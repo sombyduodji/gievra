@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../exercises.dart';
 import '../program.dart';
+import '../models.dart' show fmtDec;
 import '../program_check.dart';
 import '../program_edit.dart';
 import '../theme.dart';
@@ -303,7 +304,7 @@ class WeeklyLoadCard extends StatelessWidget {
   }
 }
 
-String fmtLoad(double v) => v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1).replaceAll('.', ',');
+String fmtLoad(double v) => v == v.roundToDouble() ? '${v.round()}' : fmtDec(v, 1);
 
 /// Yhden liikkeen muokkaus: vaihto (arvion kanssa), sarjat, toistoalue, poisto.
 class _ItemSheet extends StatefulWidget {

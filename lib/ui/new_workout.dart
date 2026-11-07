@@ -16,7 +16,8 @@ import '../l10n.dart';
 class NewWorkoutScreen extends StatefulWidget {
   final DateTime date;
   final bool newSession; // true = uusi treeni samalle päivälle (esim. illan juoksu)
-  const NewWorkoutScreen({super.key, required this.date, this.newSession = false});
+  final bool gymOnly; // etusivun salinäkymästä: ei sali / liikunta -valintaa
+  const NewWorkoutScreen({super.key, required this.date, this.newSession = false, this.gymOnly = false});
   @override
   State<NewWorkoutScreen> createState() => _NewWorkoutScreenState();
 }
@@ -77,7 +78,9 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
     final cs = Theme.of(context).colorScheme;
     final isToday = _date == dateOnly(DateTime.now());
     return Scaffold(
-      appBar: AppBar(title: Text(t('Uusi treeni'))),
+      appBar: AppBar(
+        title: Text(widget.gymOnly && settings.trainMode == 'both' ? t('Uusi salitreeni') : t('Uusi treeni')),
+      ),
       body: ListenableBuilder(
         listenable: settings,
         builder: (context, _) {
@@ -97,7 +100,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                   onTap: _pickDate,
                 ),
               ),
-              if (settings.sports) ...[
+              if (settings.sports && !widget.gymOnly) ...[
                 SectionLabel(t('Treenin tyyppi')),
                 Row(
                   children: [

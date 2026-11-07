@@ -208,7 +208,7 @@ class _WeekBars extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text('${w.start.day}.${w.start.month}.', style: TextStyle(fontSize: 8, color: cs.onSurfaceVariant)),
+                    Text(numDate(w.start), style: TextStyle(fontSize: 8, color: cs.onSurfaceVariant)),
                   ],
                 ),
               ),

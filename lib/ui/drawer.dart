@@ -347,47 +347,52 @@ class _SettingsSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SegmentedButton<double>(
               showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: 1, label: Text('1')),
-                ButtonSegment(value: 1.25, label: Text('1,25')),
-                ButtonSegment(value: 2.5, label: Text('2,5')),
-                ButtonSegment(value: 5, label: Text('5')),
+              segments: [
+                const ButtonSegment(value: 1, label: Text('1')),
+                ButtonSegment(value: 1.25, label: Text(fmtNum(1.25))),
+                ButtonSegment(value: 2.5, label: Text(fmtNum(2.5))),
+                const ButtonSegment(value: 5, label: Text('5')),
               ],
               selected: {settings.weightStep},
               onSelectionChanged: (s) => settings.setWeightStep(s.first),
             ),
           ),
           const SizedBox(height: 8),
-          Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Liikkeiden nimet'))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SegmentedButton<String>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: 'fi',
-                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Suomi'), maxLines: 1)),
-                ),
-                const ButtonSegment(
-                  value: 'en',
-                  label: FittedBox(fit: BoxFit.scaleDown, child: Text('English', maxLines: 1)),
-                ),
-                ButtonSegment(
-                  value: 'both',
-                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Molemmat'), maxLines: 1)),
-                ),
-              ],
-              selected: {settings.moveNames},
-              onSelectionChanged: (s) => settings.setMoveNames(s.first),
+          // Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi: valintaa ei tarvita.
+          if (!isEnglish) ...[
+            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Liikkeiden nimet'))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: 'fi',
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Suomi'), maxLines: 1)),
+                  ),
+                  const ButtonSegment(
+                    value: 'en',
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text('English', maxLines: 1)),
+                  ),
+                  ButtonSegment(
+                    value: 'both',
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Molemmat'), maxLines: 1)),
+                  ),
+                ],
+                selected: {settings.moveNames},
+                onSelectionChanged: (s) => settings.setMoveNames(s.first),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Text(
-              t('Haku löytää liikkeet aina molemmilla kielillä. Tiedostoihin nimet tallentuvat suomeksi.'),
-              style: sub,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                t(
+                  'Liikkeiden ja lajien nimet. Haku löytää ne aina molemmilla kielillä, ja tiedostoihin nimet tallentuvat suomeksi.',
+                ),
+                style: sub,
+              ),
             ),
-          ),
+          ],
           Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

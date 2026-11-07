@@ -16,7 +16,7 @@ class SyncScreen extends StatelessWidget {
     if (d.inMinutes < 1) return t('juuri nyt');
     if (d.inHours < 1) return t('{0} min sitten', [d.inMinutes]);
     if (d.inDays < 1) return t('{0} h sitten', [d.inHours]);
-    return '${d0.day}.${d0.month}. ${d0.hour}:${d0.minute.toString().padLeft(2, '0')}';
+    return '${numDate(d0)} ${d0.hour}:${d0.minute.toString().padLeft(2, '0')}';
   }
 
   @override

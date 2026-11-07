@@ -88,7 +88,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - oikea mittaustapa: lankku sekunteina, askelkyykkykävely askelina, kannot edestakaisina
 
 **Seuranta ja ehdotukset, jotka voi ohittaa**
-- viikko- ja kuukausikoosteet, voimakehitys, fiilis viikonpäivittäin ja treeneittäin
+- yhteenveto viikolta ja kuukaudelta: kaikki treenit yhdessä tai sali ja kestävyys erikseen (kerrat, aika, sarjat,
+  volyymi, kilometrit, syke, lajeittain), treenit viikoittain 12 viikolta; voimakehitys, fiilis viikonpäivittäin ja
+  treeneittäin
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa etusivulla
@@ -109,9 +111,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 
 | Kieli | Tila |
 |---|---|
-| **Suomi** | oletus, koko sovellus |
-| **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden ja lajien nimet ovat vielä suomeksi. |
-| **English** | koko käyttöliittymä (oikoluettu Hunspellilla); liikkeiden ja lajien nimet englanniksi tai molemmilla kielillä; haku löytää molemmilla. Tiedostot tallentuvat aina samassa muodossa, joten kieltä voi vaihtaa milloin vain. |
+| **Suomi** | oletus, koko sovellus; liikkeiden ja lajien nimet suomeksi, englanniksi tai molemmilla (asetus) |
+| **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä, kaikki tekstit ja lajien nimet. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden nimet suomeksi, englanniksi tai molemmilla (asetus); liikeohjeet suomeksi. |
+| **English** | koko käyttöliittymä (oikoluettu Hunspellilla); liikkeiden ja lajien nimet aina englanniksi; haku löytää molemmilla kielillä. Tiedostot tallentuvat aina samassa muodossa, joten kieltä voi vaihtaa milloin vain. |
 
 Korjaukset käännöksiin ovat erityisen tervetulleita, ks. [docs/kaannokset.md](docs/kaannokset.md).
 

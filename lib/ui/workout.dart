@@ -531,7 +531,7 @@ class _SavedScreenState extends State<SavedScreen> {
                   ? Text(t('Ensimmäinen kerta tällä treenillä. Ensi kerralla näet, miten kehityit.'))
                   : workout.activity != null
                   ? Text(
-                      '${t('Edellinen kerta: {0} ({1})', [trName(workout.activity!), shortDate(c.previous!.date)])}: '
+                      '${t('Edellinen kerta: {0} ({1})', [sportName(workout.activity!), shortDate(c.previous!.date)])}: '
                       '${[if (c.previous!.minutes != null) fmtDuration(c.previous!.minutes!), if (c.previous!.distanceKm != null) '${fmtNum(c.previous!.distanceKm!)} km', ?c.previous!.pace, ?c.previous!.intensity].join(' · ')}',
                     )
                   : Column(

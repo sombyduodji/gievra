@@ -80,16 +80,14 @@ HistoryProfile? analyzeHistory(List<Workout> all, {DateTime? now}) {
   final recent = weeks.skip(math.max(0, weeks.length - 12)).map((k) => perWeek[k]!).toList();
   final avg = recent.fold(0, (a, b) => a + b) / recent.length;
   final days = avg.round().clamp(2, 6);
-  why['days'] = l10n.t('keskimäärin {0} treeniä viikossa', [
-    l10n.isEnglish ? avg.toStringAsFixed(1) : avg.toStringAsFixed(1).replaceAll('.', ','),
-  ]);
+  why['days'] = l10n.t('keskimäärin {0} treeniä viikossa', [fmtDec(avg, 1)]);
 
   // Kokemus
   final months = (last.difference(ws.first.date).inDays / 30.4).floor();
   final experience = months < 12 ? 'aloittelija' : (months < 36 ? 'keski' : 'kokenut');
   why['experience'] = months < 12
       ? l10n.t('treenihistoriaa {0} kk', [months])
-      : 'treenihistoriaa ${(months / 12).toStringAsFixed(1).replaceAll('.', ',')} vuotta';
+      : l10n.t('treenihistoriaa {0} vuotta', [fmtDec(months / 12, 1)]);
 
   // Tyyli ja toistot (viimeinen puoli vuotta)
   final since = addDays(last, -183);
@@ -177,7 +175,7 @@ HistoryProfile? analyzeHistory(List<Workout> all, {DateTime? now}) {
     if (slot.isEmpty) continue;
     favorites.putIfAbsent(slot, () => e.key);
   }
-  if (favorites.isNotEmpty) why['favorites'] = favorites.values.take(6).join(', ');
+  if (favorites.isNotEmpty) why['favorites'] = favorites.values.take(6).map(exerciseLabel).join(', ');
 
   final idle = today.difference(last).inDays;
   if (idle > 28) why['idle'] = l10n.t('edellinen treeni {0} päivää sitten: aloita kevyemmin', [idle]);

@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'models.dart' show decimalComma;
+
 /// Käyttöliittymän kieli. Suomi on lähdekieli: koodissa teksti kirjoitetaan suomeksi `t('…')`-kutsuun,
 /// ja käännökset ovat gettext-tiedostossa assets/l10n/KIELI.po (msgid = suomenkielinen teksti).
 /// Puuttuva käännös näkyy suomeksi, joten keskeneräinenkin käännös toimii.
@@ -17,12 +19,18 @@ class UiLang {
 
 const uiLanguages = [
   UiLang('fi', 'Suomi', ''),
-  UiLang('se', 'Davvisámegiella', 'Geahččaleapmi: hárjehusaid namat leat ain suomagillii.'),
+  UiLang('se', 'Davvisámegiella', 'Geahččaleapmi: hárjehusaid namat leat suomagillii dahje eaŋgalsgillii.'),
   UiLang('en', 'English', ''),
 ];
 
 String _lang = 'fi';
 Map<String, String> _catalog = const {};
+Map<String, String> _en = const {}; // englanninkieliset nimet suomen- ja saamenkielisen rinnalle
+
+/// Liikkeiden ja lajien nimet: 'fi' (käyttöliittymän kielellä), 'en' tai 'both'. Asetus (app_state) päivittää.
+/// Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi.
+String nameMode = 'fi';
+String get effectiveNameMode => _lang == 'en' ? 'en' : nameMode;
 
 String get uiLang => _lang;
 bool get isSami => _lang == 'se';
@@ -30,16 +38,23 @@ bool get isEnglish => _lang == 'en';
 
 /// Vaihtaa kielen ja lataa sen käännökset. Tuntematon kieli = suomi.
 Future<void> setUiLang(String code) async {
+  if (_en.isEmpty) {
+    try {
+      _en = parsePo(await rootBundle.loadString('assets/l10n/en.po'));
+    } catch (_) {}
+  }
   if (!uiLanguages.any((l) => l.code == code) || code == 'fi') {
     _lang = 'fi';
     _catalog = const {};
     _patternCache = null;
+    decimalComma = true;
     return;
   }
   try {
     _catalog = parsePo(await rootBundle.loadString('assets/l10n/$code.po'));
     _patternCache = null;
     _lang = code;
+    decimalComma = code != 'en';
   } catch (_) {
     _lang = 'fi';
     _catalog = const {};
@@ -47,8 +62,10 @@ Future<void> setUiLang(String code) async {
 }
 
 /// Testeille: kieli ja käännökset suoraan.
-void debugSetCatalog(String code, Map<String, String> catalog) {
+void debugSetCatalog(String code, Map<String, String> catalog, {Map<String, String>? english}) {
+  if (english != null) _en = english;
   _lang = code;
+  decimalComma = code != 'en';
   _catalog = catalog;
   _patternCache = null;
 }
@@ -102,6 +119,20 @@ String trName(String name) {
     if (base != null && base.isNotEmpty) return '$base ${m[2]}';
   }
   return name;
+}
+
+/// Lajin nimi (Juoksu, Pyöräily …) nimiasetuksen mukaan: käyttöliittymän kielellä, englanniksi tai molemmilla
+/// ("Juoksu (Running)"). Englanninkielisessä käyttöliittymässä aina englanniksi.
+String sportName(String name) {
+  final local = trName(name);
+  if (_lang == 'en') return local;
+  final en = _en[name];
+  if (en == null || en.isEmpty || en == local) return local;
+  return switch (nameMode) {
+    'en' => en,
+    'both' => '$local ($en)',
+    _ => local,
+  };
 }
 
 String fill(String s, List<Object?> args) {

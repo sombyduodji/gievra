@@ -115,6 +115,10 @@ String uiMonth(int month) => isSami
     ? enMonths[month - 1]
     : fiMonths[month - 1];
 
+/// Numeerinen päiväys: "6.11." / "11/6", vuoden kanssa "6.11.2026" / "11/6/2026".
+String numDate(DateTime d, {bool year = false}) =>
+    isEnglish ? '${d.month}/${d.day}${year ? '/${d.year}' : ''}' : '${d.day}.${d.month}.${year ? d.year : ''}';
+
 /// "pe 6.11." / "Fri 11/6"
 String shortDate(DateTime d) => isEnglish
     ? '${uiWeekdaysShort[d.weekday - 1]} ${d.month}/${d.day}'
@@ -279,21 +283,28 @@ class LanguagePicker extends StatelessWidget {
   Future<void> _choose(BuildContext context, String code) async {
     if (code == uiLang) return;
     if (code == 'se') {
+      // Ilmoitus käyttöliittymän nykyisellä kielellä (suomi tai englanti) ja saameksi.
+      final en = isEnglish;
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          icon: const LangFlag('se', width: 36),
+          icon: const Center(child: LangFlag('se', height: 28)),
           title: const Text('Davvisámegiella · geahččaleapmi'),
-          content: const Text(
-            'Pohjoissaamenkielinen käyttöliittymä on kokeellinen. Kaikkea ei ole vielä käännetty: '
-            'liikkeiden ja lajien nimet ja liikeohjeet ovat suomeksi, ja käännökset odottavat vielä '
-            'natiivipuhujan tarkistusta. Treenitiedostot pysyvät suomeksi.\n\n'
-            'Sámegiel geavahanlávdi lea geahččaleapmi. Buot ii leat vel jorgaluvvon: hárjehusaid ja '
-            'valáštallamiid namat leat ain suomagillii.\n\nJatketaanko? · Joatkitgo?',
+          content: Text(
+            '${en ? 'The North Sámi interface is experimental: the translations are machine translations checked '
+                      'with a Sámi spell checker, and they still await review by a native speaker. Exercise names '
+                      'are in Finnish or English (choose in Settings) and exercise instructions in Finnish. '
+                      'Workout files stay in Finnish.' : 'Pohjoissaamenkielinen käyttöliittymä on kokeellinen: käännökset ovat konekäännöksiä, jotka on '
+                      'tarkistettu saamen oikolukijalla, ja ne odottavat vielä natiivipuhujan tarkistusta. Liikkeiden '
+                      'nimet ovat suomeksi tai englanniksi (valinta asetuksissa) ja liikeohjeet suomeksi. '
+                      'Treenitiedostot pysyvät suomeksi.'}\n\n'
+            'Sámegiel geavahanlávdi lea geahččaleapmi: jorgalusat leat mašiidnajorgalusat, dárkkistuvvon '
+            'Divvun-čállinmeattáhusdárkkistusain. Hárjehusaid namat leat suomagillii dahje eaŋgalsgillii '
+            '(válljejuvvo ásahusain).\n\n${en ? 'Continue?' : 'Jatketaanko?'} · Joatkitgo?',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ei · Ii')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Kyllä · Juo')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(en ? 'No · Ii' : 'Ei · Ii')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(en ? 'Yes · Juo' : 'Kyllä · Juo')),
           ],
         ),
       );
@@ -306,56 +317,74 @@ class LanguagePicker extends StatelessWidget {
   Widget build(BuildContext context) =>
       ListenableBuilder(listenable: settings, builder: (context, _) => _build(context));
 
+  // Kolme kieltä rinnakkain: lippu ja kielen oma nimi; valittu kehystetään keltaisella.
   Widget _build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
-      // Rivittyy kapealla näytöllä (kolme kieltä ei aina mahdu riville).
-      child: Wrap(
-        spacing: 2,
-        runSpacing: 2,
-        children: [
-          for (final l in uiLanguages)
-            Material(
-              color: uiLang == l.code ? cs.surface : Colors.transparent,
-              elevation: uiLang == l.code ? 1 : 0,
-              borderRadius: BorderRadius.circular(99),
+    return Row(
+      children: [
+        for (final (i, l) in uiLanguages.indexed) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: Material(
+              color: uiLang == l.code ? Sami.yellow.withValues(alpha: .16) : cs.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: uiLang == l.code ? Sami.yellow : cs.outlineVariant,
+                  width: uiLang == l.code ? 2 : 1,
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: InkWell(
-                borderRadius: BorderRadius.circular(99),
                 onTap: () => _choose(context, l.code),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  padding: const EdgeInsets.fromLTRB(6, 12, 6, 10),
+                  child: Column(
                     children: [
-                      LangFlag(l.code),
-                      const SizedBox(width: 8),
-                      Text(l.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      LangFlag(l.code, height: 22),
+                      const SizedBox(height: 8),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          l.name,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: uiLang == l.code ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
+          ),
         ],
-      ),
+      ],
     );
   }
 }
 
-/// Pieni lippu kielivalintaan (piirretty, ei kuvatiedostoa): Suomi ja saamen lippu.
+/// Lippu kielivalintaan (piirretty, ei kuvatiedostoa), omissa mittasuhteissaan: Suomi 18:11,
+/// saamen lippu 808:600 (Wikimedia Commons), Yhdistynyt kuningaskunta 2:1.
 class LangFlag extends StatelessWidget {
   final String code;
-  final double width;
-  const LangFlag(this.code, {super.key, this.width = 24});
+  final double height;
+  const LangFlag(this.code, {super.key, this.height = 16});
+
+  static double ratio(String code) => switch (code) {
+    'se' => 808 / 600,
+    'en' => 2,
+    _ => 18 / 11,
+  };
 
   @override
   Widget build(BuildContext context) => Container(
-    width: width,
-    // Saamen lippu omissa mittasuhteissaan (808:600), ettei ympyrä veny; muut 3:2.
-    height: code == 'se' ? width * 600 / 808 : width * 2 / 3,
+    width: height * ratio(code),
+    height: height,
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(3),
       boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.outlineVariant, spreadRadius: 1)],
     ),
     clipBehavior: Clip.antiAlias,
@@ -390,26 +419,58 @@ class _FlagPainter extends CustomPainter {
       c.drawArc(r, math.pi / 2, math.pi, false, ring(blue));
       c.drawArc(r, -math.pi / 2, math.pi, false, ring(red));
     } else if (code == 'en') {
-      // Yhdistyneen kuningaskunnan lippu (yksinkertaistettu, 3:2): sininen, valkoiset ja punaiset ristit.
+      // Yhdistyneen kuningaskunnan lippu (Union Jack) virallisin mittasuhtein 60 × 30: valkoinen vinoristi 6,
+      // punainen vinoristi 2 siirrettynä (vastavuoroisesti, kuten oikeassa lipussa), valkoinen risti 10,
+      // punainen risti 6.
       const blue = Color(0xFF012169), red = Color(0xFFC8102E);
-      c.drawRect(Rect.fromLTWH(0, 0, w, h), p(blue));
-      Paint line(Color col, double width) => Paint()
+      c.save();
+      c.scale(w / 60, h / 30);
+      c.drawRect(const Rect.fromLTWH(0, 0, 60, 30), p(blue));
+      Paint stroke(Color col, double width) => Paint()
         ..color = col
+        ..style = PaintingStyle.stroke
         ..strokeWidth = width;
-      c.drawLine(Offset.zero, Offset(w, h), line(Colors.white, h * .2));
-      c.drawLine(Offset(w, 0), Offset(0, h), line(Colors.white, h * .2));
-      c.drawLine(Offset.zero, Offset(w, h), line(red, h * .07));
-      c.drawLine(Offset(w, 0), Offset(0, h), line(red, h * .07));
-      c.drawRect(Rect.fromLTWH(w * .4167, 0, w * .1667, h), p(Colors.white));
-      c.drawRect(Rect.fromLTWH(0, h * .375, w, h * .25), p(Colors.white));
-      c.drawRect(Rect.fromLTWH(w * .45, 0, w * .1, h), p(red));
-      c.drawRect(Rect.fromLTWH(0, h * .4, w, h * .2), p(red));
+      final diag = Path()
+        ..moveTo(0, 0)
+        ..lineTo(60, 30)
+        ..moveTo(60, 0)
+        ..lineTo(0, 30);
+      c.drawPath(diag, stroke(Colors.white, 6));
+      // Punainen vinoristi vain kunkin lävistäjän toisella puolella: neljä kolmiota keskeltä.
+      c.save();
+      c.clipPath(
+        Path()
+          ..moveTo(30, 15)
+          ..lineTo(60, 15)
+          ..lineTo(60, 30)
+          ..close()
+          ..moveTo(30, 15)
+          ..lineTo(30, 30)
+          ..lineTo(0, 30)
+          ..close()
+          ..moveTo(30, 15)
+          ..lineTo(0, 15)
+          ..lineTo(0, 0)
+          ..close()
+          ..moveTo(30, 15)
+          ..lineTo(30, 0)
+          ..lineTo(60, 0)
+          ..close(),
+      );
+      c.drawPath(diag, stroke(red, 4));
+      c.restore();
+      c.drawRect(const Rect.fromLTWH(25, 0, 10, 30), p(Colors.white));
+      c.drawRect(const Rect.fromLTWH(0, 10, 60, 10), p(Colors.white));
+      c.drawRect(const Rect.fromLTWH(27, 0, 6, 30), p(red));
+      c.drawRect(const Rect.fromLTWH(0, 12, 60, 6), p(red));
+      c.restore();
     } else {
-      // Suomen lippu: valkoinen, sininen risti (18:11 → tässä 3:2).
+      // Suomen lippu (laki 1978/380): 18 × 11, sininen risti 3 leveä, pystyosa 5:n päässä vasemmasta reunasta,
+      // vaakaosa 4:n päässä ylhäältä.
       const blue = Color(0xFF002F6C);
       c.drawRect(Rect.fromLTWH(0, 0, w, h), p(Colors.white));
-      c.drawRect(Rect.fromLTWH(w * .28, 0, w * .17, h), p(blue));
-      c.drawRect(Rect.fromLTWH(0, h * .37, w, h * .26), p(blue));
+      c.drawRect(Rect.fromLTWH(w * 5 / 18, 0, w * 3 / 18, h), p(blue));
+      c.drawRect(Rect.fromLTWH(0, h * 4 / 11, w, h * 3 / 11), p(blue));
     }
   }
 
@@ -426,7 +487,7 @@ class ExName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final en = englishOf(name);
-    if (en == null || settings.moveNames == 'en') return Text(en ?? name, style: style);
+    if (en == null || effectiveNameMode == 'en') return Text(en ?? name, style: style);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,

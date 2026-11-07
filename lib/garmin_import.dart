@@ -197,7 +197,7 @@ const _cPower = ['Keskiteho', 'Avg Power'];
     final extra = <String>[
       if (garminNum(c.get(r, _cAscent)) case final v?) 'nousu ${v.round()} m',
       if (garminNum(c.get(r, _cCad)) case final v?) 'askeltiheys ${v.round()} /min',
-      if (te != null) 'aerobinen TE ${fmtNum(te)}',
+      if (te != null) 'aerobinen TE ${fileNum(te)}',
       if (garminNum(c.get(r, _cSteps)) case final v?) 'askeleet ${v.round()}',
       if (garminNum(c.get(r, _cPower)) case final v?) 'keskiteho ${v.round()} W',
     ];

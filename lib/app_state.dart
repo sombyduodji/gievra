@@ -93,7 +93,7 @@ class Settings extends ChangeNotifier {
   String get homeShows => trainMode == 'both' ? homeView : trainMode;
 
   /// Liikkeiden nimet näytössä: 'fi' suomeksi, 'en' englanniksi, 'both' molemmat. Tiedostoihin aina suomeksi.
-  String moveNames = 'fi';
+  String moveNames = 'fi'; // suomen- ja saamenkielinen käyttöliittymä; englanniksi aina 'en'
   bool watch = false; // sykemittarin / älykellon tiedot näkyvissä
   bool restTimer = false; // palautusajastin sarjan tallennuksen jälkeen (oletus pois)
   String restSound = 'pling'; // pling / boop / chime / none (vain värinä)
@@ -220,7 +220,7 @@ class Settings extends ChangeNotifier {
       ..writeln('---')
       ..writeln('name: ${name ?? ''}')
       ..writeln('theme: ${themeMode.name}')
-      ..writeln('weightStep: ${fmtNum(weightStep)}')
+      ..writeln('weightStep: ${fileNum(weightStep)}')
       ..writeln('tips: $tips')
       ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
       ..writeln('mode: $trainMode')
@@ -323,6 +323,7 @@ class Settings extends ChangeNotifier {
             if (v == 'true') moveNames = 'both';
           case 'move_names':
             moveNames = const {'fi', 'en', 'both'}.contains(v) ? v : 'fi';
+            nameMode = moveNames;
           case 'watch':
             watch = v == 'true';
           case 'rest_timer':
@@ -477,18 +478,10 @@ class Settings extends ChangeNotifier {
 
   /// Käyttöliittymän kieli on laitekohtainen (ei asetukset.md:ssä): treenitiedostot pysyvät suomeksi.
   Future<void> setLang(String code) async {
-    final wasEnglish = isEnglish;
     await setUiLang(code);
     await _p?.setString('lang', uiLang);
-    // Englanninkielisessä käyttöliittymässä liikkeet englanniksi (jos ne olivat vain suomeksi); takaisin suomeen
-    // vaihdettaessa palautetaan suomi. Asetuksista voi valita myös molemmat.
-    if (isEnglish && moveNames == 'fi') {
-      moveNames = 'en';
-      _persist();
-    } else if (wasEnglish && !isEnglish && moveNames == 'en') {
-      moveNames = 'fi';
-      _persist();
-    }
+    // Englanninkielisessä käyttöliittymässä liikkeiden ja lajien nimet ovat aina englanniksi (effectiveNameMode);
+    // suomen ja saamen nimiasetus (suomi / englanti / molemmat) säilyy ennallaan.
     notifyListeners();
   }
 
@@ -536,6 +529,7 @@ class Settings extends ChangeNotifier {
 
   void setMoveNames(String v) {
     moveNames = v;
+    nameMode = v;
     _persist();
   }
 

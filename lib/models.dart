@@ -199,10 +199,22 @@ const notesHeading = 'Muistiinpanot';
 String _two(int n) => n.toString().padLeft(2, '0');
 String isoDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${_two(d.month)}-${_two(d.day)}';
 
-/// 2.5 -> "2,5", 100.0 -> "100"
-String fmtNum(double v) {
+/// Näytön desimaalierotin: pilkku (suomi, saame) tai piste (englanti). Kieli asettaa (l10n.setUiLang).
+bool decimalComma = true;
+
+/// Tiedostoihin: aina pilkku, kielestä riippumatta. 2.5 -> "2,5", 100.0 -> "100"
+String fileNum(double v) {
   final s = v == v.truncateToDouble() ? v.toInt().toString() : v.toString();
   return s.replaceAll('.', ',');
+}
+
+/// Näytölle: 2.5 -> "2,5" (englanniksi "2.5"), 100.0 -> "100"
+String fmtNum(double v) => decimalComma ? fileNum(v) : fileNum(v).replaceAll(',', '.');
+
+/// Näytölle kiinteällä desimaalimäärällä: fmtDec(1.25, 1) -> "1,3" / "1.3".
+String fmtDec(num v, int digits) {
+  final s = v.toStringAsFixed(digits);
+  return decimalComma ? s.replaceAll('.', ',') : s;
 }
 
 double? parseNum(String s) => double.tryParse(s.trim().replaceAll(',', '.'));
@@ -215,10 +227,10 @@ String workoutToMarkdown(Workout w) {
   if (w.programDay != null && w.programDay != w.title) b.writeln('day: ${w.programDay}');
   if (w.session > 1) b.writeln('session: ${w.session}');
   if (w.activity != null) b.writeln('activity: ${w.activity}');
-  if (w.distanceKm != null) b.writeln('distance: ${fmtNum(w.distanceKm!)} km');
+  if (w.distanceKm != null) b.writeln('distance: ${fileNum(w.distanceKm!)} km');
   if (w.intensity != null) b.writeln('intensity: ${w.intensity}');
   if (w.warmup != null) b.writeln('warmup: ${w.warmup!.equipment}, ${w.warmup!.minutes} min');
-  if (w.bodyweight != null) b.writeln('bodyweight: ${fmtNum(w.bodyweight!)}');
+  if (w.bodyweight != null) b.writeln('bodyweight: ${fileNum(w.bodyweight!)}');
   if (w.started != null) b.writeln('start: ${_two(w.started!.hour)}:${_two(w.started!.minute)}');
   if (w.minutes != null) b.writeln('duration: ${w.minutes} min${w.watchTime ? ' (kello)' : ''}');
   if (w.seconds != null) b.writeln('time: ${fmtDurationSec(w.seconds!)}');
@@ -248,7 +260,7 @@ String workoutToMarkdown(Workout w) {
             : w.minutes == null
             ? ''
             : ': ${w.minutes} min'}'
-        '${w.distanceKm == null ? '' : ', ${fmtNum(w.distanceKm!)} km'}${w.pace == null ? '' : ', ${w.pace}'}'
+        '${w.distanceKm == null ? '' : ', ${fileNum(w.distanceKm!)} km'}${w.pace == null ? '' : ', ${w.pace}'}'
         '${w.intensity == null ? '' : ', ${w.intensity}'}',
       );
   }
@@ -267,13 +279,13 @@ String workoutToMarkdown(Workout w) {
     for (var i = 0; i < e.sets.length; i++) {
       final s = e.sets[i];
       if (m == Measure.reps) {
-        b.write('${i + 1}. ${fmtNum(s.kg)} kg × ${s.reps}');
+        b.write('${i + 1}. ${fileNum(s.kg)} kg × ${s.reps}');
       } else if (s.kg == 0) {
         b.write('${i + 1}. ${s.reps} ${m.suffix}');
       } else {
-        b.write('${i + 1}. ${fmtNum(s.kg)} kg × ${s.reps} ${m.suffix}');
+        b.write('${i + 1}. ${fileNum(s.kg)} kg × ${s.reps} ${m.suffix}');
       }
-      if (s.rpe != null) b.write(' @${fmtNum(s.rpe!)}');
+      if (s.rpe != null) b.write(' @${fileNum(s.rpe!)}');
       if (s.rir != null) b.write(' RIR ${rirLabels[s.rir]}');
       if (s.pr) b.write(' 🏆 ennätys');
       if (s.warmup) b.write(' (lämmittely)');

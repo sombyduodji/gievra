@@ -822,7 +822,7 @@ Target targetFor(Program p, PlanItem it, DateTime date) {
       l10n.t('Viikko {0}/10 · {1} · {2} %', [
         w + 1,
         l10n.t(plPhases[w]),
-        (pct * 100).toStringAsFixed(1).replaceAll('.0', '').replaceAll('.', ','),
+        fmtNum(double.parse((pct * 100).toStringAsFixed(1))),
       ]),
       pct: pct,
     );
@@ -1512,7 +1512,7 @@ void _fitTime(List<PlanItem> items, int minutes, {Set<String> keep = const {}}) 
 
 // --- ohjelma.md ----------------------------------------------------------
 
-String _min(int s) => s % 60 == 0 ? '${s ~/ 60} min' : '${fmtNum(s / 60)} min';
+String _min(int s) => s % 60 == 0 ? '${s ~/ 60} min' : '${fileNum(s / 60)} min';
 
 String programToMarkdown(Program p) {
   final b = StringBuffer()
@@ -1527,7 +1527,7 @@ String programToMarkdown(Program p) {
   if (!fitsAll(p.equipment)) b.writeln('equipment: ${p.equipment.join(', ')}');
   if (p.kbFocus != null) b.writeln('kettlebell: ${p.kbFocus}');
   if (p.maxes.isNotEmpty) {
-    b.writeln('maxes: ${p.maxes.entries.map((e) => '${e.key}=${fmtNum(e.value)}').join('; ')}');
+    b.writeln('maxes: ${p.maxes.entries.map((e) => '${e.key}=${fileNum(e.value)}').join('; ')}');
   }
   b
     ..writeln('---')

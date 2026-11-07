@@ -4,6 +4,7 @@ import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/main.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/sports.dart';
+import 'package:treenipaivakirja/stats.dart';
 
 void main() {
   test('Vanha sports-asetus -> treenitila; mode voittaa', () {
@@ -62,5 +63,32 @@ void main() {
   test('Lajit käyttömäärän mukaan', () {
     final order = sportsByUse(['Kävely', 'Pyöräily', 'Kävely', null, 'Pyöräily', 'Kävely']).map((s) => s.name);
     expect(order.take(3), ['Kävely', 'Pyöräily', 'Juoksu']); // käyttämättömät alkuperäisessä järjestyksessä
+  });
+
+  test('kooste: kaikki, sali ja kestävyys erikseen; viikoittaiset määrät', () {
+    final mon = DateTime(2026, 11, 2);
+    final ws = [
+      Workout(
+        date: mon,
+        title: 'Koko keho A',
+        exercises: [
+          ExerciseEntry('Takakyykky', [SetEntry(100, 5)]),
+        ],
+      )..minutes = 60,
+      Workout(date: mon, session: 2, title: 'Juoksu', activity: 'Juoksu')
+        ..seconds = 1800
+        ..distanceKm = 5
+        ..hrAvg = 140,
+      Workout(date: DateTime(2026, 11, 4), title: 'Pyöräily', activity: 'Pyöräily')..minutes = 45,
+    ];
+    final all = recap(ws, mon, DateTime(2026, 11, 9));
+    expect((all.gym, all.activities, all.minutes, all.gymMinutes, all.cardioMinutes), (1, 2, 135, 60, 75));
+    expect(all.sports['Juoksu']!.km, 5);
+    expect(all.hrAvg, 140);
+    expect(recap(ws, mon, DateTime(2026, 11, 9), kind: 'gym').sessions, 1);
+    expect(recap(ws, mon, DateTime(2026, 11, 9), kind: 'cardio').sessions, 2);
+    final weeks = weeklyCounts(ws, DateTime(2026, 11, 7));
+    expect(weeks.length, 12);
+    expect((weeks.last.$2, weeks.last.$3), (1, 2));
   });
 }

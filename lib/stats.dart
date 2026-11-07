@@ -9,36 +9,76 @@ import 'l10n.dart' as l10n;
 // Edistyminen ja tilastot: viikko- ja kuukausikoosteet, fiiliksen kehitys (viikoittain, viikonpäivittäin,
 // treenipäivittäin ja liikkeittäin), voimakehitys ja ehdotukset, kun fiilis laskee.
 
+/// Lajin osuus jaksossa: kerrat, minuutit ja kilometrit.
+class SportShare {
+  int count = 0, minutes = 0;
+  double km = 0;
+}
+
 class Recap {
   final DateTime from, to; // to = seuraavan jakson alku
   int gym = 0, activities = 0, sets = 0, prs = 0, minutes = 0, kcal = 0;
+  int gymMinutes = 0, cardioMinutes = 0;
   double volume = 0, km = 0;
   final List<int> feelings = [];
+  final List<int> hr = [];
+  final Map<String, SportShare> sports = {}; // laji (tiedoston nimi, suomeksi) -> osuus
   Recap(this.from, this.to);
   int get sessions => gym + activities;
   double? get feeling => feelings.isEmpty ? null : feelings.reduce((a, b) => a + b) / feelings.length;
+  int? get hrAvg => hr.isEmpty ? null : (hr.reduce((a, b) => a + b) / hr.length).round();
 }
 
-Recap recap(List<Workout> ws, DateTime from, DateTime to) {
+/// Treenin kesto minuutteina: kirjattu kesto tai kestävyyslajin tarkka aika.
+int workoutMinutes(Workout w) => w.minutes ?? (w.seconds == null ? 0 : (w.seconds! / 60).round());
+
+/// Jakson kooste. [kind]: 'all' = kaikki, 'gym' = salitreenit, 'cardio' = liikunta ja lajit.
+Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'}) {
   final r = Recap(from, to);
   for (final w in ws) {
     if (w.date.isBefore(from) || !w.date.isBefore(to)) continue;
+    final mins = workoutMinutes(w);
     if (w.activity != null) {
+      if (kind == 'gym') continue;
       r.activities++;
       r.km += w.distanceKm ?? 0;
+      r.cardioMinutes += mins;
+      final s = r.sports.putIfAbsent(w.activity!, SportShare.new);
+      s.count++;
+      s.minutes += mins;
+      s.km += w.distanceKm ?? 0;
+      if (w.hrAvg != null) r.hr.add(w.hrAvg!);
     } else if (w.exercises.any((e) => e.sets.isNotEmpty)) {
+      if (kind == 'cardio') continue;
       r.gym++;
+      r.gymMinutes += mins;
     } else {
       continue;
     }
     r.sets += w.exercises.fold(0, (a, e) => a + e.workSets.length);
     r.prs += w.exercises.expand((e) => e.sets).where((s) => s.pr).length;
     r.volume += workVolume(w);
-    r.minutes += w.minutes ?? 0;
+    r.minutes += mins;
     r.kcal += w.kcal ?? 0;
     if (w.feeling != null) r.feelings.add(w.feeling!);
   }
   return r;
+}
+
+/// Treenit viikoittain [weeks] viikolta (vanhin ensin): (viikon alku, salitreenit, liikunta).
+List<(DateTime, int, int)> weeklyCounts(List<Workout> ws, DateTime today, {int weeks = 12}) {
+  final first = addDays(weekStart(today), -7 * (weeks - 1));
+  final out = [for (var i = 0; i < weeks; i++) (addDays(first, 7 * i), 0, 0)];
+  for (final w in ws) {
+    if (w.date.isBefore(first)) continue;
+    final i = w.date.difference(first).inDays ~/ 7;
+    if (i < 0 || i >= weeks) continue;
+    final gym = w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty);
+    if (!gym && w.activity == null) continue;
+    final (d, g, c) = out[i];
+    out[i] = (d, g + (gym ? 1 : 0), c + (gym ? 0 : 1));
+  }
+  return out;
 }
 
 DateTime monthStart(DateTime d) => DateTime(d.year, d.month);
@@ -176,7 +216,7 @@ List<String> feelingSuggestions(List<Workout> ws, DateTime today) {
   return out;
 }
 
-String _f(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
+String _f(double v) => fmtDec(v, 1);
 
 String _weekdayLong(String short) => {
   'ma': l10n.t('Maanantain'),

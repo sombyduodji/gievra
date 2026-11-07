@@ -12,8 +12,10 @@ import 'widgets.dart';
 import '../l10n.dart';
 
 /// ☰ → Edistyminen ja tilastot.
+/// Edistyminen ja tilastot. [kind]: aloitusnäkymä 'all' (kaikki), 'gym' tai 'cardio'.
 class StatsScreen extends StatefulWidget {
-  const StatsScreen({super.key});
+  final String? kind;
+  const StatsScreen({super.key, this.kind});
   @override
   State<StatsScreen> createState() => _StatsScreenState();
 }
@@ -21,6 +23,7 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   bool _month = false;
   int _offset = 0; // 0 = tämä jakso, 1 = edellinen …
+  late String _kind = widget.kind ?? (settings.trainMode == 'cardio' ? 'cardio' : 'all');
 
   (DateTime, DateTime) _period(int back) {
     final today = dateOnly(DateTime.now());
@@ -34,7 +37,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
   String _label(DateTime a, DateTime b) {
     if (_month) {
-      return '${isSami ? seMonths[a.month - 1] : fiMonths[a.month - 1].toLowerCase()} ${a.year}';
+      final m = uiMonth(a.month);
+      return '${isEnglish ? m : m.toLowerCase()} ${a.year}';
     }
     final e = addDays(b, -1);
     return t('viikko {0}.{1}.–{2}.{3}.', [a.day, a.month, e.day, e.month]);
@@ -47,7 +51,13 @@ class _StatsScreenState extends State<StatsScreen> {
     final ws = store.workouts;
     final (a, b) = _period(_offset);
     final (pa, pb) = _period(_offset + 1);
-    final r = recap(ws, a, b), p = recap(ws, pa, pb);
+    // Suodatin näkyy, kun käytössä on sekä sali että kestävyys (asetus tai historia).
+    final hasGym = ws.any((w) => w.activity == null && w.exercises.isNotEmpty);
+    final hasCardio = ws.any((w) => w.activity != null);
+    final showKind = settings.trainMode == 'both' || (hasGym && hasCardio);
+    final kind = showKind ? _kind : (hasCardio && !hasGym ? 'cardio' : 'gym');
+    final r = recap(ws, a, b, kind: kind), p = recap(ws, pa, pb, kind: kind);
+    final weekly = weeklyCounts(ws, dateOnly(DateTime.now()));
     final today = dateOnly(DateTime.now());
     final fs = feelingStats(ws, today);
     final tips = feelingSuggestions(ws, today);
@@ -67,8 +77,12 @@ class _StatsScreenState extends State<StatsScreen> {
         child: Column(
           children: [
             Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            Text(label, style: sub, textAlign: TextAlign.center),
-            if (d.isNotEmpty) Text(d, style: TextStyle(fontSize: 11, color: d.startsWith('↓') ? Sami.red : Sami.green)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label, style: sub, maxLines: 1),
+            ),
+            // Muutosrivi aina paikallaan, jotta rivin ruudut ovat yhtä korkeita.
+            Text(d.isEmpty ? ' ' : d, style: TextStyle(fontSize: 11, color: d.startsWith('↓') ? Sami.red : Sami.green)),
           ],
         ),
       ),
@@ -94,6 +108,28 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
             ),
+          if (showKind) ...[
+            const SizedBox(height: 12),
+            SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: 'all',
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Kaikki'), maxLines: 1)),
+                ),
+                ButtonSegment(
+                  value: 'gym',
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Sali'), maxLines: 1)),
+                ),
+                ButtonSegment(
+                  value: 'cardio',
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Kestävyys'), maxLines: 1)),
+                ),
+              ],
+              selected: {_kind},
+              onSelectionChanged: (v) => setState(() => _kind = v.first),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -120,36 +156,63 @@ class _StatsScreenState extends State<StatsScreen> {
           Text(_label(a, b), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           Text(_month ? t('Vertailu edelliseen kuukauteen') : t('Vertailu edelliseen viikkoon'), style: sub),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              tile('${r.sessions}', t('treeniä'), delta(r.sessions, p.sessions)),
-              const SizedBox(width: 6),
-              tile(
-                r.minutes == 0 ? '–' : '${(r.minutes / 60).toStringAsFixed(1).replaceAll('.', ',')} h',
-                t('aikaa'),
-                delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
-              ),
-              const SizedBox(width: 6),
-              tile('${r.sets}', t('sarjaa'), delta(r.sets, p.sets)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              tile(
-                r.volume == 0 ? '–' : _vol(r.volume),
-                t('volyymi'),
-                p.volume == 0 || r.volume == p.volume
-                    ? delta(r.volume, p.volume)
-                    : '${r.volume > p.volume ? '↑' : '↓'} ${_vol((r.volume - p.volume).abs())}',
-              ),
-              const SizedBox(width: 6),
-              tile('${r.prs}', t('ennätystä'), ''),
-              const SizedBox(width: 6),
-              tile(r.feeling == null ? '–' : feelingOf(r.feeling!.round())!.$2, t('fiilis keskimäärin'), ''),
-            ],
-          ),
-          if (r.kcal > 0)
+          if (kind != 'cardio') ...[
+            Row(
+              children: [
+                tile('${r.sessions}', kind == 'all' ? t('treeniä') : t('salitreeniä'), delta(r.sessions, p.sessions)),
+                const SizedBox(width: 6),
+                tile(
+                  r.minutes == 0 ? '–' : _hours(r.minutes),
+                  t('aikaa'),
+                  delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
+                ),
+                const SizedBox(width: 6),
+                tile(r.feeling == null ? '–' : feelingOf(r.feeling!.round())!.$2, t('fiilis keskimäärin'), ''),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                tile('${r.sets}', t('sarjaa'), delta(r.sets, p.sets)),
+                const SizedBox(width: 6),
+                tile(
+                  r.volume == 0 ? '–' : _vol(r.volume),
+                  t('volyymi'),
+                  p.volume == 0 || r.volume == p.volume
+                      ? delta(r.volume, p.volume)
+                      : '${r.volume > p.volume ? '↑' : '↓'} ${_vol((r.volume - p.volume).abs())}',
+                ),
+                const SizedBox(width: 6),
+                tile('${r.prs}', t('ennätystä'), ''),
+              ],
+            ),
+          ],
+          if (kind != 'gym') ...[
+            if (kind == 'all') const SizedBox(height: 6),
+            Row(
+              children: [
+                if (kind == 'cardio') ...[
+                  tile('${r.activities}', t('kertaa'), delta(r.activities, p.activities)),
+                  const SizedBox(width: 6),
+                  tile(
+                    r.minutes == 0 ? '–' : _hours(r.minutes),
+                    t('aikaa'),
+                    delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                tile(
+                  r.km == 0 ? '–' : '${fmtNum((r.km * 10).round() / 10)} km',
+                  t('matka'),
+                  delta(r.km, p.km, unit: ' km'),
+                ),
+                const SizedBox(width: 6),
+                tile(r.hrAvg == null ? '–' : '${r.hrAvg}', t('keskisyke'), ''),
+                if (kind == 'all') ...[const SizedBox(width: 6), tile(r.kcal == 0 ? '–' : '${r.kcal}', 'kcal', '')],
+              ],
+            ),
+          ],
+          if (kind == 'cardio' && r.kcal > 0)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
@@ -157,15 +220,33 @@ class _StatsScreenState extends State<StatsScreen> {
                 style: sub,
               ),
             ),
-          if (r.activities > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                '${t('Liikuntaa {0} kertaa', [r.activities])}${r.km > 0 ? ', ${fmtNum((r.km * 10).round() / 10)} km' : ''}. '
-                '${t('Salitreenejä {0}.', [r.gym])}',
-                style: sub,
+          // Kaikki: sali ja kestävyys rinnakkain (kerrat ja aika).
+          if (kind == 'all' && r.sessions > 0) ...[
+            const SizedBox(height: 10),
+            _Split(gym: r.gym, cardio: r.activities, gymMinutes: r.gymMinutes, cardioMinutes: r.cardioMinutes),
+          ],
+          if (kind != 'gym' && r.sports.isNotEmpty) ...[
+            SectionLabel(t('Lajeittain')),
+            for (final e in (r.sports.entries.toList()..sort((x, y) => y.value.count.compareTo(x.value.count))))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(sportName(e.key))),
+                    Text(
+                      [
+                        t('{0} krt', [e.value.count]),
+                        if (e.value.minutes > 0) _hours(e.value.minutes),
+                        if (e.value.km > 0) '${fmtNum((e.value.km * 10).round() / 10)} km',
+                      ].join(' · '),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
-            ),
+          ],
+          SectionLabel(t('Treenit viikoittain (12 viikkoa)')),
+          _StackBars(weeks: weekly, kind: kind),
           if (tips.isNotEmpty) ...[
             SectionLabel(t('Huomiot ja ehdotukset')),
             for (final tip in tips)
@@ -186,20 +267,15 @@ class _StatsScreenState extends State<StatsScreen> {
           else ...[
             _Bars(
               values: [for (final (_, v, _) in fs.weekly) v],
-              labels: [for (final (d, _, _) in fs.weekly) '${d.day}.${d.month}'],
+              labels: [for (final (d, _, _) in fs.weekly) numDate(d)],
               max: 5,
             ),
             const SizedBox(height: 4),
-            Text(
-              t('Asteikko 1 = 😫 raskas … 5 = 🤩 loistava. Keskiarvo {0}.', [
-                fs.overall!.toStringAsFixed(1).replaceAll('.', ','),
-              ]),
-              style: sub,
-            ),
+            Text(t('Asteikko 1 = 😫 raskas … 5 = 🤩 loistava. Keskiarvo {0}.', [fmtDec(fs.overall!, 1)]), style: sub),
             SectionLabel(t('Viikonpäivittäin')),
             _Bars(
               values: [for (final d in weekdayNames) fs.byWeekday.where((g) => g.label == d).firstOrNull?.avg ?? 0],
-              labels: weekdayNames,
+              labels: uiWeekdaysShort,
               max: 5,
             ),
             if (fs.byDay.isNotEmpty) ...[
@@ -262,14 +338,11 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Row(
         children: [
           Expanded(child: Text(g.label)),
-          Text(
-            '${f?.$2 ?? ''} ${g.avg.toStringAsFixed(1).replaceAll('.', ',')}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          Text('${f?.$2 ?? ''} ${fmtDec(g.avg, 1)}', style: const TextStyle(fontWeight: FontWeight.w600)),
           SizedBox(
             width: 52,
             child: Text(
-              '${g.n} krt',
+              t('{0} krt', [g.n]),
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
@@ -301,8 +374,7 @@ class _Bars extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (values[i] > 0)
-                      Text(values[i].toStringAsFixed(1).replaceAll('.', ','), style: const TextStyle(fontSize: 9)),
+                    if (values[i] > 0) Text(fmtDec(values[i], 1), style: const TextStyle(fontSize: 9)),
                     Container(
                       height: 80 * clamp01(values[i] / max),
                       decoration: BoxDecoration(
@@ -357,5 +429,142 @@ class _Spark extends CustomPainter {
 String _vol(num kg) {
   if (kg < 1000) return '${fmtNum(kg.roundToDouble())} kg';
   final t = kg / 1000;
-  return t < 10 ? '${t.toStringAsFixed(1).replaceAll('.', ',')} t' : '${fmtNum(t.roundToDouble())} t';
+  return t < 10 ? '${fmtDec(t, 1)} t' : '${fmtNum(t.roundToDouble())} t';
+}
+
+/// Tunnit: "1,5 h" / "45 min".
+String _hours(int minutes) => minutes < 60 ? '$minutes min' : '${fmtDec(minutes / 60, 1)} h';
+
+/// Sali ja kestävyys rinnakkain: kerrat ja aika, palkki osuuksista (ajan mukaan, jos aika on kirjattu).
+class _Split extends StatelessWidget {
+  final int gym, cardio, gymMinutes, cardioMinutes;
+  const _Split({required this.gym, required this.cardio, required this.gymMinutes, required this.cardioMinutes});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final byTime = gymMinutes + cardioMinutes > 0;
+    final g = byTime ? gymMinutes : gym, c = byTime ? cardioMinutes : cardio;
+    final total = g + c;
+    Widget side(String icon, String label, int n, int mins, Color color, CrossAxisAlignment align) => Column(
+      crossAxisAlignment: align,
+      children: [
+        Text('$icon $label', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+        Text(
+          '${t('{0} krt', [n])}${mins > 0 ? ' · ${_hours(mins)}' : ''}',
+          style: TextStyle(fontWeight: FontWeight.w700, color: color),
+        ),
+      ],
+    );
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              side('🏋', t('Sali'), gym, gymMinutes, Sami.red, CrossAxisAlignment.start),
+              side('🏃', t('Kestävyys'), cardio, cardioMinutes, Sami.green, CrossAxisAlignment.end),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              height: 10,
+              child: Row(
+                children: [
+                  if (g > 0)
+                    Expanded(
+                      flex: g,
+                      child: Container(color: Sami.red),
+                    ),
+                  if (c > 0)
+                    Expanded(
+                      flex: c,
+                      child: Container(color: Sami.green),
+                    ),
+                  if (total == 0) Expanded(child: Container(color: cs.outlineVariant)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Treenit viikoittain: pinotut pylväät, sali punainen ja kestävyys vihreä. [kind] rajaa näytettävät.
+class _StackBars extends StatelessWidget {
+  final List<(DateTime, int, int)> weeks;
+  final String kind;
+  const _StackBars({required this.weeks, required this.kind});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    int g(int i) => kind == 'cardio' ? 0 : weeks[i].$2;
+    int c(int i) => kind == 'gym' ? 0 : weeks[i].$3;
+    final top = [for (var i = 0; i < weeks.length; i++) g(i) + c(i)].fold(0, (a, b) => a > b ? a : b);
+    final max = top < 3 ? 3 : top;
+    final label = TextStyle(fontSize: 9, color: cs.onSurfaceVariant);
+    Widget legend(Color col, String text) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: col, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 120,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < weeks.length; i++)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (g(i) + c(i) > 0) Text('${g(i) + c(i)}', style: const TextStyle(fontSize: 9)),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Column(
+                            children: [
+                              if (c(i) > 0) Container(height: 80 * c(i) / max, color: Sami.green),
+                              if (g(i) > 0) Container(height: 80 * g(i) / max, color: Sami.red),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(numDate(weeks[i].$1), style: label, maxLines: 1),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 12,
+          children: [
+            if (kind != 'cardio') legend(Sami.red, t('Sali')),
+            if (kind != 'gym') legend(Sami.green, t('Kestävyys')),
+          ],
+        ),
+      ],
+    );
+  }
 }

@@ -612,16 +612,15 @@ bool matchesSearch(String exercise, String q) {
 }
 
 /// Englanninkielinen nimi, jos asetus on päällä (näytetään suomenkielisen rinnalla).
-String? englishOf(String exercise) => settings.moveNames == 'fi' ? null : exerciseEnglish[exercise];
+String? englishOf(String exercise) => effectiveNameMode == 'fi' ? null : exerciseEnglish[exercise];
 
 /// Liikkeen pääasiallinen näyttönimi asetuksen mukaan (englanniksi, jos valittu ja käännös on olemassa).
-String exerciseDisplay(String exercise) =>
-    settings.moveNames == 'en' ? exerciseEnglish[exercise] ?? exercise : exercise;
+String exerciseDisplay(String exercise) => effectiveNameMode == 'en' ? exerciseEnglish[exercise] ?? exercise : exercise;
 
 /// Liikkeen nimi näytettäväksi yhdellä rivillä: "Takakyykky · Back Squat" tai pelkkä nimi.
 String exerciseLabel(String exercise) {
   final en = englishOf(exercise);
-  return switch (settings.moveNames) {
+  return switch (effectiveNameMode) {
     'en' => en ?? exercise,
     'both' when en != null => '$exercise ($en)',
     _ => exercise,

@@ -1,3 +1,4 @@
+import 'exercises.dart';
 import 'program.dart';
 import 'l10n.dart' as l10n;
 
@@ -127,7 +128,9 @@ List<String> validateProgram(Program p, {List<String> injuries = const []}) {
     for (final i in d.items) {
       if (!i.compound && i.kind == null) seenIso = true;
       if (i.compound && seenIso) {
-        issues.add(l10n.t('{0}: moninivelliike {1} eristävän jälkeen', [l10n.trName(d.name), i.exercise]));
+        issues.add(
+          l10n.t('{0}: moninivelliike {1} eristävän jälkeen', [l10n.trName(d.name), exerciseLabel(i.exercise)]),
+        );
       }
     }
     // Treenikohtainen yläraja

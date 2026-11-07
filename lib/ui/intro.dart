@@ -523,7 +523,7 @@ class _IntroScreenState extends State<IntroScreen> {
                 final now = DateTime.now();
                 final pr = bestLift(store.workouts, l);
                 final (sug, oldEnd) = suggestedMax(store.workouts, l, now);
-                String d(DateTime t) => '${t.day}.${t.month}.${t.year}';
+                String d(DateTime t) => numDate(t, year: true);
                 String set(LiftRecord r) => '${fmtNum(r.kg)} kg × ${r.reps}';
                 final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
                 return Padding(
