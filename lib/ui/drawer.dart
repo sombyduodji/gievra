@@ -25,6 +25,7 @@ import 'intro.dart';
 import 'program_screen.dart';
 import 'program_template.dart';
 import 'programs_screen.dart';
+import 'body_screen.dart';
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -408,6 +409,31 @@ class _SettingsSection extends StatelessWidget {
               style: sub,
             ),
           ),
+          SwitchListTile(
+            title: Text(t('Kehonpainon seuranta')),
+            subtitle: Text(
+              t('Tämän päivän paino etusivulla, painon kehitys ja painoindeksi tilastoissa. Punnitse milloin haluat.'),
+              style: sub,
+            ),
+            value: settings.bodyTracker,
+            onChanged: settings.setBodyTracker,
+          ),
+          if (settings.bodyTracker)
+            ListTile(
+              leading: const Icon(Icons.monitor_weight_outlined),
+              title: Text(t('Paino ja pituus')),
+              subtitle: Text(
+                settings.body.isEmpty
+                    ? t('Lisää punnitus ja pituus')
+                    : [
+                        if (settings.body.sorted.lastOrNull case final last?) '${fmtNum(last.$2)} kg',
+                        if (settings.body.heightCm != null) '${settings.body.heightCm} cm',
+                      ].join(' · '),
+                style: sub,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BodyScreen())),
+            ),
           SwitchListTile(
             title: Text(t('Palautusajastin')),
             subtitle: Text(

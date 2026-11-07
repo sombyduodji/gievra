@@ -88,9 +88,11 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - oikea mittaustapa: lankku sekunteina, askelkyykkykävely askelina, kannot edestakaisina
 
 **Seuranta ja ehdotukset, jotka voi ohittaa**
-- yhteenveto viikolta ja kuukaudelta: kaikki treenit yhdessä tai sali ja kestävyys erikseen (kerrat, aika, sarjat,
-  volyymi, kilometrit, syke, lajeittain), treenit viikoittain 12 viikolta; voimakehitys, fiilis viikonpäivittäin ja
-  treeneittäin
+- yhteenveto viikolta, kuukaudelta, 3 tai 6 kuukaudelta ja vuodelta: kaikki treenit yhdessä tai sali ja kestävyys
+  erikseen (kerrat, aika, sarjat, volyymi, kilometrit, syke, lajeittain), treenit viikoittain tai kuukausittain;
+  mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
+- kehonpainon seuranta (valinnainen): *Tämän päivän paino* etusivulla, kun et ole vielä punninnut (pilkku tai piste
+  käy), painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa etusivulla

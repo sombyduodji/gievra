@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'activity.dart';
 import 'running_screen.dart';
@@ -9,7 +10,9 @@ import '../app_info.dart';
 import '../app_state.dart';
 import '../exercises.dart';
 import '../insights.dart';
+import '../body.dart';
 import '../models.dart';
+import '../stats.dart';
 import '../program.dart';
 import '../theme.dart';
 import 'drawer.dart';
@@ -306,6 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Text(store.error!, style: TextStyle(color: cs.error)),
                     ),
                   const SizedBox(height: 14),
+                  const WeightTodayCard(),
                   _Stats(),
                   _OverviewLink(),
                   if (settings.activePause != null) const _PauseCard(),
@@ -390,7 +394,9 @@ class _Stats extends StatelessWidget {
     final now = dateOnly(DateTime.now());
     final weekStart = addDays(now, 1 - now.weekday);
     // Molemmat-tilassa salinäkymän luvut ovat salitreenejä; kokonaisuus on Yhteenvedossa.
-    final ws = settings.trainMode == 'both' ? store.workouts.where((w) => w.activity == null).toList() : store.workouts;
+    final ws = settings.trainMode == 'both'
+        ? store.workouts.where((w) => workoutKind(w) == 'gym').toList()
+        : store.workouts;
     final week = ws.where((w) => !w.date.isBefore(weekStart)).length;
     final month = ws.where((w) => w.date.year == now.year && w.date.month == now.month).length;
     // Viikkoputki: peräkkäiset viikot, joilla vähintään yksi treeni (tämä viikko saa vielä puuttua).
@@ -938,6 +944,7 @@ class _CardioHome extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
+        const WeightTodayCard(),
         Row(
           children: [
             tile('${kmS(km)} km', t('tällä viikolla')),
@@ -1009,4 +1016,107 @@ class _OverviewLink extends StatelessWidget {
       label: Text(settings.trainMode == 'both' ? t('Yhteenveto: kaikki treenit') : t('Yhteenveto ja tilastot')),
     ),
   );
+}
+
+/// Tämän päivän paino (kehonpainon seuranta päällä, ei vielä punnittu tänään eikä ohitettu).
+/// Tallennuksen jälkeen kortti katoaa; korjaukset ☰ → Asetukset → Paino ja pituus.
+class WeightTodayCard extends StatefulWidget {
+  const WeightTodayCard({super.key});
+  @override
+  State<WeightTodayCard> createState() => _WeightTodayCardState();
+}
+
+class _WeightTodayCardState extends State<WeightTodayCard> {
+  final _c = TextEditingController();
+  String? _error;
+
+  void _save(DateTime today) {
+    final kg = parseWeight(_c.text);
+    if (kg == null) {
+      setState(() => _error = t('Anna paino 20–400 kg.'));
+      return;
+    }
+    _c.clear();
+    FocusScope.of(context).unfocus();
+    settings.setWeight(today, kg);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = dateOnly(DateTime.now());
+    if (!settings.bodyTracker || settings.body.weights.containsKey(today) || settings.bodySkipped == isoDate(today)) {
+      return const SizedBox.shrink();
+    }
+    final cs = Theme.of(context).colorScheme;
+    final prev = settings.body.sorted.lastOrNull;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(14, 8, 8, 12),
+      decoration: BoxDecoration(
+        color: Sami.yellow.withValues(alpha: .14),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Sami.yellow, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.monitor_weight_outlined, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(t('Tämän päivän paino'), style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              TextButton(onPressed: () => settings.skipBodyToday(isoDate(today)), child: Text(t('Ohita'))),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _c,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      LengthLimitingTextInputFormatter(5),
+                    ],
+                    decoration: InputDecoration(
+                      isDense: true,
+                      hintText: prev == null ? '80,0' : fmtNum(prev.$2),
+                      suffixText: 'kg',
+                      errorText: _error,
+                      filled: true,
+                      fillColor: cs.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onChanged: (_) => setState(() => _error = null),
+                    onSubmitted: (_) => _save(today),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(onPressed: () => _save(today), child: Text(t('Tallenna'))),
+              ],
+            ),
+          ),
+          if (prev != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                t('Edellinen {0} kg ({1})', [fmtNum(prev.$2), shortDate(prev.$1)]),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 import 'app_state.dart';
+import 'body.dart';
 export 'fitnotes_db_stub.dart' if (dart.library.ffi) 'fitnotes_db.dart';
 import 'exercises.dart';
 import 'models.dart';
@@ -26,6 +27,9 @@ class ImportResult {
   final String? settingsMd;
   final String? programMd;
 
+  /// kehonpaino.md (punnitukset ja pituus), jos tuonnissa oli sellainen.
+  final String? bodyMd;
+
   /// Tunnistetut mittaustavat (esim. askelkyykky kirjattu edestakaisina).
   final Map<String, Measure> measures;
 
@@ -38,6 +42,7 @@ class ImportResult {
     this.cardioNotes = 0,
     this.settingsMd,
     this.programMd,
+    this.bodyMd,
     this.measures = const {},
   });
 
@@ -226,9 +231,14 @@ Future<Uint8List> exportZip() async {
 ImportResult readMdFiles(Map<String, String> files) {
   final list = <Workout>[];
   var sets = 0;
+  String? bodyMd;
   for (final e in files.entries) {
     final base = p.basename(e.key);
     if (base == settingsFileName || base == 'ohjelma.md') continue;
+    if (base == bodyFileName) {
+      bodyMd = e.value;
+      continue;
+    }
     final m = _dateFile.firstMatch(base);
     try {
       final w = parseWorkout(
@@ -241,13 +251,13 @@ ImportResult readMdFiles(Map<String, String> files) {
     } catch (_) {}
   }
   list.sort((a, b) => a.date.compareTo(b.date));
-  return ImportResult(source: '.md-tiedostot', workouts: list, sets: sets);
+  return ImportResult(source: '.md-tiedostot', workouts: list, sets: sets, bodyMd: bodyMd);
 }
 
 ImportResult readZip(List<int> bytes) {
   final archive = ZipDecoder().decodeBytes(bytes);
   final list = <Workout>[];
-  String? settingsMd, programMd;
+  String? settingsMd, programMd, bodyMd;
   var sets = 0;
   for (final f in archive.files) {
     if (!f.isFile) continue;
@@ -261,6 +271,10 @@ ImportResult readZip(List<int> bytes) {
       programMd = text;
       continue;
     }
+    if (base == bodyFileName) {
+      bodyMd = text;
+      continue;
+    }
     final m = _dateFile.firstMatch(base);
     if (m == null) continue;
     try {
@@ -270,7 +284,14 @@ ImportResult readZip(List<int> bytes) {
     } catch (_) {}
   }
   list.sort((a, b) => a.date.compareTo(b.date));
-  return ImportResult(source: 'Gievra', workouts: list, sets: sets, settingsMd: settingsMd, programMd: programMd);
+  return ImportResult(
+    source: 'Gievra',
+    workouts: list,
+    sets: sets,
+    settingsMd: settingsMd,
+    programMd: programMd,
+    bodyMd: bodyMd,
+  );
 }
 
 /// Tallentaa tuonnin: uudet treenit (olemassa olevat päivät ohitetaan) ja omat liikkeet.
@@ -287,6 +308,16 @@ Future<int> applyImport(ImportResult r) async {
   if (r.programMd != null && settings.program == null) {
     final prog = parseProgram(r.programMd!);
     if (prog != null) await settings.setProgram(prog);
+  }
+  // Punnitukset ja pituus: puuttuvat lisätään, olemassa olevia ei muuteta. Seuranta päälle, jos sitä käytettiin.
+  if (r.bodyMd != null) {
+    final imported = parseBody(r.bodyMd!);
+    if (!imported.isEmpty) {
+      await settings.setBody(mergeBody(settings.body, imported));
+      if (r.settingsMd != null && (Settings()..applyMarkdown(r.settingsMd!)).bodyTracker) {
+        settings.setBodyTracker(true);
+      }
+    }
   }
   settings.addCustomExercises(r.newExercises);
   for (final e in r.measures.entries) {

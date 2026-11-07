@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../app_state.dart';
+import '../body.dart';
 import '../garmin_import.dart';
 import '../import_export.dart';
 import '../models.dart';
@@ -167,6 +168,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
               ),
             _row(t('Aikaväli'), '${isoDate(r.first!)} – ${isoDate(r.last!)}'),
             if (r.bodyweights > 0) _row(t('Kehonpainoja'), '${r.bodyweights}'),
+            if (r.bodyMd != null) _row(t('Punnituksia'), '${parseBody(r.bodyMd!).weights.length}'),
             if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
             if (r.newExercises.isNotEmpty) _row(t('Uusia omia liikkeitä'), '${r.newExercises.length}'),
             if (r.settingsMd != null) _row(t('Asetukset'), t('yhdistetään')),

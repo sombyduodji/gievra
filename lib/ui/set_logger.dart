@@ -379,7 +379,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             onPlus: () => setState(() => _kg = (_kg + step).clamp(0, 1000)),
             onTap: () async {
               final v = await askNumber(context, t('Paino (kg)'), _kg);
-              if (v != null && v >= 0) setState(() => _kg = v);
+              if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
             },
           ),
           SectionLabel(
@@ -394,7 +394,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             onPlus: () => setState(() => _reps = (_reps + _m.step).clamp(1, 9999)),
             onTap: () async {
               final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false);
-              if (v != null && v >= 1) setState(() => _reps = v.round());
+              if (v != null && v >= 1 && v <= 9999) setState(() => _reps = v.round());
             },
           ),
           const SizedBox(height: 18),
@@ -601,7 +601,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             onPlus: () => setState(() => _kg = (_kg + step).clamp(0, 1000)),
             onTap: () async {
               final v = await askNumber(context, t('Paino (kg)'), _kg);
-              if (v != null && v >= 0) setState(() => _kg = v);
+              if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
             },
           ),
           SectionLabel(t(_m.label)[0].toUpperCase() + t(_m.label).substring(1)),
@@ -612,7 +612,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             onPlus: () => setState(() => _reps = (_reps + _m.step).clamp(1, 9999)),
             onTap: () async {
               final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false);
-              if (v != null && v >= 1) setState(() => _reps = v.round());
+              if (v != null && v >= 1 && v <= 9999) setState(() => _reps = v.round());
             },
           ),
           SectionLabel(rw.question),

@@ -29,54 +29,116 @@ class Recap {
   int? get hrAvg => hr.isEmpty ? null : (hr.reduce((a, b) => a + b) / hr.length).round();
 }
 
-/// Treenin kesto minuutteina: kirjattu kesto tai kestävyyslajin tarkka aika.
-int workoutMinutes(Workout w) => w.minutes ?? (w.seconds == null ? 0 : (w.seconds! / 60).round());
+/// FitNotesista tuodut kardiorivit muistiinpanoissa: "- Juoksumatto: matka 5, aika 30:00".
+final _cardioNote = RegExp(r'^- [^:\n]+: (?:matka [\d.,]+)?(?:, )?(?:aika (\d+):(\d\d))?\s*$', multiLine: true);
+
+/// Tuotu kestävyystreeni ilman lajia: ei sarjoja, mutta muistiinpanoissa FitNotesin kardiorivejä.
+bool isNoteCardio(Workout w) =>
+    w.activity == null && !w.exercises.any((e) => e.sets.isNotEmpty) && _cardioNote.hasMatch(w.notes);
+
+/// Salitreeni (sarjoja) vai kestävyys (laji tai tuotu kardio). null = tyhjä treeni.
+String? workoutKind(Workout w) => w.activity != null || isNoteCardio(w)
+    ? 'cardio'
+    : w.exercises.any((e) => e.sets.isNotEmpty)
+    ? 'gym'
+    : null;
+
+/// FitNotesin kardiorivien yhteisaika minuutteina (muistiinpanoista).
+int noteCardioMinutes(Workout w) {
+  var s = 0;
+  for (final m in _cardioNote.allMatches(w.notes)) {
+    if (m[1] != null) s += int.parse(m[1]!) * 60 + int.parse(m[2]!);
+  }
+  return (s / 60).round();
+}
+
+/// Treenin kesto minuutteina: kirjattu kesto, kestävyyslajin tarkka aika tai tuodun kardion aika.
+/// Salitreenin kestoa ei arvioida, jos sitä ei ole kirjattu.
+int workoutMinutes(Workout w) {
+  if (w.minutes != null) return w.minutes!;
+  if (w.seconds != null) return (w.seconds! / 60).round();
+  return isNoteCardio(w) ? noteCardioMinutes(w) : 0;
+}
+
+/// Treenin osat koosteeseen: ('gym' | 'cardio', minuutit). FitNotesin päivä, jossa on sekä sarjoja että
+/// kardiorivejä, on kaksi osaa: salitreeni ja kestävyys (muistiinpanojen aika).
+List<(String, int)> workoutParts(Workout w) {
+  final k = workoutKind(w);
+  if (k == null) return const [];
+  if (k == 'gym' && _cardioNote.hasMatch(w.notes)) return [('gym', w.minutes ?? 0), ('cardio', noteCardioMinutes(w))];
+  return [(k, workoutMinutes(w))];
+}
 
 /// Jakson kooste. [kind]: 'all' = kaikki, 'gym' = salitreenit, 'cardio' = liikunta ja lajit.
 Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'}) {
   final r = Recap(from, to);
   for (final w in ws) {
     if (w.date.isBefore(from) || !w.date.isBefore(to)) continue;
-    final mins = workoutMinutes(w);
-    if (w.activity != null) {
-      if (kind == 'gym') continue;
-      r.activities++;
-      r.km += w.distanceKm ?? 0;
-      r.cardioMinutes += mins;
-      final s = r.sports.putIfAbsent(w.activity!, SportShare.new);
-      s.count++;
-      s.minutes += mins;
-      s.km += w.distanceKm ?? 0;
-      if (w.hrAvg != null) r.hr.add(w.hrAvg!);
-    } else if (w.exercises.any((e) => e.sets.isNotEmpty)) {
-      if (kind == 'cardio') continue;
-      r.gym++;
-      r.gymMinutes += mins;
-    } else {
-      continue;
+    var counted = false;
+    for (final (k, mins) in workoutParts(w)) {
+      if (kind != 'all' && kind != k) continue;
+      counted = true;
+      r.minutes += mins;
+      if (k == 'cardio') {
+        r.activities++;
+        r.cardioMinutes += mins;
+        final s = r.sports.putIfAbsent(w.activity ?? 'Muu liikunta', SportShare.new);
+        s.count++;
+        s.minutes += mins;
+        if (w.activity != null) {
+          r.km += w.distanceKm ?? 0;
+          s.km += w.distanceKm ?? 0;
+          if (w.hrAvg != null) r.hr.add(w.hrAvg!);
+        }
+      } else {
+        r.gym++;
+        r.gymMinutes += mins;
+        r.sets += w.exercises.fold(0, (a, e) => a + e.workSets.length);
+        r.prs += w.exercises.expand((e) => e.sets).where((s) => s.pr).length;
+        r.volume += workVolume(w);
+      }
     }
-    r.sets += w.exercises.fold(0, (a, e) => a + e.workSets.length);
-    r.prs += w.exercises.expand((e) => e.sets).where((s) => s.pr).length;
-    r.volume += workVolume(w);
-    r.minutes += mins;
+    if (!counted) continue;
     r.kcal += w.kcal ?? 0;
     if (w.feeling != null) r.feelings.add(w.feeling!);
   }
   return r;
 }
 
-/// Treenit viikoittain [weeks] viikolta (vanhin ensin): (viikon alku, salitreenit, liikunta).
+/// Treenit viikoittain [weeks] viikolta, viimeisenä [today]:n viikko: (viikon alku, salitreenit, kestävyys).
 List<(DateTime, int, int)> weeklyCounts(List<Workout> ws, DateTime today, {int weeks = 12}) {
   final first = addDays(weekStart(today), -7 * (weeks - 1));
   final out = [for (var i = 0; i < weeks; i++) (addDays(first, 7 * i), 0, 0)];
   for (final w in ws) {
-    if (w.date.isBefore(first)) continue;
-    final i = w.date.difference(first).inDays ~/ 7;
+    final k = workoutKind(w);
+    if (k == null || w.date.isBefore(first)) continue;
+    final i =
+        DateTime.utc(
+          w.date.year,
+          w.date.month,
+          w.date.day,
+        ).difference(DateTime.utc(first.year, first.month, first.day)).inDays ~/
+        7;
     if (i < 0 || i >= weeks) continue;
-    final gym = w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty);
-    if (!gym && w.activity == null) continue;
+    final parts = workoutParts(w).map((p) => p.$1);
     final (d, g, c) = out[i];
-    out[i] = (d, g + (gym ? 1 : 0), c + (gym ? 0 : 1));
+    out[i] = (d, g + (parts.contains('gym') ? 1 : 0), c + (parts.contains('cardio') ? 1 : 0));
+  }
+  return out;
+}
+
+/// Treenit kuukausittain [months] kuukaudelta, viimeisenä [last]:n kuukausi: (kuun alku, salitreenit, kestävyys).
+List<(DateTime, int, int)> monthlyCounts(List<Workout> ws, DateTime last, {int months = 12}) {
+  final first = DateTime(last.year, last.month - (months - 1));
+  final out = [for (var i = 0; i < months; i++) (DateTime(first.year, first.month + i), 0, 0)];
+  for (final w in ws) {
+    final k = workoutKind(w);
+    if (k == null) continue;
+    final i = (w.date.year - first.year) * 12 + w.date.month - first.month;
+    if (i < 0 || i >= months) continue;
+    final parts = workoutParts(w).map((p) => p.$1);
+    final (d, g, c) = out[i];
+    out[i] = (d, g + (parts.contains('gym') ? 1 : 0), c + (parts.contains('cardio') ? 1 : 0));
   }
   return out;
 }

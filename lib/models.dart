@@ -334,7 +334,14 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   }
   final date = DateTime.tryParse(meta['date'] ?? '') ?? fallbackDate;
   if (date == null) throw const FormatException('Päivämäärä puuttuu');
-  final w = Workout(date: date, title: meta['title'] ?? 'Treeni', bodyweight: parseNum(meta['bodyweight'] ?? ''));
+  // Negatiivinen tai nolla (käsin muokattu tiedosto) = arvoa ei ole.
+  bool neg(String k) => RegExp(r'^\s*[-−]').hasMatch(meta[k] ?? '');
+  double? pos(double? v) => v == null || v <= 0 ? null : v;
+  final w = Workout(
+    date: date,
+    title: meta['title'] ?? 'Treeni',
+    bodyweight: neg('bodyweight') ? null : pos(parseNum(meta['bodyweight'] ?? '')),
+  );
   final st = RegExp(r'^(\d{1,2})[:.](\d{2})').firstMatch(meta['start'] ?? '');
   if (st != null && int.parse(st[1]!) < 24 && int.parse(st[2]!) < 60) {
     w.started = DateTime(date.year, date.month, date.day, int.parse(st[1]!), int.parse(st[2]!));
@@ -342,10 +349,12 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   w.session = int.tryParse(meta['session'] ?? '') ?? fallbackSession;
   final act = meta['activity']?.trim();
   if (act != null && act.isNotEmpty) w.activity = act;
-  w.distanceKm = parseNum(RegExp(r'[\d.,]+').firstMatch(meta['distance'] ?? '')?[0] ?? '');
+  w.distanceKm = neg('distance')
+      ? null
+      : pos(parseNum(RegExp(r'[\d.,]+').firstMatch(meta['distance'] ?? '')?[0] ?? ''));
   final inten = meta['intensity']?.trim();
   if (inten != null && inten.isNotEmpty) w.intensity = inten;
-  int? num(String k) => int.tryParse(RegExp(r'\d+').firstMatch(meta[k] ?? '')?[0] ?? '');
+  int? num(String k) => neg(k) ? null : int.tryParse(RegExp(r'\d+').firstMatch(meta[k] ?? '')?[0] ?? '');
   w.kcal = num('kcal');
   w.hrAvg = num('hr_avg');
   w.hrMax = num('hr_max');
@@ -364,7 +373,7 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
     for (final r in (meta['day_feeling'] ?? '').split(','))
       if (r.trim().isNotEmpty) r.trim(),
   ];
-  w.minutes = int.tryParse(RegExp(r'\d+').firstMatch(meta['duration'] ?? '')?[0] ?? '');
+  w.minutes = num('duration');
   w.seconds = parseDurationSec(meta['time'] ?? '');
   final rt = meta['run_type']?.trim();
   if (rt != null && rt.isNotEmpty) w.runType = rt;

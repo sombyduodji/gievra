@@ -139,7 +139,7 @@ msgstr "mehterat"
 msgid "Voimanosto"
 msgstr "Fápmolokten"
 
-#: lib/exercises.dart:634 lib/program.dart:331 lib/ui/home.dart:517
+#: lib/exercises.dart:634 lib/program.dart:331 lib/ui/home.dart:523
 msgid "Jalat"
 msgstr "Juolggit"
 
@@ -163,7 +163,7 @@ msgstr "Gieđat"
 msgid "Keskivartalo"
 msgstr "Gaskarumaš"
 
-#: lib/exercises.dart:640
+#: lib/exercises.dart:640 lib/ui/stats_screen.dart:645 lib/ui/stats_screen.dart:677
 msgid "Kehonpaino"
 msgstr "Rumašdeaddu"
 
@@ -179,7 +179,7 @@ msgstr "Kardio"
 msgid "Koko keho"
 msgstr "Olles rumaš"
 
-#: lib/exercises.dart:644 lib/ui/home.dart:599
+#: lib/exercises.dart:644 lib/ui/home.dart:605
 msgid "Viimeksi"
 msgstr "Maŋimusat"
 
@@ -657,7 +657,7 @@ msgstr "Vuođđu ovttain kettlebellain"
 msgid "Heilautus, ylösnousu ja perusliikkeet, sopii aloittajalle"
 msgstr "Šlivgen, čuožžileapmi ja vuođđohárjehusat, heive álggaheaddjái"
 
-#: lib/program.dart:327 lib/ui/home.dart:518 lib/ui/program_view.dart:489
+#: lib/program.dart:327 lib/ui/home.dart:524 lib/ui/program_view.dart:489
 msgid "Ylävartalo"
 msgstr "Bajitoassi"
 
@@ -1112,7 +1112,7 @@ msgid "paluu lomalta"
 msgstr "máhccan luomus"
 
 #. {0} = sets
-#: lib/share_text.dart:28 lib/ui/home.dart:121 lib/ui/workout.dart:274
+#: lib/share_text.dart:28 lib/ui/home.dart:124 lib/ui/workout.dart:274
 msgid "{0} sarjaa"
 msgstr "{0} ráiddu"
 
@@ -1406,7 +1406,7 @@ msgstr "Gilvu dahje áigegeahččaleapmi"
 
 #. {0} = _f(before)
 #. {1} = _f(recent)
-#: lib/stats.dart:159
+#: lib/stats.dart:221
 msgid ""
 "Fiilis on laskenut viimeisen 3 viikon aikana ({0} → {1}). Pidä "
 "kevennysviikko: puolet sarjoista ja painot −10 %. Tarkista myös uni, "
@@ -1416,7 +1416,7 @@ msgstr ""
 "geahpedanvahku: bealli ráidduin ja deattut −10 %. Dárkkis maiddái "
 "oađđima, borrama ja streassa."
 
-#: lib/stats.dart:169
+#: lib/stats.dart:231
 msgid ""
 "Kolme viimeisintä treeniä ovat tuntuneet raskailta. Lepopäivä tai "
 "kevyempi treeni auttaa palautumaan."
@@ -1427,7 +1427,7 @@ msgstr ""
 #. {0} = _weekdayLong(g.label)
 #. {1} = _f(g.avg)
 #. {2} = _f(overall)
-#: lib/stats.dart:179
+#: lib/stats.dart:241
 msgid ""
 "{0} treenit tuntuvat muita raskaammilta ({1} vs. {2}). Siirrä raskain "
 "treeni toiselle päivälle tai pidä edellinen ilta rauhallisena."
@@ -1438,7 +1438,7 @@ msgstr ""
 
 #. {0} = l10n.trName(g.label)
 #. {1} = _f(g.avg)
-#: lib/stats.dart:188
+#: lib/stats.dart:250
 msgid ""
 "{0} tuntuu raskaimmalta ({1}). Vähennä sarja tai kaksi tai vaihda "
 "jokin liike (☰ → Ohjelma ja tavoitteet)."
@@ -1447,7 +1447,7 @@ msgstr ""
 "muhtin hárjehusa (☰ → Prográmma ja ulbmilat)."
 
 #. {0} = ex.map((g) => l10n.trName(g.label)).join(l10n.t(' tai '))
-#: lib/stats.dart:198
+#: lib/stats.dart:260
 msgid ""
 "Treenit, joissa on {0}, tuntuvat raskaimmilta. Kokeile kevyempää "
 "painoa, vähemmän sarjoja tai saman liikemallin toista liikettä."
@@ -1456,13 +1456,13 @@ msgstr ""
 "geahppasit deattu, unnit ráidduid dahje eará hárjehusa seamma "
 "lihkadanmálles."
 
-#: lib/stats.dart:199
+#: lib/stats.dart:261
 msgid " tai "
 msgstr " dahje "
 
 #. {0} = _f(now4)
 #. {1} = _f(prev8)
-#: lib/stats.dart:210
+#: lib/stats.dart:272
 msgid ""
 "Treenejä on ollut vähemmän ({0} viikossa, aiemmin {1}). Lyhyempikin "
 "treeni pitää kunnon yllä; ohjelman voi muuttaa kahdelle päivälle."
@@ -1471,31 +1471,31 @@ msgstr ""
 "hárjehallan doallá návccaid; prográmma sáhttá rievdadit guovtti "
 "beaivái."
 
-#: lib/stats.dart:222
+#: lib/stats.dart:284
 msgid "Maanantain"
 msgstr "Vuossárgga"
 
-#: lib/stats.dart:223
+#: lib/stats.dart:285
 msgid "Tiistain"
 msgstr "Maŋŋebárgga"
 
-#: lib/stats.dart:224
+#: lib/stats.dart:286
 msgid "Keskiviikon"
 msgstr "Gaskavahku"
 
-#: lib/stats.dart:225
+#: lib/stats.dart:287
 msgid "Torstain"
 msgstr "Duorastaga"
 
-#: lib/stats.dart:226
+#: lib/stats.dart:288
 msgid "Perjantain"
 msgstr "Bearjadaga"
 
-#: lib/stats.dart:227
+#: lib/stats.dart:289
 msgid "Lauantain"
 msgstr "Lávvardaga"
 
-#: lib/stats.dart:228
+#: lib/stats.dart:290
 msgid "Sunnuntain"
 msgstr "Sotnabeaivvi"
 
@@ -1507,11 +1507,11 @@ msgstr "Áigi"
 msgid "min:s tai h:min:s"
 msgstr "min:s dahje d:min:s"
 
-#: lib/ui/activity.dart:54 lib/ui/drawer.dart:238 lib/ui/drawer.dart:833 lib/ui/drawer.dart:864 …
+#: lib/ui/activity.dart:54 lib/ui/body_screen.dart:43 lib/ui/drawer.dart:239 lib/ui/drawer.dart:859 …
 msgid "Peruuta"
 msgstr "Gaskkalduhte"
 
-#: lib/ui/activity.dart:85 lib/ui/home.dart:520
+#: lib/ui/activity.dart:85 lib/ui/home.dart:526
 msgid "Liikunta"
 msgstr "Lihkadeapmi"
 
@@ -1563,9 +1563,65 @@ msgstr "Notáhtat"
 msgid "Reitti, sää, joukkue, tulos… (vapaaehtoinen)"
 msgstr "Ruovttu, dálki, joavku, boađus… (eaktodáhtolaš)"
 
-#: lib/ui/activity.dart:230 lib/ui/drawer.dart:239 lib/ui/injury_screen.dart:72 lib/ui/program_template.dart:43 …
+#: lib/ui/activity.dart:230 lib/ui/drawer.dart:240 lib/ui/home.dart:1106 lib/ui/injury_screen.dart:72 …
 msgid "Tallenna"
 msgstr "Vurke"
+
+#: lib/ui/body_screen.dart:22
+msgid "Anna pituus 100–250 cm."
+msgstr "Čális guhkkodaga 100–250 cm."
+
+#: lib/ui/body_screen.dart:22 lib/ui/home.dart:1036
+msgid "Anna paino 20–400 kg."
+msgstr "Čális deattu 20–400 kg."
+
+#: lib/ui/body_screen.dart:29 lib/ui/body_screen.dart:92 lib/ui/onboarding.dart:146
+msgid "Pituus"
+msgstr "Guhkkodat"
+
+#: lib/ui/body_screen.dart:29 lib/ui/set_logger.dart:372 lib/ui/set_logger.dart:594
+msgid "Paino"
+msgstr "Deaddu"
+
+#: lib/ui/body_screen.dart:73 lib/ui/drawer.dart:424
+msgid "Paino ja pituus"
+msgstr "Deaddu ja guhkkodat"
+
+#: lib/ui/body_screen.dart:77
+msgid "Lisää punnitus"
+msgstr "Lasit deaddovihkkema"
+
+#: lib/ui/body_screen.dart:93
+msgid "Ei asetettu (tarvitaan painoindeksiin)"
+msgstr "Ii biddjon (dárbbašuvvo deaddoindeksii)"
+
+#: lib/ui/body_screen.dart:100
+msgid "Punnitukset"
+msgstr "Deaddovihkkemat"
+
+#: lib/ui/body_screen.dart:102
+msgid "Ei vielä punnituksia. Lisää paino etusivulta tai tästä."
+msgstr "Ii vel deaddovihkkemat. Lasit deattu ovdasiiddus dahje dás."
+
+#: lib/ui/body_screen.dart:120 lib/ui/stats_screen.dart:693
+msgid "painoindeksi"
+msgstr "deaddoindeaksa"
+
+#: lib/ui/body_screen.dart:126 lib/ui/new_workout.dart:220
+msgid "Muokkaa"
+msgstr "Rievdat"
+
+#: lib/ui/body_screen.dart:134 lib/ui/intro.dart:569 lib/ui/program_screen.dart:137 lib/ui/program_view.dart:431 …
+msgid "Poista"
+msgstr "Sihko"
+
+#: lib/ui/body_screen.dart:144
+msgid ""
+"Tallentuu treenikansioon tiedostoon kehonpaino.md, ja se kulkee "
+"varmuuskopion ja tuonnin mukana."
+msgstr ""
+"Vurkejuvvo hárjehallanmáhppii fiilan kehonpaino.md, ja dat lea mielde "
+"sihkkarvurkemis ja viežžamis."
 
 #: lib/ui/bug_report.dart:40
 msgid "Treeni ei tallennu tai katoaa"
@@ -1595,16 +1651,16 @@ msgstr "Eará váttisvuohta dahje evttohus"
 msgid "Valitse kuvakaappaukset"
 msgstr "Vállje šearbmagovaid"
 
-#: lib/ui/bug_report.dart:72 lib/ui/import_export.dart:88
+#: lib/ui/bug_report.dart:72 lib/ui/import_export.dart:89
 msgid "Valitse .md-tiedostot"
 msgstr "Vállje .md-fiillaid"
 
 #. {0} = e
-#: lib/ui/bug_report.dart:135 lib/ui/import_export.dart:34
+#: lib/ui/bug_report.dart:135 lib/ui/import_export.dart:35
 msgid "Virhe: {0}"
 msgstr "Meattáhus: {0}"
 
-#: lib/ui/bug_report.dart:146 lib/ui/drawer.dart:191
+#: lib/ui/bug_report.dart:146 lib/ui/drawer.dart:192
 msgid "Ilmoita ongelmasta"
 msgstr "Dieđit váttisvuođas"
 
@@ -1668,121 +1724,121 @@ msgstr ""
 "ii sáddejuvvo ovdal go deattut e-poasttas Sádde."
 
 #. {0} = AppInfo.author
-#: lib/ui/drawer.dart:74 lib/ui/program_template.dart:86
+#: lib/ui/drawer.dart:75 lib/ui/program_template.dart:86
 msgid "Tekijä: {0}"
 msgstr "Ráhkadeaddji: {0}"
 
-#: lib/ui/drawer.dart:88 lib/ui/import_export.dart:172
+#: lib/ui/drawer.dart:89 lib/ui/import_export.dart:174
 msgid "Asetukset"
 msgstr "Ásahusat"
 
-#: lib/ui/drawer.dart:94 lib/ui/program_screen.dart:23
+#: lib/ui/drawer.dart:95 lib/ui/program_screen.dart:23
 msgid "Ohjelma ja tavoitteet"
 msgstr "Prográmma ja ulbmilat"
 
-#: lib/ui/drawer.dart:96 lib/ui/programs_screen.dart:98
+#: lib/ui/drawer.dart:97 lib/ui/programs_screen.dart:98
 msgid "Treenaat vapaasti"
 msgstr "Hárjehalat friddja"
 
-#: lib/ui/drawer.dart:106
+#: lib/ui/drawer.dart:107
 msgid "Tuo ohjelmapohja"
 msgstr "Viečča prográmmavuođu"
 
-#: lib/ui/drawer.dart:107
+#: lib/ui/drawer.dart:108
 msgid ".gmd-tiedosto valmentajalta, kaverilta tai verkosta"
 msgstr ".gmd-fiila hárjeheaddjis, ustibis dahje neahtas"
 
-#: lib/ui/drawer.dart:116 lib/ui/injury_screen.dart:71
+#: lib/ui/drawer.dart:117 lib/ui/injury_screen.dart:71
 msgid "Vammatila"
 msgstr "Roasmmohuvvan"
 
 #. {0} = settings.injuries.length
-#: lib/ui/drawer.dart:120
+#: lib/ui/drawer.dart:121
 msgid "{0} aluetta valittuna"
 msgstr "{0} guovllu válljejuvvon"
 
-#: lib/ui/drawer.dart:131
+#: lib/ui/drawer.dart:132
 msgid "Tauko: sairas tai loma"
 msgstr "Boddu: buohcci dahje luopmu"
 
-#: lib/ui/drawer.dart:131 lib/ui/home.dart:795
+#: lib/ui/drawer.dart:132 lib/ui/home.dart:801
 msgid "Lopeta tauko"
 msgstr "Loahpat bottu"
 
-#: lib/ui/drawer.dart:135
+#: lib/ui/drawer.dart:136
 msgid "Sairauslomalla"
 msgstr "Buohccin"
 
-#: lib/ui/drawer.dart:135
+#: lib/ui/drawer.dart:136
 msgid "Lomalla"
 msgstr "Luomus"
 
-#: lib/ui/drawer.dart:145 lib/ui/stats_screen.dart:92
+#: lib/ui/drawer.dart:146 lib/ui/stats_screen.dart:112
 msgid "Edistyminen ja tilastot"
 msgstr "Ovdáneapmi ja statistihkka"
 
-#: lib/ui/drawer.dart:146
+#: lib/ui/drawer.dart:147
 msgid "Viikko- ja kuukausikoosteet, fiilis, voimakehitys"
 msgstr "Vahkku- ja mánnočoahkkáigeasut, dovdu, fápmoovdáneapmi"
 
-#: lib/ui/drawer.dart:158 lib/ui/sync_screen.dart:30
+#: lib/ui/drawer.dart:159 lib/ui/sync_screen.dart:30
 msgid "Synkronointi"
 msgstr "Synkroniseren"
 
-#: lib/ui/drawer.dart:160
+#: lib/ui/drawer.dart:161
 msgid "Pois päältä (valinnainen)"
 msgstr "Ii geavahusas (eaktodáhtolaš)"
 
-#: lib/ui/drawer.dart:171 lib/ui/import_export.dart:229
+#: lib/ui/drawer.dart:172 lib/ui/import_export.dart:231
 msgid "Tuonti ja varmuuskopio"
 msgstr "Viežžan ja sihkkarvurken"
 
-#: lib/ui/drawer.dart:180
+#: lib/ui/drawer.dart:181
 msgid "Tietoa"
 msgstr "Dieđut"
 
-#: lib/ui/drawer.dart:185 lib/ui/drawer.dart:656 lib/ui/drawer.dart:734
+#: lib/ui/drawer.dart:186 lib/ui/drawer.dart:682 lib/ui/drawer.dart:760
 msgid "Lähetä palautetta"
 msgstr "Sádde máhcahaga"
 
-#: lib/ui/drawer.dart:192
+#: lib/ui/drawer.dart:193
 msgid "Tallennus, tuonti, vienti… liitteineen"
 msgstr "Vurken, viežžan, doalvun… mildosiiguin"
 
-#: lib/ui/drawer.dart:200 lib/ui/drawer.dart:696
+#: lib/ui/drawer.dart:201 lib/ui/drawer.dart:722
 msgid "Osallistu ja tue"
 msgstr "Searvva ja doarjjo"
 
-#: lib/ui/drawer.dart:205
+#: lib/ui/drawer.dart:206
 msgid "Tarjoa kahvit"
 msgstr "Fála káffe"
 
-#: lib/ui/drawer.dart:206
+#: lib/ui/drawer.dart:207
 msgid "Vapaaehtoinen tuki kehitykselle"
 msgstr "Eaktodáhtolaš doarjja ovddideapmái"
 
 #. {0} = snap.data!.version
-#: lib/ui/drawer.dart:214
+#: lib/ui/drawer.dart:215
 msgid "Versio {0}"
 msgstr "Veršuvdna {0}"
 
-#: lib/ui/drawer.dart:235
+#: lib/ui/drawer.dart:236
 msgid "Miksi sinua kutsutaan?"
 msgstr "Mo don háliidat ahte du gohčodit?"
 
-#: lib/ui/drawer.dart:248
+#: lib/ui/drawer.dart:249
 msgid "Valitse treenikansio"
 msgstr "Vállje hárjehallanmáhpa"
 
-#: lib/ui/drawer.dart:256
+#: lib/ui/drawer.dart:257
 msgid "Kansion käyttö vaatii luvan \"Kaikkien tiedostojen käyttö\"."
 msgstr "Máhpa geavaheapmi gáibida lobi \"Buot fiillaid geavaheapmi\"."
 
-#: lib/ui/drawer.dart:275
+#: lib/ui/drawer.dart:276
 msgid "Tehdäänkö treeniohjelma?"
 msgstr "Ráhkadit go hárjehallanprográmma?"
 
-#: lib/ui/drawer.dart:278
+#: lib/ui/drawer.dart:279
 msgid ""
 "Vastaa muutamaan kysymykseen (tavoite, kokemus, päivät, kesto), niin "
 "saat salille valmiin ohjelman. Voit myös treenata vapaasti ja tehdä "
@@ -1792,59 +1848,59 @@ msgstr ""
 "oaččut sállii gárvves prográmma. Sáhtát maiddái hárjehallat friddja "
 "ja ráhkadit prográmma maŋŋelis."
 
-#: lib/ui/drawer.dart:283
+#: lib/ui/drawer.dart:284
 msgid "Myöhemmin"
 msgstr "Maŋŋelis"
 
-#: lib/ui/drawer.dart:284 lib/ui/program_screen.dart:37
+#: lib/ui/drawer.dart:285 lib/ui/program_screen.dart:37
 msgid "Tee ohjelma"
 msgstr "Ráhkat prográmma"
 
-#: lib/ui/drawer.dart:308
+#: lib/ui/drawer.dart:309
 msgid "Nimesi"
 msgstr "Du namma"
 
-#: lib/ui/drawer.dart:314 lib/ui/programs_screen.dart:85
+#: lib/ui/drawer.dart:315 lib/ui/programs_screen.dart:85
 msgid "Ohjelmat"
 msgstr "Prográmmat"
 
-#: lib/ui/drawer.dart:315
+#: lib/ui/drawer.dart:316
 msgid "Tallennetut ohjelmat: vaihda, nimeä, vie, tuo, poista"
 msgstr "Vurkejuvvon prográmmat: molsso, namat, doalvvo, viečča, sihko"
 
-#: lib/ui/drawer.dart:322
+#: lib/ui/drawer.dart:323
 msgid "Teema"
-msgstr "Fáddá"
+msgstr "Ivnnit"
 
-#: lib/ui/drawer.dart:330
+#: lib/ui/drawer.dart:331
 msgid "Auto"
 msgstr "Auto"
 
-#: lib/ui/drawer.dart:334
+#: lib/ui/drawer.dart:335
 msgid "Tumma"
 msgstr "Seavdnjat"
 
-#: lib/ui/drawer.dart:338
+#: lib/ui/drawer.dart:339
 msgid "Vaalea"
 msgstr "Čuovgat"
 
-#: lib/ui/drawer.dart:345
+#: lib/ui/drawer.dart:346
 msgid "Painon lisäys (kg)"
 msgstr "Deattu lassáneapmi (kg)"
 
-#: lib/ui/drawer.dart:363
+#: lib/ui/drawer.dart:364
 msgid "Liikkeiden nimet"
 msgstr "Hárjehusaid namat"
 
-#: lib/ui/drawer.dart:371
+#: lib/ui/drawer.dart:372
 msgid "Suomi"
 msgstr "Suomagiella"
 
-#: lib/ui/drawer.dart:379 lib/ui/widgets.dart:516
+#: lib/ui/drawer.dart:380 lib/ui/widgets.dart:516
 msgid "Molemmat"
 msgstr "Goappašat"
 
-#: lib/ui/drawer.dart:390
+#: lib/ui/drawer.dart:391
 msgid ""
 "Liikkeiden ja lajien nimet. Haku löytää ne aina molemmilla kielillä, "
 "ja tiedostoihin nimet tallentuvat suomeksi."
@@ -1852,11 +1908,11 @@ msgstr ""
 "Hárjehusaid ja valáštallamiid namat. Ohcan gávdná daid álo goappašiin "
 "gielain, ja fiillaide namat vurkejuvvojit suomagillii."
 
-#: lib/ui/drawer.dart:396 lib/ui/onboarding.dart:83
+#: lib/ui/drawer.dart:397 lib/ui/onboarding.dart:97
 msgid "Mitä treenaat?"
 msgstr "Maid hárjehalat?"
 
-#: lib/ui/drawer.dart:405
+#: lib/ui/drawer.dart:406
 msgid ""
 "Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja "
 "muut lajit. Molemmat: etusivulla valinta Sali / Kestävyys."
@@ -1865,11 +1921,27 @@ msgstr ""
 "sihkkelastin, čuoigan ja eará valáštallamat. Goappašat: ovdasiiddus "
 "válljejupmi Sálla / Gierdavašvuohta."
 
-#: lib/ui/drawer.dart:412
+#: lib/ui/drawer.dart:413
+msgid "Kehonpainon seuranta"
+msgstr "Rumašdeattu čuovvun"
+
+#: lib/ui/drawer.dart:415
+msgid ""
+"Tämän päivän paino etusivulla, painon kehitys ja painoindeksi "
+"tilastoissa. Punnitse milloin haluat."
+msgstr ""
+"Dálá beaivvi deaddu ovdasiiddus, deattu ovdáneapmi ja deaddoindeaksa "
+"statistihkas. Vihkke goas háliidat."
+
+#: lib/ui/drawer.dart:427
+msgid "Lisää punnitus ja pituus"
+msgstr "Lasit deaddovihkkema ja guhkkodaga"
+
+#: lib/ui/drawer.dart:438
 msgid "Palautusajastin"
 msgstr "Vuoiŋŋasteami áigemihttár"
 
-#: lib/ui/drawer.dart:415
+#: lib/ui/drawer.dart:441
 msgid ""
 "Sarjan tallennus käynnistää palautuksen: raskaissa ja lähellä "
 "maksimia pidempi, kevennysviikolla lyhyempi. Ohjelman liikkeillä "
@@ -1879,27 +1951,27 @@ msgstr ""
 "deattu guhkit, geahpedanvahkus oanehit. Prográmma hárjehusain "
 "prográmma vuoiŋŋasteapmi."
 
-#: lib/ui/drawer.dart:431
+#: lib/ui/drawer.dart:457
 msgid "Ilmoitusääni"
 msgstr "Dieđihanjietna"
 
-#: lib/ui/drawer.dart:444
+#: lib/ui/drawer.dart:470
 msgid "Kello"
 msgstr "Biellu"
 
-#: lib/ui/drawer.dart:445
+#: lib/ui/drawer.dart:471
 msgid "Värinä"
 msgstr "Doarggistus"
 
-#: lib/ui/drawer.dart:460
+#: lib/ui/drawer.dart:486
 msgid "Kuuntele"
 msgstr "Guldal"
 
-#: lib/ui/drawer.dart:471
+#: lib/ui/drawer.dart:497
 msgid "Sykemittari ja älykello"
 msgstr "Pulsamihttár ja jierbmediibmu"
 
-#: lib/ui/drawer.dart:473
+#: lib/ui/drawer.dart:499
 msgid ""
 "Kirjaa kellosta kesto, kalorit sekä keski- ja maksimisyke treeneihin "
 "ja liikuntaan."
@@ -1907,23 +1979,23 @@ msgstr ""
 "Čále diimmus áiggi, kaloriijaid sihke gaskamearalaš ja alimus pulssa "
 "hárjehallamiidda ja lihkadeapmái."
 
-#: lib/ui/drawer.dart:480
+#: lib/ui/drawer.dart:506
 msgid "Vinkit ja edistyminen"
 msgstr "Rávvagat ja ovdáneapmi"
 
-#: lib/ui/drawer.dart:481
+#: lib/ui/drawer.dart:507
 msgid "Edistyminen etusivulla ja kevennysviikon ehdotukset."
 msgstr "Ovdáneapmi ovdasiiddus ja geahpedanvahku evttohusat."
 
-#: lib/ui/drawer.dart:486
+#: lib/ui/drawer.dart:512
 msgid "Ehdota kevennystä (viikon välein)"
 msgstr "Evttot geahpedeami (vahku gaskkaid)"
 
-#: lib/ui/drawer.dart:507
+#: lib/ui/drawer.dart:533
 msgid "Treenikansio (.md)"
 msgstr "Hárjehallanmáhppa (.md)"
 
-#: lib/ui/drawer.dart:509
+#: lib/ui/drawer.dart:535
 msgid ""
 "Valitse esim. Nextcloud-, Seafile-, ownCloud- tai Drive-synkattu "
 "kansio."
@@ -1931,53 +2003,53 @@ msgstr ""
 "Vállje om. Nextcloud-, Seafile-, ownCloud- dahje "
 "Drive-synkroniserejuvvon máhpa."
 
-#: lib/ui/drawer.dart:520
+#: lib/ui/drawer.dart:546
 msgid "Palauta oletuskansio"
 msgstr "Máhcat álgomáhpa"
 
-#: lib/ui/drawer.dart:523
+#: lib/ui/drawer.dart:549
 msgid "Lämmittelylaitteet"
 msgstr "Liegganeami rusttegat"
 
-#: lib/ui/drawer.dart:527
+#: lib/ui/drawer.dart:553
 msgid "Palauta"
 msgstr "Máhcat"
 
-#: lib/ui/drawer.dart:532
+#: lib/ui/drawer.dart:558
 msgid "Laitteita voi lisätä ja poistaa uuden treenin Muokkaa-napista."
 msgstr "Rusttegiid sáhttá lasihit ja sihkkut ođđa hárjehallama Rievdat-boalus."
 
-#: lib/ui/drawer.dart:574
+#: lib/ui/drawer.dart:600
 msgid "verkkodemo"
 msgstr "neahttademo"
 
-#: lib/ui/drawer.dart:574
+#: lib/ui/drawer.dart:600
 msgid "työpöytä"
 msgstr "čállinbeavdi"
 
 #. {0} = info.version
 #. {1} = platform
-#: lib/ui/drawer.dart:585
+#: lib/ui/drawer.dart:611
 msgid "Versio {0} ({1})"
 msgstr "Veršuvdna {0} ({1})"
 
-#: lib/ui/drawer.dart:594
+#: lib/ui/drawer.dart:620
 msgid "Maksuton ja avoin treenipäiväkirja salille ja kuntoiluun."
 msgstr "Nuvttá ja rabas hárjehallanbeaivegirji sállii ja lihkadeapmái."
 
-#: lib/ui/drawer.dart:597
+#: lib/ui/drawer.dart:623
 msgid "Tekijä"
 msgstr "Ráhkadeaddji"
 
-#: lib/ui/drawer.dart:606 lib/ui/drawer.dart:737
+#: lib/ui/drawer.dart:632 lib/ui/drawer.dart:763
 msgid "GitHub"
 msgstr "GitHub"
 
-#: lib/ui/drawer.dart:609
+#: lib/ui/drawer.dart:635
 msgid "Treenit ovat sinun"
 msgstr "Hárjehallamat leat du"
 
-#: lib/ui/drawer.dart:612
+#: lib/ui/drawer.dart:638
 msgid ""
 "Jokainen treeni tallentuu tavallisena Markdown-tiedostona (.md) "
 "valitsemaasi kansioon, yksi tiedosto treeniä kohden. Tiedostot "
@@ -1991,11 +2063,11 @@ msgstr ""
 "Obsidianain, ja dat johtet ovtta ovttadagas nubbái Nextcloud, "
 "Seafile, ownCloud dahje Drive bokte."
 
-#: lib/ui/drawer.dart:618
+#: lib/ui/drawer.dart:644
 msgid "Tietosuoja"
 msgstr "Dieđuid suodjaleapmi"
 
-#: lib/ui/drawer.dart:621
+#: lib/ui/drawer.dart:647
 msgid ""
 "Sovelluksessa ei ole tiliä, mainoksia eikä analytiikkaa, eikä se "
 "lähetä tietoja minnekään. Treenit pysyvät omassa kansiossasi."
@@ -2003,11 +2075,11 @@ msgstr ""
 "Prográmmas ii leat konto, ii reklámat iige dieđuid čohkken, iige dat "
 "sádde dieđuid gosage. Hárjehallamat bissot du iežat máhpas."
 
-#: lib/ui/drawer.dart:625
+#: lib/ui/drawer.dart:651
 msgid "Saamelainen teema"
 msgstr "Sámi fáddá"
 
-#: lib/ui/drawer.dart:628
+#: lib/ui/drawer.dart:654
 msgid ""
 "Värit ja aurinko/kuu-ympyrä tulevat saamen lipusta, ja koristenauha "
 "on lainattu gáktin reunuksista. Kalenterissa kuukaudet näkyvät myös "
@@ -2017,42 +2089,42 @@ msgstr ""
 "čikŋabáddi lea luoikkahuvvon gávtti ravddain. Kaleandaris mánut "
 "čájehuvvojit maiddái davvisámegillii."
 
-#: lib/ui/drawer.dart:637
+#: lib/ui/drawer.dart:663
 msgid "Avoin lähdekoodi ja lisenssit"
 msgstr "Rabas gáldokoda ja liseanssat"
 
-#: lib/ui/drawer.dart:645
+#: lib/ui/drawer.dart:671
 msgid "Lisenssit"
 msgstr "Liseanssat"
 
-#: lib/ui/drawer.dart:647 lib/ui/drawer.dart:687 lib/ui/drawer.dart:777
+#: lib/ui/drawer.dart:673 lib/ui/drawer.dart:713 lib/ui/drawer.dart:803
 msgid "Sulje"
 msgstr "Gidde"
 
-#: lib/ui/drawer.dart:661
+#: lib/ui/drawer.dart:687
 msgid "Virheet, puuttuvat liikkeet, toiveet ja ideat ovat tervetulleita."
 msgstr ""
 "Meattáhusat, váilevaš hárjehusat, sávaldagat ja jurdagat leat "
 "buresboahtimat."
 
-#: lib/ui/drawer.dart:672
+#: lib/ui/drawer.dart:698
 msgid "Osoite kopioitu"
 msgstr "Čujuhus máŋgejuvvon"
 
-#: lib/ui/drawer.dart:674 lib/ui/drawer.dart:866
+#: lib/ui/drawer.dart:700 lib/ui/drawer.dart:892
 msgid "Kopioi"
 msgstr "Máŋge"
 
-#: lib/ui/drawer.dart:683
+#: lib/ui/drawer.dart:709
 msgid "Avaa sähköposti"
 msgstr "Raba e-poasta"
 
-#: lib/ui/drawer.dart:686
+#: lib/ui/drawer.dart:712
 msgid "Tee ilmoitus GitHubissa"
 msgstr "Dieđit GitHubas"
 
 #. {0} = AppInfo.fullName
-#: lib/ui/drawer.dart:702
+#: lib/ui/drawer.dart:728
 msgid ""
 "{0} on maksuton ja avoin sovellus kaikille salista ja kuntoilusta "
 "kiinnostuneille. Siinä ei ole mainoksia, tilauksia eikä maksullisia "
@@ -2062,7 +2134,7 @@ msgstr ""
 "lihkadeamis. Das eai leat reklámat, abonnemeanttat eaige mávssolaš "
 "lasseoasit, eaige boađe."
 
-#: lib/ui/drawer.dart:710
+#: lib/ui/drawer.dart:736
 msgid ""
 "Gievra on vapaa ohjelma GNU GPL v3.0 -lisenssillä: sen lähdekoodia "
 "saa käyttää, tutkia, muokata ja jakaa, kunhan muokatut versiot "
@@ -2076,39 +2148,39 @@ msgstr ""
 "gáldokoda girjerájuid, mat leat listtus Dieđut → Rabas gáldokoda ja "
 "liseanssat."
 
-#: lib/ui/drawer.dart:717
+#: lib/ui/drawer.dart:743
 msgid "Näin voit auttaa"
 msgstr "Ná sáhtát veahkehit"
 
-#: lib/ui/drawer.dart:719
+#: lib/ui/drawer.dart:745
 msgid "Ehdota liikkeitä:"
 msgstr "Evttot hárjehusaid:"
 
-#: lib/ui/drawer.dart:719
+#: lib/ui/drawer.dart:745
 msgid "kerro, jos luettelosta puuttuu salilla yleinen liike."
 msgstr "muital, jos listtus váilu dábálaš sálla-hárjehus."
 
-#: lib/ui/drawer.dart:720
+#: lib/ui/drawer.dart:746
 msgid "Ilmoita virheistä:"
 msgstr "Dieđit meattáhusain:"
 
-#: lib/ui/drawer.dart:720
+#: lib/ui/drawer.dart:746
 msgid "kerro, jos jokin ei toimi tai treeni ei tallennu oikein."
 msgstr "muital, jos juoga ii doaimma dahje hárjehallan ii vurkejuvvo riekta."
 
-#: lib/ui/drawer.dart:721
+#: lib/ui/drawer.dart:747
 msgid "Ehdota ideoita:"
 msgstr "Evttot jurdagiid:"
 
-#: lib/ui/drawer.dart:721
+#: lib/ui/drawer.dart:747
 msgid "uusia ominaisuuksia, tilastoja tai käyttöliittymän muutoksia."
 msgstr "ođđa doaimmaid, statistihka dahje geavahanlávddi rievdadusaid."
 
-#: lib/ui/drawer.dart:722
+#: lib/ui/drawer.dart:748
 msgid "Saavutettavuus:"
 msgstr "Olahahttivuohta:"
 
-#: lib/ui/drawer.dart:722
+#: lib/ui/drawer.dart:748
 msgid ""
 "kerro, mikä helpottaisi käyttöä esimerkiksi näkö- tai liikuntavamman "
 "kanssa."
@@ -2116,27 +2188,27 @@ msgstr ""
 "muital, mii álkidivččii geavaheami ovdamearkka dihte oaidnin- dahje "
 "lihkadanváttuin."
 
-#: lib/ui/drawer.dart:723
+#: lib/ui/drawer.dart:749
 msgid "Käännökset:"
 msgstr "Jorgalusat:"
 
-#: lib/ui/drawer.dart:723
+#: lib/ui/drawer.dart:749
 msgid "auta tuomaan sovellus saameksi."
 msgstr "veahket buktit prográmma sámegillii."
 
-#: lib/ui/drawer.dart:724
+#: lib/ui/drawer.dart:750
 msgid "Osallistu kehitykseen:"
 msgstr "Searvva ovddideapmái:"
 
-#: lib/ui/drawer.dart:724
+#: lib/ui/drawer.dart:750
 msgid "lähdekoodi on avointa, ja korjaukset ovat tervetulleita."
 msgstr "gáldokoda lea rabas, ja divodusat leat buresboahtimat."
 
-#: lib/ui/drawer.dart:740
+#: lib/ui/drawer.dart:766
 msgid "Miksi tukea?"
 msgstr "Manne doarjut?"
 
-#: lib/ui/drawer.dart:743
+#: lib/ui/drawer.dart:769
 msgid ""
 "Sovelluksen kehittäminen ja ylläpito tehdään vapaa-ajalla. "
 "Tarjoamalla kahvit tuet suoraan tätä työtä:"
@@ -2144,11 +2216,11 @@ msgstr ""
 "Prográmma ovddideapmi ja fuolahus dahkkojuvvo friddjaáiggis. Go fálát "
 "káffe, de doarjut njuolgga dán barggu:"
 
-#: lib/ui/drawer.dart:749
+#: lib/ui/drawer.dart:775
 msgid "sovellus pysyy maksuttomana ja mainoksettomana kaikille"
 msgstr "prográmma bissu nuvttá ja reklámaid haga buohkaide"
 
-#: lib/ui/drawer.dart:753
+#: lib/ui/drawer.dart:779
 msgid ""
 "sovellus pysyy ajan tasalla, ja Windows- ja Linux-versiot "
 "valmistuvat, kun sovellus on hiottu valmiiksi"
@@ -2156,15 +2228,15 @@ msgstr ""
 "prográmma bissu áigeguovdil, ja Windows- ja Linux-veršuvnnat "
 "gárvánit, go prográmma lea gárvvis"
 
-#: lib/ui/drawer.dart:757
+#: lib/ui/drawer.dart:783
 msgid "saamenkielinen versio ja uudet ominaisuudet etenevät nopeammin"
 msgstr "sámegiel veršuvdna ja ođđa doaimmat ovdánit johtilit"
 
-#: lib/ui/drawer.dart:765
+#: lib/ui/drawer.dart:791
 msgid "Buy me a coffee"
 msgstr "Buy me a coffee"
 
-#: lib/ui/drawer.dart:770
+#: lib/ui/drawer.dart:796
 msgid ""
 "Tuki on vapaaehtoista eikä avaa mitään lisäominaisuuksia: sovellus "
 "pysyy kaikille maksuttomana."
@@ -2172,30 +2244,30 @@ msgstr ""
 "Doarjja lea eaktodáhtolaš iige raba makkárge lassedoaimmaid: "
 "prográmma bissu nuvttá buohkaide."
 
-#: lib/ui/drawer.dart:774
+#: lib/ui/drawer.dart:800
 msgid "Giitu! Kiitos, että tuet sovellusta!"
 msgstr "Giitu go doarjut prográmma!"
 
-#: lib/ui/drawer.dart:788
+#: lib/ui/drawer.dart:814
 msgid "Tauko treenaamisesta"
 msgstr "Boddu hárjehallamis"
 
-#: lib/ui/drawer.dart:796
+#: lib/ui/drawer.dart:822
 msgid "🤒 Sairas"
 msgstr "🤒 Buohcci"
 
-#: lib/ui/drawer.dart:797
+#: lib/ui/drawer.dart:823
 msgid "🏖 Loma"
 msgstr "🏖 Luopmu"
 
 #. {0} = start.day
 #. {1} = start.month
 #. {2} = start.year
-#: lib/ui/drawer.dart:805
+#: lib/ui/drawer.dart:831
 msgid "Alkoi {0}.{1}.{2}"
 msgstr "Álggii {0}.{1}.{2}"
 
-#: lib/ui/drawer.dart:820
+#: lib/ui/drawer.dart:846
 msgid ""
 "Lepää ja parane. Tauko päättyy, kun kirjaat seuraavan treenin. Sen "
 "jälkeen sovellus ehdottaa noin kahden viikon ajan kevyempiä kuormia "
@@ -2205,7 +2277,7 @@ msgstr ""
 "maŋŋá prográmma evttoha sullii guokte vahku geahppasit noađi ja unnit "
 "ráidduid bottu guhkkodaga mielde."
 
-#: lib/ui/drawer.dart:825
+#: lib/ui/drawer.dart:851
 msgid ""
 "Tauko päättyy, kun kirjaat seuraavan treenin. Lyhyt loma ei juuri "
 "vaikuta voimaan; pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä "
@@ -2215,29 +2287,29 @@ msgstr ""
 "fápmui measta ollenge; guhkit luomu maŋŋá prográmma evttoha álggus "
 "geahppasit noađi."
 
-#: lib/ui/drawer.dart:834
+#: lib/ui/drawer.dart:860
 msgid "Aloita tauko"
 msgstr "Álgge bottu"
 
-#: lib/ui/drawer.dart:856
+#: lib/ui/drawer.dart:882
 msgid "Kopioidaanko treenit?"
 msgstr "Máŋgejuvvojitgo hárjehallamat?"
 
 #. {0} = oldFiles.length
-#: lib/ui/drawer.dart:858
+#: lib/ui/drawer.dart:884
 msgid "Nykyisessä kansiossa on {0} tiedostoa (treenit, asetukset ja ohjelma)."
 msgstr "Dálá máhpas leat {0} fiilla (hárjehallamat, ásahusat ja prográmma)."
 
-#: lib/ui/drawer.dart:859
+#: lib/ui/drawer.dart:885
 msgid "Uusi kansio on tyhjä."
 msgstr "Ođđa máhppa lea guorus."
 
 #. {0} = newFiles.length
-#: lib/ui/drawer.dart:859
+#: lib/ui/drawer.dart:885
 msgid "Uudessa kansiossa on jo {0} .md-tiedostoa."
 msgstr "Ođđa máhpas leat juo {0} .md-fiilla."
 
-#: lib/ui/drawer.dart:860
+#: lib/ui/drawer.dart:886
 msgid ""
 "Kopioidaanko treenit uuteen kansioon? Uuden kansion tiedostoja ei "
 "ylikirjoiteta, ja alkuperäiset jäävät myös vanhaan kansioon."
@@ -2245,68 +2317,68 @@ msgstr ""
 "Máŋgejuvvojitgo hárjehallamat ođđa máhppii? Ođđa máhpa fiillat eai "
 "čállojuvvo badjel, ja álgofiillat bissot maiddái boares máhppii."
 
-#: lib/ui/drawer.dart:865
+#: lib/ui/drawer.dart:891
 msgid "Älä kopioi"
 msgstr "Ale máŋge"
 
 #. {0} = c
 #. {1} = sk
-#: lib/ui/drawer.dart:878
+#: lib/ui/drawer.dart:904
 msgid "Kopioitu {0} tiedostoa, {1} oli jo uudessa kansiossa. "
 msgstr "{0} fiilla máŋgejuvvon, {1} ledje juo ođđa máhpas. "
 
 #. {0} = c
-#: lib/ui/drawer.dart:879
+#: lib/ui/drawer.dart:905
 msgid "Kopioitu {0} tiedostoa. "
 msgstr "{0} fiilla máŋgejuvvon. "
 
 #. {0} = e
-#: lib/ui/drawer.dart:881
+#: lib/ui/drawer.dart:907
 msgid "Kopiointi epäonnistui: {0}"
 msgstr "Máŋgen ii lihkostuvvan: {0}"
 
 #. {0} = msg
 #. {1} = store.workouts.length
-#: lib/ui/drawer.dart:887
+#: lib/ui/drawer.dart:913
 msgid "{0}Löytyi {1} treeniä."
 msgstr "{0}Gávdnui {1} hárjehallama."
 
-#: lib/ui/drawer.dart:906
+#: lib/ui/drawer.dart:932
 msgid "Kevyt kuorma (yli 12 toistoa)"
 msgstr "Geahpas noađđi (badjel 12 geardduheami)"
 
-#: lib/ui/drawer.dart:907
+#: lib/ui/drawer.dart:933
 msgid "Keskiraskas (6–12 toistoa)"
 msgstr "Gaskadássi (6–12 geardduheami)"
 
-#: lib/ui/drawer.dart:908
+#: lib/ui/drawer.dart:934
 msgid "Raskas (1–5 toistoa tai lähellä maksimia)"
 msgstr "Lossat (1–5 geardduheami dahje lahka eanemus deattu)"
 
-#: lib/ui/drawer.dart:915
+#: lib/ui/drawer.dart:941
 msgid "Palautusajat"
 msgstr "Vuoiŋŋastanáiggit"
 
-#: lib/ui/drawer.dart:926
+#: lib/ui/drawer.dart:952
 msgid "ohjelmasi oletus"
 msgstr "du prográmma álgoárvu"
 
-#: lib/ui/drawer.dart:926
+#: lib/ui/drawer.dart:952
 msgid "oletus"
 msgstr "álgoárvu"
 
 #. {0} = _mmss(defs[c])
 #. {1} = settings.restAdjust[c] > 0 ? '+' : ''
 #. {2} = settings.restAdjust[c]
-#: lib/ui/drawer.dart:927
+#: lib/ui/drawer.dart:953
 msgid "oletus {0}, oma säätö {1}{2} s"
 msgstr "álgoárvu {0}, iežat heiveheapmi {1}{2} s"
 
-#: lib/ui/drawer.dart:968
+#: lib/ui/drawer.dart:994
 msgid "Palauta oletukset"
 msgstr "Máhcat álgoárvvuid"
 
-#: lib/ui/drawer.dart:972
+#: lib/ui/drawer.dart:998
 msgid ""
 "Eristävät liikkeet ja lämmittelysarjat lyhyemmin. Ei varaa: +30 s. "
 "Kevennysviikolla × 0,75."
@@ -2316,19 +2388,19 @@ msgstr ""
 
 #. {0} = longDate(d)
 #. {1} = ws.length
-#: lib/ui/home.dart:109
+#: lib/ui/home.dart:112
 msgid "{0}: {1} treeniä"
 msgstr "{0}: {1} hárjehallama"
 
-#: lib/ui/home.dart:129
+#: lib/ui/home.dart:132
 msgid "Lisää uusi treeni tälle päivälle"
 msgstr "Lasit ođđa hárjehallama dán beaivái"
 
-#: lib/ui/home.dart:179 lib/ui/onboarding.dart:44
+#: lib/ui/home.dart:182 lib/ui/onboarding.dart:58
 msgid "Bures!"
 msgstr "Bures!"
 
-#: lib/ui/home.dart:223
+#: lib/ui/home.dart:226
 msgid ""
 "🧪 Demo selaimessa: esimerkkitreenit, mitään ei tallenneta. Kokeile "
 "treenin kirjausta, tilastoja ja ohjelman tekoa (☰ → Ohjelma ja "
@@ -2341,93 +2413,93 @@ msgstr ""
 "vuođu). Duohta prográmma vurke hárjehallamiid .md-fiillaid du iežat "
 "máhppii."
 
-#: lib/ui/home.dart:239
+#: lib/ui/home.dart:242
 msgid "Tee oma treeniohjelma"
 msgstr "Ráhkat iežat hárjehallanprográmma"
 
 #. {0} = trName(open.single.title)
-#: lib/ui/home.dart:261
+#: lib/ui/home.dart:264
 msgid "Jatka: {0}"
 msgstr "Joatkke: {0}"
 
-#: lib/ui/home.dart:262
+#: lib/ui/home.dart:265
 msgid "Jatka tämän päivän treeniä"
 msgstr "Joatkke dálá hárjehallama"
 
-#: lib/ui/home.dart:264 lib/ui/new_workout.dart:82
+#: lib/ui/home.dart:267 lib/ui/new_workout.dart:82
 msgid "Uusi salitreeni"
 msgstr "Ođđa sálehárjehallan"
 
-#: lib/ui/home.dart:265 lib/ui/new_workout.dart:82
+#: lib/ui/home.dart:268 lib/ui/new_workout.dart:82
 msgid "Uusi treeni"
 msgstr "Ođđa hárjehallan"
 
 #. {0} = sugg
-#: lib/ui/home.dart:266 lib/ui/set_logger.dart:345
+#: lib/ui/home.dart:269 lib/ui/set_logger.dart:345
 msgid "Ehdotus: {0}"
 msgstr "Evttohus: {0}"
 
-#: lib/ui/home.dart:285
+#: lib/ui/home.dart:288
 msgid "Toinen salitreeni tälle päivälle"
 msgstr "Nubbi sálehárjehallan dán beaivái"
 
-#: lib/ui/home.dart:285 lib/ui/workout.dart:654
+#: lib/ui/home.dart:288 lib/ui/workout.dart:654
 msgid "Uusi treeni tälle päivälle"
 msgstr "Ođđa hárjehallan dán beaivái"
 
-#: lib/ui/home.dart:287
+#: lib/ui/home.dart:290
 msgid "Avaa tämän päivän treeni"
 msgstr "Raba dálá hárjehallama"
 
 #. {0} = todays.length
-#: lib/ui/home.dart:288
+#: lib/ui/home.dart:291
 msgid "Tämän päivän treenit ({0})"
 msgstr "Dálá hárjehallamat ({0})"
 
 #. {0} = settings.program!.weekOf(today) + 1
-#: lib/ui/home.dart:296
+#: lib/ui/home.dart:299
 msgid "viikko {0}"
 msgstr "vahkku {0}"
 
-#: lib/ui/home.dart:297
+#: lib/ui/home.dart:300
 msgid "kevennysviikko"
 msgstr "geahpedanvahkku"
 
-#: lib/ui/home.dart:420 lib/ui/home.dart:943 lib/ui/running_screen.dart:71
+#: lib/ui/home.dart:426 lib/ui/home.dart:950 lib/ui/running_screen.dart:71
 msgid "tällä viikolla"
 msgstr "dán vahkus"
 
-#: lib/ui/home.dart:422 lib/ui/running_screen.dart:73
+#: lib/ui/home.dart:428 lib/ui/running_screen.dart:73
 msgid "tässä kuussa"
 msgstr "dán mánus"
 
-#: lib/ui/home.dart:424
+#: lib/ui/home.dart:430
 msgid "viikon putki"
 msgstr "vahku ráidu"
 
-#: lib/ui/home.dart:519
+#: lib/ui/home.dart:525
 msgid "Kardio / keskivartalo"
 msgstr "Kardio / gaskarumaš"
 
-#: lib/ui/home.dart:521
+#: lib/ui/home.dart:527
 msgid "Ennätys"
 msgstr "Rekorda"
 
-#: lib/ui/home.dart:659
+#: lib/ui/home.dart:665
 msgid "junnaa"
 msgstr "bissu"
 
-#: lib/ui/home.dart:695
+#: lib/ui/home.dart:701
 msgid "Kevennysviikon paikka?"
 msgstr "Áigi geahpedanvahkkui?"
 
-#: lib/ui/home.dart:699 lib/ui/move_feedback.dart:135 lib/ui/set_logger.dart:353
+#: lib/ui/home.dart:705 lib/ui/home.dart:1076 lib/ui/move_feedback.dart:135 lib/ui/set_logger.dart:353
 msgid "Ohita"
 msgstr "Njuikes"
 
 #. {0} = ins.loadingWeeks
 #. {1} = ins.stalled.length
-#: lib/ui/home.dart:706
+#: lib/ui/home.dart:712
 msgid ""
 "Olet treenannut {0} viikkoa putkeen, ja {1} liikettä junnaa "
 "paikallaan. Väsymys voi peittää kehityksen."
@@ -2436,11 +2508,11 @@ msgstr ""
 "sajistis. Váibbasvuohta sáhttá čiehkat ovdáneami."
 
 #. {0} = ins.loadingWeeks
-#: lib/ui/home.dart:710
+#: lib/ui/home.dart:716
 msgid "Olet treenannut {0} viikkoa putkeen ilman kevennystä."
 msgstr "Leat hárjehallan {0} vahku maŋŋálagaid geahpedeami haga."
 
-#: lib/ui/home.dart:715
+#: lib/ui/home.dart:721
 msgid ""
 "Kevennysviikko: sama treenitiheys, noin puolet sarjoista ja "
 "toistoista, painot noin 10 % kevyemmät, ei maksimiyrityksiä. Voima- "
@@ -2452,30 +2524,30 @@ msgstr ""
 "eanemus deattu geahččalemiid. Fápmovaláštallit ja fysihkkavaláštallit "
 "geahpedit dábálaččat 5–6 vahku gaskkaid sullii vahkku áigge."
 
-#: lib/ui/home.dart:734
+#: lib/ui/home.dart:740
 msgid "Edistyminen"
 msgstr "Ovdáneapmi"
 
 #. {0} = ins.prs30d
-#: lib/ui/home.dart:736
+#: lib/ui/home.dart:742
 msgid "🏆 {0} ennätystä / 30 pv"
 msgstr "🏆 {0} rekorda / 30 b."
 
-#: lib/ui/home.dart:739
+#: lib/ui/home.dart:745
 msgid "Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen"
 msgstr "Árvvoštallon 1RM: maŋimuš 4 vahku vs. 2 mánu ovdal"
 
-#: lib/ui/home.dart:773
+#: lib/ui/home.dart:779
 msgid "🤒  Sairastat – parane pian!"
 msgstr "🤒  Don buohcat – dearvvašmuva fargga!"
 
-#: lib/ui/home.dart:773
+#: lib/ui/home.dart:779
 msgid "🏖  Lomalla – nauti!"
 msgstr "🏖  Luomus – návddaš!"
 
 #. {0} = shortDate(p.start)
 #. {1} = p.days
-#: lib/ui/home.dart:779
+#: lib/ui/home.dart:785
 msgid ""
 "Tauko alkoi {0} ({1} pv). Kun palaat, sovellus ehdottaa kevyempiä "
 "kuormia ja vähemmän sarjoja noin kahden viikon ajan."
@@ -2483,38 +2555,38 @@ msgstr ""
 "Boddu álggii {0} ({1} b.). Go máhcat, prográmma evttoha geahppasit "
 "noađi ja unnit ráidduid sullii guokte vahku."
 
-#: lib/ui/home.dart:789
+#: lib/ui/home.dart:795
 msgid "Älä treenaa kuumeisena tai jos koko kroppa on kipeä."
 msgstr "Ale hárjehala go dus lea feber dahje jos olles rumaš bávččaga."
 
-#: lib/ui/home.dart:847 lib/ui/stats_screen.dart:122 lib/ui/stats_screen.dart:467 lib/ui/stats_screen.dart:563 …
+#: lib/ui/home.dart:853 lib/ui/stats_screen.dart:142 lib/ui/stats_screen.dart:511 lib/ui/stats_screen.dart:612 …
 msgid "Sali"
 msgstr "Sálla"
 
-#: lib/ui/home.dart:917
+#: lib/ui/home.dart:923
 msgid "Lisää lenkki"
 msgstr "Lasit viehkama"
 
 #. {0} = sportName(main)
-#: lib/ui/home.dart:917
+#: lib/ui/home.dart:923
 msgid "Lisää: {0}"
 msgstr "Lasit: {0}"
 
-#: lib/ui/home.dart:935
+#: lib/ui/home.dart:941
 msgid "Muu laji"
 msgstr "Eará valáštallan"
 
-#: lib/ui/home.dart:945
+#: lib/ui/home.dart:952
 msgid "vauhti /km"
 msgstr "leaktu /km"
 
-#: lib/ui/home.dart:947 lib/ui/stats_screen.dart:210 lib/ui/watch.dart:75
+#: lib/ui/home.dart:954 lib/ui/stats_screen.dart:247 lib/ui/watch.dart:75
 msgid "keskisyke"
 msgstr "gaskamearálaš pulsa"
 
 #. {0} = fmtPace(trend.pacePrev!)
 #. {1} = fmtPace(trend.paceNow!)
-#: lib/ui/home.dart:955
+#: lib/ui/home.dart:962
 msgid "Kevyet lenkit: {0} → {1} /km (4 vk)"
 msgstr "Geahppa viehkamat: {0} → {1} /km (4 vahku)"
 
@@ -2524,11 +2596,11 @@ msgstr "Geahppa viehkamat: {0} → {1} /km (4 vahku)"
                   if (acts.first.distanceKm != null) '${kmS(acts.first.distanceKm!)} km',
                   shortDate(acts.first.date),
                 ].join(' · ')
-#: lib/ui/home.dart:964
+#: lib/ui/home.dart:971
 msgid "Viimeksi: {0}"
 msgstr "Maŋimusat: {0}"
 
-#: lib/ui/home.dart:981
+#: lib/ui/home.dart:988
 msgid ""
 "Kirjaa ensimmäinen lenkki tai muu laji: aika, matka ja kellon tiedot. "
 "Vauhti ja kehitys lasketaan itse."
@@ -2537,32 +2609,42 @@ msgstr ""
 "diimmu dieđut. Leaktu ja ovdáneapmi rehkenastojuvvojit "
 "automáhtalaččat."
 
-#: lib/ui/home.dart:992 lib/ui/running_screen.dart:17 lib/ui/stats_screen.dart:104 lib/ui/workout.dart:707
+#: lib/ui/home.dart:999 lib/ui/running_screen.dart:17 lib/ui/stats_screen.dart:124 lib/ui/workout.dart:707
 msgid "Juoksun kehitys"
 msgstr "Viehkama ovdáneapmi"
 
-#: lib/ui/home.dart:1009
+#: lib/ui/home.dart:1016
 msgid "Yhteenveto: kaikki treenit"
 msgstr "Čoahkkáigeassu: buot hárjehallamat"
 
-#: lib/ui/home.dart:1009
+#: lib/ui/home.dart:1016
 msgid "Yhteenveto ja tilastot"
 msgstr "Čoahkkáigeassu ja statistihkka"
 
-#: lib/ui/import_export.dart:41
+#: lib/ui/home.dart:1074
+msgid "Tämän päivän paino"
+msgstr "Dálá beaivvi deaddu"
+
+#. {0} = fmtNum(prev.$2)
+#. {1} = shortDate(prev.$1)
+#: lib/ui/home.dart:1114
+msgid "Edellinen {0} kg ({1})"
+msgstr "Ovddit {0} kg ({1})"
+
+#: lib/ui/import_export.dart:42
 msgid "Valitse tiedosto"
 msgstr "Vállje fiilla"
 
 #. {0} = ext.map((x) => '.$x').join(' / ')
-#: lib/ui/import_export.dart:46
+#: lib/ui/import_export.dart:47
 msgid "Odotettiin tiedostoa: {0}"
 msgstr "Vurdojuvvui fiila: {0}"
 
-#: lib/ui/import_export.dart:66
+#: lib/ui/import_export.dart:67
 msgid "Valitse Garmin Connectin CSV-tiedosto"
 msgstr "Vállje Garmin Connect CSV-fiilla"
 
-#: lib/ui/import_export.dart:71
+#: lib/ui/import_export.dart:72
 msgid ""
 "Tiedostosta ei löytynyt Garmin-suorituksia. Vie CSV Garmin Connectin "
 "Suoritukset-sivulta."
@@ -2571,30 +2653,30 @@ msgstr ""
 "doaimmaid siiddus."
 
 #. {0} = skipped
-#: lib/ui/import_export.dart:74
+#: lib/ui/import_export.dart:75
 msgid "Ohitettiin {0} voimaharjoittelua: salitreenit kirjataan Gievrassa."
 msgstr ""
 "{0} fápmohárjehallama njuikejuvvoje: sálehárjehallamat čállojuvvojit "
 "Gievrai."
 
-#: lib/ui/import_export.dart:95
+#: lib/ui/import_export.dart:96
 msgid "Valitse .md-tiedostoja"
 msgstr "Vállje .md-fiillaid"
 
-#: lib/ui/import_export.dart:107
+#: lib/ui/import_export.dart:108
 msgid "Tallenna varmuuskopio"
 msgstr "Vurke sihkkarvurkema"
 
 #. {0} = store.workouts.length
-#: lib/ui/import_export.dart:109
+#: lib/ui/import_export.dart:110
 msgid "Varmuuskopio tallennettu ({0} treeniä)."
 msgstr "Sihkkarvurken vurkejuvvon ({0} hárjehallama)."
 
-#: lib/ui/import_export.dart:116
+#: lib/ui/import_export.dart:117
 msgid "Vie FitNotes-muotoon (kokeellinen)"
 msgstr "Doalvvo FitNotes-hápmái (geahččalus)"
 
-#: lib/ui/import_export.dart:119
+#: lib/ui/import_export.dart:120
 msgid ""
 "Tekee FitNotes-varmuuskopion, jonka voi palauttaa FitNotesissa "
 "(Asetukset → Varmuuskopio → Palauta). Palautus korvaa FitNotesin "
@@ -2608,106 +2690,110 @@ msgstr ""
 "namaid. Notáhtat ja liegganeapmi vurkejuvvojit "
 "hárjehallankommentáraide, rumašdeaddu mihtidemiide."
 
-#: lib/ui/import_export.dart:127
+#: lib/ui/import_export.dart:128
 msgid "Vie"
 msgstr "Doalvvo"
 
-#: lib/ui/import_export.dart:138
+#: lib/ui/import_export.dart:139
 msgid "Tallenna FitNotes-varmuuskopio"
 msgstr "Vurke FitNotes-sihkkarvurkema"
 
 #. {0} = store.workouts.length
 #. {1} = sets
-#: lib/ui/import_export.dart:141
+#: lib/ui/import_export.dart:142
 msgid "Viety {0} treeniä, {1} sarjaa."
 msgstr "{0} hárjehallama, {1} ráiddu doalvvuhuvvon."
 
-#: lib/ui/import_export.dart:147
+#: lib/ui/import_export.dart:148
 msgid "Tiedostosta ei löytynyt treenejä."
 msgstr "Fiillas eai gávdnon hárjehallamat."
 
 #. {0} = r.source
-#: lib/ui/import_export.dart:156
+#: lib/ui/import_export.dart:157
 msgid "Tuo: {0}"
 msgstr "Viečča: {0}"
 
-#: lib/ui/import_export.dart:160
+#: lib/ui/import_export.dart:161
 msgid "Treenipäiviä"
 msgstr "Hárjehallanbeaivvit"
 
-#: lib/ui/import_export.dart:161
+#: lib/ui/import_export.dart:162
 msgid "Sarjoja"
 msgstr "Ráiddut"
 
-#: lib/ui/import_export.dart:164
+#: lib/ui/import_export.dart:165
 msgid "Liikuntaa"
 msgstr "Lihkadeapmi"
 
-#: lib/ui/import_export.dart:168
+#: lib/ui/import_export.dart:169
 msgid "Aikaväli"
 msgstr "Áigodat"
 
-#: lib/ui/import_export.dart:169
+#: lib/ui/import_export.dart:170
 msgid "Kehonpainoja"
 msgstr "Rumašdeattut"
 
-#: lib/ui/import_export.dart:170
+#: lib/ui/import_export.dart:171
+msgid "Punnituksia"
+msgstr "Deaddovihkkemat"
+
+#: lib/ui/import_export.dart:172
 msgid "Kardio/aika muistiinpanoihin"
 msgstr "Kardio/áigi notáhtaide"
 
-#: lib/ui/import_export.dart:171
+#: lib/ui/import_export.dart:173
 msgid "Uusia omia liikkeitä"
 msgstr "Ođđa iežat hárjehusat"
 
-#: lib/ui/import_export.dart:172
+#: lib/ui/import_export.dart:174
 msgid "yhdistetään"
 msgstr "ovttastuvvojit"
 
-#: lib/ui/import_export.dart:173
+#: lib/ui/import_export.dart:175
 msgid "Ohjelma"
 msgstr "Prográmma"
 
-#: lib/ui/import_export.dart:173
+#: lib/ui/import_export.dart:175
 msgid "tuodaan"
 msgstr "vižžojuvvo"
 
-#: lib/ui/import_export.dart:173
+#: lib/ui/import_export.dart:175
 msgid "nykyinen säilyy"
 msgstr "dálá bissu"
 
 #. {0} = r.existing
-#: lib/ui/import_export.dart:177
+#: lib/ui/import_export.dart:179
 msgid "{0} päivää on jo päiväkirjassa. Niitä ei muuteta."
 msgstr "{0} beaivvi leat juo beaivegirjjis. Dat eai rievdaduvvo."
 
 #. {0} = newCount
-#: lib/ui/import_export.dart:180
+#: lib/ui/import_export.dart:182
 msgid "Tuodaan {0} uutta treeniä."
 msgstr "Vižžojuvvojit {0} ođđa hárjehallama."
 
 #. {0} = '${r.newExercises.keys.take(12).join(', ')}${r.newExercises.length > 12 ? '…' : ''}'
-#: lib/ui/import_export.dart:184
+#: lib/ui/import_export.dart:186
 msgid "Omat liikkeet: {0}"
 msgstr "Iežat hárjehusat: {0}"
 
-#: lib/ui/import_export.dart:194
+#: lib/ui/import_export.dart:196
 msgid "Tuo"
 msgstr "Viečča"
 
 #. {0} = n
-#: lib/ui/import_export.dart:200
+#: lib/ui/import_export.dart:202
 msgid "Tuotiin {0} treeniä. Giitu!"
 msgstr "{0} hárjehallama vižžojuvvon. Giitu!"
 
-#: lib/ui/import_export.dart:237
+#: lib/ui/import_export.dart:239
 msgid "Tuo toisesta sovelluksesta"
 msgstr "Viečča eará prográmmas"
 
-#: lib/ui/import_export.dart:240
+#: lib/ui/import_export.dart:242
 msgid "FitNotes"
 msgstr "FitNotes"
 
-#: lib/ui/import_export.dart:242
+#: lib/ui/import_export.dart:244
 msgid ""
 "Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio. "
 "Tunnetut liikkeet yhdistyvät Gievran liikkeisiin."
@@ -2715,11 +2801,11 @@ msgstr ""
 "Sihkkarvurken (.fitnotes). FitNotes: Settings → Backup. Dovdojuvvon "
 "hárjehusat laktojuvvojit Gievra hárjehusaide."
 
-#: lib/ui/import_export.dart:248
+#: lib/ui/import_export.dart:250
 msgid "Garmin Connect (.csv)"
 msgstr "Garmin Connect (.csv)"
 
-#: lib/ui/import_export.dart:250
+#: lib/ui/import_export.dart:252
 msgid ""
 "Garmin Connect → Suoritukset → Vie CSV. Juoksut, kävelyt, pyöräily "
 "ym.: matka, kesto, kalorit ja syke; nousu ja askeltiheys "
@@ -2729,33 +2815,33 @@ msgstr ""
 "sihkkelastin jna.: gaska, guhkkodat, kaloriijat ja pulsa; badjáneapmi "
 "ja lávkeleaktu notáhtaide."
 
-#: lib/ui/import_export.dart:255
+#: lib/ui/import_export.dart:257
 msgid "Gievran varmuuskopio"
 msgstr "Gievra sihkkarvurken"
 
-#: lib/ui/import_export.dart:258
+#: lib/ui/import_export.dart:260
 msgid "Vie varmuuskopio (.zip)"
 msgstr "Doalvvo sihkkarvurkema (.zip)"
 
-#: lib/ui/import_export.dart:259
+#: lib/ui/import_export.dart:261
 msgid "Kaikki .md-tiedostot ja asetukset.md yhdessä zip-tiedostossa."
 msgstr "Buot .md-fiillat ja asetukset.md ovtta zip-fiillas."
 
-#: lib/ui/import_export.dart:264
+#: lib/ui/import_export.dart:266
 msgid "Palauta varmuuskopiosta (.zip)"
 msgstr "Máhcat sihkkarvurkemis (.zip)"
 
-#: lib/ui/import_export.dart:265
+#: lib/ui/import_export.dart:267
 msgid "Tuo treenit zipistä. Olemassa olevia päiviä ei ylikirjoiteta."
 msgstr ""
 "Viečča hárjehallamiid zip-fiillas. Dálá beaivvit eai čállojuvvo "
 "badjel."
 
-#: lib/ui/import_export.dart:270
+#: lib/ui/import_export.dart:272
 msgid "Tuo .md-tiedostoja"
 msgstr "Viečča .md-fiillaid"
 
-#: lib/ui/import_export.dart:272
+#: lib/ui/import_export.dart:274
 msgid ""
 "Yksi tai useampi treenitiedosto, esim. PC:llä tehty tai muokattu "
 "treeni. Olemassa olevia päiviä ei ylikirjoiteta."
@@ -2763,15 +2849,15 @@ msgstr ""
 "Okta dahje eanet hárjehallanfiillat, om. PC:s dahkkon dahje "
 "rievdaduvvon hárjehallan. Dálá beaivvit eai čállojuvvo badjel."
 
-#: lib/ui/import_export.dart:277
+#: lib/ui/import_export.dart:279
 msgid "Vie toiseen sovellukseen"
 msgstr "Doalvvo eará prográmmii"
 
-#: lib/ui/import_export.dart:280
+#: lib/ui/import_export.dart:282
 msgid "FitNotes (.fitnotes) – kokeellinen"
 msgstr "FitNotes (.fitnotes) – geahččalus"
 
-#: lib/ui/import_export.dart:281
+#: lib/ui/import_export.dart:283
 msgid ""
 "Jos haluat palata FitNotesiin. Palautetaan FitNotesin "
 "varmuuskopiotoiminnolla."
@@ -2779,7 +2865,7 @@ msgstr ""
 "Jos háliidat máhccat FitNotesii. Máhcahuvvo FitNotes "
 "sihkkarvurkendoaimmain."
 
-#: lib/ui/import_export.dart:292
+#: lib/ui/import_export.dart:294
 msgid ""
 "Synkattu kansio (Nextcloud, Seafile…) on jo itsessään varmuuskopio: "
 "tiedostot ovat tavallisia .md-tiedostoja."
@@ -3192,10 +3278,6 @@ msgstr ""
 "Evttohus: {0} ({1}). Hárjehus ii leat dahkkon jahkebealis: álgge "
 "geahppasit"
 
-#: lib/ui/intro.dart:569 lib/ui/program_screen.dart:137 lib/ui/program_view.dart:431 lib/ui/programs_screen.dart:71 …
-msgid "Poista"
-msgstr "Sihko"
-
 #: lib/ui/intro.dart:583
 msgid "Lisää ennätys"
 msgstr "Lasit rekorda"
@@ -3381,7 +3463,7 @@ msgstr ""
 msgid "Liian raskas paino?"
 msgstr "Menddo lossa deaddu?"
 
-#: lib/ui/move_feedback.dart:97
+#: lib/ui/move_feedback.dart:97 lib/ui/onboarding.dart:118
 msgid "Kyllä"
 msgstr "Juo"
 
@@ -3412,7 +3494,7 @@ msgstr ""
 msgid "Hae liikettä…"
 msgstr "Oza hárjehusa…"
 
-#: lib/ui/move_select.dart:67 lib/ui/stats_screen.dart:118 lib/ui/sync_screen.dart:105
+#: lib/ui/move_select.dart:67 lib/ui/stats_screen.dart:138 lib/ui/sync_screen.dart:105
 msgid "Kaikki"
 msgstr "Buot"
 
@@ -3472,10 +3554,6 @@ msgstr "Njuikes →"
 msgid "Laite"
 msgstr "Rusttet"
 
-#: lib/ui/new_workout.dart:220
-msgid "Muokkaa"
-msgstr "Rievdat"
-
 #: lib/ui/new_workout.dart:254
 msgid "Uusi laite, esim. Airbike"
 msgstr "Ođđa rusttet, om. Airbike"
@@ -3492,11 +3570,11 @@ msgstr "Álgge hárjehallama →"
 msgid "Ohita lämmittely"
 msgstr "Njuikes liegganeami"
 
-#: lib/ui/onboarding.dart:53
+#: lib/ui/onboarding.dart:67
 msgid "Tervetuloa Gievraan"
 msgstr "Bures boahtin Gievra-prográmmii"
 
-#: lib/ui/onboarding.dart:59
+#: lib/ui/onboarding.dart:73
 msgid ""
 "Sinun treenisi, sinun tiedostosi: Gievra tallentaa treenit "
 "tavallisina .md-tiedostoina omaan kansioosi. Ei tiliä, ei mainoksia."
@@ -3504,15 +3582,15 @@ msgstr ""
 "Du hárjehallamat, du fiillat: Gievra vurke hárjehallamiid dábálaš "
 ".md-fiilan du iežat máhppii. Ii konto, ii reklámat."
 
-#: lib/ui/onboarding.dart:64
+#: lib/ui/onboarding.dart:78
 msgid "Miksi haluat, että sinua kutsutaan?"
 msgstr "Mo háliidat ahte du gohčodit?"
 
-#: lib/ui/onboarding.dart:70
+#: lib/ui/onboarding.dart:84
 msgid "Nimi, lempinimi tai mitä vain"
 msgstr "Namma, oanehis namma dahje mii beare"
 
-#: lib/ui/onboarding.dart:88
+#: lib/ui/onboarding.dart:102
 msgid ""
 "Juoksu, pyöräily, hiihto ja muut lajit: aika, matka, vauhti ja "
 "kehitys."
@@ -3520,21 +3598,43 @@ msgstr ""
 "Viehkan, sihkkelastin, čuoigan ja eará valáštallamat: áigi, gaska, "
 "leaktu ja ovdáneapmi."
 
-#: lib/ui/onboarding.dart:89
+#: lib/ui/onboarding.dart:103
 msgid "Etusivulla valitset Sali tai Kestävyys. Kalenterissa näkyy kaikki."
 msgstr ""
 "Ovdasiiddus válljet Sálla dahje Gierdavašvuohta. Kaleandaris oidno "
 "buot."
 
-#: lib/ui/onboarding.dart:90
+#: lib/ui/onboarding.dart:104
 msgid "Salitreenit, treeniohjelma ja voiman kehitys."
 msgstr "Sálehárjehallamat, hárjehallanprográmma ja fámu ovdáneapmi."
 
-#: lib/ui/onboarding.dart:96
+#: lib/ui/onboarding.dart:110
 msgid "Voit vaihtaa tätä myöhemmin asetuksista."
 msgstr "Sáhtát rievdadit dán maŋŋelis heivehusain."
 
-#: lib/ui/onboarding.dart:103
+#: lib/ui/onboarding.dart:114
+msgid "Seurataanko kehonpainoa?"
+msgstr "Čuvvotgo rumašdeattu?"
+
+#: lib/ui/onboarding.dart:119
+msgid "Ei nyt"
+msgstr "Ii dál"
+
+#: lib/ui/onboarding.dart:128
+msgid ""
+"Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai "
+"harvemmin. Näet painon kehityksen ja painoindeksin kohdassa "
+"Edistyminen ja tilastot."
+msgstr ""
+"Válljejuvvon. Vihkke goas háliidat: beaivválaččat, vahkkosaččat dahje "
+"hárvvibut. Oainnát deattu ovdáneami ja deaddoindeavssa oasis "
+"Ovdáneapmi ja statistihkka."
+
+#: lib/ui/onboarding.dart:162
+msgid "Paino nyt"
+msgstr "Deaddu dál"
+
+#: lib/ui/onboarding.dart:174
 msgid "Aloitetaan"
 msgstr "Álggahit"
 
@@ -3961,9 +4061,8 @@ msgid ""
 "Ei vielä juoksuja. Lisää juoksu tai hölkkä matkan ja ajan kanssa, "
 "niin näet täällä kilometrit, vauhdin kehityksen ja ennätykset."
 msgstr ""
-"Ii vel viehkamat. Lasit viehkama gaskkain ja "
-"áiggiin, de oainnát dáppe kilomehteriid, leavttu ovdáneami ja "
-"rekordaid."
+"Ii vel viehkamat. Lasit viehkama gaskkain ja áiggiin, de oainnát "
+"dáppe kilomehteriid, leavttu ovdáneami ja rekordaid."
 
 #: lib/ui/running_screen.dart:75
 msgid "juoksua yhteensä"
@@ -4137,10 +4236,6 @@ msgstr "Deaddu juohke gieđas"
 msgid "Paino per kuula (2 kuulaa)"
 msgstr "Deaddu juohke kettlebell (2 kettlebell)"
 
-#: lib/ui/set_logger.dart:372 lib/ui/set_logger.dart:594
-msgid "Paino"
-msgstr "Deaddu"
-
 #: lib/ui/set_logger.dart:373 lib/ui/set_logger.dart:595
 msgid "Lisäpaino (0 = oma paino)"
 msgstr "Lassedeaddu (0 = iežat deaddu)"
@@ -4219,98 +4314,131 @@ msgstr "Olles hárjehallan fiilan (rahpasa notáhtaprográmmain)"
 #. {1} = a.month
 #. {2} = e.day
 #. {3} = e.month
-#: lib/ui/stats_screen.dart:44
+#: lib/ui/stats_screen.dart:58
 msgid "viikko {0}.{1}.–{2}.{3}."
 msgstr "vahkku {0}.{1}.–{2}.{3}."
 
-#: lib/ui/stats_screen.dart:105
+#: lib/ui/stats_screen.dart:125
 msgid "Kilometrit, vauhti, ennätykset ja lenkkityypit"
 msgstr "Kilomehterat, leaktu, rekordat ja viehkanšlájat"
 
-#: lib/ui/stats_screen.dart:139
+#: lib/ui/stats_screen.dart:158
 msgid "Viikko"
 msgstr "Vahkku"
 
-#: lib/ui/stats_screen.dart:140
+#: lib/ui/stats_screen.dart:159
 msgid "Kuukausi"
 msgstr "Mánnu"
 
-#: lib/ui/stats_screen.dart:157
+#: lib/ui/stats_screen.dart:160
+msgid "3 kk"
+msgstr "3 mán."
+
+#: lib/ui/stats_screen.dart:161
+msgid "6 kk"
+msgstr "6 mán."
+
+#: lib/ui/stats_screen.dart:162
+msgid "Vuosi"
+msgstr "Jahki"
+
+#: lib/ui/stats_screen.dart:189
 msgid "Vertailu edelliseen kuukauteen"
 msgstr "Buohtastahttin ovddit mánnui"
 
-#: lib/ui/stats_screen.dart:157
+#: lib/ui/stats_screen.dart:190
+msgid "Vertailu edelliseen 3 kuukauteen"
+msgstr "Buohtastahttin ovddit 3 mánnui"
+
+#: lib/ui/stats_screen.dart:191
+msgid "Vertailu edelliseen 6 kuukauteen"
+msgstr "Buohtastahttin ovddit 6 mánnui"
+
+#: lib/ui/stats_screen.dart:192
+msgid "Vertailu edelliseen 12 kuukauteen"
+msgstr "Buohtastahttin ovddit 12 mánnui"
+
+#: lib/ui/stats_screen.dart:193
 msgid "Vertailu edelliseen viikkoon"
 msgstr "Buohtastahttin ovddit vahkkui"
 
-#: lib/ui/stats_screen.dart:162
+#: lib/ui/stats_screen.dart:199
 msgid "treeniä"
 msgstr "hárjehallama"
 
-#: lib/ui/stats_screen.dart:162
+#: lib/ui/stats_screen.dart:199
 msgid "salitreeniä"
 msgstr "sálehárjehallama"
 
-#: lib/ui/stats_screen.dart:166 lib/ui/stats_screen.dart:199
+#: lib/ui/stats_screen.dart:203 lib/ui/stats_screen.dart:236
 msgid "aikaa"
 msgstr "áigi"
 
-#: lib/ui/stats_screen.dart:170
+#: lib/ui/stats_screen.dart:207
 msgid "fiilis keskimäärin"
 msgstr "dovdu gaskamearálaččat"
 
-#: lib/ui/stats_screen.dart:176 lib/ui/workout.dart:471
+#: lib/ui/stats_screen.dart:213 lib/ui/workout.dart:471
 msgid "sarjaa"
 msgstr "ráiddu"
 
-#: lib/ui/stats_screen.dart:180 lib/ui/workout.dart:473
+#: lib/ui/stats_screen.dart:217 lib/ui/workout.dart:473
 msgid "volyymi"
 msgstr "voluma"
 
-#: lib/ui/stats_screen.dart:186
+#: lib/ui/stats_screen.dart:223
 msgid "ennätystä"
 msgstr "rekorda"
 
-#: lib/ui/stats_screen.dart:195
+#: lib/ui/stats_screen.dart:232
 msgid "kertaa"
 msgstr "geardde"
 
-#: lib/ui/stats_screen.dart:206 lib/ui/workout.dart:467
+#: lib/ui/stats_screen.dart:243 lib/ui/workout.dart:467
 msgid "matka"
 msgstr "gaska"
 
 #. {0} = r.kcal
-#: lib/ui/stats_screen.dart:219
+#: lib/ui/stats_screen.dart:256
 msgid "Kalorit kellosta {0} kcal"
 msgstr "Kaloriijat diimmus {0} kcal"
 
 #. {0} = p.kcal
-#: lib/ui/stats_screen.dart:219
+#: lib/ui/stats_screen.dart:256
 msgid "(edellinen {0})"
 msgstr "(ovddit {0})"
 
-#: lib/ui/stats_screen.dart:229
+#: lib/ui/stats_screen.dart:266
 msgid "Lajeittain"
 msgstr "Valáštallamiid mielde"
 
 #. {0} = e.value.count
-#: lib/ui/stats_screen.dart:238 lib/ui/stats_screen.dart:345 lib/ui/stats_screen.dart:454
+#: lib/ui/stats_screen.dart:275 lib/ui/stats_screen.dart:389 lib/ui/stats_screen.dart:498
 msgid "{0} krt"
 msgstr "{0} g."
 
-#: lib/ui/stats_screen.dart:248
+#. {0} = _months
+#: lib/ui/stats_screen.dart:287
+msgid "Treenit kuukausittain ({0} kk)"
+msgstr "Hárjehallamat mánuid mielde ({0} mán.)"
+
+#: lib/ui/stats_screen.dart:289
+msgid "Treenit viikoittain (13 viikkoa)"
+msgstr "Hárjehallamat vahkuid mielde (13 vahku)"
+
+#: lib/ui/stats_screen.dart:290
 msgid "Treenit viikoittain (12 viikkoa)"
 msgstr "Hárjehallamat vahkuid mielde (12 vahku)"
 
-#: lib/ui/stats_screen.dart:251
+#: lib/ui/stats_screen.dart:295
 msgid "Huomiot ja ehdotukset"
 msgstr "Fuomášumit ja evttohusat"
 
-#: lib/ui/stats_screen.dart:264
+#: lib/ui/stats_screen.dart:308
 msgid "Fiilis viikoittain (12 viikkoa)"
 msgstr "Dovdu vahkuid mielde (12 vahku)"
 
-#: lib/ui/stats_screen.dart:266
+#: lib/ui/stats_screen.dart:310
 msgid ""
 "Merkitse treenin lopuksi \"Miltä tuntui?\", niin näet täällä, miten "
 "treenit tuntuvat."
@@ -4319,29 +4447,57 @@ msgstr ""
 "hárjehallamat dovdojit."
 
 #. {0} = fmtDec(fs.overall!, 1)
-#: lib/ui/stats_screen.dart:274
+#: lib/ui/stats_screen.dart:318
 msgid "Asteikko 1 = 😫 raskas … 5 = 🤩 loistava. Keskiarvo {0}."
 msgstr "Skála 1 = 😫 lossat … 5 = 🤩 hui buorre. Gaskamearri {0}."
 
-#: lib/ui/stats_screen.dart:275
+#: lib/ui/stats_screen.dart:319
 msgid "Viikonpäivittäin"
 msgstr "Vahkkobeaivvi mielde"
 
-#: lib/ui/stats_screen.dart:282
+#: lib/ui/stats_screen.dart:326
 msgid "Treeneittäin"
 msgstr "Hárjehallama mielde"
 
-#: lib/ui/stats_screen.dart:286
+#: lib/ui/stats_screen.dart:330
 msgid "Raskaimmilta tuntuvat liikkeet"
 msgstr "Hárjehusat mat dovdojit eanemusat lossadin"
 
-#: lib/ui/stats_screen.dart:291
+#: lib/ui/stats_screen.dart:335
 msgid "Voimakehitys (arvioitu maksimi, 6 kk)"
 msgstr "Fápmoovdáneapmi (árvvoštallon eanemus deaddu, 6 mánu)"
 
-#: lib/ui/stats_screen.dart:309
+#: lib/ui/stats_screen.dart:353
 msgid "kevyt jakso"
 msgstr "geahpas áigodat"
+
+#: lib/ui/stats_screen.dart:646
+msgid ""
+"Ei vielä punnituksia. Lisää paino etusivulta tai ☰ → Asetukset → "
+"Paino ja pituus."
+msgstr ""
+"Ii vel deaddovihkkemat. Lasit deattu ovdasiiddus dahje ☰ → Ásahusat → "
+"Deaddu ja guhkkodat."
+
+#: lib/ui/stats_screen.dart:690
+msgid "muutos jaksolla"
+msgstr "rievdan áigodagas"
+
+#: lib/ui/stats_screen.dart:708
+msgid "Pituus puuttuu: lisää se asetuksista, niin näet painoindeksin."
+msgstr "Guhkkodat váilu: lasit dan ásahusain, de oainnát deaddoindeavssa."
+
+#. {0} = fmtDec(18.5 * h * h / 10000, 1)
+#. {1} = fmtDec(25 * h * h / 10000, 1)
+#: lib/ui/stats_screen.dart:709
+msgid "Vihreä alue: painoindeksi 18,5–25 ({0}–{1} kg)."
+msgstr "Ruoná guovlu: deaddoindeaksa 18,5–25 ({0}–{1} kg)."
+
+#: lib/ui/stats_screen.dart:718
+msgid "Punnitusten korjaus ja pituus: ☰ → Asetukset → Paino ja pituus."
+msgstr ""
+"Deaddovihkkemiid divvun ja guhkkodat: ☰ → Ásahusat → Deaddu ja "
+"guhkkodat."
 
 #: lib/ui/sync_screen.dart:16
 msgid "juuri nyt"

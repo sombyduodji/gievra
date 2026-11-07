@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../body.dart';
 import '../exercises.dart';
 import '../insights.dart';
 import '../models.dart';
@@ -21,25 +22,38 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  bool _month = false;
+  String _span = 'week'; // week, month, quarter (3 kk), half (6 kk), year (12 kk)
   int _offset = 0; // 0 = tämä jakso, 1 = edellinen …
   late String _kind = widget.kind ?? (settings.trainMode == 'cardio' ? 'cardio' : 'all');
 
+  /// Kuukausien määrä jaksossa (6 kk / vuosi); viikolla ja kuukaudella 0 / 1.
+  int get _months => switch (_span) {
+    'quarter' => 3,
+    'half' => 6,
+    'year' => 12,
+    'month' => 1,
+    _ => 0,
+  };
+
+  /// Jakso [back] jakson päähän: viikko, kalenterikuukausi tai tämän kuun kanssa päättyvät 6 / 12 kuukautta.
   (DateTime, DateTime) _period(int back) {
     final today = dateOnly(DateTime.now());
-    if (_month) {
-      final m = DateTime(today.year, today.month - back);
-      return (m, nextMonth(m));
+    if (_months == 0) {
+      final w = addDays(weekStart(today), -7 * back);
+      return (w, addDays(w, 7));
     }
-    final w = addDays(weekStart(today), -7 * back);
-    return (w, addDays(w, 7));
+    final end = DateTime(today.year, today.month + 1 - _months * back);
+    return (DateTime(end.year, end.month - _months), end);
+  }
+
+  String _monthName(DateTime d) {
+    final m = uiMonth(d.month);
+    return '${isEnglish ? m : m.toLowerCase()} ${d.year}';
   }
 
   String _label(DateTime a, DateTime b) {
-    if (_month) {
-      final m = uiMonth(a.month);
-      return '${isEnglish ? m : m.toLowerCase()} ${a.year}';
-    }
+    if (_months == 1) return _monthName(a);
+    if (_months > 1) return '${_monthName(a)} – ${_monthName(DateTime(b.year, b.month - 1))}';
     final e = addDays(b, -1);
     return t('viikko {0}.{1}.–{2}.{3}.', [a.day, a.month, e.day, e.month]);
   }
@@ -52,12 +66,18 @@ class _StatsScreenState extends State<StatsScreen> {
     final (a, b) = _period(_offset);
     final (pa, pb) = _period(_offset + 1);
     // Suodatin näkyy, kun käytössä on sekä sali että kestävyys (asetus tai historia).
-    final hasGym = ws.any((w) => w.activity == null && w.exercises.isNotEmpty);
-    final hasCardio = ws.any((w) => w.activity != null);
+    final hasGym = ws.any((w) => workoutKind(w) == 'gym');
+    final hasCardio = ws.any((w) => workoutKind(w) == 'cardio');
     final showKind = settings.trainMode == 'both' || (hasGym && hasCardio);
     final kind = showKind ? _kind : (hasCardio && !hasGym ? 'cardio' : 'gym');
     final r = recap(ws, a, b, kind: kind), p = recap(ws, pa, pb, kind: kind);
-    final weekly = weeklyCounts(ws, dateOnly(DateTime.now()));
+    // Pylväät päättyvät valitun jakson loppuun: viikot (viikko, kuukausi) tai kuukaudet (6 kk, vuosi).
+    final lastDay = addDays(b, -1);
+    // 3 kk: 13 viikkoa; 6 kk ja vuosi kuukausittain.
+    final monthly = _months > 3;
+    final bars = monthly
+        ? monthlyCounts(ws, lastDay, months: _months)
+        : weeklyCounts(ws, lastDay, weeks: _months == 3 ? 13 : 12);
     final today = dateOnly(DateTime.now());
     final fs = feelingStats(ws, today);
     final tips = feelingSuggestions(ws, today);
@@ -131,21 +151,33 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
           ],
           const SizedBox(height: 12),
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: [
+              for (final (v, l) in [
+                ('week', t('Viikko')),
+                ('month', t('Kuukausi')),
+                ('quarter', t('3 kk')),
+                ('half', t('6 kk')),
+                ('year', t('Vuosi')),
+              ])
+                ButtonSegment(
+                  value: v,
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+                ),
+            ],
+            selected: {_span},
+            onSelectionChanged: (v) => setState(() {
+              _span = v.first;
+              _offset = 0;
+            }),
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
-              SegmentedButton<bool>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(value: false, label: Text(t('Viikko'))),
-                  ButtonSegment(value: true, label: Text(t('Kuukausi'))),
-                ],
-                selected: {_month},
-                onSelectionChanged: (v) => setState(() {
-                  _month = v.first;
-                  _offset = 0;
-                }),
+              Expanded(
+                child: Text(_label(a, b), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               ),
-              const Spacer(),
               IconButton(onPressed: () => setState(() => _offset++), icon: const Icon(Icons.chevron_left)),
               IconButton(
                 onPressed: _offset == 0 ? null : () => setState(() => _offset--),
@@ -153,8 +185,13 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
             ],
           ),
-          Text(_label(a, b), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          Text(_month ? t('Vertailu edelliseen kuukauteen') : t('Vertailu edelliseen viikkoon'), style: sub),
+          Text(switch (_span) {
+            'month' => t('Vertailu edelliseen kuukauteen'),
+            'quarter' => t('Vertailu edelliseen 3 kuukauteen'),
+            'half' => t('Vertailu edelliseen 6 kuukauteen'),
+            'year' => t('Vertailu edelliseen 12 kuukauteen'),
+            _ => t('Vertailu edelliseen viikkoon'),
+          }, style: sub),
           const SizedBox(height: 10),
           if (kind != 'cardio') ...[
             Row(
@@ -245,8 +282,15 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
           ],
-          SectionLabel(t('Treenit viikoittain (12 viikkoa)')),
-          _StackBars(weeks: weekly, kind: kind),
+          SectionLabel(
+            monthly
+                ? t('Treenit kuukausittain ({0} kk)', [_months])
+                : _months == 3
+                ? t('Treenit viikoittain (13 viikkoa)')
+                : t('Treenit viikoittain (12 viikkoa)'),
+          ),
+          _StackBars(weeks: bars, kind: kind, monthly: monthly),
+          if (settings.bodyTracker) _BodySection(from: _months > 1 ? a : addDays(b, -84), to: b),
           if (tips.isNotEmpty) ...[
             SectionLabel(t('Huomiot ja ehdotukset')),
             for (final tip in tips)
@@ -500,7 +544,8 @@ class _Split extends StatelessWidget {
 class _StackBars extends StatelessWidget {
   final List<(DateTime, int, int)> weeks;
   final String kind;
-  const _StackBars({required this.weeks, required this.kind});
+  final bool monthly; // pylväs = kuukausi (6 kk / vuosi), muuten viikko
+  const _StackBars({required this.weeks, required this.kind, this.monthly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -548,7 +593,11 @@ class _StackBars extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(numDate(weeks[i].$1), style: label, maxLines: 1),
+                        Text(
+                          monthly ? _monthShort(weeks[i].$1.month) : numDate(weeks[i].$1),
+                          style: label,
+                          maxLines: 1,
+                        ),
                       ],
                     ),
                   ),
@@ -567,4 +616,166 @@ class _StackBars extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Kuukauden lyhenne pylvään alle: "mar" / "Nov" / "skáb".
+String _monthShort(int m) {
+  if (isEnglish) return uiMonth(m).substring(0, 3);
+  if (isSami) return uiMonth(m).substring(0, 4);
+  const fi = ['tam', 'hel', 'maa', 'huh', 'tou', 'kes', 'hei', 'elo', 'syy', 'lok', 'mar', 'jou'];
+  return fi[m - 1];
+}
+
+/// Kehonpaino jaksolta (vähintään 12 viikkoa): nykyinen paino, muutos, painoindeksi ja käyrä.
+/// Punnitusten korjaus: ☰ → Asetukset → Paino ja pituus.
+class _BodySection extends StatelessWidget {
+  final DateTime from, to;
+  const _BodySection({required this.from, required this.to});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final all = weightSeries(settings.body, store.workouts);
+    final h = settings.body.heightCm;
+    if (all.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionLabel(t('Kehonpaino')),
+          Text(t('Ei vielä punnituksia. Lisää paino etusivulta tai ☰ → Asetukset → Paino ja pituus.'), style: sub),
+        ],
+      );
+    }
+    final pts = all.where((e) => !e.$1.isBefore(from) && e.$1.isBefore(to)).toList();
+    final last = all.where((e) => e.$1.isBefore(to)).lastOrNull ?? all.last;
+    // Muutos jakson aikana: ensimmäisestä jakson punnituksesta (tai sitä edeltävästä) viimeiseen.
+    final before = all.where((e) => e.$1.isBefore(from)).lastOrNull;
+    final start = before ?? pts.firstOrNull;
+    final change = start == null || identical(start, last) ? null : last.$2 - start.$2;
+    Widget tile(String v, String l, {Color? color}) => Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+        child: Column(
+          children: [
+            Text(
+              v,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: color),
+            ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(l, style: sub, maxLines: 1),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionLabel(t('Kehonpaino')),
+        Row(
+          children: [
+            tile('${fmtNum(last.$2)} kg', shortDate(last.$1)),
+            const SizedBox(width: 6),
+            tile(
+              change == null
+                  ? '–'
+                  : '${change > 0
+                        ? '+'
+                        : change < 0
+                        ? '−'
+                        : ''}${fmtDec(change.abs(), 1)} kg',
+              t('muutos jaksolla'),
+            ),
+            const SizedBox(width: 6),
+            tile(h == null ? '–' : fmtNum(bmi(last.$2, h)), t('painoindeksi')),
+          ],
+        ),
+        if (pts.length >= 2) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 110,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _WeightPainter(pts, from, to, h, cs.onSurfaceVariant, Theme.of(context).textTheme.bodySmall!),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            h == null
+                ? t('Pituus puuttuu: lisää se asetuksista, niin näet painoindeksin.')
+                : t('Vihreä alue: painoindeksi 18,5–25 ({0}–{1} kg).', [
+                    fmtDec(18.5 * h * h / 10000, 1),
+                    fmtDec(25 * h * h / 10000, 1),
+                  ]),
+            style: sub,
+          ),
+        ],
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(t('Punnitusten korjaus ja pituus: ☰ → Asetukset → Paino ja pituus.'), style: sub),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeightPainter extends CustomPainter {
+  final List<(DateTime, double)> pts;
+  final DateTime from, to;
+  final int? height;
+  final Color muted;
+  final TextStyle text;
+  _WeightPainter(this.pts, this.from, this.to, this.height, this.muted, this.text);
+
+  @override
+  void paint(Canvas c, Size s) {
+    final ws = pts.map((e) => e.$2);
+    var lo = ws.reduce((a, b) => a < b ? a : b) - 1, hi = ws.reduce((a, b) => a > b ? a : b) + 1;
+    final span = to.difference(from).inHours.toDouble();
+    const left = 34.0; // akselin luvuille oma sarake, ettei teksti mene käyrän päälle
+    double x(DateTime d) => left + (s.width - left - 4) * (d.difference(from).inHours / span).clamp(0.0, 1.0);
+    double y(double kg) => s.height - 4 - (kg - lo) / (hi - lo) * (s.height - 8);
+    // Normaalin painoindeksin alue (18,5–25), jos se osuu näkyvälle välille.
+    if (height != null) {
+      final m2 = height! * height! / 10000;
+      final a = (18.5 * m2).clamp(lo, hi), b = (25 * m2).clamp(lo, hi);
+      if (b > a) {
+        c.drawRect(Rect.fromLTRB(left, y(b), s.width, y(a)), Paint()..color = Sami.green.withValues(alpha: .12));
+      }
+    }
+    final path = Path();
+    for (final (i, (d, kg)) in pts.indexed) {
+      i == 0 ? path.moveTo(x(d), y(kg)) : path.lineTo(x(d), y(kg));
+    }
+    c.drawPath(
+      path,
+      Paint()
+        ..color = Sami.blue
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeJoin = StrokeJoin.round,
+    );
+    for (final (d, kg) in pts) {
+      c.drawCircle(Offset(x(d), y(kg)), 3, Paint()..color = Sami.blue);
+    }
+    void label(String t, double yy) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: t,
+          style: text.copyWith(color: muted, fontSize: 10),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(c, Offset(0, (yy - tp.height / 2).clamp(0, s.height - tp.height)));
+    }
+
+    label(fmtNum(hi - 1), y(hi - 1));
+    label(fmtNum(lo + 1), y(lo + 1));
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeightPainter o) => o.pts != pts || o.height != height;
 }

@@ -91,4 +91,24 @@ void main() {
     expect(weeks.length, 12);
     expect((weeks.last.$2, weeks.last.$3), (1, 2));
   });
+
+  test('tuodut treenit: FitNotesin kardio muistiinpanoissa ja salitreenin arvioitu kesto', () {
+    final mon = DateTime(2026, 11, 2);
+    final ws = [
+      Workout(
+        date: mon,
+        title: 'Kyykky',
+        exercises: [
+          ExerciseEntry('Takakyykky', [SetEntry(100, 5), SetEntry(100, 5)]),
+        ],
+      ),
+      Workout(date: DateTime(2026, 11, 3), title: 'Kardio')..notes = '- Juoksumatto: matka 5, aika 30:00',
+    ];
+    expect(workoutKind(ws[1]), 'cardio');
+    final r = recap(ws, mon, DateTime(2026, 11, 9));
+    expect((r.gym, r.activities, r.cardioMinutes, r.gymMinutes), (1, 1, 30, 0)); // kestoa ei arvioida
+    final months = monthlyCounts(ws, DateTime(2026, 11, 30), months: 6);
+    expect(months.length, 6);
+    expect((months.last.$2, months.last.$3), (1, 1));
+  });
 }

@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'body.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'program.dart';
@@ -80,6 +81,13 @@ class Settings extends ChangeNotifier {
   double weightStep = 2.5;
   bool tips = true;
 
+  /// Kehonpainon seuranta (asetukset.md: body_tracker). Punnitukset ja pituus kehonpaino.md:ssä ([body]).
+  bool bodyTracker = false;
+  BodyLog body = BodyLog();
+
+  /// Päivä, jolta etusivun painokortti on ohitettu (laitekohtainen).
+  String? bodySkipped;
+
   /// Mitä treenataan: 'gym' sali, 'cardio' kestävyys (juoksu, pyöräily …), 'both' molemmat (etusivulla
   /// Sali / Kestävyys -valinta). Kestävyyslajit näkyvät, kun tila ei ole pelkkä sali.
   String trainMode = 'gym';
@@ -132,6 +140,7 @@ class Settings extends ChangeNotifier {
     final sp = _p = await SharedPreferences.getInstance();
     folder = sp.getString('folder');
     deloadDismissed = sp.getString('deloadDismissed');
+    bodySkipped = sp.getString('bodySkipped');
     homeView = sp.getString('homeView') == 'cardio' ? 'cardio' : 'gym';
     await setUiLang(sp.getString('lang') ?? 'fi');
     final cached = sp.getString('settingsMd');
@@ -145,6 +154,7 @@ class Settings extends ChangeNotifier {
   Future<bool> loadFromFolder() async {
     try {
       await _loadProgram();
+      await _loadBody();
       final text = await files.read(settingsFileName);
       if (text == null) return false;
       applyMarkdown(text);
@@ -165,6 +175,42 @@ class Settings extends ChangeNotifier {
     } catch (_) {
       program = null;
     }
+  }
+
+  Future<void> _loadBody() async {
+    try {
+      final text = await files.read(bodyFileName);
+      body = text == null ? BodyLog() : parseBody(text);
+    } catch (_) {
+      body = BodyLog();
+    }
+  }
+
+  /// Tallentaa punnitukset ja pituuden kehonpaino.md:hen.
+  Future<void> setBody(BodyLog b) async {
+    body = b;
+    notifyListeners();
+    try {
+      await files.write(bodyFileName, bodyToMarkdown(b));
+      onLocalChange?.call(bodyFileName);
+    } catch (_) {}
+  }
+
+  Future<void> setWeight(DateTime day, double? kg) async {
+    final b = body.copy();
+    kg == null ? b.weights.remove(dateOnly(day)) : b.weights[dateOnly(day)] = kg;
+    await setBody(b);
+  }
+
+  void setBodyTracker(bool v) {
+    bodyTracker = v;
+    _persist();
+  }
+
+  void skipBodyToday(String day) {
+    bodySkipped = day;
+    _p?.setString('bodySkipped', day);
+    notifyListeners();
   }
 
   TrainingStyle? style;
@@ -222,6 +268,7 @@ class Settings extends ChangeNotifier {
       ..writeln('theme: ${themeMode.name}')
       ..writeln('weightStep: ${fileNum(weightStep)}')
       ..writeln('tips: $tips')
+      ..writeln('body_tracker: $bodyTracker')
       ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
       ..writeln('mode: $trainMode')
       ..writeln('move_names: $moveNames')
@@ -315,6 +362,8 @@ class Settings extends ChangeNotifier {
             weightStep = parseNum(v) ?? weightStep;
           case 'tips':
             tips = v != 'false';
+          case 'body_tracker':
+            bodyTracker = v == 'true';
           case 'sports': // vanha asetus: liikunta päällä -> molemmat (mode: voittaa, jos se on mukana)
             if (!lines.any((l) => l.trim().startsWith('mode:'))) trainMode = v == 'true' ? 'both' : 'gym';
           case 'mode':

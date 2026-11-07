@@ -62,4 +62,13 @@ void main() {
       Settings().applyMarkdown(text);
     }
   });
+
+  test('Negatiiviset arvot käsin muokatussa tiedostossa ohitetaan', () {
+    final w = parseWorkout(
+      '---\ndate: 2026-01-05\ntitle: X\nduration: -30 min\nkcal: -5\nhr_avg: -1\nhr_max: −2\n'
+      'distance: -3 km\nbodyweight: -80\n---\n## Takakyykky\n1. -20 kg × 5\n2. 20 kg × -5\n3. 100 kg × 5\n',
+    );
+    expect((w.minutes, w.kcal, w.hrAvg, w.hrMax, w.distanceKm, w.bodyweight), (null, null, null, null, null, null));
+    expect(w.exercises.single.sets.map((s) => (s.kg, s.reps)), [(100.0, 5)]);
+  });
 }
