@@ -359,14 +359,20 @@ class _SettingsSection extends StatelessWidget {
               style: sub,
             ),
           ),
-          SwitchListTile(
-            title: Text(t('Urheilu ja liikunta')),
-            subtitle: Text(
-              t('Juoksu, kävely, pyöräily, salibandy, squash ja muut lajit treenien rinnalle.'),
+          Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TrainModePicker(value: settings.trainMode, onChanged: settings.setTrainMode),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+            child: Text(
+              t(
+                'Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja muut lajit. Molemmat: '
+                'etusivulla valinta Sali / Kestävyys.',
+              ),
               style: sub,
             ),
-            value: settings.sports,
-            onChanged: settings.setSports,
           ),
           SwitchListTile(
             title: Text(t('Palautusajastin')),

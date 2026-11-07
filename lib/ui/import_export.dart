@@ -231,7 +231,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
         children: [
           const SamiBand(height: 4, pattern: false),
-          if (_busy) const LinearProgressIndicator(),
+          // Aina paikallaan (tyhjänä, kun ei käynnissä): listaan lisätty rivi siirtäisi painikkeita, jolloin
+          // napautuksen korostus välähtäisi väärässä painikkeessa.
+          SizedBox(height: 4, child: _busy ? const LinearProgressIndicator() : null),
           SectionLabel(t('Tuo toisesta sovelluksesta')),
           tile(
             Icons.fitness_center,

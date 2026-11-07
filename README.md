@@ -91,7 +91,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - viikko- ja kuukausikoosteet, voimakehitys, fiilis viikonpäivittäin ja treeneittäin
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
-- valinnaisesti urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
+- **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa etusivulla
+  on Sali / Kestävyys -valinta; kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke
+- urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
   (kesto, kalorit, keski- ja maksimisyke heti *Treeni valmis!* -näkymässä; kirjoitetaan toistaiseksi käsin, suoraa
   yhteyttä kelloon tai Health Connectiin ei vielä ole)
 - juoksulle oma kehitysnäkymä, erillään salista: lenkin tyyppi (kevyt, palauttava, pitkä, vauhtikestävyys,

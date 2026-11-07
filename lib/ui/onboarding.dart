@@ -14,9 +14,13 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _c = TextEditingController();
+  String _mode = settings.trainMode;
 
   void _done() {
     if (_c.text.trim().isEmpty) return;
+    settings.trainMode = _mode;
+    // Pelkkä kestävyys: salin ohjelmakysely ohitetaan (sen voi tehdä myöhemmin valikosta).
+    if (_mode == 'cardio') settings.introDone = true;
     settings.setName(_c.text);
   }
 
@@ -76,6 +80,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 padding: const EdgeInsets.only(top: 12),
                 child: Text('${seGreeting()}, ${_c.text.trim()}!', style: TextStyle(color: cs.onSurfaceVariant)),
               ),
+            SectionLabel(t('Mitä treenaat?')),
+            TrainModePicker(value: _mode, onChanged: (v) => setState(() => _mode = v)),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(switch (_mode) {
+                'cardio' => t('Juoksu, pyöräily, hiihto ja muut lajit: aika, matka, vauhti ja kehitys.'),
+                'both' => t('Etusivulla valitset Sali tai Kestävyys. Kalenterissa näkyy kaikki.'),
+                _ => t('Salitreenit, treeniohjelma ja voiman kehitys.'),
+              }, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                t('Voit vaihtaa tätä myöhemmin asetuksista.'),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
+            ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _c.text.trim().isEmpty ? null : _done,

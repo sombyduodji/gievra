@@ -387,3 +387,29 @@ class ExName extends StatelessWidget {
     );
   }
 }
+
+/// Treenitila: Sali / Kestävyys / Molemmat (asetukset ja aloituskysely).
+class TrainModePicker extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  const TrainModePicker({super.key, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => SegmentedButton<String>(
+    showSelectedIcon: false,
+    segments: [
+      for (final (v, icon, l) in [
+        ('gym', Icons.fitness_center, t('Sali')),
+        ('cardio', Icons.directions_run, t('Kestävyys')),
+        ('both', Icons.sync_alt, t('Molemmat')),
+      ])
+        ButtonSegment(
+          value: v,
+          icon: Icon(icon, size: 18),
+          label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+        ),
+    ],
+    selected: {value},
+    onSelectionChanged: (s) => onChanged(s.first),
+  );
+}

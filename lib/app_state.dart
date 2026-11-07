@@ -79,7 +79,19 @@ class Settings extends ChangeNotifier {
   ThemeMode themeMode = ThemeMode.system; // oletus: järjestelmän asetus
   double weightStep = 2.5;
   bool tips = true;
-  bool sports = false; // urheilulajit ja liikunta näkyvissä
+
+  /// Mitä treenataan: 'gym' sali, 'cardio' kestävyys (juoksu, pyöräily …), 'both' molemmat (etusivulla
+  /// Sali / Kestävyys -valinta). Kestävyyslajit näkyvät, kun tila ei ole pelkkä sali.
+  String trainMode = 'gym';
+  bool get sports => trainMode != 'gym';
+  set sports(bool v) => trainMode = v ? (trainMode == 'cardio' ? 'cardio' : 'both') : 'gym';
+
+  /// Etusivun näkymä molemmat-tilassa ('gym' tai 'cardio'); vain tällä laitteella.
+  String homeView = 'gym';
+
+  /// Etusivun näkymä: molemmat-tilassa valinnan mukaan, muuten tila.
+  String get homeShows => trainMode == 'both' ? homeView : trainMode;
+
   /// Liikkeiden nimet näytössä: 'fi' suomeksi, 'en' englanniksi, 'both' molemmat. Tiedostoihin aina suomeksi.
   String moveNames = 'fi';
   bool watch = false; // sykemittarin / älykellon tiedot näkyvissä
@@ -120,6 +132,7 @@ class Settings extends ChangeNotifier {
     final sp = _p = await SharedPreferences.getInstance();
     folder = sp.getString('folder');
     deloadDismissed = sp.getString('deloadDismissed');
+    homeView = sp.getString('homeView') == 'cardio' ? 'cardio' : 'gym';
     await setUiLang(sp.getString('lang') ?? 'fi');
     final cached = sp.getString('settingsMd');
     if (cached != null) applyMarkdown(cached);
@@ -209,7 +222,8 @@ class Settings extends ChangeNotifier {
       ..writeln('theme: ${themeMode.name}')
       ..writeln('weightStep: ${fmtNum(weightStep)}')
       ..writeln('tips: $tips')
-      ..writeln('sports: $sports')
+      ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
+      ..writeln('mode: $trainMode')
       ..writeln('move_names: $moveNames')
       ..writeln('watch: $watch')
       ..writeln('rest_timer: $restTimer')
@@ -301,8 +315,10 @@ class Settings extends ChangeNotifier {
             weightStep = parseNum(v) ?? weightStep;
           case 'tips':
             tips = v != 'false';
-          case 'sports':
-            sports = v == 'true';
+          case 'sports': // vanha asetus: liikunta päällä -> molemmat (mode: voittaa, jos se on mukana)
+            if (!lines.any((l) => l.trim().startsWith('mode:'))) trainMode = v == 'true' ? 'both' : 'gym';
+          case 'mode':
+            trainMode = const {'gym', 'cardio', 'both'}.contains(v) ? v : 'gym';
           case 'english_names': // vanha asetus (0.1.2-kehitysversio)
             if (v == 'true') moveNames = 'both';
           case 'move_names':
@@ -516,6 +532,17 @@ class Settings extends ChangeNotifier {
   void setSports(bool v) {
     sports = v;
     _persist();
+  }
+
+  void setTrainMode(String v) {
+    trainMode = v;
+    _persist();
+  }
+
+  void setHomeView(String v) {
+    homeView = v;
+    _p?.setString('homeView', v);
+    notifyListeners();
   }
 
   void setTips(bool v) {
