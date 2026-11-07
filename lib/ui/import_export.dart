@@ -144,73 +144,103 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
 
   Future<void> _preview(ImportResult r) async {
     if (!mounted) return;
-    if (r.workouts.isEmpty) {
+    if (r.workouts.isEmpty && r.bodyMd == null) {
       _snack(t('Tiedostosta ei löytynyt treenejä.'));
       return;
     }
     final cs = Theme.of(context).colorScheme;
     final newCount = r.workouts.length - r.existing;
+    // Punnitukset: uusia ovat päivät, joilta Gievrassa ei vielä ole punnitusta (olemassa olevat säilyvät).
+    final weighIns = r.bodyMd == null ? const <DateTime, double>{} : parseBody(r.bodyMd!).weights;
+    final newWeighIns = weighIns.keys.where((d) => !settings.body.weights.containsKey(d)).length;
+    var enableTracker = !settings.bodyTracker && newWeighIns > 0;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        scrollable: true,
-        title: Text(t('Tuo: {0}', [r.source])),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _row(t('Treenipäiviä'), '${r.workouts.length}'),
-            if (r.sets > 0 || r.workouts.every((w) => w.activity == null)) _row(t('Sarjoja'), '${r.sets}'),
-            if (r.workouts.any((w) => w.activity != null))
-              _row(
-                t('Liikuntaa'),
-                '${r.workouts.where((w) => w.activity != null).length} · '
-                '${fmtNum((r.workouts.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0)) * 10).round() / 10)} km',
-              ),
-            _row(t('Aikaväli'), '${isoDate(r.first!)} – ${isoDate(r.last!)}'),
-            // Punnitukset (kaikki päivät) kehonpaino.md:hen; vanha laskuri vain, jos punnituksia ei ole erikseen.
-            if (r.bodyMd != null)
-              _row(t('Punnituksia'), '${parseBody(r.bodyMd!).weights.length}')
-            else if (r.bodyweights > 0)
-              _row(t('Kehonpainoja'), '${r.bodyweights}'),
-            if (r.bodyMd != null && !settings.bodyTracker)
-              Padding(
-                padding: const EdgeInsets.only(top: 2, bottom: 4),
-                child: Text(
-                  t('Punnitukset näkyvät tilastoissa, kun ☰ → Asetukset → Kehonpainon seuranta on päällä.'),
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          scrollable: true,
+          title: Text(t('Tuo: {0}', [r.source])),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _row(t('Treenipäiviä'), '${r.workouts.length}'),
+              if (r.sets > 0 || r.workouts.every((w) => w.activity == null)) _row(t('Sarjoja'), '${r.sets}'),
+              if (r.workouts.any((w) => w.activity != null))
+                _row(
+                  t('Liikuntaa'),
+                  '${r.workouts.where((w) => w.activity != null).length} · '
+                  '${fmtNum((r.workouts.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0)) * 10).round() / 10)} km',
                 ),
-              ),
-            if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
-            if (r.newExercises.isNotEmpty) _row(t('Uusia omia liikkeitä'), '${r.newExercises.length}'),
-            if (r.settingsMd != null) _row(t('Asetukset'), t('yhdistetään')),
-            if (r.programMd != null) _row(t('Ohjelma'), settings.program == null ? t('tuodaan') : t('nykyinen säilyy')),
-            const SizedBox(height: 10),
-            if (r.existing > 0)
-              Text(
-                t('{0} päivää on jo päiväkirjassa. Niitä ei muuteta.', [r.existing]),
-                style: TextStyle(color: cs.onSurfaceVariant),
-              ),
-            Text(t('Tuodaan {0} uutta treeniä.', [newCount]), style: const TextStyle(fontWeight: FontWeight.w700)),
-            if (r.newExercises.isNotEmpty) ...[
+              if (r.first != null) _row(t('Aikaväli'), '${isoDate(r.first!)} – ${isoDate(r.last!)}'),
+              // Punnitukset (kaikki päivät) kehonpaino.md:hen; vanha laskuri vain, jos punnituksia ei ole erikseen.
+              if (r.bodyMd != null)
+                _row(
+                  t('Punnituksia'),
+                  newWeighIns == weighIns.length
+                      ? '${weighIns.length}'
+                      : t('{0} (uusia {1})', [weighIns.length, newWeighIns]),
+                )
+              else if (r.bodyweights > 0)
+                _row(t('Kehonpainoja'), '${r.bodyweights}'),
+              if (!settings.bodyTracker && newWeighIns > 0)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: enableTracker,
+                  onChanged: (v) => setDialog(() => enableTracker = v ?? false),
+                  title: Text(t('Ota kehonpainon seuranta käyttöön')),
+                  subtitle: Text(t('Paino ja painoindeksi tilastoissa, tämän päivän paino etusivulla.')),
+                ),
+              if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
+              if (r.newExercises.isNotEmpty) _row(t('Uusia omia liikkeitä'), '${r.newExercises.length}'),
+              if (r.settingsMd != null) _row(t('Asetukset'), t('yhdistetään')),
+              if (r.programMd != null)
+                _row(t('Ohjelma'), settings.program == null ? t('tuodaan') : t('nykyinen säilyy')),
               const SizedBox(height: 10),
+              if (r.existing > 0)
+                Text(
+                  t('{0} päivää on jo päiväkirjassa. Niitä ei muuteta.', [r.existing]),
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
               Text(
-                t('Omat liikkeet: {0}', [
-                  '${r.newExercises.keys.take(12).join(', ')}${r.newExercises.length > 12 ? '…' : ''}',
-                ]),
-                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                newWeighIns > 0
+                    ? t('Tuodaan {0} uutta treeniä ja {1} punnitusta.', [newCount, newWeighIns])
+                    : t('Tuodaan {0} uutta treeniä.', [newCount]),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
+              if (r.newExercises.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  t('Omat liikkeet: {0}', [
+                    '${r.newExercises.keys.take(12).join(', ')}${r.newExercises.length > 12 ? '…' : ''}',
+                  ]),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+              ],
             ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+            // Tuotavaa on, jos on uusia treenejä tai uusia punnituksia (esim. FitNotes-tuonti uudelleen punnitusten takia).
+            FilledButton(
+              onPressed: newCount == 0 && newWeighIns == 0 ? null : () => Navigator.pop(ctx, true),
+              child: Text(t('Tuo')),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
-          FilledButton(onPressed: newCount == 0 ? null : () => Navigator.pop(ctx, true), child: Text(t('Tuo'))),
-        ],
       ),
     );
     if (ok != true) return;
     final n = await applyImport(r);
-    if (mounted) _snack(t('Tuotiin {0} treeniä. Giitu!', [n]));
+    if (enableTracker) settings.setBodyTracker(true);
+    if (mounted) {
+      _snack(
+        newWeighIns > 0
+            ? t('Tuotiin {0} treeniä ja {1} punnitusta. Giitu!', [n, newWeighIns])
+            : t('Tuotiin {0} treeniä. Giitu!', [n]),
+      );
+    }
   }
 
   Widget _row(String a, String b) => Padding(

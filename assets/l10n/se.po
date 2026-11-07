@@ -1728,7 +1728,7 @@ msgstr ""
 msgid "Tekijä: {0}"
 msgstr "Ráhkadeaddji: {0}"
 
-#: lib/ui/drawer.dart:89 lib/ui/import_export.dart:185
+#: lib/ui/drawer.dart:89 lib/ui/import_export.dart:197
 msgid "Asetukset"
 msgstr "Ásahusat"
 
@@ -1789,7 +1789,7 @@ msgstr "Synkroniseren"
 msgid "Pois päältä (valinnainen)"
 msgstr "Ii geavahusas (eaktodáhtolaš)"
 
-#: lib/ui/drawer.dart:172 lib/ui/import_export.dart:242
+#: lib/ui/drawer.dart:172 lib/ui/import_export.dart:272
 msgid "Tuonti ja varmuuskopio"
 msgstr "Viežžan ja sihkkarvurken"
 
@@ -2709,99 +2709,119 @@ msgid "Tiedostosta ei löytynyt treenejä."
 msgstr "Fiillas eai gávdnon hárjehallamat."
 
 #. {0} = r.source
-#: lib/ui/import_export.dart:157
+#: lib/ui/import_export.dart:162
 msgid "Tuo: {0}"
 msgstr "Viečča: {0}"
 
-#: lib/ui/import_export.dart:161
+#: lib/ui/import_export.dart:166
 msgid "Treenipäiviä"
 msgstr "Hárjehallanbeaivvit"
 
-#: lib/ui/import_export.dart:162
+#: lib/ui/import_export.dart:167
 msgid "Sarjoja"
 msgstr "Ráiddut"
 
-#: lib/ui/import_export.dart:165
+#: lib/ui/import_export.dart:170
 msgid "Liikuntaa"
 msgstr "Lihkadeapmi"
 
-#: lib/ui/import_export.dart:169
+#: lib/ui/import_export.dart:174
 msgid "Aikaväli"
 msgstr "Áigodat"
 
-#: lib/ui/import_export.dart:172
+#: lib/ui/import_export.dart:178
 msgid "Punnituksia"
 msgstr "Deaddovihkkemat"
 
-#: lib/ui/import_export.dart:174
+#. {0} = weighIns.length
+#. {1} = newWeighIns
+#: lib/ui/import_export.dart:181
+msgid "{0} (uusia {1})"
+msgstr "{0} (ođđa {1})"
+
+#: lib/ui/import_export.dart:184
 msgid "Kehonpainoja"
 msgstr "Rumašdeattut"
 
-#: lib/ui/import_export.dart:179
-msgid ""
-"Punnitukset näkyvät tilastoissa, kun ☰ → Asetukset → Kehonpainon "
-"seuranta on päällä."
-msgstr ""
-"Deaddovihkkemat oidnojit statistihkas, go ☰ → Ásahusat → Rumašdeattu "
-"čuovvun lea doaimmas."
+#: lib/ui/import_export.dart:192
+msgid "Ota kehonpainon seuranta käyttöön"
+msgstr "Váldde rumašdeattu čuovvuma atnui"
 
-#: lib/ui/import_export.dart:183
+#: lib/ui/import_export.dart:193
+msgid "Paino ja painoindeksi tilastoissa, tämän päivän paino etusivulla."
+msgstr ""
+"Deaddu ja deaddoindeaksa statistihkas, dálá beaivvi deaddu "
+"ovdasiiddus."
+
+#: lib/ui/import_export.dart:195
 msgid "Kardio/aika muistiinpanoihin"
 msgstr "Kardio/áigi notáhtaide"
 
-#: lib/ui/import_export.dart:184
+#: lib/ui/import_export.dart:196
 msgid "Uusia omia liikkeitä"
 msgstr "Ođđa iežat hárjehusat"
 
-#: lib/ui/import_export.dart:185
+#: lib/ui/import_export.dart:197
 msgid "yhdistetään"
 msgstr "ovttastuvvojit"
 
-#: lib/ui/import_export.dart:186
+#: lib/ui/import_export.dart:199
 msgid "Ohjelma"
 msgstr "Prográmma"
 
-#: lib/ui/import_export.dart:186
+#: lib/ui/import_export.dart:199
 msgid "tuodaan"
 msgstr "vižžojuvvo"
 
-#: lib/ui/import_export.dart:186
+#: lib/ui/import_export.dart:199
 msgid "nykyinen säilyy"
 msgstr "dálá bissu"
 
 #. {0} = r.existing
-#: lib/ui/import_export.dart:190
+#: lib/ui/import_export.dart:203
 msgid "{0} päivää on jo päiväkirjassa. Niitä ei muuteta."
 msgstr "{0} beaivvi leat juo beaivegirjjis. Dat eai rievdaduvvo."
 
 #. {0} = newCount
-#: lib/ui/import_export.dart:193
+#. {1} = newWeighIns
+#: lib/ui/import_export.dart:208
+msgid "Tuodaan {0} uutta treeniä ja {1} punnitusta."
+msgstr "Vižžojuvvojit {0} ođđa hárjehallama ja {1} deaddovihkkema."
+
+#. {0} = newCount
+#: lib/ui/import_export.dart:209
 msgid "Tuodaan {0} uutta treeniä."
 msgstr "Vižžojuvvojit {0} ođđa hárjehallama."
 
 #. {0} = '${r.newExercises.keys.take(12).join(', ')}${r.newExercises.length > 12 ? '…' : ''}'
-#: lib/ui/import_export.dart:197
+#: lib/ui/import_export.dart:215
 msgid "Omat liikkeet: {0}"
 msgstr "Iežat hárjehusat: {0}"
 
-#: lib/ui/import_export.dart:207
+#: lib/ui/import_export.dart:228
 msgid "Tuo"
 msgstr "Viečča"
 
 #. {0} = n
-#: lib/ui/import_export.dart:213
+#. {1} = newWeighIns
+#: lib/ui/import_export.dart:240
+msgid "Tuotiin {0} treeniä ja {1} punnitusta. Giitu!"
+msgstr "{0} hárjehallama ja {1} deaddovihkkema vižžojuvvon. Giitu!"
+
+#. {0} = n
+#: lib/ui/import_export.dart:241
 msgid "Tuotiin {0} treeniä. Giitu!"
 msgstr "{0} hárjehallama vižžojuvvon. Giitu!"
 
-#: lib/ui/import_export.dart:250
+#: lib/ui/import_export.dart:280
 msgid "Tuo toisesta sovelluksesta"
 msgstr "Viečča eará prográmmas"
 
-#: lib/ui/import_export.dart:253
+#: lib/ui/import_export.dart:283
 msgid "FitNotes"
 msgstr "FitNotes"
 
-#: lib/ui/import_export.dart:255
+#: lib/ui/import_export.dart:285
 msgid ""
 "Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio. "
 "Tunnetut liikkeet yhdistyvät Gievran liikkeisiin."
@@ -2809,11 +2829,11 @@ msgstr ""
 "Sihkkarvurken (.fitnotes). FitNotes: Settings → Backup. Dovdojuvvon "
 "hárjehusat laktojuvvojit Gievra hárjehusaide."
 
-#: lib/ui/import_export.dart:261
+#: lib/ui/import_export.dart:291
 msgid "Garmin Connect (.csv)"
 msgstr "Garmin Connect (.csv)"
 
-#: lib/ui/import_export.dart:263
+#: lib/ui/import_export.dart:293
 msgid ""
 "Garmin Connect → Suoritukset → Vie CSV. Juoksut, kävelyt, pyöräily "
 "ym.: matka, kesto, kalorit ja syke; nousu ja askeltiheys "
@@ -2823,33 +2843,33 @@ msgstr ""
 "sihkkelastin jna.: gaska, guhkkodat, kaloriijat ja pulsa; badjáneapmi "
 "ja lávkeleaktu notáhtaide."
 
-#: lib/ui/import_export.dart:268
+#: lib/ui/import_export.dart:298
 msgid "Gievran varmuuskopio"
 msgstr "Gievra sihkkarvurken"
 
-#: lib/ui/import_export.dart:271
+#: lib/ui/import_export.dart:301
 msgid "Vie varmuuskopio (.zip)"
 msgstr "Doalvvo sihkkarvurkema (.zip)"
 
-#: lib/ui/import_export.dart:272
+#: lib/ui/import_export.dart:302
 msgid "Kaikki .md-tiedostot ja asetukset.md yhdessä zip-tiedostossa."
 msgstr "Buot .md-fiillat ja asetukset.md ovtta zip-fiillas."
 
-#: lib/ui/import_export.dart:277
+#: lib/ui/import_export.dart:307
 msgid "Palauta varmuuskopiosta (.zip)"
 msgstr "Máhcat sihkkarvurkemis (.zip)"
 
-#: lib/ui/import_export.dart:278
+#: lib/ui/import_export.dart:308
 msgid "Tuo treenit zipistä. Olemassa olevia päiviä ei ylikirjoiteta."
 msgstr ""
 "Viečča hárjehallamiid zip-fiillas. Dálá beaivvit eai čállojuvvo "
 "badjel."
 
-#: lib/ui/import_export.dart:283
+#: lib/ui/import_export.dart:313
 msgid "Tuo .md-tiedostoja"
 msgstr "Viečča .md-fiillaid"
 
-#: lib/ui/import_export.dart:285
+#: lib/ui/import_export.dart:315
 msgid ""
 "Yksi tai useampi treenitiedosto, esim. PC:llä tehty tai muokattu "
 "treeni. Olemassa olevia päiviä ei ylikirjoiteta."
@@ -2857,15 +2877,15 @@ msgstr ""
 "Okta dahje eanet hárjehallanfiillat, om. PC:s dahkkon dahje "
 "rievdaduvvon hárjehallan. Dálá beaivvit eai čállojuvvo badjel."
 
-#: lib/ui/import_export.dart:290
+#: lib/ui/import_export.dart:320
 msgid "Vie toiseen sovellukseen"
 msgstr "Doalvvo eará prográmmii"
 
-#: lib/ui/import_export.dart:293
+#: lib/ui/import_export.dart:323
 msgid "FitNotes (.fitnotes) – kokeellinen"
 msgstr "FitNotes (.fitnotes) – geahččalus"
 
-#: lib/ui/import_export.dart:294
+#: lib/ui/import_export.dart:324
 msgid ""
 "Jos haluat palata FitNotesiin. Palautetaan FitNotesin "
 "varmuuskopiotoiminnolla."
@@ -2873,7 +2893,7 @@ msgstr ""
 "Jos háliidat máhccat FitNotesii. Máhcahuvvo FitNotes "
 "sihkkarvurkendoaimmain."
 
-#: lib/ui/import_export.dart:305
+#: lib/ui/import_export.dart:335
 msgid ""
 "Synkattu kansio (Nextcloud, Seafile…) on jo itsessään varmuuskopio: "
 "tiedostot ovat tavallisia .md-tiedostoja."
