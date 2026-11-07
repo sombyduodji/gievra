@@ -36,7 +36,7 @@ Markdown-tiedosto valitsemassasi kansiossa, joten ne aukeavat millä tahansa tek
 laitteelta toiselle Nextcloudin, Syncthingin tai muun synkronoinnin mukana. Sovelluksessa ei ole tiliä,
 mainoksia eikä analytiikkaa, eikä se lähetä tietojasi minnekään.
 
-Gievra on tehty saamelaisella otteella: värit tulevat saamen lipusta, koristenauha gáktin reunuksista ja
+Gievrassa on saamelaishenkinen väriteema: värit tulevat saamen lipusta, koristenauha gáktin reunuksista ja
 tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 
 ## Kokeile selaimessa
@@ -112,7 +112,7 @@ käännöskorjaukset:
 
 - sovelluksessa: ☰ → *Ilmoita ongelmasta* (liitteeksi treenitiedostot ja kuvakaappaukset) tai *Lähetä palautetta*
 - sähköposti: [treeni@somby.fi](mailto:treeni@somby.fi)
-- GitHubissa: [issues](../../issues)
+- GitHubissa: [virheilmoitukset ja ehdotukset](../../issues)
 
 ## Avoin lähdekoodi
 
