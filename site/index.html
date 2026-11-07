@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gievra – Treenipäiväkirja</title>
+<meta name="description" content="Gievra – Treenipäiväkirja: maksuton ja avoin treenipäiväkirja salille ja kuntoiluun. Sinun treenisi, sinun tiedostosi. Kokeile selaimessa ja tee oma treeniohjelma.">
+<link rel="icon" href="logo.png">
+<style>
+:root{--bg:#f6f4ef;--surface:#fff;--text:#17191d;--muted:#5d636d;--line:#e4e1da;
+  --red:#d52b1e;--green:#007229;--yellow:#ffce00;--blue:#0035ad;--dark:#262a30}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--surface:#1c1f24;--text:#eceae5;--muted:#a3a8b0;--line:#2c3037}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+.band{height:8px;background:linear-gradient(90deg,var(--red) 0 25%,var(--green) 25% 50%,var(--yellow) 50% 75%,var(--blue) 75%)}
+header{padding:40px 0 24px;text-align:center}
+header img{width:96px;height:96px;border-radius:22px}
+h1{font-size:clamp(28px,5vw,44px);margin:14px 0 4px;letter-spacing:-.5px}
+.slogan{font-size:20px;font-weight:600;margin:0}
+.sub{color:var(--muted);margin:6px 0 0}
+.bures{color:#b07d00;font-weight:600}
+@media (prefers-color-scheme:dark){.bures{color:var(--yellow)}}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:26px 0 8px}
+.btn{display:inline-block;padding:14px 22px;border-radius:14px;text-decoration:none;font-weight:700}
+.btn.primary{background:var(--red);color:#fff}
+.btn.secondary{border:2px solid var(--red);color:var(--red)}
+@media (prefers-color-scheme:dark){.btn.secondary{color:#ff6b5f;border-color:#ff6b5f}}
+.shots{display:flex;gap:14px;overflow-x:auto;padding:18px 4px 8px;scroll-snap-type:x mandatory;justify-content:center}
+.shots img{width:210px;flex:none;border-radius:22px;border:6px solid var(--dark);scroll-snap-align:center;background:#fff}
+@media (max-width:900px){.shots{justify-content:flex-start}}
+section{padding:26px 0}
+h2{font-size:26px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h3{margin:0 0 6px;font-size:18px}
+.card ul{margin:0;padding-left:18px}
+.card li{margin:3px 0}
+.note{border-left:5px solid var(--yellow);background:var(--surface);border-radius:12px;padding:14px 16px}
+table{border-collapse:collapse;width:100%;background:var(--surface);border-radius:14px;overflow:hidden}
+td,th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{width:34%}
+code{background:var(--line);padding:1px 6px;border-radius:6px}
+footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
+.zigzag{height:10px;margin:8px 0;background:
+  linear-gradient(135deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px,
+  linear-gradient(225deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px}
+</style>
+</head>
+<body>
+<div class="band"></div>
+<div class="wrap">
+<header>
+  <img src="logo.png" alt="Gievra-logo, kahvakuula">
+  <h1>Gievra – Treenipäiväkirja</h1>
+  <p class="slogan">Sinun treenisi, sinun tiedostosi.</p>
+  <p class="sub">Maksuton ja avoin treenipäiväkirja salille ja kuntoiluun · ei tiliä · ei mainoksia · toimii ilman verkkoa</p>
+  <p class="sub"><span class="bures">Bures!</span> <i>Gievra</i> on pohjoissaamea ja tarkoittaa <i>vahvaa</i>.</p>
+  <div class="cta">
+    <a class="btn primary" href="app/">Kokeile selaimessa</a>
+    <a class="btn secondary" href="https://github.com/sombyduodji/gievra/releases/latest">Lataa Androidille</a>
+    <a class="btn secondary" href="https://github.com/sombyduodji/gievra">Lähdekoodi</a>
+  </div>
+</header>
+
+<div class="shots">
+  <img src="kuvat/koti.png" alt="Etusivu: tervehdys saameksi, kalenteri ja viikon treenit">
+  <img src="kuvat/sarja.png" alt="Sarjan kirjaus: painoehdotus ja lämmittelysarjat">
+  <img src="kuvat/ohjelma.png" alt="Treeniohjelma: tarkistus ja viikon kuorma">
+  <img src="kuvat/tilastot.png" alt="Edistyminen ja tilastot: fiilis viikoittain">
+</div>
+
+<section>
+  <h2>Kokeile ja tee oma treeniohjelma</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>🧪 Demo selaimessa</h3>
+      <p>Sovellus toimii suoraan selaimessa neljän viikon esimerkkitreeneillä: etusivu, kalenteri, treenin
+      kirjaus ja tilastot. Mitään ei tallenneta, joten voit kokeilla vapaasti.</p>
+    </div>
+    <div class="card">
+      <h3>📋 Ohjelmatyökalu</h3>
+      <p>Tee ohjelma vastaamalla muutamaan kysymykseen: ☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma →
+      <b>Tallenna pohja</b>. Saat <code>.gmd</code>-ohjelmapohjan, jonka voit tuoda puhelimen sovellukseen tai
+      lähettää kaverille.</p>
+    </div>
+    <div class="card">
+      <h3>🔒 Yksityinen</h3>
+      <p>Verkkoversio ei ota yhteyttä Googleen tai muihin palveluihin: sovellus, fontit ja emojit tulevat
+      tältä sivulta. Puhelimessa treenit ovat tavallisina tiedostoina omassa kansiossasi.</p>
+    </div>
+  </div>
+  <p class="cta"><a class="btn primary" href="app/">Avaa demo ja ohjelmatyökalu</a></p>
+</section>
+
+<section>
+  <h2>Mitä se osaa</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Treenin kirjaus yhdellä kädellä</h3>
+      <ul>
+        <li>isot +/– -säätimet, edellinen kerta ja paras tulos, ennätykset 🏆</li>
+        <li>sarja tallentuu yhdellä napautuksella: <i>jäikö varaa?</i></li>
+        <li>lämmittelysarjat valmiiksi täytettyinä työpainon mukaan</li>
+        <li>painoehdotus edellisen kerran perusteella</li>
+        <li><i>Miltä tuntui?</i> 😫 😕 😐 🙂 🤩 – raskaan treenin jälkeen liikekohtainen palaute</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Valmiit treeniohjelmat</h3>
+      <ul>
+        <li>voimanosto, lihaskasvu, rasvanpoltto, yleiskunto tai fiiliksellä</li>
+        <li>kahvakuulaohjelmat: voima, lihaskasvu, kunto, perusta yhdellä kuulalla</li>
+        <li>kehonpainolla ilman salia</li>
+        <li>voimanoston 10 viikon sykli ja kevennysviikot</li>
+        <li>lähtökohdaksi voi ottaa oman treenihistorian FitNotesista</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Ohjelmapohjat</h3>
+      <ul>
+        <li>tallenna ohjelma <code>.gmd</code>-tiedostoksi ja jaa se</li>
+        <li>tuo valmentajan tai kaverin pohja, Androidilla suoraan <i>Avaa sovelluksella</i></li>
+        <li>vaihda ohjelmaa milloin vain, treenihistoria säilyy</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Liikkeet ja ohjeet</h3>
+      <ul>
+        <li>147 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula, kehonpaino</li>
+        <li><i>Näin teet</i>: animaatio ja tekniikkavinkit jokaiselle liikkeelle</li>
+        <li>lankku sekunteina, kävelyt askelina, kannot edestakaisina</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Seuranta</h3>
+      <ul>
+        <li>viikko- ja kuukausikoosteet, voimakehitys, fiilis</li>
+        <li>vammatila, sairas- ja lomatauot, palautuminen</li>
+        <li>valinnaisesti urheilulajit ja älykellon tiedot</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Tiedostot ovat sinun</h3>
+      <ul>
+        <li>treenit tavallisina Markdown-tiedostoina (<code>.md</code>)</li>
+        <li>synkronoi Nextcloudilla, Syncthingillä tai muulla</li>
+        <li>tuonti FitNotesista, varmuuskopio zip-tiedostona</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Kielet</h2>
+  <table>
+    <tr><th>Suomi</th><td>Oletus, koko sovellus.</td></tr>
+    <tr><th>Davvisámegiella</th><td>Kokeellinen käyttöliittymä. Käännökset ovat toistaiseksi konekäännöksiä,
+      jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden ja lajien nimet ovat
+      vielä suomeksi. Korjaukset ovat erityisen tervetulleita.</td></tr>
+    <tr><th>English</th><td>Liikkeiden nimet englanniksi tai molemmilla kielillä; haku löytää molemmilla.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Saamelainen ilme, avoin lähdekoodi</h2>
+  <div class="zigzag" aria-hidden="true"></div>
+  <p>Värit tulevat saamen lipusta ja koristenauha gáktin reunuksista. Tervehdys on aina saameksi –
+  <i>Buorre iđit</i>, <i>Buorre beaivi</i>, <i>Buorre eahket</i> – ja päiväys näkyy myös pohjoissaameksi.</p>
+  <p>Gievra on vapaa ohjelma <b>GNU GPL v3.0</b> -lisenssillä: saat käyttää, tutkia, muokata ja jakaa sitä.
+  Lähdekoodi on <a href="https://github.com/sombyduodji/gievra">GitHubissa</a>.</p>
+  <p class="note">Liikeohjeet, animaatiot ja ohjelmat on koottu tutkimuksista ja avoimista oppikirjoista, mutta
+  ammattilainen ei ole vielä tarkistanut niitä. Varmista tekniikka valmentajalta tai fysioterapeutilta ennen
+  raskaita painoja.</p>
+</section>
+
+<section>
+  <h2>Palaute on enemmän kuin tervetullutta</h2>
+  <p>Virheet, puuttuvat liikkeet, oudon näköiset liikeohjeet, ideat ja käännöskorjaukset:</p>
+  <ul>
+    <li>sovelluksessa: ☰ → <i>Ilmoita ongelmasta</i> tai <i>Lähetä palautetta</i></li>
+    <li>sähköposti: <a href="mailto:treeni@somby.fi">treeni@somby.fi</a></li>
+    <li>GitHub: <a href="https://github.com/sombyduodji/gievra/issues">issues</a></li>
+  </ul>
+  <p>Gievra on ja pysyy maksuttomana. Jos siitä on sinulle hyötyä, voit
+  <a href="https://buymeacoffee.com/sombyduodji">tarjota kahvit</a> ☕</p>
+</section>
+</div>
+<footer>
+  <div class="band" style="margin-bottom:16px"></div>
+  Gievra – Treenipäiväkirja · Juha Somby · <a href="https://github.com/sombyduodji/gievra/blob/main/LICENSE">GPL-3.0</a> ·
+  <a href="mailto:treeni@somby.fi">treeni@somby.fi</a><br>
+  <span lang="en">Free, open-source training log in Finnish with an experimental North Sámi interface. Try the demo and program builder: <a href="app/">app</a>.</span>
+</footer>
+</body>
+</html>
