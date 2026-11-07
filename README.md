@@ -16,7 +16,7 @@
 <p align="center">
   <a href="https://sombyduodji.github.io/gievra/"><b>Kotisivu</b></a> ·
   <a href="https://sombyduodji.github.io/gievra/app/"><b>Kokeile selaimessa</b></a> ·
-  <a href="../../releases/latest"><b>Lataa Androidille</b></a> ·
+  <a href="https://github.com/sombyduodji/gievra/releases/latest/download/Gievra-android-arm64.apk"><b>Lataa Androidille</b></a> ·
   <a href="#palaute">Palaute</a>
 </p>
 
@@ -45,7 +45,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 
 - valmiina neljän viikon esimerkkitreenit: näet etusivun, kalenterin, tilastot ja treenin kirjauksen
 - mitään ei tallenneta: kokeile vapaasti, sivun päivitys palauttaa demon alkuun
-- **tee oma treeniohjelma**: ☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma → *Tallenna pohja*. Saat
+- **tee oma treeniohjelma**: *Tee oma treeniohjelma* -painike etusivulla (tai ☰ → Ohjelma ja tavoitteet →
+  Tee uusi ohjelma), lopuksi *Tallenna pohja*. Saat
   ohjelmapohjan (`.gmd`), jonka voit tuoda puhelimen sovellukseen tai lähettää kaverille
 - verkkoversio ei ota yhteyttä Googleen tai muihin palveluihin: fontit ja emojit tulevat samalta palvelimelta
 
@@ -58,7 +59,11 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - painoehdotus seuraavaan kertaan edellisen treenin perusteella
 - *Miltä tuntui?* viidellä hymiöllä 😫 😕 😐 🙂 🤩; raskaan treenin jälkeen voi kertoa, mikä liike oli liian
   raskas tai oliko vain rankka päivä, ja seuraava ehdotus ottaa sen huomioon
-- treenin ajastin, *Treeni valmis!* ja vertailu edelliseen kertaan, useampi treeni samana päivänä, jakaminen
+- palautusajastin (valinnainen): raskaissa ja lähellä maksimia pidempi tauko, lämmittelyissä ja kevennysviikolla
+  lyhyempi, omat ajat kuormaluokittain ±15 s; ilmoitus valitulla äänellä ja värinällä myös näytön ollessa pois päältä
+  tai toisessa sovelluksessa
+- treenin ajastin, *Treeni valmis!* ja vertailu edelliseen kertaan, useampi treeni samana päivänä
+  (*Lisää uusi treeni*), jakaminen
 
 **Valmiit treeniohjelmat**
 - lyhyt aloituskysely: tavoite (voimanosto, lihaskasvu, rasvanpoltto, yleiskunto, fiiliksellä), kokemus,
@@ -84,6 +89,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - valinnaisesti urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
+  (kesto, kalorit, keski- ja maksimisyke heti *Treeni valmis!* -näkymässä)
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi

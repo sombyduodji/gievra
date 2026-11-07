@@ -89,6 +89,9 @@ Lukija sietää käsin kirjoitettua: `- 100kg x 5` käy myös, tuntemattomat riv
   liikkeelle (`lib/anim/cues.dart`, lähteet `docs/tutkimus/liikkeet.md`). Asennot kuviksi:
   `RENDER=1 flutter test --update-goldens test/anim/render_test.dart`.
 - Mittaustavat: toistot, sekunnit (lankku), askeleet, edestakaiset (farmer walk), metrit.
+- Palautusajastin: `lib/rest.dart` (säännöt, lähteet `docs/tutkimus/palautus.md`), ilmoitus ja tarkka hälytys
+  Androidilla `RestAlarm.kt` (kanava `fi.somby.gievra/rest`). Äänet `android/app/src/main/res/raw/rest_*.wav`
+  syntyvät skriptillä `python3 tools/rest_sounds.py` (oma työ, ei kolmannen osapuolen tiedostoja).
 - Sarjan tallennus yhdellä napautuksella: jäikö varaa (Ei yhtään / Muutama / Reilusti); aika- ja
   matkaliikkeissä "olisitko jaksanut pidempään / pidemmälle" (En yhtään / Vähän / Reilusti).
   Tallennetun sarjan voi korjata napauttamalla.

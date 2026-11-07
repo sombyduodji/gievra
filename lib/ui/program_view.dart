@@ -206,7 +206,9 @@ class _CheckCard extends StatelessWidget {
           const SizedBox(height: 2),
           if (ok)
             Text(
-              t('Työntö ja veto tasapainossa, kaikki päämallit mukana, volyymi ja järjestys kunnossa.'),
+              t(
+                'Työntö ja veto tasapainossa, kaikki päämallit mukana ja järjestys kunnossa. Määrä: ks. viikon kuorma.',
+              ),
               style: TextStyle(fontSize: 12),
             )
           else
@@ -227,7 +229,6 @@ class WeeklyLoadCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final load = weeklyLoad(program);
-    final maxV = load.fold<double>(0, (a, m) => [a, m.sets, m.hi.toDouble()].reduce((x, y) => x > y ? x : y));
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
@@ -240,63 +241,37 @@ class WeeklyLoadCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           for (final m in load)
+            // Yksinkertainen edistymispalkki: täysi = suosituksen yläraja, luvut näkyvissä.
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
                   SizedBox(width: 78, child: Text(t(m.muscle), style: const TextStyle(fontSize: 13))),
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (_, c) {
-                        final w = c.maxWidth / (maxV <= 0 ? 1 : maxV);
-                        final color = switch (m.level) {
-                          LoadLevel.ok => Sami.green,
-                          LoadLevel.low => Sami.yellow,
-                          LoadLevel.high => Sami.red,
-                        };
-                        final v = done == null ? m.sets : (done![m.muscle] ?? 0);
-                        return Stack(
-                          children: [
-                            Container(height: 14, color: Colors.transparent),
-                            // Suositeltu alue
-                            Positioned(
-                              left: m.lo * w,
-                              width: ((m.hi - m.lo) * w).clamp(1, c.maxWidth),
-                              top: 0,
-                              bottom: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: cs.outlineVariant.withValues(alpha: .35),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                            if (done != null)
-                              Positioned(
-                                left: 0,
-                                width: (m.sets * w).clamp(0, c.maxWidth),
-                                top: 5,
-                                bottom: 5,
-                                child: Container(color: cs.onSurfaceVariant.withValues(alpha: .4)),
-                              ),
-                            Positioned(
-                              left: 0,
-                              width: (v * w).clamp(0, c.maxWidth),
-                              top: 3,
-                              bottom: 3,
-                              child: Container(
-                                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: LinearProgressIndicator(
+                        value: done == null
+                            ? (m.hi <= 0 ? 0 : (m.sets / m.hi).clamp(0.0, 1.0))
+                            : (m.sets <= 0 ? 0 : ((done![m.muscle] ?? 0) / m.sets).clamp(0.0, 1.0)),
+                        minHeight: 10,
+                        color: done != null
+                            ? Sami.blue
+                            : switch (m.level) {
+                                LoadLevel.ok => Sami.green,
+                                LoadLevel.low => Sami.yellow,
+                                LoadLevel.high => Sami.red,
+                              },
+                        backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+                      ),
                     ),
                   ),
                   SizedBox(
-                    width: 64,
+                    width: 84,
                     child: Text(
-                      done == null ? fmtLoad(m.sets) : '${fmtLoad(done![m.muscle] ?? 0)}/${fmtLoad(m.sets)}',
+                      done == null
+                          ? '${fmtLoad(m.sets)} / ${m.lo}–${m.hi}'
+                          : '${fmtLoad(done![m.muscle] ?? 0)} / ${fmtLoad(m.sets)}',
                       textAlign: TextAlign.right,
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
@@ -316,9 +291,9 @@ class WeeklyLoadCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             t(
-              'Harmaa alue = suositus tavoitteellesi. Epäsuora kuorma lasketaan puolikkaana (esim. '
-              'penkki: ojentajille ½). Vähintään 4 sarjaa ylläpitää, lihaskasvussa 10–20 tuottaa yleensä '
-              'eniten.',
+              'Luvut: sarjaa viikossa / tavoitteesi suositus. Täysi palkki = suosituksen yläraja. Vihreä: '
+              'suosituksessa, keltainen: alle, punainen: yli. Epäsuora kuorma lasketaan puolikkaana (esim. '
+              'penkki: ojentajille ½). Vähintään 4 sarjaa ylläpitää, lihaskasvussa 10–20 tuottaa yleensä eniten.',
             ),
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),

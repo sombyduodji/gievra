@@ -12,6 +12,8 @@ import '../anim/motions.dart';
 import '../theme.dart';
 import 'widgets.dart';
 import '../l10n.dart';
+import '../rest.dart';
+import 'rest_banner.dart';
 
 /// Sarjojen kirjaus yhdelle liikkeelle.
 class SetLoggerScreen extends StatefulWidget {
@@ -40,6 +42,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       ? suggestForTarget(e.name, widget.date, widget.target!)
       : suggestNext(e.name, widget.date);
   late final InjuryStatus _inj = injuryStatus(e.name, settings.injuries);
+  late final double _bestE1rm = bestE1rmBefore(e.name, widget.date);
   bool _showSugg = true;
   double _kg = 20;
   int _reps = 8;
@@ -150,6 +153,20 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       }
       _recomputePr();
     });
+    if (settings.restTimer) {
+      final deload = widget.target == null && (settings.program?.isDeloadWeek(widget.date) ?? false);
+      rest.start(
+        restSeconds(
+          e.name,
+          e.sets.last,
+          target: widget.target,
+          deload: deload,
+          best: _bestE1rm,
+          work: _sugg?.kg ?? _last?.$2.workSets.lastOrNull?.kg,
+        ),
+        e.name,
+      );
+    }
     await widget.onChanged();
     if (mounted && e.sets.last.pr) {
       ScaffoldMessenger.of(
@@ -379,6 +396,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             },
           ),
           const SizedBox(height: 18),
+          const RestBanner(),
           if (_warming) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -449,12 +467,19 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                TextButton(onPressed: () => _saveSet(), child: Text(t('Tallenna vastaamatta'))),
-                const Spacer(),
-                OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(t('Valmis'))),
-              ],
+            // Yhtä leveä kuin vastausnapit: tallennus ilman vastausta on oma selkeä painike.
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(color: cs.primary),
+              ),
+              onPressed: () => _saveSet(),
+              child: Text(t('Tallenna vastaamatta'), style: const TextStyle(fontSize: 15)),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(t('Valmis'))),
             ),
           ],
           const SizedBox(height: 12),

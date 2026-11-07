@@ -11,6 +11,7 @@ import '../theme.dart';
 import 'new_workout.dart';
 import 'picker.dart';
 import 'share.dart';
+import 'rest_banner.dart';
 import 'watch.dart';
 import 'set_logger.dart';
 import 'move_feedback.dart';
@@ -214,6 +215,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 100),
         children: [
           const SamiBand(height: 4, pattern: false),
+          const Padding(padding: EdgeInsets.only(top: 10), child: RestBanner()),
           if (w.warmup != null)
             Container(
               margin: const EdgeInsets.only(top: 12),
@@ -476,7 +478,17 @@ class _SavedScreenState extends State<SavedScreen> {
               padding: const EdgeInsets.only(top: 8),
               child: Text('🌙 ${_tiredTip()}', style: const TextStyle(fontSize: 13)),
             ),
-          if (watchLine(workout) != null)
+          // Kellon tiedot heti treenin jälkeen (kalorit ja syke näkyvät kellossa vasta lopussa).
+          if (settings.watch)
+            WatchCard(
+              w: workout,
+              withDuration: workout.activity == null,
+              onChanged: () async {
+                setState(() {});
+                if (!workout.isEmpty) await store.save(workout);
+              },
+            )
+          else if (watchLine(workout) != null)
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(watchLine(workout)!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),

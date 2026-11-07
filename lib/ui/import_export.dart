@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../app_info.dart';
 import '../app_state.dart';
 import '../import_export.dart';
 import '../models.dart';
@@ -23,7 +22,6 @@ class ImportExportScreen extends StatefulWidget {
 
 class _ImportExportScreenState extends State<ImportExportScreen> {
   bool _busy = false;
-  bool _translate = true;
 
   void _snack(String t) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
 
@@ -57,7 +55,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final tmp = File(p.join((await getTemporaryDirectory()).path, 'fitnotes-import.db'));
     await tmp.writeAsBytes(await f.xFile.readAsBytes());
     try {
-      await _preview(readFitnotes(tmp.path, translate: _translate));
+      await _preview(readFitnotes(tmp.path, translate: true));
     } finally {
       if (await tmp.exists()) await tmp.delete();
     }
@@ -215,38 +213,12 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           tile(
             Icons.fitness_center,
             t('FitNotes'),
-            t('Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio.'),
+            t(
+              'Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio. Tunnetut liikkeet yhdistyvät Gievran liikkeisiin.',
+            ),
             _importFitnotes,
           ),
-          SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-            title: Text(t('Suomenna tunnetut liikkeet')),
-            subtitle: Text(
-              t('esim. Barbell Squat → Takakyykky. Muut säilyttävät nimensä omina liikkeinä.'),
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-            ),
-            value: _translate,
-            onChanged: (v) => setState(() => _translate = v),
-          ),
-          Text(
-            t('Tulossa myöhemmin: Strong, Hevy ja FitNotesin CSV-vienti.'),
-            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-          ),
           SectionLabel(t('Gievran varmuuskopio')),
-          if (!syncReleased)
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
-              child: Text(
-                t(
-                  '☁️ Google Drive -synkronointi on tulossa, mutta sitä ei ole vielä julkaistu. Siihen asti '
-                  'siirrä treenit laitteelta toiselle varmuuskopiolla: vie zip täältä ja palauta se toisella '
-                  'laitteella.',
-                ),
-                style: TextStyle(fontSize: 13),
-              ),
-            ),
           tile(
             Icons.archive_outlined,
             t('Vie varmuuskopio (.zip)'),

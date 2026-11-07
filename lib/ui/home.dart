@@ -10,6 +10,8 @@ import '../models.dart';
 import '../program.dart';
 import '../theme.dart';
 import 'drawer.dart';
+import 'intro.dart';
+import 'program_screen.dart';
 import 'new_workout.dart';
 import 'widgets.dart';
 import 'workout.dart';
@@ -19,6 +21,32 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
+}
+
+// Asetusten muutos (teema, painon lisäys …) rakentaa etusivun uudelleen: raskaat laskelmat lasketaan vain,
+// kun treenit, ohjelma tai päivä muuttuvat.
+Object? _insKey;
+Insights? _ins;
+Insights _insights() {
+  final key = (store.rev, store.workouts.length, settings.deloadEvery, dateOnly(DateTime.now()));
+  if (key != _insKey || _ins == null) {
+    _ins = analyze(store.workouts, deloadEvery: settings.deloadEvery);
+    _insKey = key;
+  }
+  return _ins!;
+}
+
+Object? _dayKey;
+Program? _dayProgram;
+(PlanDay, String?)? _day;
+(PlanDay, String?) _suggestDay(Program p, DateTime today) {
+  final key = (store.rev, store.workouts.length, today);
+  if (key != _dayKey || !identical(p, _dayProgram) || _day == null) {
+    _day = suggestDay(p, store.workouts, today);
+    _dayKey = key;
+    _dayProgram = p;
+  }
+  return _day!;
 }
 
 /// Avaa päivän treenin: yksi treeni muokattavaksi, useampi valittavaksi, muuten uusi.
@@ -48,6 +76,14 @@ void _open(BuildContext context, DateTime d, Workout? w, {bool newSession = fals
           : NewWorkoutScreen(date: d, newSession: newSession),
     ),
   );
+}
+
+/// Uusi treeni päivälle: ensimmäinen tai saman päivän seuraava (vvvv-kk-pp-2.md …).
+void _startNew(BuildContext context, DateTime d) {
+  if (settings.activePause != null && !dateOnly(d).isBefore(settings.activePause!.start)) {
+    settings.endPause(addDays(d, -1));
+  }
+  _open(context, d, null, newSession: store.onDay(d).isNotEmpty);
 }
 
 Future<void> _chooseSession(BuildContext context, DateTime d, List<Workout> ws) async {
@@ -104,7 +140,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, _) {
         final now = DateTime.now();
         final today = dateOnly(now);
-        final hasToday = store.forDate(today) != null;
+        final todays = store.onDay(today);
+        // Kesken oleva treeni (ei merkitty valmiiksi): etusivu tarjoaa sen jatkamista, muuten uutta treeniä.
+        final open = todays.where((w) => w.minutes == null && w.feeling == null).toList();
+        final hasToday = open.isNotEmpty;
         return Scaffold(
           appBar: AppBar(title: const Text(AppInfo.fullName)),
           drawer: const AppDrawer(),
@@ -164,13 +203,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Sami.blue.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Text(
-                      t(
-                        '🧪 Demo selaimessa: esimerkkitreenit, mitään ei tallenneta. Kokeile treenin kirjausta, '
-                        'tilastoja ja ohjelman tekoa (☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma → Tallenna pohja). '
-                        'Oikea sovellus tallentaa treenit .md-tiedostoina omaan kansioosi.',
-                      ),
-                      style: const TextStyle(fontSize: 13),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          t(
+                            '🧪 Demo selaimessa: esimerkkitreenit, mitään ei tallenneta. Kokeile treenin kirjausta, '
+                            'tilastoja ja ohjelman tekoa (☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma → Tallenna pohja). '
+                            'Oikea sovellus tallentaa treenit .md-tiedostoina omaan kansioosi.',
+                          ),
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(height: 10),
+                        // Ohjelmatyökalu suoraan: kysymykset, ehdotus, muokkaus ja .gmd-pohjan lataus.
+                        FilledButton.icon(
+                          // Ohjelmanäkymä alle: kyselyn jälkeen näkyy ohjelma ja Tallenna pohja -painike.
+                          onPressed: () {
+                            final nav = Navigator.of(context);
+                            nav.push(MaterialPageRoute(builder: (_) => const ProgramScreen()));
+                            nav.push(MaterialPageRoute(builder: (_) => const IntroScreen()));
+                          },
+                          icon: const Icon(Icons.edit_calendar_outlined),
+                          label: Text(t('Tee oma treeniohjelma')),
+                        ),
+                      ],
                     ),
                   ),
                 const SizedBox(height: 18),
@@ -178,18 +234,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: hasToday
                       ? t('Jatka tämän päivän treeniä')
                       : settings.program != null
-                      ? t('Aloita: {0}', [suggestDay(settings.program!, store.workouts, today).$1.uiName])
-                      : t('Lisää treeni tänään'),
+                      ? (todays.isEmpty
+                            ? t('Aloita: {0}', [_suggestDay(settings.program!, today).$1.uiName])
+                            : t('Uusi treeni: {0}', [_suggestDay(settings.program!, today).$1.uiName]))
+                      : todays.isEmpty
+                      ? t('Lisää treeni tänään')
+                      : t('Lisää uusi treeni'),
                   icon: hasToday ? Icons.play_arrow_rounded : Icons.add_rounded,
-                  onTap: () => openDate(context, today),
+                  onTap: () => hasToday
+                      ? (open.length == 1 ? _open(context, today, open.single) : openDate(context, today))
+                      : _startNew(context, today),
                 ),
+                if (todays.isNotEmpty)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => hasToday ? _startNew(context, today) : openDate(context, today),
+                      icon: Icon(hasToday ? Icons.add_rounded : Icons.edit_note_rounded, size: 18),
+                      label: Text(
+                        hasToday
+                            ? t('Uusi treeni tälle päivälle')
+                            : todays.length == 1
+                            ? t('Avaa tämän päivän treeni')
+                            : t('Tämän päivän treenit ({0})', [todays.length]),
+                      ),
+                    ),
+                  ),
                 if (settings.program != null && !hasToday)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '${settings.program!.displayTitle} · ${t('viikko {0}', [settings.program!.weekOf(today) + 1])}'
                       '${settings.program!.isDeloadWeek(today) ? ' · ${t('kevennysviikko')} 🌙' : ''}'
-                      '${suggestDay(settings.program!, store.workouts, today).$2 == null ? '' : '\n${suggestDay(settings.program!, store.workouts, today).$2}'}',
+                      '${_suggestDay(settings.program!, today).$2 == null ? '' : '\n${_suggestDay(settings.program!, today).$2}'}',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                     ),
@@ -509,7 +585,7 @@ class _InsightsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final ins = analyze(store.workouts, deloadEvery: settings.deloadEvery);
+    final ins = _insights();
     final week = isoDate(weekStart(DateTime.now()));
     // Ohjelma ajoittaa kevennykset itse; vinkki vain vapaassa treenissä.
     final showDeload = ins.suggestDeload && settings.deloadDismissed != week && settings.program == null;

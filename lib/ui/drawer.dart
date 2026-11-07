@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_info.dart';
 import '../app_state.dart';
+import '../rest.dart';
 import '../models.dart';
 import '../theme.dart';
 import 'bug_report.dart';
@@ -30,6 +31,18 @@ Future<void> _open(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.ext
 
 /// ☰-valikko samaan tapaan kuin Sátni FST:ssä: nimi ja tekijä, avattavat asetukset,
 /// lopuksi Tietoa, Lähetä palautetta, Osallistu ja tue sekä versio.
+// Samat Futuret joka rakennuksella: muuten versio ja kansiopolku vilkkuvat tyhjinä jokaisen asetusmuutoksen jälkeen.
+final Future<PackageInfo> _packageInfo = PackageInfo.fromPlatform();
+String? _rootKey;
+Future<Directory>? _root;
+Future<Directory> _rootDir() {
+  if (_root == null || _rootKey != settings.folder) {
+    _rootKey = settings.folder;
+    _root = store.rootDir();
+  }
+  return _root!;
+}
+
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -135,9 +148,8 @@ class AppDrawer extends StatelessWidget {
                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StatsScreen()));
                 },
               ),
-              if (isDemo)
-                const SizedBox.shrink()
-              else if (syncReleased)
+              // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
+              if (!isDemo && syncReleased)
                 ListenableBuilder(
                   listenable: sync,
                   builder: (context, _) => ListTile(
@@ -151,16 +163,6 @@ class AppDrawer extends StatelessWidget {
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SyncScreen()));
                     },
                   ),
-                )
-              else
-                ListTile(
-                  leading: const Icon(Icons.cloud_sync_outlined),
-                  title: Text(t('Synkronointi')),
-                  subtitle: Text(t('Tulossa: Google Drive. Siihen asti: Tuonti ja varmuuskopio')),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ImportExportScreen()));
-                  },
                 ),
               if (!isDemo)
                 ListTile(
@@ -204,7 +206,7 @@ class AppDrawer extends StatelessWidget {
                 onTap: () => _open(AppInfo.coffee),
               ),
               FutureBuilder(
-                future: PackageInfo.fromPlatform(),
+                future: _packageInfo,
                 builder: (context, snap) => Padding(
                   padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
                   child: Text(
@@ -259,8 +261,13 @@ class _SettingsSection extends StatelessWidget {
     await changeFolder(context, dir);
   }
 
+  // Osio on const-lapsi, joten valikon ListenableBuilder ei rakenna sitä uudelleen: kuunnellaan itse,
+  // muuten valinnat (teema, painon lisäys …) tallentuvat, mutta valikko näyttää vanhan valinnan.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: Listenable.merge([settings, store]), builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     return Padding(
@@ -362,6 +369,65 @@ class _SettingsSection extends StatelessWidget {
             onChanged: settings.setSports,
           ),
           SwitchListTile(
+            title: Text(t('Palautusajastin')),
+            subtitle: Text(
+              t(
+                'Sarjan tallennus käynnistää palautuksen: raskaissa ja lähellä maksimia pidempi, kevennysviikolla lyhyempi. Ohjelman liikkeillä ohjelman tauko.',
+              ),
+              style: sub,
+            ),
+            value: settings.restTimer,
+            onChanged: (v) async {
+              settings.setRestTimer(v);
+              // Ilmoitus näkyy ja soi myös näytön ollessa pois päältä tai toisessa sovelluksessa.
+              if (v && RestTimer.native) {
+                RestTimer.notificationsOk = (await Permission.notification.request()).isGranted;
+              }
+            },
+          ),
+          if (settings.restTimer && !isDemo) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Text(t('Ilmoitusääni'), style: sub),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<String>(
+                      showSelectedIcon: false,
+                      segments: [
+                        for (final (v, l) in [
+                          ('pling', 'Pling'),
+                          ('boop', 'Boop'),
+                          ('chime', t('Kello')),
+                          ('none', t('Värinä')),
+                        ])
+                          ButtonSegment(
+                            value: v,
+                            label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+                          ),
+                      ],
+                      selected: {settings.restSound},
+                      onSelectionChanged: (s) {
+                        settings.setRestSound(s.first);
+                        RestTimer.preview();
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: t('Kuuntele'),
+                    onPressed: RestTimer.preview,
+                    icon: const Icon(Icons.volume_up_outlined),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const _RestTimes(),
+          ],
+          SwitchListTile(
             title: Text(t('Sykemittari ja älykello')),
             subtitle: Text(
               t('Kirjaa kellosta kesto, kalorit sekä keski- ja maksimisyke treeneihin ja liikuntaan.'),
@@ -396,7 +462,7 @@ class _SettingsSection extends StatelessWidget {
           ],
           if (!isDemo)
             FutureBuilder(
-              future: store.rootDir(),
+              future: _rootDir(),
               builder: (context, snap) => ListTile(
                 title: Text(t('Treenikansio (.md)')),
                 subtitle: Text(
@@ -779,4 +845,95 @@ Future<void> changeFolder(BuildContext context, String? newDir) async {
   await settings.setFolder(newDir);
   await store.reload();
   messenger.showSnackBar(SnackBar(content: Text(t('{0}Löytyi {1} treeniä.', [msg, store.workouts.length]))));
+}
+
+String _mmss(int s) => '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+
+/// Palautusajat kuormaluokittain: oletus ohjelman (tai tutkimusten) mukaan, oma säätö ±15 s.
+class _RestTimes extends StatelessWidget {
+  const _RestTimes();
+
+  // const-lapsi: kuunnellaan asetuksia itse, muuten ±15 s ei näkyisi heti.
+  @override
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: settings, builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final defs = restDefaults(settings.program);
+    final labels = [
+      t('Kevyt kuorma (yli 12 toistoa)'),
+      t('Keskiraskas (6–12 toistoa)'),
+      t('Raskas (1–5 toistoa tai lähellä maksimia)'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 4, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t('Palautusajat'), style: sub),
+          for (var c = 0; c < 3; c++)
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(labels[c], style: const TextStyle(fontSize: 13)),
+                      Text(
+                        settings.restAdjust[c] == 0
+                            ? (settings.program != null ? t('ohjelmasi oletus') : t('oletus'))
+                            : t('oletus {0}, oma säätö {1}{2} s', [
+                                _mmss(defs[c]),
+                                settings.restAdjust[c] > 0 ? '+' : '',
+                                settings.restAdjust[c],
+                              ]),
+                        style: sub,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: '−15 s',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => settings.adjustRest(c, -15),
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    _mmss((defs[c] + settings.restAdjust[c]).clamp(15, 600)),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  tooltip: '+15 s',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => settings.adjustRest(c, 15),
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+          if (settings.restAdjust.any((x) => x != 0))
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  for (var c = 0; c < 3; c++) {
+                    settings.adjustRest(c, null);
+                  }
+                },
+                child: Text(t('Palauta oletukset')),
+              ),
+            ),
+          Text(
+            t('Eristävät liikkeet ja lämmittelysarjat lyhyemmin. Ei varaa: +30 s. Kevennysviikolla × 0,75.'),
+            style: sub,
+          ),
+        ],
+      ),
+    );
+  }
 }

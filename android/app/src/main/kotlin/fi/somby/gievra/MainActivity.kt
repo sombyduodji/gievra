@@ -55,6 +55,21 @@ class MainActivity : FlutterActivity() {
         }
         // Vikailmoitus: sähköposti vastaanottajalla, aiheella, tekstillä ja liitteillä (Gmail ym.).
         // mailto: ei tue liitteitä, joten käytetään ACTION_SEND(_MULTIPLE)-aikomusta ja FileProvideria.
+        // Palautusajastin: hälytys ja ilmoitus (ks. RestAlarm.kt).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/rest").setMethodCallHandler { call, result ->
+            val title = call.argument<String>("title") ?: "Gievra"
+            val body = call.argument<String>("body") ?: ""
+            val sound = call.argument<String>("sound") ?: "pling"
+            call.argument<String>("channel")?.let { RestAlarm.channelName = it }
+            call.argument<String>("channelDesc")?.let { RestAlarm.channelDesc = it }
+            when (call.method) {
+                "schedule" -> RestAlarm.schedule(this, call.argument<Int>("seconds") ?: 60, title, body, sound)
+                "cancel" -> RestAlarm.cancel(this)
+                "preview" -> RestAlarm.show(this, title, body, sound)
+                else -> return@setMethodCallHandler result.notImplemented()
+            }
+            result.success(null)
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/email").setMethodCallHandler { call, result ->
             if (call.method != "send") {
                 result.notImplemented()

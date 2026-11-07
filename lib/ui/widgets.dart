@@ -270,7 +270,10 @@ class LanguagePicker extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: settings, builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(3),

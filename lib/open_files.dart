@@ -9,6 +9,7 @@ import 'ui/program_template.dart';
 
 /// Sovelluksen navigaattori: avatut tiedostot (ohjelmapohja .gmd) tarvitsevat kontekstin dialogille.
 final appNavigator = GlobalKey<NavigatorState>();
+final appMessenger = GlobalKey<ScaffoldMessengerState>();
 
 const _channel = MethodChannel('fi.somby.gievra/open');
 

@@ -83,6 +83,10 @@ class Settings extends ChangeNotifier {
   /// Liikkeiden nimet näytössä: 'fi' suomeksi, 'en' englanniksi, 'both' molemmat. Tiedostoihin aina suomeksi.
   String moveNames = 'fi';
   bool watch = false; // sykemittarin / älykellon tiedot näkyvissä
+  bool restTimer = false; // palautusajastin sarjan tallennuksen jälkeen (oletus pois)
+  String restSound = 'pling'; // pling / boop / chime / none (vain värinä)
+  /// Oma säätö palautukseen (s) kuormaluokittain: kevyt, keskiraskas, raskas (ks. rest.dart).
+  List<int> restAdjust = [0, 0, 0];
   int deloadEvery = 6;
 
   /// Viikko (maanantai), jolta kevennysvinkki on piilotettu. Vain tällä laitteella.
@@ -208,6 +212,9 @@ class Settings extends ChangeNotifier {
       ..writeln('sports: $sports')
       ..writeln('move_names: $moveNames')
       ..writeln('watch: $watch')
+      ..writeln('rest_timer: $restTimer')
+      ..writeln('rest_sound: $restSound')
+      ..writeln('rest_adjust: ${restAdjust.join(', ')}')
       ..writeln('deloadEvery: $deloadEvery')
       ..writeln('introDone: $introDone')
       ..writeln('---')
@@ -302,6 +309,13 @@ class Settings extends ChangeNotifier {
             moveNames = const {'fi', 'en', 'both'}.contains(v) ? v : 'fi';
           case 'watch':
             watch = v == 'true';
+          case 'rest_timer':
+            restTimer = v == 'true';
+          case 'rest_adjust':
+            final a = v.split(',').map((x) => int.tryParse(x.trim()) ?? 0).toList();
+            restAdjust = [for (var i = 0; i < 3; i++) i < a.length ? a[i].clamp(-300, 300) : 0];
+          case 'rest_sound':
+            restSound = const {'pling', 'boop', 'chime', 'none'}.contains(v) ? v : 'pling';
           case 'introDone':
             introDone = v == 'true';
           case 'deloadEvery':
@@ -472,6 +486,23 @@ class Settings extends ChangeNotifier {
     _persist();
   }
 
+  /// [cls]: 0 kevyt, 1 keskiraskas, 2 raskas; [delta] ±15 s. Null nollaa.
+  void adjustRest(int cls, int? delta) {
+    restAdjust = [...restAdjust];
+    restAdjust[cls] = delta == null ? 0 : (restAdjust[cls] + delta).clamp(-300, 300);
+    _persist();
+  }
+
+  void setRestSound(String v) {
+    restSound = v;
+    _persist();
+  }
+
+  void setRestTimer(bool v) {
+    restTimer = v;
+    _persist();
+  }
+
   void setWatch(bool v) {
     watch = v;
     _persist();
@@ -533,6 +564,16 @@ const ownCategory = 'Omat';
 /// Lukee ja kirjoittaa treenit .md-tiedostoina valittuun kansioon.
 class WorkoutStore extends ChangeNotifier {
   List<Workout> workouts = []; // uusin ensin
+
+  /// Kasvaa jokaisella muutoksella: raskaat laskelmat (oivallukset, päiväehdotus) välimuistiin tämän mukaan.
+  int rev = 0;
+
+  @override
+  void notifyListeners() {
+    rev++;
+    super.notifyListeners();
+  }
+
   String? error;
 
   Future<Directory> defaultDir() async {
