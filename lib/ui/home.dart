@@ -31,7 +31,7 @@ class HomeScreen extends StatefulWidget {
 Object? _insKey;
 Insights? _ins;
 Insights _insights() {
-  final key = (store.rev, store.workouts.length, settings.deloadEvery, dateOnly(DateTime.now()));
+  final key = (store.rev, store.workouts.length, settings.deloadEvery, dateOnly(DateTime.now()), uiLang);
   if (key != _insKey || _ins == null) {
     _ins = analyze(store.workouts, deloadEvery: settings.deloadEvery);
     _insKey = key;
@@ -43,7 +43,7 @@ Object? _dayKey;
 Program? _dayProgram;
 (PlanDay, String?)? _day;
 (PlanDay, String?) _suggestDay(Program p, DateTime today) {
-  final key = (store.rev, store.workouts.length, today);
+  final key = (store.rev, store.workouts.length, today, uiLang); // teksti kielen mukaan
   if (key != _dayKey || !identical(p, _dayProgram) || _day == null) {
     _day = suggestDay(p, store.workouts, today);
     _dayKey = key;
@@ -107,7 +107,7 @@ Future<void> _chooseSession(BuildContext context, DateTime d, List<Workout> ws) 
           for (final w in ws)
             ListTile(
               leading: Text(w.activity != null ? '🏃' : '💪', style: const TextStyle(fontSize: 22)),
-              title: Text(w.activity ?? trName(w.title)),
+              title: Text(trName(w.activity ?? w.title)),
               subtitle: Text(
                 [
                   if (w.minutes != null) '${w.minutes} min',
@@ -477,7 +477,7 @@ class _Calendar extends StatelessWidget {
           runSpacing: 4,
           children: [
             for (final (c, l) in [
-              (Sami.red, 'Jalat'),
+              (Sami.red, t('Jalat')),
               (Sami.blue, t('Ylävartalo')),
               (Sami.green, t('Kardio / keskivartalo')),
               if (settings.sports) (sportColor, t('Liikunta')),
@@ -835,12 +835,12 @@ class _CardioHome extends StatelessWidget {
       for (final w in store.workouts)
         if (w.activity != null) w,
     ]..sort((a, b) => b.date.compareTo(a.date));
-    // Käytetyimmät lajit pikavalinnoiksi (oletuksena juoksu, pyöräily, kävely).
-    final counts = <String, int>{};
-    for (final w in acts) {
-      counts[w.activity!] = (counts[w.activity!] ?? 0) + 1;
-    }
-    final top = (counts.keys.toList()..sort((a, b) => counts[b]!.compareTo(counts[a]!))).take(3).toList();
+    // Käytetyimmät lajit pikavalinnoiksi, eniten käytetty ensin (oletuksena juoksu, pyöräily, kävely).
+    final used = acts.map((w) => w.activity!).toSet();
+    final top = [
+      ...sportsByUse(acts.map((w) => w.activity)).where((s) => used.contains(s.name)).map((s) => s.name),
+      ...acts.map((w) => w.activity!).where((a) => sportOf(a) == null).toSet(), // omat lajit (esim. Garmin)
+    ].take(3).toList();
     for (final d in ['Juoksu', 'Pyöräily', 'Kävely']) {
       if (top.length < 3 && !top.contains(d)) top.add(d);
     }
@@ -874,7 +874,7 @@ class _CardioHome extends StatelessWidget {
       children: [
         const SizedBox(height: 14),
         _Cta(
-          label: main == 'Juoksu' || main == 'Hölkkä' ? t('Lisää lenkki') : t('Lisää: {0}', [main]),
+          label: main == 'Juoksu' || main == 'Hölkkä' ? t('Lisää lenkki') : t('Lisää: {0}', [trName(main)]),
           icon: Icons.add_rounded,
           onTap: () => _add(context, main),
         ),
@@ -885,7 +885,11 @@ class _CardioHome extends StatelessWidget {
           runSpacing: 4,
           children: [
             for (final sp in top.skip(1))
-              ActionChip(avatar: Text(sportOf(sp)?.icon ?? '✨'), label: Text(sp), onPressed: () => _add(context, sp)),
+              ActionChip(
+                avatar: Text(sportOf(sp)?.icon ?? '✨'),
+                label: Text(trName(sp)),
+                onPressed: () => _add(context, sp),
+              ),
             ActionChip(
               avatar: const Icon(Icons.more_horiz, size: 18),
               label: Text(t('Muu laji')),
@@ -918,7 +922,7 @@ class _CardioHome extends StatelessWidget {
             child: Text(
               t('Viimeksi: {0}', [
                 [
-                  acts.first.activity!,
+                  trName(acts.first.activity!),
                   if (runTypeOf(acts.first.runType) != null) t(runTypeOf(acts.first.runType)!.$2).toLowerCase(),
                   if (acts.first.distanceKm != null) '${kmS(acts.first.distanceKm!)} km',
                   shortDate(acts.first.date),

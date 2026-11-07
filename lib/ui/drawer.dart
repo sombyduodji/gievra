@@ -21,6 +21,7 @@ import '../theme.dart';
 import 'bug_report.dart';
 import 'import_export.dart';
 import 'injury_screen.dart';
+import 'intro.dart';
 import 'program_screen.dart';
 import 'program_template.dart';
 import 'programs_screen.dart';
@@ -263,6 +264,34 @@ class _SettingsSection extends StatelessWidget {
 
   // Osio on const-lapsi, joten valikon ListenableBuilder ei rakenna sitä uudelleen: kuunnellaan itse,
   // muuten valinnat (teema, painon lisäys …) tallentuvat, mutta valikko näyttää vanhan valinnan.
+  /// Pelkästä kestävyydestä saliin tai molempiin: tarjotaan treeniohjelmaa (kysymykset), jos sitä ei vielä ole.
+  Future<void> _changeMode(BuildContext context, String v) async {
+    final fromCardio = settings.trainMode == 'cardio';
+    settings.setTrainMode(v);
+    if (!fromCardio || v == 'cardio' || settings.program != null || !context.mounted) return;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Tehdäänkö treeniohjelma?')),
+        content: Text(
+          t(
+            'Vastaa muutamaan kysymykseen (tavoite, kokemus, päivät, kesto), niin saat salille valmiin ohjelman. '
+            'Voit myös treenata vapaasti ja tehdä ohjelman myöhemmin.',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Myöhemmin'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Tee ohjelma'))),
+        ],
+      ),
+    );
+    if (yes == true && context.mounted) {
+      final nav = Navigator.of(context);
+      nav.push(MaterialPageRoute(builder: (_) => const ProgramScreen()));
+      nav.push(MaterialPageRoute(builder: (_) => const IntroScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) =>
       ListenableBuilder(listenable: Listenable.merge([settings, store]), builder: (context, _) => _build(context));
@@ -362,7 +391,7 @@ class _SettingsSection extends StatelessWidget {
           Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TrainModePicker(value: settings.trainMode, onChanged: settings.setTrainMode),
+            child: TrainModePicker(value: settings.trainMode, icons: false, onChanged: (v) => _changeMode(context, v)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),

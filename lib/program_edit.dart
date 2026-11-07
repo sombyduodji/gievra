@@ -73,7 +73,7 @@ String _fmt(double v) => fmtNum((v * 2).round() / 2);
   }
   final inj = injuryStatus(to, injuries);
   if (inj.avoid.isNotEmpty) {
-    msgs.add('⚠ Vammatila (${inj.avoid.join(', ')}): tätä liikettä kannattaa välttää.');
+    msgs.add(l10n.t('⚠ Vammatila ({0}): tätä liikettä kannattaa välttää.', [inj.avoid.join(', ')]));
     ok = false;
   } else if (inj.modify.isNotEmpty) {
     msgs.add('🩹 ${inj.modify.join(' · ')}');
@@ -118,7 +118,9 @@ List<String> assessItem(Program p, PlanItem it) {
   final g = p.goal;
   final ov = repRangeOverride[it.exercise];
   if (ov != null && it.lo >= ov.$1 && it.hi <= ov.$2) {
-    return ['✓ Tyypillinen alue tälle liikkeelle (${ov.$1}–${ov.$2}).'];
+    return [
+      l10n.t('✓ Tyypillinen alue tälle liikkeelle ({0}–{1}).', [ov.$1, ov.$2]),
+    ];
   }
   if (it.hi > 30) msgs.add(l10n.t('⚠ Yli 30 toistoa: kehittää lähinnä kestävyyttä, lihaskasvu ja voima heikkenevät.'));
   if (g == 'voimanosto' &&
@@ -263,7 +265,18 @@ Set<String> _heavyMuscles(Iterable<String> slotsUsed) => {
   }
   final fresh = cands.where((d) => hits(d).isEmpty).firstOrNull;
   if (fresh != null) {
-    return (fresh, 'Eilen kuormittui ${hits(first).join(', ')}: ${fresh.display} antaa niille palautumisaikaa.');
+    return (
+      fresh,
+      l10n.t('Eilen kuormittui {0}: {1} antaa niille palautumisaikaa.', [
+        hits(first).map(l10n.t).join(', '),
+        l10n.trName(fresh.display),
+      ]),
+    );
   }
-  return (first, 'Eilen kuormittui ${hits(first).join(', ')}. Jos tuntuu raskaalta, jätä tänään enemmän varaa.');
+  return (
+    first,
+    l10n.t('Eilen kuormittui {0}. Jos tuntuu raskaalta, jätä tänään enemmän varaa.', [
+      hits(first).map(l10n.t).join(', '),
+    ]),
+  );
 }

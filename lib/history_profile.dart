@@ -80,7 +80,9 @@ HistoryProfile? analyzeHistory(List<Workout> all, {DateTime? now}) {
   final recent = weeks.skip(math.max(0, weeks.length - 12)).map((k) => perWeek[k]!).toList();
   final avg = recent.fold(0, (a, b) => a + b) / recent.length;
   final days = avg.round().clamp(2, 6);
-  why['days'] = 'keskimäärin ${avg.toStringAsFixed(1).replaceAll('.', ',')} treeniä viikossa';
+  why['days'] = l10n.t('keskimäärin {0} treeniä viikossa', [
+    l10n.isEnglish ? avg.toStringAsFixed(1) : avg.toStringAsFixed(1).replaceAll('.', ','),
+  ]);
 
   // Kokemus
   final months = (last.difference(ws.first.date).inDays / 30.4).floor();
@@ -161,8 +163,9 @@ HistoryProfile? analyzeHistory(List<Workout> all, {DateTime? now}) {
     if (eqTotal > 0 && e.value / eqTotal >= .8) equipment.add(e.key);
   }
   if (equipment.isNotEmpty) {
-    why['equipment'] =
-        'lähes kaikki liikkeet: ${equipment.map((e) => equipmentChoices[e]!.$2.toLowerCase()).join(', ')}';
+    why['equipment'] = l10n.t('lähes kaikki liikkeet: {0}', [
+      equipment.map((e) => l10n.t(equipmentChoices[e]!.$2).toLowerCase()).join(', '),
+    ]);
   }
 
   // Suosikit liikemalleittain (vähintään 3 kertaa).

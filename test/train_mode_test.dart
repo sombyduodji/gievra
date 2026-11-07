@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/main.dart';
 import 'package:treenipaivakirja/models.dart';
+import 'package:treenipaivakirja/sports.dart';
 
 void main() {
   test('Vanha sports-asetus -> treenitila; mode voittaa', () {
@@ -56,5 +57,10 @@ void main() {
     expect(find.text('Lisää lenkki'), findsOneWidget);
     settings.trainMode = 'gym';
     store.workouts = [];
+  });
+
+  test('Lajit käyttömäärän mukaan', () {
+    final order = sportsByUse(['Kävely', 'Pyöräily', 'Kävely', null, 'Pyöräily', 'Kävely']).map((s) => s.name);
+    expect(order.take(3), ['Kävely', 'Pyöräily', 'Juoksu']); // käyttämättömät alkuperäisessä järjestyksessä
   });
 }

@@ -69,23 +69,56 @@ String greeting([DateTime? now]) {
   return t('Hyvää yötä');
 }
 
-/// "perjantai 6. marraskuuta"
-/// Saamenkielisessä käyttöliittymässä saamenkielinen päiväys (seDate).
-String longDate(DateTime d) =>
-    isSami ? seDate(d) : '${fiWeekdays[d.weekday - 1]} ${d.day}. ${fiMonths[d.month - 1].toLowerCase()}ta';
+const enWeekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const enWeekdaysShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const enMonths = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
-/// Päiväys vuoden kanssa: "lauantai 7. marraskuuta 2026" / "lávvardat 7.11.2026".
-String longDateYear(DateTime d) =>
-    isSami ? '${seWeekdays[d.weekday - 1]} ${d.day}.${d.month}.${d.year}' : '${longDate(d)} ${d.year}';
+/// "perjantai 6. marraskuuta" / "Friday, November 6"
+/// Saamenkielisessä käyttöliittymässä saamenkielinen päiväys (seDate).
+String longDate(DateTime d) => isSami
+    ? seDate(d)
+    : isEnglish
+    ? '${enWeekdays[d.weekday - 1]}, ${enMonths[d.month - 1]} ${d.day}'
+    : '${fiWeekdays[d.weekday - 1]} ${d.day}. ${fiMonths[d.month - 1].toLowerCase()}ta';
+
+/// Päiväys vuoden kanssa: "lauantai 7. marraskuuta 2026" / "lávvardat 7.11.2026" / "Saturday, November 7, 2026".
+String longDateYear(DateTime d) => isSami
+    ? '${seWeekdays[d.weekday - 1]} ${d.day}.${d.month}.${d.year}'
+    : isEnglish
+    ? '${longDate(d)}, ${d.year}'
+    : '${longDate(d)} ${d.year}';
 
 /// Kalenterin viikonpäivälyhenteet.
-List<String> get uiWeekdaysShort => isSami ? seWeekdaysShort : fiWeekdaysShort;
+List<String> get uiWeekdaysShort => isSami
+    ? seWeekdaysShort
+    : isEnglish
+    ? enWeekdaysShort
+    : fiWeekdaysShort;
 
-/// Kuukauden nimi otsikkoon: "Marraskuu" / "skábmamánnu".
-String uiMonth(int month) => isSami ? seMonths[month - 1] : fiMonths[month - 1];
+/// Kuukauden nimi otsikkoon: "Marraskuu" / "skábmamánnu" / "November".
+String uiMonth(int month) => isSami
+    ? seMonths[month - 1]
+    : isEnglish
+    ? enMonths[month - 1]
+    : fiMonths[month - 1];
 
-/// "pe 6.11."
-String shortDate(DateTime d) => '${uiWeekdaysShort[d.weekday - 1]} ${d.day}.${d.month}.';
+/// "pe 6.11." / "Fri 11/6"
+String shortDate(DateTime d) => isEnglish
+    ? '${uiWeekdaysShort[d.weekday - 1]} ${d.month}/${d.day}'
+    : '${uiWeekdaysShort[d.weekday - 1]} ${d.day}.${d.month}.';
 
 /// Iso +/- -säädin. Arvoa napauttamalla voi kirjoittaa luvun.
 class ValueStepper extends StatelessWidget {
@@ -277,9 +310,11 @@ class LanguagePicker extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(99)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(20)),
+      // Rivittyy kapealla näytöllä (kolme kieltä ei aina mahdu riville).
+      child: Wrap(
+        spacing: 2,
+        runSpacing: 2,
         children: [
           for (final l in uiLanguages)
             Material(
@@ -354,6 +389,21 @@ class _FlagPainter extends CustomPainter {
         ..color = col;
       c.drawArc(r, math.pi / 2, math.pi, false, ring(blue));
       c.drawArc(r, -math.pi / 2, math.pi, false, ring(red));
+    } else if (code == 'en') {
+      // Yhdistyneen kuningaskunnan lippu (yksinkertaistettu, 3:2): sininen, valkoiset ja punaiset ristit.
+      const blue = Color(0xFF012169), red = Color(0xFFC8102E);
+      c.drawRect(Rect.fromLTWH(0, 0, w, h), p(blue));
+      Paint line(Color col, double width) => Paint()
+        ..color = col
+        ..strokeWidth = width;
+      c.drawLine(Offset.zero, Offset(w, h), line(Colors.white, h * .2));
+      c.drawLine(Offset(w, 0), Offset(0, h), line(Colors.white, h * .2));
+      c.drawLine(Offset.zero, Offset(w, h), line(red, h * .07));
+      c.drawLine(Offset(w, 0), Offset(0, h), line(red, h * .07));
+      c.drawRect(Rect.fromLTWH(w * .4167, 0, w * .1667, h), p(Colors.white));
+      c.drawRect(Rect.fromLTWH(0, h * .375, w, h * .25), p(Colors.white));
+      c.drawRect(Rect.fromLTWH(w * .45, 0, w * .1, h), p(red));
+      c.drawRect(Rect.fromLTWH(0, h * .4, w, h * .2), p(red));
     } else {
       // Suomen lippu: valkoinen, sininen risti (18:11 → tässä 3:2).
       const blue = Color(0xFF002F6C);
@@ -392,7 +442,8 @@ class ExName extends StatelessWidget {
 class TrainModePicker extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
-  const TrainModePicker({super.key, required this.value, required this.onChanged});
+  final bool icons; // kapeassa valikossa ilman kuvakkeita, jotta teksti mahtuu
+  const TrainModePicker({super.key, required this.value, required this.onChanged, this.icons = true});
 
   @override
   Widget build(BuildContext context) => SegmentedButton<String>(
@@ -405,7 +456,7 @@ class TrainModePicker extends StatelessWidget {
       ])
         ButtonSegment(
           value: v,
-          icon: Icon(icon, size: 18),
+          icon: icons ? Icon(icon, size: 18) : null,
           label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
         ),
     ],

@@ -111,7 +111,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 |---|---|
 | **Suomi** | oletus, koko sovellus |
 | **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden ja lajien nimet ovat vielä suomeksi. |
-| **English** | liikkeiden nimet englanniksi tai molemmilla kielillä (asetus); haku löytää molemmilla |
+| **English** | koko käyttöliittymä (oikoluettu Hunspellilla); liikkeiden ja lajien nimet englanniksi tai molemmilla kielillä; haku löytää molemmilla. Tiedostot tallentuvat aina samassa muodossa, joten kieltä voi vaihtaa milloin vain. |
 
 Korjaukset käännöksiin ovat erityisen tervetulleita, ks. [docs/kaannokset.md](docs/kaannokset.md).
 
@@ -160,7 +160,7 @@ Gievra on ja pysyy maksuttomana. Jos se on sinulle hyödyllinen, voit tarjota ka
 ---
 
 **In English:** Gievra (North Sámi for *strong*) is a free, open-source training log for the gym and sports,
-in Finnish with an experimental North Sámi interface and optional English exercise names. Workouts are plain
+in Finnish and English, with an experimental North Sámi interface. Workouts are plain
 Markdown files in a folder you choose; no account, no ads, no tracking. It builds evidence-based programs
 (including kettlebell programs), prefills warm-up sets, adapts suggestions to your feedback, and shares programs
 as `.gmd` templates. Try the demo and program builder in your browser:

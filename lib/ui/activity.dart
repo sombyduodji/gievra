@@ -82,7 +82,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final sport = sportOf(w.activity);
     return Scaffold(
       appBar: AppBar(
-        title: Text(w.activity ?? t('Liikunta')),
+        title: Text(w.activity == null ? t('Liikunta') : trName(w.activity!)),
         actions: [
           if (w.activity != null)
             Padding(
@@ -102,10 +102,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final s in sports.where((s) => s.group == g))
+                  // Eniten käytetyt ensin.
+                  for (final s in sportsByUse(
+                    store.workouts.map((w) => w.activity),
+                    among: sports.where((s) => s.group == g),
+                  ))
                     ActionChip(
                       avatar: Text(s.icon),
-                      label: Text(s.name),
+                      label: Text(trName(s.name)),
                       onPressed: () => setState(() => w.activity = s.name),
                     ),
                 ],
@@ -118,7 +122,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 Text(sport?.icon ?? '✨', style: const TextStyle(fontSize: 34)),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(w.activity!, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  child: Text(trName(w.activity!), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
                 ),
                 TextButton(onPressed: () => setState(() => w.activity = null), child: Text(t('Vaihda laji'))),
               ],

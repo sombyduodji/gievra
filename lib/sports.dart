@@ -11,6 +11,7 @@ class Sport {
 const sportGroups = ['Kestävyys', 'Pallo- ja mailapelit', 'Muut lajit'];
 
 // Lajien nimet pysyvät suomeksi myös saamenkielisessä käyttöliittymässä (natiivitarkistus myöhemmin).
+// l10n: data
 const sports = <Sport>[
   Sport('Juoksu', '🏃', 'Kestävyys', distance: true),
   Sport('Hölkkä', '🏃', 'Kestävyys', distance: true),
@@ -75,3 +76,17 @@ const runTypes = <(String, String, String, String, String)>[
 ];
 
 (String, String, String, String, String)? runTypeOf(String? key) => runTypes.where((r) => r.$1 == key).firstOrNull;
+
+/// Lajit käyttömäärän mukaan (eniten käytetty ensin); tasapelissä alkuperäinen järjestys.
+List<Sport> sportsByUse(Iterable<String?> history, {Iterable<Sport> among = sports}) {
+  final n = <String, int>{};
+  for (final a in history) {
+    if (a != null) n[a] = (n[a] ?? 0) + 1;
+  }
+  final list = among.toList();
+  final order = {for (final (i, s) in list.indexed) s.name: i};
+  return list..sort((a, b) {
+    final c = (n[b.name] ?? 0).compareTo(n[a.name] ?? 0);
+    return c != 0 ? c : order[a.name]!.compareTo(order[b.name]!);
+  });
+}

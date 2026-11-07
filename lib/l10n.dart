@@ -18,6 +18,7 @@ class UiLang {
 const uiLanguages = [
   UiLang('fi', 'Suomi', ''),
   UiLang('se', 'Davvisámegiella', 'Geahččaleapmi: hárjehusaid namat leat ain suomagillii.'),
+  UiLang('en', 'English', ''),
 ];
 
 String _lang = 'fi';
@@ -25,6 +26,7 @@ Map<String, String> _catalog = const {};
 
 String get uiLang => _lang;
 bool get isSami => _lang == 'se';
+bool get isEnglish => _lang == 'en';
 
 /// Vaihtaa kielen ja lataa sen käännökset. Tuntematon kieli = suomi.
 Future<void> setUiLang(String code) async {

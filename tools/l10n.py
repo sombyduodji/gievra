@@ -17,11 +17,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dartstr import Lit, _read_string, _skip_ws_comments, groups, lex, line_of  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LANGS = ['se']
+LANGS = ['se', 'en']
 HEADER = {
     'se': 'Gievra – Treenipäiväkirja: pohjoissaame (davvisámegiella)\n'
           'msgid = suomenkielinen alkuteksti. {0}, {1}… ovat muuttujia (kommentissa #. mitä ne ovat).\n'
           'Hárjehusaid (liikkeiden) namat ja .md-fiillaid sisdoallu leat ain suomagillii.',
+    'en': 'Gievra – Treenipäiväkirja: English\n'
+          'msgid = Finnish source text. {0}, {1}… are variables (the #. comment says what they are).\n'
+          'Exercise names come from lib/exercise_names_en.dart; .md file contents stay in Finnish.',
 }
 
 
@@ -201,6 +204,20 @@ def check(lang, found, po):
             problems += 1
         clean = re.sub(r'\{\d+\}|https?://\S+|\S+@\S+|\.\w+\b', ' ', s)
         words.update(w for w in re.findall(r"[^\W\d_]+(?:-[^\W\d_]+)*", clean) if len(w) > 1)
+    if lang == 'en' and words:
+        # Englannin oikoluku: hunspell (en_GB ja en_US; sana kelpaa, jos jompikumpi tuntee sen).
+        import subprocess
+        bad = set(words)
+        for d in ('en_GB', 'en_US'):
+            try:
+                out = subprocess.run(['hunspell', '-d', d, '-l'], input='\n'.join(sorted(bad)), capture_output=True,
+                                     text=True, check=False).stdout.split()
+                bad &= set(out)
+            except FileNotFoundError:
+                print('hunspell ei käytettävissä')
+                bad = set()
+        if bad:
+            print(f'hunspell ei tunnista ({len(bad)}): ' + ', '.join(sorted(bad)))
     if lang == 'se' and words:
         try:
             import libvoikko

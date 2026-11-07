@@ -147,15 +147,17 @@ List<String> feelingSuggestions(List<Workout> ws, DateTime today) {
       l10n.t(
         '{0} tuntuu raskaimmalta ({1}). Vähennä sarja tai kaksi tai vaihda jokin liike (☰ → '
         'Ohjelma ja tavoitteet).',
-        [g.label, _f(g.avg)],
+        [l10n.trName(g.label), _f(g.avg)],
       ),
     );
   }
   final ex = s.byExercise.where((g) => g.n >= 4 && overall - g.avg >= .8).take(2).toList();
   if (ex.isNotEmpty) {
     out.add(
-      'Treenit, joissa on ${ex.map((g) => g.label).join(' tai ')}, tuntuvat raskaimmilta. '
-      'Kokeile kevyempää painoa, vähemmän sarjoja tai saman liikemallin toista liikettä.',
+      l10n.t(
+        'Treenit, joissa on {0}, tuntuvat raskaimmilta. Kokeile kevyempää painoa, vähemmän sarjoja tai saman liikemallin toista liikettä.',
+        [ex.map((g) => l10n.trName(g.label)).join(l10n.t(' tai '))],
+      ),
     );
   }
   // Treenitiheys: viimeiset 4 viikkoa vs. sitä edeltävät 8.

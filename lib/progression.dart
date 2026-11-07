@@ -236,17 +236,20 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
   var r = reps;
   String why;
   if (rirs.isEmpty) {
-    why = 'Toista edellinen (${fmtNum(top)} kg × $reps). Vastaa sarjan jälkeen "jäikö varaa", niin ehdotus tarkentuu.';
+    why = l10n.t('Toista edellinen ({0} kg × {1}). Vastaa sarjan jälkeen "jäikö varaa", niin ehdotus tarkentuu.', [
+      fmtNum(top),
+      reps,
+    ]);
   } else {
     final minRir = rirs.reduce((a, b) => a < b ? a : b);
     if (minRir >= 3) {
       kg = top + step;
-      why = 'Edellisellä kerralla jäi reilusti varaa: +${fmtNum(step)} kg.';
+      why = l10n.t('Edellisellä kerralla jäi reilusti varaa: +{0} kg.', [fmtNum(step)]);
     } else if (minRir >= 1) {
       r = reps + 1;
-      why = 'Edellisellä kerralla jäi muutama: sama paino, yksi toisto lisää.';
+      why = l10n.t('Edellisellä kerralla jäi muutama: sama paino, yksi toisto lisää.');
     } else {
-      why = 'Edellisellä kerralla ei jäänyt varaa: toista sama.';
+      why = l10n.t('Edellisellä kerralla ei jäänyt varaa: toista sama.');
     }
   }
 
@@ -256,18 +259,23 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
     kg = _round(top * load, settings.weightStep);
     r = reps;
     final pct = ((1 - load) * 100).round();
-    why =
-        '${p.sick ? 'Paluu sairauden jälkeen' : 'Paluu lomalta'} (${p.days} pv): '
-        '${pct > 0 ? 'kuormat −$pct %' : 'normaalit kuormat'}'
-        '${sets < 1 ? ', noin ${(sets * 100).round()} % tavallisista sarjoista' : ''}.'
-        '${p.sick ? ' Jos oireita vielä on, kevennä lisää.' : ''}';
+    why = [
+      l10n.t('{0} ({1} pv): {2}', [
+        p.sick ? l10n.t('Paluu sairauden jälkeen') : l10n.t('Paluu lomalta'),
+        p.days,
+        pct > 0 ? l10n.t('kuormat −{0} %', [pct]) : l10n.t('normaalit kuormat'),
+      ]),
+      if (sets < 1) l10n.t(', noin {0} % tavallisista sarjoista', [(sets * 100).round()]),
+      '.',
+      if (p.sick) ' ${l10n.t('Jos oireita vielä on, kevennä lisää.')}',
+    ].join();
     return Suggestion(kg, r, why, setsFactor: sets);
   }
   if (lastDate.isBefore(addDays(date, -21)) && rirs.isNotEmpty) {
     // Pitkä väli ilman merkittyä taukoa: ei nosteta.
     kg = top;
     r = reps;
-    why = 'Edellisestä kerrasta yli 3 viikkoa: aloita samalla painolla.';
+    why = l10n.t('Edellisestä kerrasta yli 3 viikkoa: aloita samalla painolla.');
   }
   return Suggestion(kg, r, why);
 }

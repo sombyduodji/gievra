@@ -477,8 +477,18 @@ class Settings extends ChangeNotifier {
 
   /// Käyttöliittymän kieli on laitekohtainen (ei asetukset.md:ssä): treenitiedostot pysyvät suomeksi.
   Future<void> setLang(String code) async {
+    final wasEnglish = isEnglish;
     await setUiLang(code);
     await _p?.setString('lang', uiLang);
+    // Englanninkielisessä käyttöliittymässä liikkeet englanniksi (jos ne olivat vain suomeksi); takaisin suomeen
+    // vaihdettaessa palautetaan suomi. Asetuksista voi valita myös molemmat.
+    if (isEnglish && moveNames == 'fi') {
+      moveNames = 'en';
+      _persist();
+    } else if (wasEnglish && !isEnglish && moveNames == 'en') {
+      moveNames = 'fi';
+      _persist();
+    }
     notifyListeners();
   }
 
