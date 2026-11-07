@@ -70,6 +70,52 @@ days: 2
 ''');
     expect(restDefaults(p), [60, 150, 240]);
     expect(restDefaults(), [60, 120, 180]);
+    // Muokattu ohjelma: 4 min keskiraskaalla, 2,5 min raskaalla -> raskas vähintään yhtä pitkä.
+    final q = parseProgram('''---
+start: 2026-11-02
+goal: lihaskasvu
+days: 2
+---
+
+# Ohjelma
+
+## A
+- Takakyykky | 3 × 6–10 | varaa 2 | tauko 4 min | KYY
+- Penkkipunnerrus | 5 × 3–5 | varaa 2 | tauko 2,5 min | VTY
+''');
+    expect(restDefaults(q), [60, 240, 240]);
+
+    // Tiedostosta luettu voimanosto-ohjelma: pääliikkeet "raskas" (ei toistolukuja) ovat raskaita, eivät
+    // keskiraskaita; 3–6 toistoa on raskas, 5–7 keskiraskas.
+    final pl = parseProgram('''---
+template: gievra-1
+goal: voimanosto
+experience: kokenut
+days: 4
+reps: raskas
+---
+
+# Ohjelma
+
+## Kyykky
+- Takakyykky | raskas | varaa 1–2 | tauko 4 min | KK
+- Reiden ojennus | 3 × 8–10 | varaa 0–1 | tauko 1,5 min | POJ
+
+## Penkki raskas
+- Penkkipunnerrus | raskas | varaa 1–2 | tauko 4 min | KP
+- Kulmasoutu | 4 × 3–6 | varaa 1–2 | tauko 2,5 min | VVE
+- Pystypunnerrus | 2 × 3–5 | varaa 1–2 | tauko 2,5 min | PTY
+- Face pull | 2 × 12–20 | varaa 0–2 | tauko 1,5 min | TAK
+
+## Maastaveto
+- Maastaveto | raskas | varaa 1–2 | tauko 4 min | KM
+
+## Penkki volyymi
+- Taukopenkki | 2 × 3–5 | varaa 1–2 | tauko 2,5 min | PEV
+- Ylätalja | 4 × 5–7 | varaa 1–2 | tauko 2,5 min | PVE
+- Takaolkavipunosto | 4 × 13 | varaa 0–1 | tauko 1,5 min | TAK
+''')!;
+    expect(restDefaults(pl), [90, 150, 240]);
   });
 
   test('Ajastin: −15 s / +15 s ja ohitus', () {

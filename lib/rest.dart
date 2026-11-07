@@ -47,8 +47,17 @@ int loadClass(SetEntry set, {double? best}) {
   return set.reps <= 12 ? 1 : 0;
 }
 
-/// Kuormaluokkien oletuspalautus moninivelliikkeille: ohjelman taukojen mukaan, jos ohjelma on käytössä
-/// (luokan yleisin tauko), muuten tutkimusten mukaiset 60 s / 2 min / 3 min.
+/// Ohjelman liikkeen kuormaluokka: pääliikkeet (raskas / volyymi, prosenttipainot) ovat raskaita; muuten
+/// toistoalueen keskikohta (esim. 3–6 -> raskas, 5–7 -> keskiraskas, 12–20 -> kevyt).
+int itemLoadClass(PlanItem i) {
+  if (i.kind == 'H' || i.kind == 'V') return 2;
+  final mid = (i.lo + i.hi) / 2;
+  return mid <= 5 ? 2 : (mid <= 12 ? 1 : 0);
+}
+
+/// Kuormaluokkien oletuspalautus ohjelman taukojen mukaan, jos ohjelma on käytössä, muuten tutkimusten
+/// mukaiset 60 s / 2 min / 3 min. Raskas = pääliikkeiden pisin tauko, muut luokat yleisin tauko
+/// (moninivelliikkeet; kevyessä luokassa myös eristävät).
 List<int> restDefaults([Program? p]) {
   final out = [60, 120, 180];
   if (p == null) return out;
@@ -56,13 +65,18 @@ List<int> restDefaults([Program? p]) {
     final counts = <int, int>{};
     for (final d in p.plan) {
       for (final i in d.items) {
-        if (!i.compound && c > 0) continue;
-        final cls = i.hi <= 5 ? 2 : (i.hi <= 12 ? 1 : 0);
-        if (cls == c) counts[i.restSec] = (counts[i.restSec] ?? 0) + 1;
+        if (!i.compound && c > 0 && i.kind == null) continue;
+        if (itemLoadClass(i) == c) counts[i.restSec] = (counts[i.restSec] ?? 0) + 1;
       }
     }
-    if (counts.isNotEmpty) out[c] = counts.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+    if (counts.isEmpty) continue;
+    out[c] = c == 2
+        ? counts.keys.reduce((a, b) => a > b ? a : b)
+        : counts.entries.reduce((a, b) => b.value > a.value || (b.value == a.value && b.key > a.key) ? b : a).key;
   }
+  // Raskaampi kuorma ei koskaan saa lyhyempää palautusta kuin kevyempi.
+  if (out[1] > out[2]) out[2] = out[1];
+  if (out[0] > out[1]) out[0] = out[1];
   return out;
 }
 
