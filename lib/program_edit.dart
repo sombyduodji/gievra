@@ -209,11 +209,14 @@ List<MuscleLoad> weeklyLoad(Program p) {
 
 /// Tällä viikolla tehdyt sarjat lihasryhmää kohden (kirjatuista treeneistä, lämmittelyt pois: sarjat,
 /// joiden paino on alle 60 % liikkeen päivän raskaimmasta).
-Map<String, double> loggedWeekSets(List<Workout> history, DateTime today) {
-  final from = weekStart(today);
+Map<String, double> loggedWeekSets(List<Workout> history, DateTime today) =>
+    loggedSets(history, weekStart(today), addDays(dateOnly(today), 1));
+
+/// Tehdyt työsarjat lihasryhmää kohden väliltä [from, to).
+Map<String, double> loggedSets(List<Workout> history, DateTime from, DateTime to) {
   final out = <String, double>{};
   for (final w in history) {
-    if (w.date.isBefore(from) || w.date.isAfter(today)) continue;
+    if (w.date.isBefore(from) || !w.date.isBefore(to)) continue;
     for (final e in w.exercises) {
       final slot = slotOf(e.name);
       final top = e.sets.fold<double>(0, (a, s) => s.kg > a ? s.kg : a);
@@ -242,22 +245,36 @@ Set<String> _heavyMuscles(Iterable<String> slotsUsed) => {
 /// Palauttaa päivän ja perustelun (null = tavallinen kierto).
 (PlanDay, String?) suggestDay(Program p, List<Workout> history, DateTime today) {
   final t = dateOnly(today);
-  final base = p.nextDay(history, t);
+  // Tänään jo tehty salitreeni (sarjoja kirjattu) lasketaan tehdyksi: toinen treeni samalle päivälle
+  // ehdottaa ohjelman seuraavaa päivää, ei samaa uudelleen.
+  final doneToday = history
+      .where((w) => w.date == t && w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty))
+      .map((w) => p.plan.indexWhere((d) => d.matches(w.dayKey)))
+      .where((i) => i >= 0)
+      .toList();
+  final base = doneToday.isEmpty ? p.nextDay(history, t) : p.plan[(doneToday.last + 1) % p.plan.length];
   final start = p.plan.indexOf(base);
   final order = [for (var k = 0; k < p.plan.length; k++) p.plan[(start + k) % p.plan.length]];
   final doneThisWeek = {
     for (final w in history)
       if (!w.date.isBefore(weekStart(t)) && w.date.isBefore(t)) w.dayKey,
+    for (final i in doneToday) p.plan[i].name,
   };
   bool done(PlanDay d) => doneThisWeek.any(d.matches);
   final open = order.where((d) => !done(d)).toList();
   final cands = open.isEmpty ? order : open;
 
+  // Kuormitus: tänään jo tehty salitreeni (tuorein) tai muuten eilinen treeni.
+  final todays = history
+      .where((w) => w.date == t && w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty))
+      .toList();
   final yesterday = history.where((w) => w.date == addDays(t, -1)).firstOrNull;
-  if (yesterday == null) {
+  final recent = todays.isNotEmpty ? todays : [?yesterday];
+  if (recent.isEmpty) {
     return (cands.first, cands.first == base ? null : l10n.t('{0} on jo tehty tällä viikolla.', [base.uiName]));
   }
-  final tired = _heavyMuscles(yesterday.exercises.map((e) => slotOf(e.name)));
+  final isToday = todays.isNotEmpty;
+  final tired = _heavyMuscles(recent.expand((w) => w.exercises).map((e) => slotOf(e.name)));
   Set<String> hits(PlanDay d) => _heavyMuscles(d.items.map((i) => i.slot)).intersection(tired);
   final first = cands.first;
   if (hits(first).isEmpty) {
@@ -267,16 +284,25 @@ Set<String> _heavyMuscles(Iterable<String> slotsUsed) => {
   if (fresh != null) {
     return (
       fresh,
-      l10n.t('Eilen kuormittui {0}: {1} antaa niille palautumisaikaa.', [
-        hits(first).map(l10n.t).join(', '),
-        l10n.trName(fresh.display),
-      ]),
+      isToday
+          ? l10n.t('Tänään kuormittui jo {0}: {1} antaa niille palautumisaikaa.', [
+              hits(first).map(l10n.t).join(', '),
+              l10n.trName(fresh.display),
+            ])
+          : l10n.t('Eilen kuormittui {0}: {1} antaa niille palautumisaikaa.', [
+              hits(first).map(l10n.t).join(', '),
+              l10n.trName(fresh.display),
+            ]),
     );
   }
   return (
     first,
-    l10n.t('Eilen kuormittui {0}. Jos tuntuu raskaalta, jätä tänään enemmän varaa.', [
-      hits(first).map(l10n.t).join(', '),
-    ]),
+    isToday
+        ? l10n.t('Tänään kuormittui jo {0}. Jos treenaat vielä, jätä enemmän varaa.', [
+            hits(first).map(l10n.t).join(', '),
+          ])
+        : l10n.t('Eilen kuormittui {0}. Jos tuntuu raskaalta, jätä tänään enemmän varaa.', [
+            hits(first).map(l10n.t).join(', '),
+          ]),
   );
 }

@@ -9,7 +9,14 @@ import 'widgets.dart';
 import '../l10n.dart';
 
 /// Kysyy painon (kg) tai pituuden (cm). Pilkku ja piste käyvät; väärä arvo näyttää virheen eikä sulje.
-Future<double?> askBodyValue(BuildContext context, {required bool height, double? current}) {
+/// [title] korvaa otsikon (esim. Aamupaino); [previous] näytetään vihjeenä kentän alla.
+Future<double?> askBodyValue(
+  BuildContext context, {
+  required bool height,
+  double? current,
+  String? title,
+  (DateTime, double)? previous,
+}) {
   final c = TextEditingController(text: current == null ? '' : (height ? '${current.round()}' : fmtNum(current)));
   String? error;
   return showDialog<double>(
@@ -26,7 +33,7 @@ Future<double?> askBodyValue(BuildContext context, {required bool height, double
         }
 
         return AlertDialog(
-          title: Text(height ? t('Pituus') : t('Paino')),
+          title: Text(title ?? (height ? t('Pituus') : t('Paino'))),
           content: TextField(
             controller: c,
             autofocus: true,
@@ -35,7 +42,13 @@ Future<double?> askBodyValue(BuildContext context, {required bool height, double
               FilteringTextInputFormatter.allow(RegExp(height ? r'[0-9]' : r'[0-9.,]')),
               LengthLimitingTextInputFormatter(height ? 3 : 5),
             ],
-            decoration: InputDecoration(suffixText: height ? 'cm' : 'kg', errorText: error),
+            decoration: InputDecoration(
+              suffixText: height ? 'cm' : 'kg',
+              errorText: error,
+              helperText: previous == null
+                  ? null
+                  : t('Edellinen {0} kg ({1})', [fmtNum(previous.$2), shortDate(previous.$1)]),
+            ),
             onChanged: (_) => setState(() => error = null),
             onSubmitted: (_) => submit(),
           ),

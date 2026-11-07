@@ -92,6 +92,7 @@ class Workout {
   String? runType; // juoksun tyyppi (kevyt, palauttava, pitka, vauhti, intervallit, kisavauhti, kilpailu)
   int? seconds; // tarkka kesto sekunteina (kestävyyslajit; minutes on pyöristetty)
   int? kcal, hrAvg, hrMax; // sykemittarin tai älykellon tiedot (valinnainen)
+  int? steps; // askeleet (kävely ja muut kävelylajit, valinnainen)
   bool watchTime; // kesto tuli kellosta (ei sovelluksen ajastimesta)
 
   Workout({
@@ -235,6 +236,7 @@ String workoutToMarkdown(Workout w) {
   if (w.minutes != null) b.writeln('duration: ${w.minutes} min${w.watchTime ? ' (kello)' : ''}');
   if (w.seconds != null) b.writeln('time: ${fmtDurationSec(w.seconds!)}');
   if (w.runType != null) b.writeln('run_type: ${w.runType}');
+  if (w.steps != null) b.writeln('steps: ${w.steps}');
   if (w.kcal != null) b.writeln('kcal: ${w.kcal}');
   if (w.hrAvg != null) b.writeln('hr_avg: ${w.hrAvg}');
   if (w.hrMax != null) b.writeln('hr_max: ${w.hrMax}');
@@ -261,6 +263,7 @@ String workoutToMarkdown(Workout w) {
             ? ''
             : ': ${w.minutes} min'}'
         '${w.distanceKm == null ? '' : ', ${fileNum(w.distanceKm!)} km'}${w.pace == null ? '' : ', ${w.pace}'}'
+        '${w.steps == null ? '' : ', ${w.steps} askelta'}'
         '${w.intensity == null ? '' : ', ${w.intensity}'}',
       );
   }
@@ -356,6 +359,8 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   if (inten != null && inten.isNotEmpty) w.intensity = inten;
   int? num(String k) => neg(k) ? null : int.tryParse(RegExp(r'\d+').firstMatch(meta[k] ?? '')?[0] ?? '');
   w.kcal = num('kcal');
+  w.steps = num('steps');
+  if (w.steps == 0) w.steps = null;
   w.hrAvg = num('hr_avg');
   w.hrMax = num('hr_max');
   w.watchTime = (meta['duration'] ?? '').contains('kello');

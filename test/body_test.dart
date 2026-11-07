@@ -84,4 +84,14 @@ void main() {
     expect((Settings()..applyMarkdown(s.settingsToMarkdown())).bodyTracker, isTrue);
     expect((Settings()..applyMarkdown('---\nname: X\n---\n')).bodyTracker, isFalse); // vanha tiedosto: pois
   });
+
+  test('Painon muutos jaksolla: jakson ensimmäisestä punnituksesta viimeiseen', () {
+    final all = [(DateTime(2025, 8, 10), 103.5), (DateTime(2025, 12, 31), 109.7), (DateTime(2026, 10, 17), 96.5)];
+    // Vuosi joulukuu 2025 – marraskuu 2026: 109,7 -> 96,5 (ei elokuun punnituksesta).
+    expect(weightChange(all, DateTime(2025, 12), DateTime(2026, 12)), -13.2);
+    // Jaksolla vain yksi punnitus: verrataan edelliseen.
+    expect(weightChange(all, DateTime(2026, 10), DateTime(2026, 11)), -13.2);
+    expect(weightChange(all, DateTime(2025, 12), DateTime(2026, 1)), 6.2);
+    expect(weightChange(all, DateTime(2024, 1), DateTime(2024, 2)), isNull);
+  });
 }

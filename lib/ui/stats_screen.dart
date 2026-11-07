@@ -5,9 +5,12 @@ import '../body.dart';
 import '../exercises.dart';
 import '../insights.dart';
 import '../models.dart';
+import '../program_edit.dart' show loggedSets;
+import '../share_text.dart' show thousands;
 import '../running.dart';
 import '../stats.dart';
 import '../theme.dart';
+import 'program_view.dart' show WeeklyLoadCard;
 import 'running_screen.dart';
 import 'widgets.dart';
 import '../l10n.dart';
@@ -200,7 +203,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 const SizedBox(width: 6),
                 tile(
                   r.minutes == 0 ? '–' : _hours(r.minutes),
-                  t('aikaa'),
+                  _timeLabel(r),
                   delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
                 ),
                 const SizedBox(width: 6),
@@ -233,7 +236,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   const SizedBox(width: 6),
                   tile(
                     r.minutes == 0 ? '–' : _hours(r.minutes),
-                    t('aikaa'),
+                    _timeLabel(r),
                     delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
                   ),
                   const SizedBox(width: 6),
@@ -275,6 +278,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         t('{0} krt', [e.value.count]),
                         if (e.value.minutes > 0) _hours(e.value.minutes),
                         if (e.value.km > 0) '${fmtNum((e.value.km * 10).round() / 10)} km',
+                        if (e.value.steps > 0) t('{0} askelta', [thousands(e.value.steps)]),
                       ].join(' · '),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
@@ -290,6 +294,23 @@ class _StatsScreenState extends State<StatsScreen> {
                 : t('Treenit viikoittain (12 viikkoa)'),
           ),
           _StackBars(weeks: bars, kind: kind, monthly: monthly),
+          // Ohjelman viikon kuorma: suunniteltu ja toteutunut lihasryhmittäin. Viikolla valitun viikon sarjat,
+          // pidemmällä jaksolla keskimäärin viikossa (kuluvasta jaksosta vain tähän päivään asti).
+          if (kind != 'cardio' && settings.program != null) ...[
+            const SizedBox(height: 14),
+            WeeklyLoadCard(
+              program: settings.program!,
+              done: () {
+                final end = b.isAfter(today) ? addDays(today, 1) : b;
+                final sets = loggedSets(ws, a, end);
+                final weeks = _span == 'week' ? 1.0 : (end.difference(a).inDays / 7).clamp(1.0, 1000.0);
+                return {for (final e in sets.entries) e.key: (e.value / weeks * 10).round() / 10};
+              }(),
+              doneLabel: _span == 'week'
+                  ? (b.isAfter(today) ? t('toteutunut tällä viikolla') : t('toteutunut sillä viikolla'))
+                  : t('toteutunut, keskimäärin viikossa'),
+            ),
+          ],
           if (settings.bodyTracker) _BodySection(from: _months > 1 ? a : addDays(b, -84), to: b),
           if (tips.isNotEmpty) ...[
             SectionLabel(t('Huomiot ja ehdotukset')),
@@ -649,10 +670,9 @@ class _BodySection extends StatelessWidget {
     }
     final pts = all.where((e) => !e.$1.isBefore(from) && e.$1.isBefore(to)).toList();
     final last = all.where((e) => e.$1.isBefore(to)).lastOrNull ?? all.last;
-    // Muutos jakson aikana: ensimmäisestä jakson punnituksesta (tai sitä edeltävästä) viimeiseen.
-    final before = all.where((e) => e.$1.isBefore(from)).lastOrNull;
-    final start = before ?? pts.firstOrNull;
-    final change = start == null || identical(start, last) ? null : last.$2 - start.$2;
+    // Muutos jakson aikana: jakson ensimmäisestä punnituksesta viimeiseen. Jos jaksolla on vain yksi punnitus,
+    // verrataan sitä edeltävään (jakson ulkopuoliseen) punnitukseen.
+    final change = weightChange(all, from, to);
     Widget tile(String v, String l, {Color? color}) => Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
@@ -779,3 +799,7 @@ class _WeightPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _WeightPainter o) => o.pts != pts || o.height != height;
 }
+
+/// Ajan selite: jos kaikilla treeneillä ei ole kestoa (esim. FitNotes-tuonti), kerrotaan, monenko treenin aika on.
+String _timeLabel(Recap r) =>
+    r.timed > 0 && r.timed < r.parts ? t('aikaa, {0}/{1} treenistä', [r.timed, r.parts]) : t('aikaa');

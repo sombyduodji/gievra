@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import '../share_text.dart' show thousands;
 import '../sports.dart';
 import '../theme.dart';
 import 'watch.dart';
@@ -200,6 +201,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     ],
                   ),
                 ),
+            ],
+            // Kävelylajeissa askeleet (esim. puhelimesta tai kellosta).
+            if (sport?.steps ?? false) ...[
+              SectionLabel(t('Askeleet')),
+              ValueStepper(
+                value: thousands(w.steps ?? 0),
+                unit: t('askelta'),
+                onMinus: () => setState(() {
+                  final v = ((w.steps ?? 0) - 500).clamp(0, 200000);
+                  w.steps = v == 0 ? null : v;
+                }),
+                onPlus: () => setState(() => w.steps = ((w.steps ?? 0) + 500).clamp(0, 200000)),
+                onTap: () async {
+                  final v = await askNumber(context, t('Askeleet'), (w.steps ?? 0).toDouble(), decimals: false);
+                  if (v != null && v >= 0 && v <= 200000) setState(() => w.steps = v == 0 ? null : v.round());
+                },
+              ),
             ],
             SectionLabel(t('Rasitus')),
             SegmentedButton<String>(

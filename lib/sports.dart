@@ -4,7 +4,8 @@
 class Sport {
   final String name, icon, group;
   final bool distance;
-  const Sport(this.name, this.icon, this.group, {this.distance = false});
+  final bool steps; // askeleet kirjataan (kävelylajit)
+  const Sport(this.name, this.icon, this.group, {this.distance = false, this.steps = false});
 }
 
 // l10n: data
@@ -15,15 +16,15 @@ const sportGroups = ['Kestävyys', 'Pallo- ja mailapelit', 'Muut lajit'];
 const sports = <Sport>[
   Sport('Juoksu', '🏃', 'Kestävyys', distance: true),
   Sport('Hölkkä', '🏃', 'Kestävyys', distance: true),
-  Sport('Kävely', '🚶', 'Kestävyys', distance: true),
-  Sport('Sauvakävely', '🥢', 'Kestävyys', distance: true),
+  Sport('Kävely', '🚶', 'Kestävyys', distance: true, steps: true),
+  Sport('Sauvakävely', '🥢', 'Kestävyys', distance: true, steps: true),
   Sport('Pyöräily', '🚴', 'Kestävyys', distance: true),
   Sport('Uinti', '🏊', 'Kestävyys', distance: true),
   Sport('Hiihto', '⛷️', 'Kestävyys', distance: true),
   Sport('Soutu', '🚣', 'Kestävyys', distance: true),
   Sport('Melonta', '🛶', 'Kestävyys', distance: true),
   Sport('Luistelu', '⛸️', 'Kestävyys', distance: true),
-  Sport('Retkeily', '🥾', 'Kestävyys', distance: true),
+  Sport('Retkeily', '🥾', 'Kestävyys', distance: true, steps: true),
   Sport('Lumikenkäily', '🌨️', 'Kestävyys', distance: true),
   Sport('Salibandy', '🏑', 'Pallo- ja mailapelit'),
   Sport('Jalkapallo', '⚽', 'Pallo- ja mailapelit'),

@@ -152,6 +152,10 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                           w.date.isBefore(_date) &&
                           d.matches(w.dayKey),
                     ),
+                    // Samana päivänä jo tehty (sarjoja kirjattu): ehdotus on silloin ohjelman seuraava päivä.
+                    doneToday: store.workouts.any(
+                      (w) => w.date == _date && d.matches(w.dayKey) && w.exercises.any((e) => e.sets.isNotEmpty),
+                    ),
                     onTap: () => setState(() => _day = d),
                     onRename: () async {
                       final v = await askDayLabel(context, d);

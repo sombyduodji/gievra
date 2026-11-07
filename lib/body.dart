@@ -100,6 +100,17 @@ BodyLog mergeBody(BodyLog current, BodyLog imported) {
   return out;
 }
 
+/// Painon muutos jaksolla [from, to): jakson ensimmäisestä punnituksesta viimeiseen. Jos jaksolla on vain yksi
+/// punnitus, verrataan sitä edeltävään. null = ei vertailtavaa.
+double? weightChange(List<(DateTime, double)> all, DateTime from, DateTime to) {
+  final pts = all.where((e) => !e.$1.isBefore(from) && e.$1.isBefore(to)).toList();
+  if (pts.isEmpty) return null;
+  final before = all.where((e) => e.$1.isBefore(from)).lastOrNull;
+  final start = pts.length >= 2 ? pts.first : before;
+  if (start == null) return null;
+  return ((pts.last.$2 - start.$2) * 10).round() / 10;
+}
+
 /// Painosarja tilastoihin: punnitukset ja treeneihin kirjatut kehonpainot (esim. FitNotes-tuonti);
 /// saman päivän punnitus voittaa. Vanhimmasta uusimpaan.
 List<(DateTime, double)> weightSeries(BodyLog b, List<Workout> ws) {

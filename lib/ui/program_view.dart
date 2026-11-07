@@ -18,6 +18,7 @@ class ProgramView extends StatelessWidget {
   final List<Widget> footer;
   final List<String> injuries;
   final VoidCallback? onChanged;
+  final Map<String, double>? done; // tällä viikolla tehdyt sarjat (nykyinen ohjelma): viikon kuormaan Tämä viikko
   const ProgramView({
     super.key,
     required this.program,
@@ -25,6 +26,7 @@ class ProgramView extends StatelessWidget {
     this.footer = const [],
     this.injuries = const [],
     this.onChanged,
+    this.done,
   });
 
   bool get _editable => onChanged != null;
@@ -86,7 +88,7 @@ class ProgramView extends StatelessWidget {
         const SizedBox(height: 6),
         _CheckCard(issues: issues),
         const SizedBox(height: 10),
-        WeeklyLoadCard(program: program),
+        WeeklyLoadCard(program: program, done: done),
         if (_editable)
           Padding(
             padding: const EdgeInsets.only(top: 10),
@@ -220,67 +222,105 @@ class _CheckCard extends StatelessWidget {
   }
 }
 
-/// Viikon sarjat lihasryhmää kohden ja suositus. [done] = tällä viikolla jo tehdyt.
+/// Viikon sarjat lihasryhmää kohden ja suositus. [done] = tällä viikolla jo tehdyt: silloin jokaisella lihasryhmällä
+/// kaksi palkkia allekkain, suunniteltu (ohjelma, väri suosituksen mukaan) ja toteutunut (tällä viikolla).
 class WeeklyLoadCard extends StatelessWidget {
   final Program program;
   final Map<String, double>? done;
-  const WeeklyLoadCard({super.key, required this.program, this.done});
+  final String? doneLabel; // toteutuneen selite (oletus: tällä viikolla)
+  const WeeklyLoadCard({super.key, required this.program, this.done, this.doneLabel});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final load = weeklyLoad(program);
+    final small = TextStyle(fontSize: 11, color: cs.onSurfaceVariant);
+    Widget bar(double value, Color color, double height) => ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: LinearProgressIndicator(
+        value: value.clamp(0.0, 1.0),
+        minHeight: height,
+        color: color,
+        backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+      ),
+    );
+    Color levelColor(MuscleLoad m) => switch (m.level) {
+      LoadLevel.ok => Sami.green,
+      LoadLevel.low => Sami.yellow,
+      LoadLevel.high => Sami.red,
+    };
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            done == null ? t('Viikon kuorma (sarjaa viikossa)') : t('Tämä viikko: tehty / suunniteltu'),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(t('Viikon kuorma (sarjaa viikossa)'), style: const TextStyle(fontWeight: FontWeight.w700)),
+          if (done != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Wrap(
+                spacing: 14,
+                children: [
+                  for (final (c, l) in [
+                    (Sami.green, t('suunniteltu')),
+                    (Sami.blue, doneLabel ?? t('toteutunut tällä viikolla')),
+                  ])
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 6,
+                          decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(3)),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(l, style: small),
+                      ],
+                    ),
+                ],
+              ),
+            ),
           const SizedBox(height: 8),
           for (final m in load)
-            // Yksinkertainen edistymispalkki: täysi = suosituksen yläraja, luvut näkyvissä.
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: EdgeInsets.symmetric(vertical: done == null ? 4 : 5),
               child: Row(
                 children: [
                   SizedBox(width: 78, child: Text(t(m.muscle), style: const TextStyle(fontSize: 13))),
                   Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(5),
-                      child: LinearProgressIndicator(
-                        value: done == null
-                            ? (m.hi <= 0 ? 0 : (m.sets / m.hi).clamp(0.0, 1.0))
-                            : (m.sets <= 0 ? 0 : ((done![m.muscle] ?? 0) / m.sets).clamp(0.0, 1.0)),
-                        minHeight: 10,
-                        color: done != null
-                            ? Sami.blue
-                            : switch (m.level) {
-                                LoadLevel.ok => Sami.green,
-                                LoadLevel.low => Sami.yellow,
-                                LoadLevel.high => Sami.red,
-                              },
-                        backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
-                      ),
+                    child: Column(
+                      children: [
+                        // Täysi palkki = suosituksen yläraja (molemmissa sama mittakaava).
+                        bar(m.hi <= 0 ? 0 : m.sets / m.hi, levelColor(m), done == null ? 10 : 8),
+                        if (done != null) ...[
+                          const SizedBox(height: 3),
+                          bar(m.hi <= 0 ? 0 : (done![m.muscle] ?? 0) / m.hi, Sami.blue, 8),
+                        ],
+                      ],
                     ),
                   ),
                   SizedBox(
                     width: 84,
-                    child: Text(
-                      done == null
-                          ? '${fmtLoad(m.sets)} / ${m.lo}–${m.hi}'
-                          : '${fmtLoad(done![m.muscle] ?? 0)} / ${fmtLoad(m.sets)}',
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${fmtLoad(m.sets)} / ${m.lo}–${m.hi}',
+                          style: TextStyle(fontSize: done == null ? 13 : 12, fontWeight: FontWeight.w600),
+                        ),
+                        if (done != null)
+                          Text(
+                            _doneLabel(done![m.muscle] ?? 0, m.sets),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Sami.blue),
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          if (done == null && load.any((m) => m.level == LoadLevel.low && majorMuscles.contains(m.muscle)))
+          if (load.any((m) => m.level == LoadLevel.low && majorMuscles.contains(m.muscle)))
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
@@ -296,8 +336,19 @@ class WeeklyLoadCard extends StatelessWidget {
               'suosituksessa, keltainen: alle, punainen: yli. Epäsuora kuorma lasketaan puolikkaana (esim. '
               'penkki: ojentajille ½). Vähintään 4 sarjaa ylläpitää, lihaskasvussa 10–20 tuottaa yleensä eniten.',
             ),
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            style: small,
           ),
+          if (done != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                t(
+                  'Toteutunut: tehdyt työsarjat kirjatuista treeneistä, myös ohjelman ulkopuoliset liikkeet; '
+                  'pidemmällä jaksolla keskimäärin viikossa. ✓ = suunnitelma täynnä, ↑ = enemmän kuin suunniteltu.',
+                ),
+                style: small,
+              ),
+            ),
         ],
       ),
     );
@@ -306,7 +357,15 @@ class WeeklyLoadCard extends StatelessWidget {
 
 String fmtLoad(double v) => v == v.roundToDouble() ? '${v.round()}' : fmtDec(v, 1);
 
-/// Yhden liikkeen muokkaus: vaihto (arvion kanssa), sarjat, toistoalue, poisto.
+/// "5 / 7", "8 / 8 ✓", "10 / 8 ↑".
+String _doneLabel(double done, double planned) {
+  final base = '${fmtLoad(done)} / ${fmtLoad(planned)}';
+  if (planned <= 0) return base;
+  if (done > planned + .01) return '$base ↑';
+  if (done >= planned - .01) return '$base ✓';
+  return base;
+}
+
 class _ItemSheet extends StatefulWidget {
   final Program program;
   final PlanDay day;
@@ -529,7 +588,7 @@ Future<String?> askDayLabel(BuildContext context, PlanDay d) {
 /// Ohjelmapäivän kortti treenin valintaan: nimi, liikkeet, kesto, suositus- ja tehty-merkit.
 class DayCard extends StatelessWidget {
   final PlanDay day;
-  final bool selected, suggested, doneThisWeek;
+  final bool selected, suggested, doneThisWeek, doneToday;
   final VoidCallback onTap;
   final VoidCallback? onRename;
   final String? subtitle;
@@ -540,6 +599,7 @@ class DayCard extends StatelessWidget {
     required this.onTap,
     this.suggested = false,
     this.doneThisWeek = false,
+    this.doneToday = false,
     this.onRename,
     this.subtitle,
   });
@@ -581,7 +641,10 @@ class DayCard extends StatelessWidget {
                           if (day.label != null)
                             Text(day.name, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                           if (suggested) _badge(t('suositus'), const Color(0xFF3FBF7F)),
-                          if (doneThisWeek) _badge(t('tehty tällä viikolla ✓'), cs.onSurfaceVariant),
+                          if (doneToday)
+                            _badge(t('tehty tänään ✓'), Sami.green)
+                          else if (doneThisWeek)
+                            _badge(t('tehty tällä viikolla ✓'), cs.onSurfaceVariant),
                         ],
                       ),
                       const SizedBox(height: 2),

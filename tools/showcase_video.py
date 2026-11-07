@@ -74,7 +74,46 @@ USER = [
      "Juoksulla on oma kehitysnäkymä: kilometrit ja vauhti viikoittain, kevyiden lenkkien vauhti ja "
      "syke sekä ennätykset. Salitreeneillä omat tilastonsa ja ennätykset."),
 ]
+# Kotisivun video (0.2): sali, kestävyys, aamupaino ja yhteenveto. Kohtaukset v1 … v5, tiedostot v1_fi.mp4 / v1_en.mp4.
+HOME = {
+    "fi": [
+        ("v1", "Sali, kestävyys tai molemmat",
+         "Etusivulla vaihdat salin ja kestävyyden välillä yhdellä napautuksella. Tervehdys on aina saameksi, ja "
+         "treenit tallentuvat tavallisiksi tiedostoiksi omaan kansioosi: ei tiliä, ei mainoksia."),
+        ("v2", "Aloita salitreeni",
+         "Ohjelman päivä ehdotetaan palautumisen mukaan. Lämmittelysarjat ja paino ovat valmiina, palautusajastin "
+         "kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
+        ("v3", "Lenkki yhdellä napautuksella",
+         "Valitse lenkin tyyppi ja kirjoita matka: vauhti ja keskinopeus lasketaan heti. Yli 35 lajia, "
+         "kävelyssä myös askeleet. Garmin Connectin suoritukset voi tuoda CSV-tiedostona."),
+        ("v4", "Aamupaino",
+         "Valinnainen kehonpainon seuranta: merkitse aamupaino, kun haluat. Pilkku tai piste käy, ja rivi "
+         "katoaa merkinnän jälkeen."),
+        ("v5", "Yhteenveto ja kehitys",
+         "Viikko, kuukausi, 3 tai 6 kuukautta tai vuosi: sali ja kestävyys yhdessä tai erikseen, lajeittain, "
+         "kehonpaino ja painoindeksi. Mukana myös FitNotesista ja Garminista tuodut treenit."),
+    ],
+    "en": [
+        ("v1", "Gym, cardio or both",
+         "Switch between gym and cardio on the home screen with one tap. The greeting is always in North Sámi, "
+         "and workouts are saved as plain files in your own folder: no account, no ads."),
+        ("v2", "Start a gym workout",
+         "The program day is suggested based on your recovery. Warm-up sets and weights are filled in, the rest "
+         "timer tells you when to go again, and a set is saved by answering »Reps in reserve?«."),
+        ("v3", "Add a run with one tap",
+         "Pick the run type and enter the distance: pace and average speed are calculated right away. Over 35 "
+         "sports, with steps for walking. Garmin Connect activities can be imported as a CSV file."),
+        ("v4", "Morning weight",
+         "Optional body weight tracking: log your morning weight whenever you like. A comma or a dot both work, "
+         "and the button disappears once you've logged it."),
+        ("v5", "Overview and progress",
+         "A week, a month, 3 or 6 months or a year: gym and cardio together or separately, by sport, body weight "
+         "and BMI. Workouts imported from FitNotes and Garmin are included."),
+    ],
+}
 SCENES = TRAINER
+LANG = "fi"
+FOOTER = {"fi": "Gievra – Treenipäiväkirja · demo-tiedot", "en": "Gievra – Training log · demo data"}
 
 
 def font(size, bold=False):
@@ -110,7 +149,7 @@ def scene_bg(path, n, title, body):
     for line in wrap(d, body, font(38), 1000):
         d.text((x, y), line, font=font(38), fill=TEXT)
         y += 58
-    d.text((x, H - 90), "Gievra – Treenipäiväkirja · demo-tiedot", font=font(26), fill=MUTED)
+    d.text((x, H - 90), FOOTER[LANG], font=font(26), fill=MUTED)
     band(d, H - 10)
     im.save(path)
 
@@ -143,18 +182,26 @@ def main():
     ap.add_argument("--scenes", required=True)
     ap.add_argument("--ffmpeg", default="ffmpeg")
     ap.add_argument("--out", default="Gievra-esittely.mp4")
-    ap.add_argument("--audience", choices=["valmentaja", "kayttaja"], default="valmentaja")
+    ap.add_argument("--audience", choices=["valmentaja", "kayttaja", "kotisivu"], default="valmentaja")
+    ap.add_argument("--lang", choices=["fi", "en"], default="fi", help="kotisivun video: kieli")
     ap.add_argument("--music", help="taustamusiikki (wav), esim. tools/video_music.py")
     ap.add_argument("--speed", type=float, default=1.0, help="nauhoitusten nopeutus (esim. 1.3)")
     a = ap.parse_args()
-    global SCENES
-    SCENES = USER if a.audience == "kayttaja" else TRAINER
-    user = a.audience == "kayttaja"
+    global SCENES, LANG
+    LANG = a.lang
+    home = a.audience == "kotisivu"
+    SCENES = HOME[a.lang] if home else USER if a.audience == "kayttaja" else TRAINER
+    user = a.audience in ("kayttaja", "kotisivu")
+    en = home and a.lang == "en"
     tmp = tempfile.mkdtemp()
     enc = ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", "-preset", "medium", "-crf", "20", "-an"]
     parts = []
 
     card(f"{tmp}/title.png", [
+        ("Gievra – Training log", 72, True, TEXT),
+        ("Your training, your files.", 44, False, TEXT),
+        ("Free and open source · no account · no ads · works offline", 32, False, MUTED),
+    ] if en else [
         ("Gievra – Treenipäiväkirja", 72, True, TEXT),
         ("Sinun treenisi, sinun tiedostosi." if user else "Esittely valmentajalle", 44, False, TEXT),
         ("Maksuton ja avoin · ei tiliä · ei mainoksia · toimii ilman verkkoa", 32, False, MUTED),
@@ -165,7 +212,7 @@ def main():
     for n, (name, title, body) in enumerate(SCENES, 1):
         bg = f"{tmp}/{name}.png"
         scene_bg(bg, n, title, body)
-        src = os.path.join(a.scenes, f"{name}.mp4")
+        src = os.path.join(a.scenes, f"{name}_{a.lang}.mp4" if home else f"{name}.mp4")
         out = f"{tmp}/p{n:02d}.mp4"
         # Selitys luettavaksi ennen liikettä: 2 s pysäytyskuva alussa, 1,5 s lopussa.
         run(a.ffmpeg, "-loop", "1", "-i", bg, "-i", src, "-filter_complex",
@@ -175,6 +222,12 @@ def main():
         parts.append(out)
 
     card(f"{tmp}/end.png", [
+        ("Try it in your browser or download for Android", 52, True, TEXT),
+        ("The web demo lets you try everything and build your own training program. The app is free and open "
+         "source (GPL-3.0), with no account, ads or tracking. Also in Finnish and North Sámi.", 34, False, TEXT),
+        ("In development: feedback and ideas are very welcome.", 30, False, MUTED),
+        ("sombyduodji.github.io/gievra/en · treeni@somby.fi", 36, True, (181, 36, 26)),
+    ] if en else [
         ("Kokeile selaimessa tai lataa Androidille", 52, True, TEXT),
         ("Verkkodemossa voit kokeilla kaikkea ja tehdä oman treeniohjelman. Sovellus on maksuton ja avoin "
          "(GPL-3.0), eikä siinä ole tiliä, mainoksia tai seurantaa.", 34, False, TEXT),

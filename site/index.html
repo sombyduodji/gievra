@@ -6,6 +6,8 @@
 <title>Gievra – Treenipäiväkirja</title>
 <meta name="description" content="Gievra – Treenipäiväkirja: maksuton ja avoin treenipäiväkirja salille ja kuntoiluun. Sinun treenisi, sinun tiedostosi. Kokeile selaimessa ja tee oma treeniohjelma.">
 <link rel="icon" href="logo.png">
+<link rel="alternate" hreflang="fi" href="https://sombyduodji.github.io/gievra/">
+<link rel="alternate" hreflang="en" href="https://sombyduodji.github.io/gievra/en/">
 <style>
 :root{--bg:#f6f4ef;--surface:#fff;--text:#17191d;--muted:#5d636d;--line:#e4e1da;
   --red:#d52b1e;--green:#007229;--yellow:#ffce00;--blue:#0035ad;--dark:#262a30}
@@ -44,6 +46,9 @@ th{width:34%}
 code{background:var(--line);padding:1px 6px;border-radius:6px}
 section.video{text-align:center;padding-top:8px}
 section.video video{width:100%;max-width:960px;border-radius:16px;border:1px solid var(--line);background:#000;display:block;margin:0 auto}
+nav.lang{display:flex;justify-content:flex-end;gap:6px;padding-top:12px;font-size:14px}
+nav.lang a,nav.lang span{padding:4px 10px;border-radius:999px;text-decoration:none;border:1px solid var(--line)}
+nav.lang span{background:var(--surface);font-weight:700}
 footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 .zigzag{height:10px;margin:8px 0;background:
   linear-gradient(135deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px,
@@ -53,11 +58,12 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 <body>
 <div class="band"></div>
 <div class="wrap">
+<nav class="lang" aria-label="Kieli · Language"><span>Suomi</span><a href="en/" hreflang="en" lang="en">English</a></nav>
 <header>
   <img src="logo.png" alt="Gievra-logo, kahvakuula">
   <h1>Gievra – Treenipäiväkirja</h1>
   <p class="slogan">Sinun treenisi, sinun tiedostosi.</p>
-  <p class="sub">Maksuton ja avoin treenipäiväkirja salille ja kuntoiluun · ei tiliä · ei mainoksia · toimii ilman verkkoa</p>
+  <p class="sub">Maksuton ja avoin treenipäiväkirja salille, juoksuun ja muuhun liikuntaan · ei tiliä · ei mainoksia · toimii ilman verkkoa</p>
   <p class="sub"><span class="bures">Bures!</span> <i>Gievra</i> on pohjoissaamea ja tarkoittaa <i>vahvaa</i>.</p>
   <div class="cta">
     <a class="btn primary" href="app/">Kokeile selaimessa</a>
@@ -70,10 +76,10 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Katso, miten Gievra toimii</h2>
   <video controls preload="none" playsinline poster="gievra-video.jpg">
     <source src="gievra-video.mp4" type="video/mp4">
-    <a href="gievra-video.mp4">Lataa esittelyvideo (MP4, 2 min)</a>
+    <a href="gievra-video.mp4">Lataa esittelyvideo (MP4, 1,5 min)</a>
   </video>
-  <p class="sub">2 min · suomeksi · demo-tiedot · taustamusiikki tehty itse</p>
-  <p class="sub"><small>Video on tehty versiosta 0.1.8 (marraskuu 2026). Gievra kehittyy jatkuvasti, joten uusimmassa versiossa on enemmän ominaisuuksia ja osa näkymistä voi näyttää erilaiselta.</small></p>
+  <p class="sub">1,5 min · suomeksi · demo-tiedot · taustamusiikki tehty itse · <a href="en/">in English</a></p>
+  <p class="sub"><small>Video on tehty versiosta 0.2.4 (marraskuu 2026). Gievra kehittyy jatkuvasti, joten uusimmassa versiossa on enemmän ominaisuuksia ja osa näkymistä voi näyttää erilaiselta.</small></p>
 </section>
 
 <div class="shots">
@@ -110,60 +116,72 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Mitä se osaa</h2>
   <div class="grid">
     <div class="card">
-      <h3>Treenin kirjaus yhdellä kädellä</h3>
+      <h3>💪 Salitreeni yhdellä kädellä</h3>
       <ul>
+        <li><i>Aloita salitreeni</i>: ohjelman päivä ehdotetaan palautumisen mukaan (tänään ja eilen kuormittuneet lihakset), ja jo tehty päivä merkitään</li>
         <li>isot +/– -säätimet, edellinen kerta ja paras tulos, ennätykset 🏆</li>
         <li>sarja tallentuu yhdellä napautuksella: <i>jäikö varaa?</i></li>
-        <li>lämmittelysarjat valmiiksi täytettyinä työpainon mukaan</li>
-        <li>painoehdotus edellisen kerran perusteella</li>
+        <li>lämmittelysarjat valmiiksi täytettyinä ja painoehdotus edellisen kerran perusteella</li>
         <li><i>Miltä tuntui?</i> 😫 😕 😐 🙂 🤩 – raskaan treenin jälkeen liikekohtainen palaute</li>
-        <li>palautusajastin (valinnainen): raskaissa sarjoissa pidempi tauko, lämmittelyissä ja kevennysviikolla lyhyempi, omat ajat ±15 s; ilmoitus äänellä ja värinällä myös näytön ollessa pois päältä</li>
-        <li>useampi treeni samana päivänä: <i>Lisää uusi treeni</i> etusivulta</li>
+        <li>palautusajastin (valinnainen): raskaissa sarjoissa pidempi tauko, ilmoitus äänellä ja värinällä myös näytön ollessa pois päältä</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Valmiit treeniohjelmat</h3>
+      <h3>📋 Valmiit treeniohjelmat</h3>
       <ul>
         <li>voimanosto, lihaskasvu, rasvanpoltto, yleiskunto tai fiiliksellä</li>
-        <li>kahvakuulaohjelmat: voima, lihaskasvu, kunto, perusta yhdellä kuulalla</li>
-        <li>kehonpainolla ilman salia</li>
+        <li>kahvakuulaohjelmat ja kehonpainolla treenaaminen ilman salia</li>
         <li>voimanoston 10 viikon sykli ja kevennysviikot</li>
+        <li>ohjelman tarkistus ja viikon kuorma lihasryhmittäin</li>
         <li>lähtökohdaksi voi ottaa oman treenihistorian FitNotesista</li>
+        <li><code>.gmd</code>-ohjelmapohjat jaettaviksi; Androidilla ne aukeavat suoraan Gievralla</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Ohjelmapohjat</h3>
+      <h3>🏃 Juoksu ja muu liikunta</h3>
       <ul>
-        <li>tallenna ohjelma <code>.gmd</code>-tiedostoksi ja jaa se</li>
-        <li>tuo valmentajan tai kaverin pohja, Androidilla suoraan <i>Avaa sovelluksella</i></li>
-        <li>vaihda ohjelmaa milloin vain, treenihistoria säilyy</li>
+        <li>valitse <b>Sali</b>, <b>Kestävyys</b> tai <b>Molemmat</b>; etusivulla vaihdat näkymää yhdellä napautuksella</li>
+        <li>lenkin lisäys yhdellä napautuksella, käytetyimmät lajit ensin</li>
+        <li>yli 35 lajia; kävelyssä ja retkeilyssä myös askeleet</li>
+        <li>juoksulle oma kehitysnäkymä: lenkin tyyppi, vauhti ja keskinopeus, kilometrit, kevyiden lenkkien vauhti ja syke, ennätykset</li>
+        <li>älykellon tiedot (kesto, kalorit, syke) kirjoitetaan toistaiseksi käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Liikkeet ja ohjeet</h3>
+      <h3>📈 Edistyminen ja tilastot</h3>
       <ul>
-        <li>147 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula, kehonpaino</li>
-        <li><i>Näin teet</i>: animaatio ja tekniikkavinkit jokaiselle liikkeelle</li>
-        <li>lankku sekunteina, kävelyt askelina, kannot edestakaisina</li>
+        <li>yhteenveto viikolta, kuukaudelta, 3 tai 6 kuukaudelta ja vuodelta</li>
+        <li>kaikki treenit yhdessä tai sali ja kestävyys erikseen: kerrat, aika, sarjat, volyymi, kilometrit, syke ja lajeittain</li>
+        <li>treenit viikoittain tai kuukausittain, myös FitNotesista ja Garminista tuodut</li>
+        <li>viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain</li>
+        <li>voimakehitys arvioidusta maksimista ja fiilis viikoittain</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Seuranta</h3>
+      <h3>⚖️ Kehonpaino (valinnainen)</h3>
       <ul>
-        <li>yhteenveto viikolta, kuukaudelta, 3 ja 6 kuukaudelta sekä vuodelta: kaikki treenit tai sali ja kestävyys erikseen, myös tuodut treenit; voimakehitys, fiilis</li>
-        <li>kehonpainon seuranta (valinnainen): päivän paino etusivulla, painon kehitys ja painoindeksi tilastoissa</li>
-        <li>vammatila, sairas- ja lomatauot, palautuminen</li>
-        <li>Sali, Kestävyys tai Molemmat: etusivulla Sali / Kestävyys -valinta; kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke</li>
-        <li>urheilulajit ja älykellon tiedot (kesto, kalorit, syke heti treenin jälkeen). Kellon tiedot kirjoitetaan toistaiseksi käsin: suoraa yhteyttä kelloon tai Health Connectiin ei vielä ole</li>
-        <li>juoksulle oma kehitysnäkymä: lenkin tyyppi yhdellä napautuksella, vauhti ja keskinopeus, kilometrit viikoittain, kevyiden lenkkien vauhti ja syke sekä ennätykset</li>
+        <li><i>Merkitse aamupaino</i> etusivulla, kun et ole vielä punninnut; punnitse milloin haluat</li>
+        <li>pilkku tai piste käy (82,4 tai 82.4)</li>
+        <li>painon kehitys ja painoindeksi tilastoissa</li>
+        <li>punnitukset ja pituus muokataan asetuksista; FitNotesin punnitukset tuodaan mukana</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Tiedostot ovat sinun</h3>
+      <h3>🩹 Palautuminen ja vammat</h3>
       <ul>
-        <li>treenit tavallisina Markdown-tiedostoina (<code>.md</code>)</li>
-        <li>synkronoi Nextcloudilla, Syncthingillä tai muulla</li>
-        <li>tuonti FitNotesista ja Garmin Connectista (CSV), varmuuskopio zip-tiedostona</li>
+        <li>vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen</li>
+        <li>sairas- ja lomatauko kevyemmällä paluulla</li>
+        <li>muistutus kevennysviikosta, kun on treenattu pitkään putkeen</li>
+        <li>147 liikettä, joista jokaiselle <i>Näin teet</i> -animaatio ja tekniikkavinkit</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📁 Tiedostot ovat sinun</h3>
+      <ul>
+        <li>treenit, asetukset, ohjelma ja punnitukset tavallisina Markdown-tiedostoina (<code>.md</code>)</li>
+        <li>synkronoi Nextcloudilla, Seafilella, Syncthingillä tai muulla</li>
+        <li>tuonti FitNotesista, Garmin Connectista ja <code>.md</code>-tiedostoista; varmuuskopio zip-tiedostona</li>
+        <li>uusi tuonti ei tee kaksoiskappaleita: olemassa olevat treenit ja punnitukset säilyvät</li>
       </ul>
     </div>
   </div>
@@ -209,7 +227,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <div class="band" style="margin-bottom:16px"></div>
   Gievra – Treenipäiväkirja · Juha Somby · <a href="https://github.com/sombyduodji/gievra/blob/main/LICENSE">GPL-3.0</a> ·
   <a href="mailto:treeni@somby.fi">treeni@somby.fi</a><br>
-  <span lang="en">Free, open-source training log in Finnish with an experimental North Sámi interface. Try the demo and program builder: <a href="app/">app</a>.</span>
+  <span lang="en">Free, open-source training log in Finnish, English and North Sámi: <a href="en/">English page</a>.</span>
 </footer>
 </body>
 </html>

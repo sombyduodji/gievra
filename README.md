@@ -91,7 +91,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - yhteenveto viikolta, kuukaudelta, 3 tai 6 kuukaudelta ja vuodelta: kaikki treenit yhdessä tai sali ja kestävyys
   erikseen (kerrat, aika, sarjat, volyymi, kilometrit, syke, lajeittain), treenit viikoittain tai kuukausittain;
   mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
-- kehonpainon seuranta (valinnainen): *Tämän päivän paino* etusivulla, kun et ole vielä punninnut (pilkku tai piste
+- viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (viikko tai keskiarvo pidemmältä jaksolta)
+- kehonpainon seuranta (valinnainen): *Merkitse aamupaino* etusivulla, kun et ole vielä punninnut (pilkku tai piste
   käy), painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
   FitNotesin punnitukset tuodaan mukana
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
@@ -169,6 +170,6 @@ in Finnish and English, with an experimental North Sámi interface. Workouts are
 Markdown files in a folder you choose; no account, no ads, no tracking. It builds evidence-based programs
 (including kettlebell programs), prefills warm-up sets, adapts suggestions to your feedback, and shares programs
 as `.gmd` templates. Try the demo and program builder in your browser:
-[sombyduodji.github.io/gievra/app](https://sombyduodji.github.io/gievra/app/). Feedback is very welcome.
+[sombyduodji.github.io/gievra/app](https://sombyduodji.github.io/gievra/app/?lang=en). English home page: [sombyduodji.github.io/gievra/en](https://sombyduodji.github.io/gievra/en/). Feedback is very welcome.
 
 Tekijä: Juha Somby · [treeni@somby.fi](mailto:treeni@somby.fi)

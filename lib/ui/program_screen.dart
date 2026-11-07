@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../program.dart';
-import '../program_edit.dart';
 import 'intro.dart';
 import 'program_template.dart';
 import 'program_view.dart';
@@ -50,8 +49,6 @@ class ProgramScreen extends StatelessWidget {
                 injuries: settings.injuries,
                 onChanged: () => settings.setProgram(p),
                 footer: [
-                  const SizedBox(height: 16),
-                  WeeklyLoadCard(program: p, done: loggedWeekSets(store.workouts, DateTime.now())),
                   const SizedBox(height: 16),
                   Text(
                     isDemo

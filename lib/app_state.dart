@@ -135,8 +135,19 @@ class Settings extends ChangeNotifier {
   /// joka voittaa (näin asetukset kulkevat synkan, varmuuskopion ja palautuksen mukana).
   /// Vain kansion sijainti on pelkästään laitteella, koska sitä tarvitaan tiedoston löytämiseen.
   Future<void> load() async {
-    // Verkkodemo: ei selaimen tallennusta, aloitetaan aina puhtaalta pöydältä.
-    if (isDemo) return;
+    // Verkkodemo: ei selaimen tallennusta, aloitetaan aina puhtaalta pöydältä. Kieli osoitteesta (?lang=en),
+    // jotta englanninkielinen kotisivu avaa demon englanniksi.
+    if (isDemo) {
+      // Videota varten myös käännösaikainen kieli: --dart-define=DEMO_LANG=en
+      final lang =
+          Uri.base.queryParameters['lang'] ??
+          (const String.fromEnvironment('DEMO_LANG').isEmpty ? null : const String.fromEnvironment('DEMO_LANG'));
+      if (lang != null) {
+        await setUiLang(lang);
+        nameMode = 'fi';
+      }
+      return;
+    }
     final sp = _p = await SharedPreferences.getInstance();
     folder = sp.getString('folder');
     deloadDismissed = sp.getString('deloadDismissed');

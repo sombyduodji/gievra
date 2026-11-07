@@ -108,6 +108,29 @@ void main() {
     expect(why, contains('etureisi'));
   });
 
+  test('Tänään jo tehty ohjelmapäivä ei ole enää ehdotus', () {
+    final p = hyp(4);
+    final today = DateTime(2026, 11, 5);
+    final first = suggestDay(p, const [], today).$1;
+    final done = Workout(
+      date: today,
+      title: first.display,
+      programDay: first.name,
+      exercises: [
+        ExerciseEntry('Takakyykky', [SetEntry(100, 5)]),
+      ],
+    );
+    final next = suggestDay(p, [done], today).$1;
+    expect(next.name, isNot(first.name));
+    expect(p.plan, contains(next)); // seuraava päivä tai palautumisen takia sitä seuraava
+    // Vinkki: tänään jo kuormittuneet lihakset (ei eilisiä), jos seuraava päivä kuormittaa samoja.
+    final (_, why) = suggestDay(p, [done], today);
+    if (why != null) expect(why, startsWith('Tänään kuormittui jo'));
+    // Aloitettu mutta tyhjä treeni ei vielä siirrä ehdotusta.
+    final empty = Workout(date: today, title: first.display, programDay: first.name);
+    expect(suggestDay(p, [empty], today).$1.name, first.name);
+  });
+
   test('Kesto ja aloitusaika tallentuvat .md:hen', () {
     final w = Workout(date: DateTime(2026, 11, 7), started: DateTime(2026, 11, 7, 17, 5), minutes: 63, feeling: 4);
     final md = workoutToMarkdown(w);

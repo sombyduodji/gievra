@@ -33,10 +33,12 @@ jobs:
         run: flutter build web --release --no-web-resources-cdn --base-href /gievra/app/ $(python3 tools/version.py --flutter)
       - name: Kotisivu
         run: |
-          mkdir -p public/kuvat
-          cp site/index.html site/gievra-video.mp4 site/gievra-video.jpg public/
+          mkdir -p public/kuvat/en public/en
+          cp site/index.html site/gievra-video*.mp4 site/gievra-video*.jpg public/
+          cp site/en/index.html public/en/
           cp assets/logo_icon.png public/logo.png
           cp docs/screenshots/*.png public/kuvat/
+          cp docs/screenshots/en/*.png public/kuvat/en/
           cp -r build/web public/app
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,5 +1,6 @@
 import 'import_export.dart';
 import 'models.dart';
+import 'sports.dart';
 
 // Garmin Connect -suoritukset (Suoritukset → Vie CSV) Gievran liikunnaksi.
 //
@@ -198,7 +199,9 @@ const _cPower = ['Keskiteho', 'Avg Power'];
       if (garminNum(c.get(r, _cAscent)) case final v?) 'nousu ${v.round()} m',
       if (garminNum(c.get(r, _cCad)) case final v?) 'askeltiheys ${v.round()} /min',
       if (te != null) 'aerobinen TE ${fileNum(te)}',
-      if (garminNum(c.get(r, _cSteps)) case final v?) 'askeleet ${v.round()}',
+      // Kävelylajeissa askeleet omaan kenttäänsä, muissa muistiinpanoihin.
+      if (!(sportOf(sport)?.steps ?? false))
+        if (garminNum(c.get(r, _cSteps)) case final v?) 'askeleet ${v.round()}',
       if (garminNum(c.get(r, _cPower)) case final v?) 'keskiteho ${v.round()} W',
     ];
     final title = c.get(r, _cTitle);
@@ -217,6 +220,7 @@ const _cPower = ['Keskiteho', 'Avg Power'];
             intensity: te == null ? null : (te < 2.5 ? 'kevyt' : (te < 4 ? 'reipas' : 'kova')),
             watchTime: true,
           )
+          ..steps = (sportOf(sport)?.steps ?? false) ? garminNum(c.get(r, _cSteps))?.round() : null
           ..notes = [
             'Garmin: ${title.isEmpty ? type : title}${type.toLowerCase().contains('matto') || type.toLowerCase().contains('treadmill') ? ' (juoksumatto)' : ''}',
             if (extra.isNotEmpty) extra.join(' · '),

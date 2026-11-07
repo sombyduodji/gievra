@@ -11,7 +11,7 @@ import 'l10n.dart' as l10n;
 
 /// Lajin osuus jaksossa: kerrat, minuutit ja kilometrit.
 class SportShare {
-  int count = 0, minutes = 0;
+  int count = 0, minutes = 0, steps = 0;
   double km = 0;
 }
 
@@ -19,6 +19,7 @@ class Recap {
   final DateTime from, to; // to = seuraavan jakson alku
   int gym = 0, activities = 0, sets = 0, prs = 0, minutes = 0, kcal = 0;
   int gymMinutes = 0, cardioMinutes = 0;
+  int timed = 0, parts = 0; // osia (sali / kestävyys) yhteensä ja niistä kesto kirjattu
   double volume = 0, km = 0;
   final List<int> feelings = [];
   final List<int> hr = [];
@@ -79,6 +80,8 @@ Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'})
       if (kind != 'all' && kind != k) continue;
       counted = true;
       r.minutes += mins;
+      r.parts++;
+      if (mins > 0) r.timed++;
       if (k == 'cardio') {
         r.activities++;
         r.cardioMinutes += mins;
@@ -88,6 +91,7 @@ Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'})
         if (w.activity != null) {
           r.km += w.distanceKm ?? 0;
           s.km += w.distanceKm ?? 0;
+          s.steps += w.steps ?? 0;
           if (w.hrAvg != null) r.hr.add(w.hrAvg!);
         }
       } else {

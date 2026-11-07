@@ -318,7 +318,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                     style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
                   ),
                   if (_bestBefore > 0) ...[
-                    const TextSpan(text: '\nParas: '),
+                    TextSpan(text: '\n${t('Paras: ')}'),
                     TextSpan(
                       text: '${fmtNum(_bestBefore)} kg',
                       style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),

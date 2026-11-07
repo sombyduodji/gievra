@@ -15,6 +15,7 @@ String shareText(Workout w) {
       if (w.minutes != null) fmtDuration(w.minutes!),
       if (w.distanceKm != null) '${fmtNum(w.distanceKm!)} km',
       ?w.pace,
+      if (w.steps != null) l10n.t('{0} askelta', [thousands(w.steps!)]),
       if (w.intensity != null) l10n.t(w.intensity!),
     ];
     if (parts.isNotEmpty) b.writeln(parts.join(' · '));

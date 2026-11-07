@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../app_info.dart';
 import '../app_state.dart';
+import '../body.dart';
 import '../l10n.dart';
 import '../theme.dart';
 import 'widgets.dart';
@@ -25,8 +26,9 @@ class BugReportScreen extends StatefulWidget {
 class _Attachment {
   final String name;
   final String path; // tiedosto levyllä (kopioidaan välimuistiin lähetettäessä)
-  bool on = true;
-  _Attachment(this.name, this.path);
+  bool on;
+  final bool sensitive; // terveystietoa (punnitukset): varoitus ja oletuksena pois
+  _Attachment(this.name, this.path, {this.on = true, this.sensitive = false});
 }
 
 class _BugReportScreenState extends State<BugReportScreen> {
@@ -64,6 +66,9 @@ class _BugReportScreenState extends State<BugReportScreen> {
       final f = File(p.join(root, n));
       if (await f.exists()) _files.add(_Attachment(n, f.path));
     }
+    // Punnitukset ovat terveystietoa: mukana valittavana, mutta oletuksena pois ja varoituksen kera.
+    final body = File(p.join(root, bodyFileName));
+    if (await body.exists()) _files.add(_Attachment(bodyFileName, body.path, on: false, sensitive: true));
     if (mounted) setState(() {});
   }
 
@@ -191,6 +196,14 @@ class _BugReportScreenState extends State<BugReportScreen> {
               value: a.on,
               onChanged: (v) => setState(() => a.on = v ?? false),
               title: Text(a.name),
+              subtitle: a.sensitive
+                  ? Text(
+                      t(
+                        '⚠ Sisältää punnituksesi ja pituutesi (terveystietoa). Lähetä vain, jos ongelma liittyy painoon.',
+                      ),
+                      style: TextStyle(fontSize: 12, color: cs.error),
+                    )
+                  : null,
               secondary: Icon(
                 a.name.toLowerCase().endsWith('.md') ? Icons.description_outlined : Icons.image_outlined,
                 size: 20,

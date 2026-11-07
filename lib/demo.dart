@@ -1,4 +1,5 @@
 import 'app_state.dart';
+import 'body.dart';
 import 'exercises.dart';
 import 'models.dart';
 import 'program.dart';
@@ -49,6 +50,37 @@ Future<void> seedDemo() async {
   }
 
   await _seedRuns(today);
+  await _seedBody(today);
+}
+
+/// Kehonpainon seuranta: punnituksia kahdentoista viikon ajalta (paino laskee hiljalleen), ei tältä päivältä,
+/// jotta etusivulla näkyy Merkitse aamupaino. Lauantaisin kävely askelineen.
+Future<void> _seedBody(DateTime today) async {
+  settings.bodyTracker = true;
+  final weights = <DateTime, double>{};
+  for (var d = 1; d <= 84; d += d % 7 == 3 ? 4 : 3) {
+    weights[addDays(today, -d)] = ((80.4 + d * .03 + (d % 5 == 0 ? .3 : 0)) * 10).round() / 10;
+  }
+  await settings.setBody(BodyLog(heightCm: 180, weights: weights));
+  final monday = addDays(today, 1 - today.weekday);
+  for (var week = 0; week < 4; week++) {
+    final date = addDays(monday, -7 * (3 - week) + 5);
+    if (!date.isBefore(today)) continue;
+    final km = 4.0 + week * .5;
+    await store.save(
+      Workout(
+          date: date,
+          title: 'Kävely',
+          activity: 'Kävely',
+          distanceKm: km,
+          minutes: (km * 12).round(),
+          intensity: 'kevyt',
+          session: store.nextSession(date),
+        )
+        ..steps = (km * 1350).round()
+        ..feeling = 4,
+    );
+  }
 }
 
 /// Esimerkkijuoksut kahdeksalta viikolta (tiistai, torstai, sunnuntai): kevyiden lenkkien vauhti paranee ja syke
