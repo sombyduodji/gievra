@@ -317,7 +317,8 @@ class LangFlag extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: width,
-    height: width * 2 / 3,
+    // Saamen lippu omissa mittasuhteissaan (808:600), ettei ympyrä veny; muut 3:2.
+    height: code == 'se' ? width * 600 / 808 : width * 2 / 3,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(2),
       boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.outlineVariant, spreadRadius: 1)],
@@ -336,17 +337,20 @@ class _FlagPainter extends CustomPainter {
     final w = s.width, h = s.height;
     Paint p(Color col) => Paint()..color = col;
     if (code == 'se') {
-      // Saamen lippu: punainen ja sininen kenttä, vihreä ja keltainen pystyraita, ympyrä (sininen/punainen).
-      const red = Color(0xFFD52B1E), blue = Color(0xFF0035AD), green = Color(0xFF007229), yellow = Color(0xFFFFCE00);
-      c.drawRect(Rect.fromLTWH(0, 0, w, h), p(red));
-      c.drawRect(Rect.fromLTWH(w * .4375, 0, w * .0625, h), p(green));
-      c.drawRect(Rect.fromLTWH(w * .5, 0, w * .0625, h), p(yellow));
-      c.drawRect(Rect.fromLTWH(w * .5625, 0, w * .4375, h), p(blue));
-      // Ympyrän keskipiste raitojen kohdalla: vasen puoli sininen (punaisella), oikea punainen (sinisellä).
-      final r = Rect.fromCircle(center: Offset(w * .4375, h / 2), radius: h * .3);
+      // Saamen lippu Wikimedia Commonsin mukaan (File:Sami_flag.svg, public domain; mitat ja värit
+      // Saamelaiskäräjiltä), leveys 808: punainen 0–258, vihreä 258–314, keltainen 314–370, sininen 370–808.
+      // Ympyrän keskipiste vihreän ja keltaisen rajalla (314), säde 176/600 korkeudesta, viiva 32/600:
+      // punaisella puolella sininen, sinisellä puolella punainen.
+      const red = Color(0xFFDC241F), blue = Color(0xFF0035AD), green = Color(0xFF007229), yellow = Color(0xFFFFCE00);
+      double x(double v) => w * v / 808;
+      c.drawRect(Rect.fromLTWH(0, 0, w, h), p(blue));
+      c.drawRect(Rect.fromLTWH(0, 0, x(370), h), p(yellow));
+      c.drawRect(Rect.fromLTWH(0, 0, x(314), h), p(green));
+      c.drawRect(Rect.fromLTWH(0, 0, x(258), h), p(red));
+      final r = Rect.fromCircle(center: Offset(x(314), h / 2), radius: h * 176 / 600);
       Paint ring(Color col) => Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = h * .1
+        ..strokeWidth = h * 32 / 600
         ..color = col;
       c.drawArc(r, math.pi / 2, math.pi, false, ring(blue));
       c.drawArc(r, -math.pi / 2, math.pi, false, ring(red));
