@@ -42,6 +42,8 @@ table{border-collapse:collapse;width:100%;background:var(--surface);border-radiu
 td,th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
 th{width:34%}
 code{background:var(--line);padding:1px 6px;border-radius:6px}
+section.video{text-align:center;padding-top:8px}
+section.video video{width:100%;max-width:960px;border-radius:16px;border:1px solid var(--line);background:#000;display:block;margin:0 auto}
 footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 .zigzag{height:10px;margin:8px 0;background:
   linear-gradient(135deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px,
@@ -63,6 +65,16 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <a class="btn secondary" href="https://github.com/sombyduodji/gievra">Lähdekoodi</a>
   </div>
 </header>
+
+<section class="video">
+  <h2>Katso, miten Gievra toimii</h2>
+  <video controls preload="none" playsinline poster="gievra-video.jpg">
+    <source src="gievra-video.mp4" type="video/mp4">
+    <a href="gievra-video.mp4">Lataa esittelyvideo (MP4, 2 min)</a>
+  </video>
+  <p class="sub">2 min · suomeksi · demo-tiedot · taustamusiikki tehty itse</p>
+  <p class="sub"><small>Video on tehty versiosta 0.1.8 (marraskuu 2026). Gievra kehittyy jatkuvasti, joten uusimmassa versiossa on enemmän ominaisuuksia ja osa näkymistä voi näyttää erilaiselta.</small></p>
+</section>
 
 <div class="shots">
   <img src="kuvat/koti.png" alt="Etusivu: tervehdys saameksi, kalenteri ja viikon treenit">
@@ -140,7 +152,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>viikko- ja kuukausikoosteet, voimakehitys, fiilis</li>
         <li>vammatila, sairas- ja lomatauot, palautuminen</li>
-        <li>valinnaisesti urheilulajit ja älykellon tiedot (kesto, kalorit, syke heti treenin jälkeen)</li>
+        <li>valinnaisesti urheilulajit ja älykellon tiedot (kesto, kalorit, syke heti treenin jälkeen). Kellon tiedot kirjoitetaan toistaiseksi käsin: suoraa yhteyttä kelloon tai Health Connectiin ei vielä ole</li>
         <li>juoksulle oma kehitysnäkymä: lenkin tyyppi yhdellä napautuksella, vauhti ja keskinopeus, kilometrit viikoittain, kevyiden lenkkien vauhti ja syke sekä ennätykset</li>
       </ul>
     </div>
@@ -149,7 +161,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>treenit tavallisina Markdown-tiedostoina (<code>.md</code>)</li>
         <li>synkronoi Nextcloudilla, Syncthingillä tai muulla</li>
-        <li>tuonti FitNotesista, varmuuskopio zip-tiedostona</li>
+        <li>tuonti FitNotesista ja Garmin Connectista (CSV), varmuuskopio zip-tiedostona</li>
       </ul>
     </div>
   </div>

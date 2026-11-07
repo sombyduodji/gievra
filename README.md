@@ -20,6 +20,8 @@
   <a href="#palaute">Palaute</a>
 </p>
 
+<p align="center"><a href="https://sombyduodji.github.io/gievra/">▶ Katso esittelyvideo (2 min)</a></p>
+
 <p align="center">
   <img src="docs/screenshots/koti.png" width="200" alt="Etusivu">
   <img src="docs/screenshots/sarja.png" width="200" alt="Sarjan kirjaus lämmittelysarjoineen">
@@ -67,7 +69,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 
 **Valmiit treeniohjelmat**
 - lyhyt aloituskysely: tavoite (voimanosto, lihaskasvu, rasvanpoltto, yleiskunto, fiiliksellä), kokemus,
-  välineet, päivät, kesto ja toistoalue – tai lähtökohdaksi oma treenihistoria FitNotesista
+  välineet, päivät, kesto ja toistoalue – tai lähtökohdaksi oma treenihistoria FitNotesista; ennätykset valinnaisia
+  (historiasta löytyvät valmiina, muut *Lisää ennätys* -painikkeella)
 - voimanoston 10 viikon sykli, kevennysviikot, painot arvioidusta maksimista
 - kahvakuulaohjelmat painotuksen mukaan: voima, lihaskasvu, kunto tai perusta yhdellä kuulalla
 - kehonpainolla treenaaminen ilman salia
@@ -89,14 +92,16 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - valinnaisesti urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
-  (kesto, kalorit, keski- ja maksimisyke heti *Treeni valmis!* -näkymässä)
+  (kesto, kalorit, keski- ja maksimisyke heti *Treeni valmis!* -näkymässä; kirjoitetaan toistaiseksi käsin, suoraa
+  yhteyttä kelloon tai Health Connectiin ei vielä ole)
 - juoksulle oma kehitysnäkymä, erillään salista: lenkin tyyppi (kevyt, palauttava, pitkä, vauhtikestävyys,
   intervallit, kisavauhti, kilpailu), tarkka aika, vauhti min/km ja keskinopeus, kilometrit viikoittain, kevyiden
   lenkkien vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km, puolimaraton, maraton)
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
-- tuonti FitNotesista, varmuuskopio zip-tiedostona, yksittäisten `.md`-tiedostojen tuonti
+- tuonti FitNotesista ja Garmin Connectista (suoritusten CSV-vienti: laji, aika, matka, kesto, kalorit ja syke),
+  varmuuskopio zip-tiedostona, yksittäisten `.md`-tiedostojen tuonti
 
 ## Kielet
 

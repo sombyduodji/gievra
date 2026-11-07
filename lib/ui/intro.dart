@@ -12,6 +12,7 @@ import 'injury_screen.dart';
 import 'move_select.dart';
 import 'program_view.dart';
 import 'program_template.dart';
+import 'picker.dart';
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -49,12 +50,12 @@ class _IntroScreenState extends State<IntroScreen> {
 
   bool get _pl => _goal == 'voimanosto';
 
-  /// Tangon maksimit kysytään vain tankovoimanostossa: kahvakuulaohjelma ei käytä niitä.
+  /// Voimanoston kilpaliikkeiden maksimit esitäytetään historiasta vain tankovoimanostossa.
   bool get _askMaxes => _pl && !_kbOnly;
 
   /// Kahvakuulaohjelman painotus; voimanostossa pelkillä kahvakuulilla oletuksena voima.
   String? get _kbFocusEff => _kbOnly ? (_kbFocus ?? (_pl ? 'voima' : null)) : null;
-  int get _pages => _askMaxes ? 9 : 8;
+  int get _pages => 9; // viimeinen kysymys: ennätykset (valinnainen, kaikissa ohjelmissa)
 
   @override
   void initState() {
@@ -62,13 +63,36 @@ class _IntroScreenState extends State<IntroScreen> {
     _fillMaxes(keepOld: true);
   }
 
-  /// Maksimit: ehdotus = paras arvioitu maksimi viimeiseltä 6 kk:lta (ennätys näytetään erikseen).
+  /// Ennätykset esitäytetään vain, jos ne löytyvät treenihistoriasta (paras arvioitu maksimi 6 kk:lta) tai
+  /// nykyisestä ohjelmasta. Muut lisätään itse (Lisää ennätys); ilman niitä painoehdotus tulee ensimmäisen
+  /// kirjatun treenin jälkeen.
   void _fillMaxes({bool keepOld = false}) {
     for (final l in _lifts) {
-      final v =
-          suggestedMax(store.workouts, l, DateTime.now()).$1?.e1rm ?? (keepOld ? settings.program?.maxes[l] : null);
+      final v = suggestedMax(store.workouts, l, DateTime.now()).$1?.e1rm;
       if (v != null) _maxes[l] = v.roundToDouble();
     }
+    if (keepOld) {
+      for (final e in (settings.program?.maxes ?? const <String, double>{}).entries) {
+        _maxes.putIfAbsent(e.key, () => e.value);
+      }
+    }
+  }
+
+  /// Lisää ennätys: ensin liike, sitten arvio. Kahvakuulaliikkeessä kysytään raskain kuula viidelle toistolle.
+  Future<void> _addMax([String? exercise]) async {
+    final ex =
+        exercise ??
+        await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const ExercisePickerScreen()));
+    if (ex == null || !mounted) return;
+    final kb = kettlebellOnly(ex);
+    final v = await askNumber(
+      context,
+      kb ? t('{0}: raskain kuula, jolla teet 5 hyvää toistoa (kg)', [ex]) : t('{0}: 1 toiston maksimi (kg)', [ex]),
+      kb ? 16 : (_maxes[ex] ?? 60),
+    );
+    if (v == null || v <= 0) return;
+    // Kahvakuula: 5 toistoa -> arvioitu maksimi (Epley).
+    setState(() => _maxes[ex] = kb ? (v * (1 + 5 / 30) * 10).round() / 10 : v);
   }
 
   /// Täyttää vastaukset treenihistoriasta. Käyttäjä voi muuttaa jokaista.
@@ -151,7 +175,7 @@ class _IntroScreenState extends State<IntroScreen> {
     days: _days,
     minutes: _minutes,
     injuries: _injuries,
-    maxes: _askMaxes ? _maxes : const {},
+    maxes: _maxes,
     repStyle: _repStyle,
     equipment: _equipment,
     favorites: _favorites,
@@ -490,69 +514,85 @@ class _IntroScreenState extends State<IntroScreen> {
           icon: '🩹',
         ),
       ], hint: t('Ohjelma välttää ja muokkaa liikkeitä, jotka yleensä pahentavat vaivaa. Ei korvaa fysioterapeuttia.')),
-      if (_askMaxes)
-        _q(
-          t('Arvioidut maksimit'),
-          [
-            for (final l in _lifts)
-              Builder(
-                builder: (context) {
-                  final now = DateTime.now();
-                  final pr = bestLift(store.workouts, l);
-                  final (sug, oldEnd) = suggestedMax(store.workouts, l, now);
-                  String d(DateTime t) => '${t.day}.${t.month}.${t.year}';
-                  String set(LiftRecord r) => '${fmtNum(r.kg)} kg × ${r.reps}';
-                  final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: ListTile(
-                      tileColor: cs.surfaceContainer,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      title: Text(l, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: pr == null
-                          ? Text(t('Ei treenihistoriaa: syötä arvio'), style: sub)
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+      _q(
+        t('Ennätykset (valinnainen)'),
+        [
+          for (final l in _maxes.keys.toList())
+            Builder(
+              builder: (context) {
+                final now = DateTime.now();
+                final pr = bestLift(store.workouts, l);
+                final (sug, oldEnd) = suggestedMax(store.workouts, l, now);
+                String d(DateTime t) => '${t.day}.${t.month}.${t.year}';
+                String set(LiftRecord r) => '${fmtNum(r.kg)} kg × ${r.reps}';
+                final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    tileColor: cs.surfaceContainer,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    title: Text(l, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: pr == null
+                        ? Text(t('Oma arvio'), style: sub)
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t('🏆 Ennätys: {0} ({1}), arvio {2} kg', [
+                                  set(pr),
+                                  d(pr.date),
+                                  fmtNum(pr.e1rm.roundToDouble()),
+                                ]),
+                                style: sub,
+                              ),
+                              if (sug != null)
                                 Text(
-                                  t('🏆 Ennätys: {0} ({1}), arvio {2} kg', [
-                                    set(pr),
-                                    d(pr.date),
-                                    fmtNum(pr.e1rm.roundToDouble()),
-                                  ]),
+                                  oldEnd == null
+                                      ? t('Ehdotus: paras 6 kk:n ajalta {0} ({1})', [set(sug), d(sug.date)])
+                                      : t(
+                                          'Ehdotus: {0} ({1}). Liikettä ei ole tehty puoleen vuoteen: aloita kevyemmin',
+                                          [set(sug), d(sug.date)],
+                                        ),
                                   style: sub,
                                 ),
-                                if (sug != null)
-                                  Text(
-                                    oldEnd == null
-                                        ? t('Ehdotus: paras 6 kk:n ajalta {0} ({1})', [set(sug), d(sug.date)])
-                                        : t(
-                                            'Ehdotus: {0} ({1}). Liikettä ei ole tehty puoleen vuoteen: aloita kevyemmin',
-                                            [set(sug), d(sug.date)],
-                                          ),
-                                    style: sub,
-                                  ),
-                              ],
-                            ),
-                      isThreeLine: pr != null,
-                      trailing: Text(
-                        _maxes[l] == null ? t('syötä') : '${fmtNum(_maxes[l]!)} kg',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                      ),
-                      onTap: () async {
-                        final v = await askNumber(context, t('{0}: 1 toiston maksimi (kg)', [l]), _maxes[l] ?? 60);
-                        if (v != null && v > 0) setState(() => _maxes[l] = v);
-                      },
+                            ],
+                          ),
+                    isThreeLine: pr != null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${fmtNum(_maxes[l]!)} kg',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        ),
+                        IconButton(
+                          tooltip: t('Poista'),
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => setState(() => _maxes.remove(l)),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                    onTap: () async {
+                      final v = await askNumber(context, t('{0}: 1 toiston maksimi (kg)', [l]), _maxes[l] ?? 60);
+                      if (v != null && v > 0) setState(() => _maxes[l] = v);
+                    },
+                  ),
+                );
+              },
+            ),
+          OutlinedButton.icon(onPressed: _addMax, icon: const Icon(Icons.add), label: Text(t('Lisää ennätys'))),
+        ],
+        hint: _maxes.isEmpty
+            ? t(
+                'Ennätyksiä ei löytynyt treenihistoriasta, eikä niitä tarvita. Ne vaikuttavat vain '
+                'ensimmäisen kerran painoehdotuksiin: ilman niitä ehdotus tulee ensimmäisen kirjatun treenin jälkeen.',
+              )
+            : t(
+                'Ensimmäisen kerran painoehdotukset lasketaan näistä. Historiasta löytyneet ovat parhaita arvioituja '
+                'maksimeja viimeiseltä 6 kuukaudelta, koska vanha ennätys ei välttämättä kuvaa nykyistä kuntoa. '
+                'Napauta muuttaaksesi.',
               ),
-          ],
-          hint: t(
-            'Painot lasketaan näistä. Ehdotus on paras arvioitu maksimi viimeiseltä 6 kuukaudelta, '
-            'koska vanha ennätys ei välttämättä kuvaa nykyistä kuntoa. Napauta muuttaaksesi.',
-          ),
-        ),
+      ),
       _summary(),
     ];
     return Scaffold(

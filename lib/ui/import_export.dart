@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../app_state.dart';
+import '../garmin_import.dart';
 import '../import_export.dart';
 import '../models.dart';
 import '../theme.dart';
@@ -59,6 +60,22 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     } finally {
       if (await tmp.exists()) await tmp.delete();
     }
+  });
+
+  Future<void> _importGarmin() => _run(() async {
+    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse Garmin Connectin CSV-tiedosto'));
+    final f = files.firstOrNull;
+    if (f == null) return;
+    final (r, skipped) = readGarminCsv(utf8.decode(await f.xFile.readAsBytes(), allowMalformed: true), store.workouts);
+    if (r.workouts.isEmpty) {
+      _snack(t('Tiedostosta ei löytynyt Garmin-suorituksia. Vie CSV Garmin Connectin Suoritukset-sivulta.'));
+      return;
+    }
+    if (skipped > 0) _snack(t('Ohitettiin {0} voimaharjoittelua: salitreenit kirjataan Gievrassa.', [skipped]));
+    // Liikunta näkyviin, jos se on asetuksista pois.
+    if (!settings.sports) settings.setSports(true);
+    if (!settings.watch && r.workouts.any((w) => w.hrAvg != null || w.kcal != null)) settings.setWatch(true);
+    await _preview(r);
   });
 
   Future<void> _importZip() => _run(() async {
@@ -141,7 +158,13 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _row(t('Treenipäiviä'), '${r.workouts.length}'),
-            _row(t('Sarjoja'), '${r.sets}'),
+            if (r.sets > 0 || r.workouts.every((w) => w.activity == null)) _row(t('Sarjoja'), '${r.sets}'),
+            if (r.workouts.any((w) => w.activity != null))
+              _row(
+                t('Liikuntaa'),
+                '${r.workouts.where((w) => w.activity != null).length} · '
+                '${fmtNum((r.workouts.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0)) * 10).round() / 10)} km',
+              ),
             _row(t('Aikaväli'), '${isoDate(r.first!)} – ${isoDate(r.last!)}'),
             if (r.bodyweights > 0) _row(t('Kehonpainoja'), '${r.bodyweights}'),
             if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
@@ -217,6 +240,15 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
               'Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio. Tunnetut liikkeet yhdistyvät Gievran liikkeisiin.',
             ),
             _importFitnotes,
+          ),
+          tile(
+            Icons.watch_outlined,
+            t('Garmin Connect (.csv)'),
+            t(
+              'Garmin Connect → Suoritukset → Vie CSV. Juoksut, kävelyt, pyöräily ym.: matka, kesto, kalorit ja '
+              'syke; nousu ja askeltiheys muistiinpanoihin.',
+            ),
+            _importGarmin,
           ),
           SectionLabel(t('Gievran varmuuskopio')),
           tile(

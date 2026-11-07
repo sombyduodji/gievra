@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/exercises.dart';
 import 'package:treenipaivakirja/models.dart';
+import 'package:treenipaivakirja/program.dart';
 import 'package:treenipaivakirja/progression.dart';
 
 Workout bench(DateTime d, double kg, int reps, int? rir) => Workout(
@@ -102,5 +103,27 @@ void main() {
     expect(r.pauses.length, 2);
     expect(r.pauses[0].end, DateTime(2026, 10, 14));
     expect(r.activePause!.sick, isTrue);
+  });
+
+  test('Ennätys ilman treenihistoriaa: ehdotus ennätyksestä, kahvakuulassa kuulakoko', () {
+    final d = DateTime(2026, 11, 6);
+    store.workouts = [];
+    settings.program = Program(
+      goal: 'kunto',
+      experience: 'keski',
+      days: 3,
+      minutes: 60,
+      start: DateTime(2026, 11, 2),
+      deloadEvery: 0,
+      maxes: {'Penkkipunnerrus': 100, 'Kahvakuulapystypunnerrus': 21},
+    );
+    final t = Target(3, 8, 12, '1–3', 120, 'Viikko 1');
+    // 100 / (1 + (8 + 2) / 30) = 75 kg
+    expect(suggestForTarget('Penkkipunnerrus', d, t)!.kg, 75);
+    // 21 / 1,333 = 15,75 -> lähin kevyempi kuula 14 kg
+    expect(suggestForTarget('Kahvakuulapystypunnerrus', d, t)!.kg, 14);
+    // Ei ennätystä eikä historiaa: ei ehdotusta (käyttäjä valitsee painon itse).
+    expect(suggestForTarget('Kulmasoutu', d, t), isNull);
+    settings.program = null;
   });
 }

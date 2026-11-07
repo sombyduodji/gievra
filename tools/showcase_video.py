@@ -25,7 +25,7 @@ BOLD = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # (tiedosto, otsikko, selitys) — kirjoitettu valmentajalle: mitä ominaisuus tekee ja miksi.
-SCENES = [
+TRAINER = [
     ("s1", "Etusivu",
      "Päivän treeni ehdotetaan ohjelmasta ja palautumisesta (eilen kuormittuneet lihasryhmät). "
      "Viikon treenit, viikkoputki ja kalenteri. Treenit tallentuvat tavallisiksi .md-tiedostoiksi "
@@ -51,6 +51,30 @@ SCENES = [
      "kipuasteikko (kipua enintään 3–5/10, rauhoittuu seuraavaan aamuun) ja punaiset liput. "
      "Ei tee diagnoosia eikä korvaa fysioterapeuttia."),
 ]
+
+# Käyttäjälle (Gievran kotisivu): mitä sovelluksella tehdään.
+USER = [
+    ("s1", "Treenipäiväkirja taskussa",
+     "Etusivu kertoo päivän treenin ohjelmastasi, viikon treenit ja kalenterin. Ei tiliä eikä mainoksia: "
+     "treenit tallentuvat tavallisiksi tiedostoiksi omaan kansioosi, ja sovellus toimii ilman verkkoa."),
+    ("s2", "Valmis treeniohjelma",
+     "Vastaa muutamaan kysymykseen (tavoite, kokemus, päivät, kesto), niin saat tutkimuksiin perustuvan "
+     "ohjelman: voimanosto, lihaskasvu, kunto, kahvakuula tai kehonpaino. Viikon kuorma näyttää, saako "
+     "jokainen lihasryhmä tarpeeksi."),
+    ("s3", "Sarja yhdellä napautuksella",
+     "Lämmittelysarjat ja paino ovat valmiina. Tee sarja ja vastaa »jäikö varaa?«, niin seuraavan kerran "
+     "ehdotus osuu kohdalleen. Palautusajastin kertoo, milloin jatketaan."),
+    ("u_watch", "Älykellon tiedot käsin",
+     "Kalorit, keski- ja maksimisyke ja kesto kirjoitetaan kellosta itse. Gievra ei vielä yhdisty "
+     "älykelloon tai Health Connectiin. Garmin Connectin suoritukset voi tuoda CSV-tiedostona."),
+    ("u_run", "Juoksu ja muu liikunta",
+     "Valitse lenkin tyyppi (kevyt, pitkä, intervallit …), kirjoita aika ja matka: vauhti ja "
+     "keskinopeus lasketaan heti, ja tallennus vertaa edelliseen samanlaiseen lenkkiin."),
+    ("s5", "Näe kehityksesi",
+     "Juoksulla on oma kehitysnäkymä: kilometrit ja vauhti viikoittain, kevyiden lenkkien vauhti ja "
+     "syke sekä ennätykset. Salitreeneillä omat tilastonsa ja ennätykset."),
+]
+SCENES = TRAINER
 
 
 def font(size, bold=False):
@@ -119,14 +143,20 @@ def main():
     ap.add_argument("--scenes", required=True)
     ap.add_argument("--ffmpeg", default="ffmpeg")
     ap.add_argument("--out", default="Gievra-esittely.mp4")
+    ap.add_argument("--audience", choices=["valmentaja", "kayttaja"], default="valmentaja")
+    ap.add_argument("--music", help="taustamusiikki (wav), esim. tools/video_music.py")
+    ap.add_argument("--speed", type=float, default=1.0, help="nauhoitusten nopeutus (esim. 1.3)")
     a = ap.parse_args()
+    global SCENES
+    SCENES = USER if a.audience == "kayttaja" else TRAINER
+    user = a.audience == "kayttaja"
     tmp = tempfile.mkdtemp()
     enc = ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", "-preset", "medium", "-crf", "20", "-an"]
     parts = []
 
     card(f"{tmp}/title.png", [
         ("Gievra – Treenipäiväkirja", 72, True, TEXT),
-        ("Esittely valmentajalle", 44, False, TEXT),
+        ("Sinun treenisi, sinun tiedostosi." if user else "Esittely valmentajalle", 44, False, TEXT),
         ("Maksuton ja avoin · ei tiliä · ei mainoksia · toimii ilman verkkoa", 32, False, MUTED),
     ])
     run(a.ffmpeg, "-loop", "1", "-t", "4", "-i", f"{tmp}/title.png", *enc, f"{tmp}/p00.mp4")
@@ -139,12 +169,18 @@ def main():
         out = f"{tmp}/p{n:02d}.mp4"
         # Selitys luettavaksi ennen liikettä: 2 s pysäytyskuva alussa, 1,5 s lopussa.
         run(a.ffmpeg, "-loop", "1", "-i", bg, "-i", src, "-filter_complex",
-            "[1:v]scale=-2:1000,tpad=start_mode=clone:start_duration=2:stop_mode=clone:stop_duration=1.5,"
+            f"[1:v]setpts=PTS/{a.speed},scale=-2:1000,tpad=start_mode=clone:start_duration=2:stop_mode=clone:stop_duration=1.5,"
             "setsar=1[ph];[0:v][ph]overlay=120:40:shortest=1,format=yuv420p",
             *enc, out)
         parts.append(out)
 
     card(f"{tmp}/end.png", [
+        ("Kokeile selaimessa tai lataa Androidille", 52, True, TEXT),
+        ("Verkkodemossa voit kokeilla kaikkea ja tehdä oman treeniohjelman. Sovellus on maksuton ja avoin "
+         "(GPL-3.0), eikä siinä ole tiliä, mainoksia tai seurantaa.", 34, False, TEXT),
+        ("Kehitysvaiheessa: palaute ja ideat ovat erittäin tervetulleita.", 30, False, MUTED),
+        ("sombyduodji.github.io/gievra · treeni@somby.fi", 36, True, (181, 36, 26)),
+    ] if user else [
         ("Ohjelmapohjat valmentajalta asiakkaalle", 52, True, TEXT),
         ("Tee ohjelma selaimessa ja lähetä se .gmd-tiedostona: Androidilla se aukeaa suoraan Gievralla, "
          "eikä asiakkaan treenihistoria katoa.", 34, False, TEXT),
@@ -157,8 +193,12 @@ def main():
 
     with open(f"{tmp}/list.txt", "w") as f:
         f.writelines(f"file '{p}'\n" for p in parts)
-    run(a.ffmpeg, "-f", "concat", "-safe", "0", "-i", f"{tmp}/list.txt", "-c", "copy", "-movflags", "+faststart",
-        a.out)
+    if a.music:
+        run(a.ffmpeg, "-f", "concat", "-safe", "0", "-i", f"{tmp}/list.txt", "-i", a.music, "-map", "0:v", "-map",
+            "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", a.out)
+    else:
+        run(a.ffmpeg, "-f", "concat", "-safe", "0", "-i", f"{tmp}/list.txt", "-c", "copy", "-movflags",
+            "+faststart", a.out)
     print(a.out)
 
 

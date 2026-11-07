@@ -139,8 +139,11 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
     } else {
       final e1 = workingE1rm(exercise, date);
       if (e1 != null) {
-        // %1RM = 1 / (1 + (toistot + varaa) / 30)
-        final kg = _round(e1 / (1 + (t.lo + 2) / 30), settings.weightStep);
+        // %1RM = 1 / (1 + (toistot + varaa) / 30); kahvakuulassa lähin kevyempi kuulakoko.
+        final raw = e1 / (1 + (t.lo + 2) / 30);
+        final kg = kettlebellOnly(exercise)
+            ? kettlebellSizes.lastWhere((k) => k <= raw, orElse: () => kettlebellSizes.first)
+            : _round(raw, settings.weightStep);
         s = Suggestion(
           kg,
           t.lo,
