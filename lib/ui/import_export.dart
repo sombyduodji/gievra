@@ -167,8 +167,19 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                 '${fmtNum((r.workouts.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0)) * 10).round() / 10)} km',
               ),
             _row(t('Aikaväli'), '${isoDate(r.first!)} – ${isoDate(r.last!)}'),
-            if (r.bodyweights > 0) _row(t('Kehonpainoja'), '${r.bodyweights}'),
-            if (r.bodyMd != null) _row(t('Punnituksia'), '${parseBody(r.bodyMd!).weights.length}'),
+            // Punnitukset (kaikki päivät) kehonpaino.md:hen; vanha laskuri vain, jos punnituksia ei ole erikseen.
+            if (r.bodyMd != null)
+              _row(t('Punnituksia'), '${parseBody(r.bodyMd!).weights.length}')
+            else if (r.bodyweights > 0)
+              _row(t('Kehonpainoja'), '${r.bodyweights}'),
+            if (r.bodyMd != null && !settings.bodyTracker)
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 4),
+                child: Text(
+                  t('Punnitukset näkyvät tilastoissa, kun ☰ → Asetukset → Kehonpainon seuranta on päällä.'),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
             if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
             if (r.newExercises.isNotEmpty) _row(t('Uusia omia liikkeitä'), '${r.newExercises.length}'),
             if (r.settingsMd != null) _row(t('Asetukset'), t('yhdistetään')),

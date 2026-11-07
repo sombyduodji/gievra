@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:treenipaivakirja/app_state.dart';
+import 'package:treenipaivakirja/body.dart';
 import 'package:treenipaivakirja/import_export.dart';
 import 'package:treenipaivakirja/models.dart';
 
@@ -46,7 +47,9 @@ void main() {
     expect(w.exercises.first.sets[1].kg, 122.5);
     expect(w.exercises.first.sets[1].pr, isTrue);
     expect(w.bodyweight, 96.5);
-    expect(r.bodyweights, 1); // 2.10. ei ole treenipäivä
+    expect(r.bodyweights, 1); // treenin tietoihin vain treenipäivältä 1.10.
+    // Kaikki punnitukset kehonpaino.md:hen, myös päivältä, jolloin ei treenattu.
+    expect(parseBody(r.bodyMd!).weights, {DateTime(2026, 10, 1): 96.5, DateTime(2026, 10, 2): 96.0});
     expect(r.newExercises, {'Techogym Pull Down': 'Selkä'});
     expect(r.workouts[1].notes, contains('Walking: matka 2000, aika 20:00'));
     expect(r.cardioNotes, 1);
@@ -133,4 +136,22 @@ void main() {
     // ignore: avoid_print
     print('Omat: ${r.newExercises}');
   }, skip: real == null ? 'FITNOTES ei asetettu' : false);
+
+  test('FitNotes-tuonti uudelleen: ei kaksoiskappaleita treeneistä eikä punnituksista', () async {
+    settings.folder = tmp.path;
+    store.workouts = [];
+    settings.body = BodyLog();
+    final db = makeFitnotesDb(tmp);
+    expect(await applyImport(readFitnotes(db)), 2);
+    // Punnitus, joka on jo kirjattu Gievraan, ei muutu.
+    await settings.setWeight(DateTime(2026, 10, 2), 95.5);
+    expect(await applyImport(readFitnotes(db)), 0);
+    await store.reload();
+    expect(store.workouts.length, 2);
+    final files = tmp.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.md'));
+    expect(files.where((f) => f.path.contains('2026-10-0')).length, 2);
+    final body = parseBody(File('${tmp.path}/kehonpaino.md').readAsStringSync());
+    expect(body.weights, {DateTime(2026, 10, 1): 96.5, DateTime(2026, 10, 2): 95.5});
+    settings.folder = null;
+  });
 }

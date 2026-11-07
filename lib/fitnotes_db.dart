@@ -7,6 +7,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'app_state.dart';
 import 'exercises.dart';
 import 'fitnotes_template.dart';
+import 'body.dart';
 import 'import_export.dart';
 import 'models.dart';
 
@@ -79,11 +80,17 @@ ImportResult readFitnotes(String dbPath, {bool translate = true}) {
       }
     }
 
-    // Kehonpaino (mittaukset tai vanhempi BodyWeight-taulu), vain treenipäiville.
+    // Kehonpaino (mittaukset tai vanhempi BodyWeight-taulu): kaikki punnitukset kehonpaino.md:hen ja
+    // treenipäivinä myös treenin tietoihin. Saman päivän useasta punnituksesta otetaan ensimmäinen.
     var bw = 0;
+    final weighIns = <DateTime, double>{};
     void addBw(String date, num v) {
+      final kg = parseWeight(v.toString());
+      final day = DateTime.tryParse(date.substring(0, 10));
+      if (kg == null || day == null) return;
+      weighIns.putIfAbsent(dateOnly(day), () => kg);
       final w = byDate[date.substring(0, 10)];
-      if (w != null && w.bodyweight == null && v > 0) {
+      if (w != null && w.bodyweight == null) {
         w.bodyweight = v.toDouble();
         bw++;
       }
@@ -124,6 +131,7 @@ ImportResult readFitnotes(String dbPath, {bool translate = true}) {
       bodyweights: bw,
       cardioNotes: cardio,
       measures: measures,
+      bodyMd: weighIns.isEmpty ? null : bodyToMarkdown(BodyLog(weights: weighIns)),
     );
   } finally {
     db.close();

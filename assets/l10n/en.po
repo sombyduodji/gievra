@@ -1706,7 +1706,7 @@ msgstr ""
 msgid "Tekijä: {0}"
 msgstr "Author: {0}"
 
-#: lib/ui/drawer.dart:89 lib/ui/import_export.dart:174
+#: lib/ui/drawer.dart:89 lib/ui/import_export.dart:185
 msgid "Asetukset"
 msgstr "Settings"
 
@@ -1767,7 +1767,7 @@ msgstr "Sync"
 msgid "Pois päältä (valinnainen)"
 msgstr "Off (optional)"
 
-#: lib/ui/drawer.dart:172 lib/ui/import_export.dart:231
+#: lib/ui/drawer.dart:172 lib/ui/import_export.dart:242
 msgid "Tuonti ja varmuuskopio"
 msgstr "Import and backup"
 
@@ -2697,71 +2697,79 @@ msgstr "Activities"
 msgid "Aikaväli"
 msgstr "Date range"
 
-#: lib/ui/import_export.dart:170
-msgid "Kehonpainoja"
-msgstr "Bodyweights"
-
-#: lib/ui/import_export.dart:171
+#: lib/ui/import_export.dart:172
 msgid "Punnituksia"
 msgstr "Weigh-ins"
 
-#: lib/ui/import_export.dart:172
+#: lib/ui/import_export.dart:174
+msgid "Kehonpainoja"
+msgstr "Bodyweights"
+
+#: lib/ui/import_export.dart:179
+msgid ""
+"Punnitukset näkyvät tilastoissa, kun ☰ → Asetukset → Kehonpainon "
+"seuranta on päällä."
+msgstr ""
+"Weigh-ins show in statistics when ☰ → Settings → Body weight tracking "
+"is on."
+
+#: lib/ui/import_export.dart:183
 msgid "Kardio/aika muistiinpanoihin"
 msgstr "Cardio/time to notes"
 
-#: lib/ui/import_export.dart:173
+#: lib/ui/import_export.dart:184
 msgid "Uusia omia liikkeitä"
 msgstr "New custom exercises"
 
-#: lib/ui/import_export.dart:174
+#: lib/ui/import_export.dart:185
 msgid "yhdistetään"
 msgstr "will be merged"
 
-#: lib/ui/import_export.dart:175
+#: lib/ui/import_export.dart:186
 msgid "Ohjelma"
 msgstr "Program"
 
-#: lib/ui/import_export.dart:175
+#: lib/ui/import_export.dart:186
 msgid "tuodaan"
 msgstr "will be imported"
 
-#: lib/ui/import_export.dart:175
+#: lib/ui/import_export.dart:186
 msgid "nykyinen säilyy"
 msgstr "current one kept"
 
 #. {0} = r.existing
-#: lib/ui/import_export.dart:179
+#: lib/ui/import_export.dart:190
 msgid "{0} päivää on jo päiväkirjassa. Niitä ei muuteta."
 msgstr "{0} days are already in the log. They won't be changed."
 
 #. {0} = newCount
-#: lib/ui/import_export.dart:182
+#: lib/ui/import_export.dart:193
 msgid "Tuodaan {0} uutta treeniä."
 msgstr "Importing {0} new workouts."
 
 #. {0} = '${r.newExercises.keys.take(12).join(', ')}${r.newExercises.length > 12 ? '…' : ''}'
-#: lib/ui/import_export.dart:186
+#: lib/ui/import_export.dart:197
 msgid "Omat liikkeet: {0}"
 msgstr "Custom exercises: {0}"
 
-#: lib/ui/import_export.dart:196
+#: lib/ui/import_export.dart:207
 msgid "Tuo"
 msgstr "Import"
 
 #. {0} = n
-#: lib/ui/import_export.dart:202
+#: lib/ui/import_export.dart:213
 msgid "Tuotiin {0} treeniä. Giitu!"
 msgstr "Imported {0} workouts. Giitu!"
 
-#: lib/ui/import_export.dart:239
+#: lib/ui/import_export.dart:250
 msgid "Tuo toisesta sovelluksesta"
 msgstr "Import from another app"
 
-#: lib/ui/import_export.dart:242
+#: lib/ui/import_export.dart:253
 msgid "FitNotes"
 msgstr "FitNotes"
 
-#: lib/ui/import_export.dart:244
+#: lib/ui/import_export.dart:255
 msgid ""
 "Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio. "
 "Tunnetut liikkeet yhdistyvät Gievran liikkeisiin."
@@ -2769,11 +2777,11 @@ msgstr ""
 "Backup (.fitnotes). FitNotes: Settings → Backup. Known exercises are "
 "matched to Gievra's exercises."
 
-#: lib/ui/import_export.dart:250
+#: lib/ui/import_export.dart:261
 msgid "Garmin Connect (.csv)"
 msgstr "Garmin Connect (.csv)"
 
-#: lib/ui/import_export.dart:252
+#: lib/ui/import_export.dart:263
 msgid ""
 "Garmin Connect → Suoritukset → Vie CSV. Juoksut, kävelyt, pyöräily "
 "ym.: matka, kesto, kalorit ja syke; nousu ja askeltiheys "
@@ -2783,31 +2791,31 @@ msgstr ""
 "distance, duration, calories and heart rate; elevation gain and "
 "cadence to notes."
 
-#: lib/ui/import_export.dart:257
+#: lib/ui/import_export.dart:268
 msgid "Gievran varmuuskopio"
 msgstr "Gievra backup"
 
-#: lib/ui/import_export.dart:260
+#: lib/ui/import_export.dart:271
 msgid "Vie varmuuskopio (.zip)"
 msgstr "Export backup (.zip)"
 
-#: lib/ui/import_export.dart:261
+#: lib/ui/import_export.dart:272
 msgid "Kaikki .md-tiedostot ja asetukset.md yhdessä zip-tiedostossa."
 msgstr "All .md files and asetukset.md in one zip file."
 
-#: lib/ui/import_export.dart:266
+#: lib/ui/import_export.dart:277
 msgid "Palauta varmuuskopiosta (.zip)"
 msgstr "Restore from backup (.zip)"
 
-#: lib/ui/import_export.dart:267
+#: lib/ui/import_export.dart:278
 msgid "Tuo treenit zipistä. Olemassa olevia päiviä ei ylikirjoiteta."
 msgstr "Imports workouts from a zip. Existing days are not overwritten."
 
-#: lib/ui/import_export.dart:272
+#: lib/ui/import_export.dart:283
 msgid "Tuo .md-tiedostoja"
 msgstr "Import .md files"
 
-#: lib/ui/import_export.dart:274
+#: lib/ui/import_export.dart:285
 msgid ""
 "Yksi tai useampi treenitiedosto, esim. PC:llä tehty tai muokattu "
 "treeni. Olemassa olevia päiviä ei ylikirjoiteta."
@@ -2815,15 +2823,15 @@ msgstr ""
 "One or more workout files, e.g. a workout created or edited on a PC. "
 "Existing days are not overwritten."
 
-#: lib/ui/import_export.dart:279
+#: lib/ui/import_export.dart:290
 msgid "Vie toiseen sovellukseen"
 msgstr "Export to another app"
 
-#: lib/ui/import_export.dart:282
+#: lib/ui/import_export.dart:293
 msgid "FitNotes (.fitnotes) – kokeellinen"
 msgstr "FitNotes (.fitnotes) – experimental"
 
-#: lib/ui/import_export.dart:283
+#: lib/ui/import_export.dart:294
 msgid ""
 "Jos haluat palata FitNotesiin. Palautetaan FitNotesin "
 "varmuuskopiotoiminnolla."
@@ -2831,7 +2839,7 @@ msgstr ""
 "If you want to go back to FitNotes. Restore it with FitNotes' backup "
 "feature."
 
-#: lib/ui/import_export.dart:294
+#: lib/ui/import_export.dart:305
 msgid ""
 "Synkattu kansio (Nextcloud, Seafile…) on jo itsessään varmuuskopio: "
 "tiedostot ovat tavallisia .md-tiedostoja."

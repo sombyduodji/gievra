@@ -92,7 +92,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   erikseen (kerrat, aika, sarjat, volyymi, kilometrit, syke, lajeittain), treenit viikoittain tai kuukausittain;
   mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
 - kehonpainon seuranta (valinnainen): *Tämän päivän paino* etusivulla, kun et ole vielä punninnut (pilkku tai piste
-  käy), painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen
+  käy), painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
+  FitNotesin punnitukset tuodaan mukana
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa etusivulla
