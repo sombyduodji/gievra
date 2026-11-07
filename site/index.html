@@ -46,9 +46,12 @@ th{width:34%}
 code{background:var(--line);padding:1px 6px;border-radius:6px}
 section.video{text-align:center;padding-top:8px}
 section.video video{width:100%;max-width:960px;border-radius:16px;border:1px solid var(--line);background:#000;display:block;margin:0 auto}
-nav.lang{display:flex;justify-content:flex-end;gap:6px;padding-top:12px;font-size:14px}
-nav.lang a,nav.lang span{padding:4px 10px;border-radius:999px;text-decoration:none;border:1px solid var(--line)}
-nav.lang span{background:var(--surface);font-weight:700}
+nav.langs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:18px 0 0}
+nav.langs a{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;
+  background:var(--surface);border:2px solid var(--line);border-radius:99px;padding:6px 12px 6px 8px}
+nav.langs a[aria-current="page"]{border-color:var(--red)}
+nav.langs a:hover{border-color:var(--muted)}
+nav.langs svg{width:27px;height:18px;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex:none}
 footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 .zigzag{height:10px;margin:8px 0;background:
   linear-gradient(135deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px,
@@ -58,7 +61,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 <body>
 <div class="band"></div>
 <div class="wrap">
-<nav class="lang" aria-label="Kieli · Language"><span>Suomi</span><a href="en/" hreflang="en" lang="en">English</a></nav>
+<nav class="langs" aria-label="Kieli · Language"><a href="./" hreflang="fi" lang="fi" aria-current="page"><svg viewBox="0 0 36 24" aria-hidden="true"><rect width="36" height="24" fill="#fff"/><rect x="10" width="6" height="24" fill="#002f6c"/><rect y="9" width="36" height="6" fill="#002f6c"/></svg><span>Suomi</span></a><a href="en/" hreflang="en" lang="en"><svg viewBox="0 0 60 40" aria-hidden="true"><clipPath id="uk"><path d="M30,20 h30 v20 z v20 h-30 z h-30 v-20 z v-20 h30 z"/></clipPath><rect width="60" height="40" fill="#012169"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 L60,40 M60,0 L0,40" clip-path="url(#uk)" stroke="#c8102e" stroke-width="5"/><path d="M30,0 v40 M0,20 h60" stroke="#fff" stroke-width="13"/><path d="M30,0 v40 M0,20 h60" stroke="#c8102e" stroke-width="8"/></svg><span>English</span></a></nav>
 <header>
   <img src="logo.png" alt="Gievra-logo, kahvakuula">
   <h1>Gievra – Treenipäiväkirja</h1>
