@@ -55,3 +55,23 @@ Sport? sportOf(String? name) => sports.where((s) => s.name == name).firstOrNull;
 
 // l10n: data
 const intensities = [('kevyt', 'Kevyt', '😌'), ('reipas', 'Reipas', '😤'), ('kova', 'Kova', '🥵')];
+
+/// Juoksulajit: näissä on lenkin tyyppi ja oma kehitysnäkymä (☰ → Edistyminen ja tilastot → Juoksu).
+const runningSports = {'Juoksu', 'Hölkkä'};
+bool isRun(String? activity) => runningSports.contains(activity);
+
+/// Lenkin tyyppi: avain tiedostoon, nimi, emoji, oletusrasitus ja lyhyt kuvaus.
+/// Tyypit tavallisen juoksuharjoittelun mukaan (kevyt peruskestävyys, palauttava, pitkä, vauhtikestävyys,
+/// intervallit, kisavauhti ja kilpailu tai testi).
+// l10n: data
+const runTypes = <(String, String, String, String, String)>[
+  ('kevyt', 'Kevyt lenkki', '😌', 'kevyt', 'Rauhallinen peruskestävyys, puhe kulkee'),
+  ('palauttava', 'Palauttava', '🧘', 'kevyt', 'Hyvin kevyt, kovan päivän jälkeen'),
+  ('pitka', 'Pitkä lenkki', '🛣️', 'reipas', 'Viikon pisin, tasainen vauhti'),
+  ('vauhti', 'Vauhtikestävyys', '⚡', 'kova', 'Tempo: reipas, mutta hallittu'),
+  ('intervallit', 'Intervallit', '🔁', 'kova', 'Kovat vedot ja palautukset'),
+  ('kisavauhti', 'Kisavauhti', '🎯', 'kova', 'Harjoitus tavoitekisan vauhdilla'),
+  ('kilpailu', 'Kilpailu tai testi', '🏁', 'kova', 'Kisa tai aikatesti'),
+];
+
+(String, String, String, String, String)? runTypeOf(String? key) => runTypes.where((r) => r.$1 == key).firstOrNull;

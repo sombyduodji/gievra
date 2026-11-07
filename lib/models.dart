@@ -39,6 +39,32 @@ DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 /// Kalenteripäivien lisäys (Duration ei kelpaa: kesäaikasiirtymä siirtää kellonaikaa).
 DateTime addDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
 
+/// Vauhti (s/km) muotoon 5:06.
+String fmtPace(double secPerKm) {
+  final s = secPerKm.round();
+  return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+}
+
+/// Kesto sekunteina muotoon 25:31 tai 1:05:09.
+String fmtDurationSec(int sec) {
+  final h = sec ~/ 3600, m = (sec % 3600) ~/ 60, s = sec % 60;
+  String two(int v) => v.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${two(m)}:${two(s)}' : '$m:${two(s)}';
+}
+
+/// "25:31", "1:05:09" tai "45" (minuutteja) -> sekunteja.
+int? parseDurationSec(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return null;
+  final parts = t.split(RegExp(r'[:.]')).map((p) => int.tryParse(p.trim())).toList();
+  if (parts.any((p) => p == null || p < 0)) return null;
+  final p = parts.cast<int>();
+  if (p.length == 1) return p[0] * 60;
+  if (p.length == 2) return p[1] < 60 ? p[0] * 60 + p[1] : null;
+  if (p.length == 3) return p[1] < 60 && p[2] < 60 ? p[0] * 3600 + p[1] * 60 + p[2] : null;
+  return null;
+}
+
 class Workout {
   DateTime date;
   String title;
@@ -63,6 +89,8 @@ class Workout {
   String? activity; // urheilulaji tai liikunta (esim. Juoksu); null = salitreeni
   double? distanceKm;
   String? intensity; // kevyt / reipas / kova
+  String? runType; // juoksun tyyppi (kevyt, palauttava, pitka, vauhti, intervallit, kisavauhti, kilpailu)
+  int? seconds; // tarkka kesto sekunteina (kestävyyslajit; minutes on pyöristetty)
   int? kcal, hrAvg, hrMax; // sykemittarin tai älykellon tiedot (valinnainen)
   bool watchTime; // kesto tuli kellosta (ei sovelluksen ajastimesta)
 
@@ -81,6 +109,8 @@ class Workout {
     this.activity,
     this.distanceKm,
     this.intensity,
+    this.runType,
+    this.seconds,
     this.kcal,
     this.hrAvg,
     this.hrMax,
@@ -91,11 +121,24 @@ class Workout {
   bool get isEmpty =>
       warmup == null && activity == null && exercises.every((e) => e.sets.isEmpty) && notes.trim().isEmpty;
 
+  /// Kesto sekunteina: tarkka aika, jos kirjattu, muuten minuutit.
+  int? get durationSec => seconds ?? (minutes == null ? null : minutes! * 60);
+
+  /// Vauhti sekunteina kilometrille (kestävyyslajit).
+  double? get paceSecPerKm {
+    final d = durationSec;
+    if (d == null || d <= 0 || distanceKm == null || distanceKm! <= 0) return null;
+    return d / distanceKm!;
+  }
+
   /// Vauhti min/km (kestävyyslajit).
-  String? get pace {
-    if (minutes == null || distanceKm == null || distanceKm! <= 0) return null;
-    final s = (minutes! * 60 / distanceKm!).round();
-    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')} /km';
+  String? get pace => paceSecPerKm == null ? null : '${fmtPace(paceSecPerKm!)} /km';
+
+  /// Keskinopeus km/h.
+  double? get speedKmh {
+    final d = durationSec;
+    if (d == null || d <= 0 || distanceKm == null || distanceKm! <= 0) return null;
+    return distanceKm! / (d / 3600);
   }
 
   /// Ohjelmapäivän tunniste vertailuihin: pysyvä nimi tai otsikko (vanhat tiedostot).
@@ -178,6 +221,8 @@ String workoutToMarkdown(Workout w) {
   if (w.bodyweight != null) b.writeln('bodyweight: ${fmtNum(w.bodyweight!)}');
   if (w.started != null) b.writeln('start: ${_two(w.started!.hour)}:${_two(w.started!.minute)}');
   if (w.minutes != null) b.writeln('duration: ${w.minutes} min${w.watchTime ? ' (kello)' : ''}');
+  if (w.seconds != null) b.writeln('time: ${fmtDurationSec(w.seconds!)}');
+  if (w.runType != null) b.writeln('run_type: ${w.runType}');
   if (w.kcal != null) b.writeln('kcal: ${w.kcal}');
   if (w.hrAvg != null) b.writeln('hr_avg: ${w.hrAvg}');
   if (w.hrMax != null) b.writeln('hr_max: ${w.hrMax}');
@@ -198,7 +243,11 @@ String workoutToMarkdown(Workout w) {
       ..writeln()
       ..writeln('## $activityHeading')
       ..writeln(
-        '- ${w.activity}${w.minutes == null ? '' : ': ${w.minutes} min'}'
+        '- ${w.activity}${w.seconds != null
+            ? ': ${fmtDurationSec(w.seconds!)}'
+            : w.minutes == null
+            ? ''
+            : ': ${w.minutes} min'}'
         '${w.distanceKm == null ? '' : ', ${fmtNum(w.distanceKm!)} km'}${w.pace == null ? '' : ', ${w.pace}'}'
         '${w.intensity == null ? '' : ', ${w.intensity}'}',
       );
@@ -304,6 +353,9 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
       if (r.trim().isNotEmpty) r.trim(),
   ];
   w.minutes = int.tryParse(RegExp(r'\d+').firstMatch(meta['duration'] ?? '')?[0] ?? '');
+  w.seconds = parseDurationSec(meta['time'] ?? '');
+  final rt = meta['run_type']?.trim();
+  if (rt != null && rt.isNotEmpty) w.runType = rt;
 
   String? section;
   final notes = <String>[];

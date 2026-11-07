@@ -2,6 +2,7 @@ import 'app_state.dart';
 import 'exercises.dart';
 import 'models.dart';
 import 'program.dart';
+import 'sports.dart';
 
 /// Verkkodemon esimerkkitiedot: kolmen päivän ohjelma ja neljän viikon treenit, jotta etusivu, kalenteri ja
 /// tilastot näyttävät jotain. Kaikki on vain muistissa (MemoryTrainingFiles); mitään ei tallenneta.
@@ -44,6 +45,47 @@ Future<void> seedDemo() async {
       }
       await store.save(w);
       n++;
+    }
+  }
+
+  await _seedRuns(today);
+}
+
+/// Esimerkkijuoksut kahdeksalta viikolta (tiistai, torstai, sunnuntai): kevyiden lenkkien vauhti paranee ja syke
+/// laskee hiljalleen, sunnuntaisin pitkä lenkki, välillä vauhtikestävyys tai intervallit ja lopuksi 5 km testi.
+Future<void> _seedRuns(DateTime today) async {
+  settings.sports = true;
+  settings.watch = true;
+  final monday = addDays(today, 1 - today.weekday);
+  for (var week = 0; week < 8; week++) {
+    final ws = addDays(monday, -7 * (7 - week));
+    final easyPace = 375 - week * 3.5; // s/km: 6:15 -> n. 5:51
+    final hr = 148 - week;
+    final runs = <(int, String, double, double, int)>[
+      (1, 'kevyt', 6.0 + (week % 3) * .5, easyPace, hr),
+      (3, week.isEven ? 'vauhti' : 'intervallit', week.isEven ? 7.0 : 6.5, easyPace - (week.isEven ? 45 : 35), hr + 16),
+      (6, 'pitka', 10.0 + week * .7, easyPace + 12, hr + 3),
+      if (week == 6) (5, 'kilpailu', 5.0, 285, hr + 24), // 5 km testi: 23:45
+    ];
+    for (final (day, type, km, pace, h) in runs) {
+      final date = addDays(ws, day);
+      if (!date.isBefore(today)) continue;
+      final sec = (km * pace).round();
+      await store.save(
+        Workout(
+          date: date,
+          title: 'Juoksu',
+          activity: 'Juoksu',
+          distanceKm: km,
+          seconds: sec,
+          minutes: (sec / 60).round(),
+          runType: type,
+          intensity: runTypeOf(type)!.$4,
+          hrAvg: h,
+          hrMax: h + 22,
+          kcal: (km * 68).round(),
+        )..feeling = type == 'kevyt' ? 4 : 3,
+      );
     }
   }
 }

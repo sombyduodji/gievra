@@ -765,5 +765,6 @@ class MemoryTrainingFiles implements TrainingFiles {
 }
 
 /// Verkkoversio on demo: ei tiedostoja eikä pysyvää tallennusta.
-const bool isDemo = kIsWeb;
+// Verkossa aina demo; muualla vain kuvakaappauksia ja esittelyä varten: --dart-define=DEMO=true.
+const bool isDemo = kIsWeb || bool.fromEnvironment('DEMO');
 final TrainingFiles files = isDemo ? MemoryTrainingFiles() : IoTrainingFiles();

@@ -4,8 +4,10 @@ import '../app_state.dart';
 import '../exercises.dart';
 import '../insights.dart';
 import '../models.dart';
+import '../running.dart';
 import '../stats.dart';
 import '../theme.dart';
+import 'running_screen.dart';
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -78,6 +80,20 @@ class _StatsScreenState extends State<StatsScreen> {
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
         children: [
           const SamiBand(height: 4, pattern: false),
+          // Juoksulla oma kehitysnäkymä (ei sekoitu salin edistymiseen).
+          if (runsOf(ws).isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Card(
+                child: ListTile(
+                  leading: const Text('🏃', style: TextStyle(fontSize: 26)),
+                  title: Text(t('Juoksun kehitys')),
+                  subtitle: Text(t('Kilometrit, vauhti, ennätykset ja lenkkityypit'), style: sub),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RunningScreen())),
+                ),
+              ),
+            ),
           const SizedBox(height: 12),
           Row(
             children: [

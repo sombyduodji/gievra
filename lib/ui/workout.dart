@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../models.dart';
 import '../program.dart';
+import '../running.dart';
+import '../sports.dart';
 import '../exercises.dart';
 import '../session_compare.dart';
 import '../theme.dart';
@@ -12,6 +14,7 @@ import 'new_workout.dart';
 import 'picker.dart';
 import 'share.dart';
 import 'rest_banner.dart';
+import 'running_screen.dart';
 import 'watch.dart';
 import 'set_logger.dart';
 import 'move_feedback.dart';
@@ -451,7 +454,14 @@ class _SavedScreenState extends State<SavedScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              stat(workout.minutes == null ? '–' : fmtDuration(workout.minutes!), t('kesto')),
+              stat(
+                workout.seconds != null
+                    ? fmtDurationSec(workout.seconds!)
+                    : workout.minutes == null
+                    ? '–'
+                    : fmtDuration(workout.minutes!),
+                t('kesto'),
+              ),
               const SizedBox(width: 8),
               if (workout.activity != null) ...[
                 stat(workout.distanceKm == null ? '–' : '${fmtNum(workout.distanceKm!)} km', t('matka')),
@@ -473,6 +483,8 @@ class _SavedScreenState extends State<SavedScreen> {
               if (!workout.isEmpty) await store.save(workout);
             },
           ),
+          // Juoksu: vertailu edelliseen samantyyppiseen lenkkiin ja oma kehitysnäkymä.
+          if (isRun(workout.activity) && workout.paceSecPerKm != null) _RunCompare(run: workout),
           if (_tiredTip() != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -502,102 +514,104 @@ class _SavedScreenState extends State<SavedScreen> {
               ),
             ),
           const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
-            child: c.skipReason != null
-                ? Text(
-                    t(
-                      'Tämä oli {0}: kuorma on tarkoituksella pienempi, joten tätä kertaa ei verrata aiempiin. '
-                      'Tärkeintä on palautua.',
-                      [c.skipReason],
-                    ),
-                  )
-                : c.previous == null
-                ? Text(t('Ensimmäinen kerta tällä treenillä. Ensi kerralla näet, miten kehityit.'))
-                : workout.activity != null
-                ? Text(
-                    '${t('Edellinen kerta: {0} ({1})', [workout.activity!, shortDate(c.previous!.date)])}: '
-                    '${[if (c.previous!.minutes != null) fmtDuration(c.previous!.minutes!), if (c.previous!.distanceKm != null) '${fmtNum(c.previous!.distanceKm!)} km', ?c.previous!.pace, ?c.previous!.intensity].join(' · ')}',
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t('Verrattuna edelliseen kertaan ({0})', [shortDate(c.previous!.date)]),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+          // Juoksussa vertailu on yllä (samantyyppinen lenkki); yleinen vertailu vain muille.
+          if (!(isRun(workout.activity) && workout.paceSecPerKm != null))
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+              child: c.skipReason != null
+                  ? Text(
+                      t(
+                        'Tämä oli {0}: kuorma on tarkoituksella pienempi, joten tätä kertaa ei verrata aiempiin. '
+                        'Tärkeintä on palautua.',
+                        [c.skipReason],
                       ),
-                      const SizedBox(height: 4),
-                      if (c.previousVolume != null && c.previousVolume! > 0 && c.volume > 0)
+                    )
+                  : c.previous == null
+                  ? Text(t('Ensimmäinen kerta tällä treenillä. Ensi kerralla näet, miten kehityit.'))
+                  : workout.activity != null
+                  ? Text(
+                      '${t('Edellinen kerta: {0} ({1})', [workout.activity!, shortDate(c.previous!.date)])}: '
+                      '${[if (c.previous!.minutes != null) fmtDuration(c.previous!.minutes!), if (c.previous!.distanceKm != null) '${fmtNum(c.previous!.distanceKm!)} km', ?c.previous!.pace, ?c.previous!.intensity].join(' · ')}',
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          t('Volyymi {0} → {1} ({2})', [
-                            kg(c.previousVolume!),
-                            kg(c.volume),
-                            pct(c.volume, c.previousVolume!),
-                          ]),
-                          style: sub,
+                          t('Verrattuna edelliseen kertaan ({0})', [shortDate(c.previous!.date)]),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                      if (c.previous!.minutes != null && workout.minutes != null)
-                        Text(
-                          t('Kesto {0} → {1}', [fmtDuration(c.previous!.minutes!), fmtDuration(workout.minutes!)]),
-                          style: sub,
-                        ),
-                      if (c.previous!.feeling != null && workout.feeling != null)
-                        Text(
-                          t('Fiilis {0} → {1}', [feelingOf(c.previous!.feeling)!.$2, feelingOf(workout.feeling)!.$2]),
-                          style: sub,
-                        ),
-                      const SizedBox(height: 8),
-                      for (final e in c.exercises)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                switch (e.trend) {
-                                  1 => '↑ ',
-                                  -1 => '↓ ',
-                                  2 => '＋ ',
-                                  _ => '= ',
-                                },
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: switch (e.trend) {
-                                    1 => Sami.green,
-                                    -1 => Sami.red,
-                                    _ => cs.onSurfaceVariant,
-                                  },
-                                ),
-                              ),
-                              Expanded(child: ExName(e.name)),
-                              Text(
-                                e.before == null ? e.now : '${e.before} → ${e.now}',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                        const SizedBox(height: 4),
+                        if (c.previousVolume != null && c.previousVolume! > 0 && c.volume > 0)
+                          Text(
+                            t('Volyymi {0} → {1} ({2})', [
+                              kg(c.previousVolume!),
+                              kg(c.volume),
+                              pct(c.volume, c.previousVolume!),
+                            ]),
+                            style: sub,
                           ),
-                        ),
-                      if (c.history.length > 2) ...[
+                        if (c.previous!.minutes != null && workout.minutes != null)
+                          Text(
+                            t('Kesto {0} → {1}', [fmtDuration(c.previous!.minutes!), fmtDuration(workout.minutes!)]),
+                            style: sub,
+                          ),
+                        if (c.previous!.feeling != null && workout.feeling != null)
+                          Text(
+                            t('Fiilis {0} → {1}', [feelingOf(c.previous!.feeling)!.$2, feelingOf(workout.feeling)!.$2]),
+                            style: sub,
+                          ),
                         const SizedBox(height: 8),
+                        for (final e in c.exercises)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  switch (e.trend) {
+                                    1 => '↑ ',
+                                    -1 => '↓ ',
+                                    2 => '＋ ',
+                                    _ => '= ',
+                                  },
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: switch (e.trend) {
+                                      1 => Sami.green,
+                                      -1 => Sami.red,
+                                      _ => cs.onSurfaceVariant,
+                                    },
+                                  ),
+                                ),
+                                Expanded(child: ExName(e.name)),
+                                Text(
+                                  e.before == null ? e.now : '${e.before} → ${e.now}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (c.history.length > 2) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            t('Volyymi viime kerroilla: {0} kg', [
+                              c.history.map((h) => fmtNum(h.$2.roundToDouble())).join(' → '),
+                            ]),
+                            style: sub,
+                          ),
+                        ],
+                        const SizedBox(height: 6),
                         Text(
-                          t('Volyymi viime kerroilla: {0} kg', [
-                            c.history.map((h) => fmtNum(h.$2.roundToDouble())).join(' → '),
-                          ]),
-                          style: sub,
+                          t(
+                            'Paras sarja verrataan arvioituna maksimina, joten raskaampi paino tai useampi toisto '
+                            'näkyy nousuna. Kevennys- ja paluuviikot jätetään vertailusta pois.',
+                          ),
+                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                         ),
                       ],
-                      const SizedBox(height: 6),
-                      Text(
-                        t(
-                          'Paras sarja verrataan arvioituna maksimina, joten raskaampi paino tai useampi toisto '
-                          'näkyy nousuna. Kevennys- ja paluuviikot jätetään vertailusta pois.',
-                        ),
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-          ),
+                    ),
+            ),
           const SizedBox(height: 12),
           Card(
             child: ExpansionTile(
@@ -646,6 +660,52 @@ class _SavedScreenState extends State<SavedScreen> {
           FilledButton(
             onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
             child: Text(t('Takaisin etusivulle')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Juoksun jälkeen: vauhti ja nopeus, vertailu edelliseen samantyyppiseen lenkkiin, linkki kehitysnäkymään.
+class _RunCompare extends StatelessWidget {
+  final Workout run;
+  const _RunCompare({required this.run});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final prev = previousRun(store.workouts, run);
+    final type = runTypeOf(run.runType);
+    String? cmp;
+    if (prev != null) {
+      final d = (run.paceSecPerKm! - prev.paceSecPerKm!).round();
+      cmp = t('Edellinen {0} ({1}): {2} /km', [
+        type == null ? t('juoksu') : t(type.$2).toLowerCase(),
+        shortDate(prev.date),
+        fmtPace(prev.paceSecPerKm!),
+      ]);
+      cmp += d == 0 ? ' · =' : (d < 0 ? ' · ${t('{0} s/km nopeampi', [-d])}' : ' · ${t('{0} s/km hitaampi', [d])}');
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${type?.$3 ?? '🏃'} ${fmtPace(run.paceSecPerKm!)} /km · ${fmtNum((run.speedKmh! * 10).round() / 10)} km/h',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          if (cmp != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(cmp)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RunningScreen())),
+              icon: const Icon(Icons.show_chart),
+              label: Text(t('Juoksun kehitys')),
+            ),
           ),
         ],
       ),

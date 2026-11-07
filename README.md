@@ -90,6 +90,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - valinnaisesti urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
   (kesto, kalorit, keski- ja maksimisyke heti *Treeni valmis!* -näkymässä)
+- juoksulle oma kehitysnäkymä, erillään salista: lenkin tyyppi (kevyt, palauttava, pitkä, vauhtikestävyys,
+  intervallit, kisavauhti, kilpailu), tarkka aika, vauhti min/km ja keskinopeus, kilometrit viikoittain, kevyiden
+  lenkkien vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km, puolimaraton, maraton)
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
