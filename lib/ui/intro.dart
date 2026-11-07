@@ -48,7 +48,13 @@ class _IntroScreenState extends State<IntroScreen> {
   static const _lifts = ['Takakyykky', 'Penkkipunnerrus', 'Maastaveto'];
 
   bool get _pl => _goal == 'voimanosto';
-  int get _pages => _pl ? 9 : 8;
+
+  /// Tangon maksimit kysytään vain tankovoimanostossa: kahvakuulaohjelma ei käytä niitä.
+  bool get _askMaxes => _pl && !_kbOnly;
+
+  /// Kahvakuulaohjelman painotus; voimanostossa pelkillä kahvakuulilla oletuksena voima.
+  String? get _kbFocusEff => _kbOnly ? (_kbFocus ?? (_pl ? 'voima' : null)) : null;
+  int get _pages => _askMaxes ? 9 : 8;
 
   @override
   void initState() {
@@ -145,18 +151,18 @@ class _IntroScreenState extends State<IntroScreen> {
     days: _days,
     minutes: _minutes,
     injuries: _injuries,
-    maxes: _pl ? _maxes : const {},
+    maxes: _askMaxes ? _maxes : const {},
     repStyle: _repStyle,
     equipment: _equipment,
     favorites: _favorites,
     chosen: _chosen,
-    kbFocus: _kbOnly ? _kbFocus : null,
+    kbFocus: _kbFocusEff,
   );
 
   /// Luonnos pysyy muokkauksineen, kunnes jokin vastaus muuttuu.
   Program _current() {
     final key =
-        '$_goal|$_exp|$_days|$_minutes|$_injuries|$_repStyle|$_maxes|$_equipment|$_favorites|$_chosen|${_kbOnly ? _kbFocus : null}';
+        '$_goal|$_exp|$_days|$_minutes|$_injuries|$_repStyle|$_maxes|$_equipment|$_favorites|$_chosen|$_kbFocusEff';
     if (_draft == null || key != _draftKey) {
       _draft = _build();
       _draftKey = key;
@@ -177,7 +183,7 @@ class _IntroScreenState extends State<IntroScreen> {
         repStyle: _repStyle,
         equipment: _equipment,
         moves: _chosen,
-        kbFocus: _kbOnly ? _kbFocus : null,
+        kbFocus: _kbFocusEff,
       ),
     );
     await settings.setProgram(_current());
@@ -372,11 +378,11 @@ class _IntroScreenState extends State<IntroScreen> {
             const SizedBox(height: 8),
             SectionLabel(t('Kahvakuulatreenin pääpaino')),
             for (final f in kbFocuses.entries)
-              _choice(t(f.value.$2), t(f.value.$3), _kbFocus == f.key, () => _kbFocus = f.key, icon: f.value.$1),
+              _choice(t(f.value.$2), t(f.value.$3), _kbFocusEff == f.key, () => _kbFocus = f.key, icon: f.value.$1),
             _choice(
               t('Tavallinen ohjelma kahvakuulilla'),
               t('Liikemallit kuten salilla, kahvakuulaliikkeillä'),
-              _kbFocus == null,
+              _kbFocusEff == null,
               () => _kbFocus = null,
               icon: '🔄',
             ),
@@ -384,7 +390,7 @@ class _IntroScreenState extends State<IntroScreen> {
         ],
         hint:
             t('Valitse yksi tai useampi. Ohjelma suosii niitä ja käyttää muita vain, jos sopivaa liikettä ei löydy.') +
-            (_pl ? ' ${t('Voimanoston kilpaliikkeet tehdään aina tangolla.')}' : ''),
+            (_askMaxes ? ' ${t('Voimanoston kilpaliikkeet tehdään aina tangolla.')}' : ''),
       ),
       _q(t('Mitä liikkeitä haluat tehdä?'), [
         _choice(
@@ -484,7 +490,7 @@ class _IntroScreenState extends State<IntroScreen> {
           icon: '🩹',
         ),
       ], hint: t('Ohjelma välttää ja muokkaa liikkeitä, jotka yleensä pahentavat vaivaa. Ei korvaa fysioterapeuttia.')),
-      if (_pl)
+      if (_askMaxes)
         _q(
           t('Arvioidut maksimit'),
           [

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'exercises.dart';
 import 'l10n.dart' as l10n;
+import 'program_check.dart' show majorMuscles;
+import 'program_edit.dart' show weeklyLoad;
 import 'injuries.dart';
 import 'models.dart';
 
@@ -1141,7 +1143,7 @@ Program generateProgram({
     notes.add(l10n.fi('Kevennysviikko joka {0}. viikko (puolet sarjoista, painot −10 %).', [deloadEvery]));
   }
 
-  return Program(
+  final program = Program(
     goal: goal,
     experience: experience,
     days: days,
@@ -1155,6 +1157,82 @@ Program generateProgram({
     equipment: {...equipment},
     kbFocus: kb,
   );
+  // Viikon sarjat tavoitteen suositukseen (Viikon kuorma), kun aika ja treenikohtainen yläraja sallivat.
+  if (kb == null) {
+    final short = _reachWeeklyTargets(program, exp);
+    if (short.isNotEmpty) {
+      program.notes.add(
+        l10n.fi(
+          'Viikon sarjamäärä jää alle tavoitteen suosituksen: {0}. {1} × {2} min ei riitä enempään; lisää '
+          'treenipäivä tai pidennä treeniä. Vähemmälläkin kehittyy, kunhan treenaat säännöllisesti.',
+          [short.map(l10n.fi).join(', '), plan.length, minutes],
+        ),
+      );
+    }
+  }
+  return program;
+}
+
+/// Suorat liikepaikat päälihasryhmille (samat kuin minimiannoksessa).
+const _directSlots = <String, List<String>>{
+  'rinta': ['VTY', 'VIN', 'RIE'],
+  'selkä': ['VVE', 'PVE'],
+  'etureisi': ['KYY', 'YKS', 'POJ'],
+  'takareisi': ['LON', 'POK'],
+  'pakara': ['PAK', 'LON', 'KYY', 'YKS'],
+  'olkapää': ['PTY', 'OSI'],
+};
+
+/// Lisää sarjoja päälihasryhmille, joiden viikkosarjat jäävät alle tavoitteen suosituksen (weeklyRange):
+/// sarja kerrallaan sille päivälle, jolla on eniten aikaa jäljellä, kunhan treeni mahtuu kestoonsa, liikkeen
+/// sarjoja on enintään 5 ja treenikohtainen yläraja (sessionCap) pitää. Palauttaa lihasryhmät, jotka jäivät
+/// silti alle suosituksen.
+List<String> _reachWeeklyTargets(Program p, String exp) {
+  final cap = sessionCap(exp);
+  double sum(Set<String> s) =>
+      p.plan.expand((d) => d.items).where((i) => s.contains(i.slot)).fold(0.0, (a, i) => a + _weekSets(i));
+
+  /// Sarja, joka mahtuu päivän kestoon, liikkeen enimmäismäärään ja treenikohtaiseen ylärajaan; eniten aikaa
+  /// jäljellä olevalta päivältä.
+  PlanItem? pick(bool Function(PlanItem) ok) {
+    PlanItem? best;
+    var bestRoom = -1.0;
+    for (final d in p.plan) {
+      final room = p.minutes - estimateMinutes(d.items);
+      final per = _sessionSets(d);
+      for (final i in d.items) {
+        if (i.kind != null || i.sets >= 5 || !ok(i) || i.restSec / 60 + .75 > room) continue;
+        final credit = _sessionCredit[i.slot] ?? const <String, double>{};
+        if (credit.entries.any((e) => (per[e.key] ?? 0) + e.value > cap + .01)) continue;
+        if (room > bestRoom) {
+          best = i;
+          bestRoom = room;
+        }
+      }
+    }
+    return best;
+  }
+
+  for (var guard = 0; guard < 300; guard++) {
+    final low = weeklyLoad(p).where((m) => majorMuscles.contains(m.muscle) && m.sets < m.lo - .01).toList()
+      ..sort((a, b) => (a.sets / a.lo).compareTo(b.sets / b.lo));
+    if (low.isEmpty) return const [];
+    PlanItem? best;
+    for (final m in low) {
+      best = pick((i) => _directSlots[m.muscle]?.contains(i.slot) ?? false);
+      if (best != null) break; // vajaimmalle lihasryhmälle löytyi paikka
+    }
+    if (best == null) return [for (final m in low) m.muscle];
+    // Työntö/veto-tasapaino (veto vähintään 0,95 × työntö): tarvittaessa ensin vetosarja.
+    if (_push.contains(best.slot) && sum(_pull) < (sum(_push) + 1) * .95) {
+      final pull = pick((i) => _pull.contains(i.slot));
+      if (pull == null) return [for (final m in low) m.muscle];
+      pull.sets++;
+      continue;
+    }
+    best.sets++;
+  }
+  return const [];
 }
 
 bool fitsAll(Set<String> prefs) => prefs.isEmpty || prefs.length == equipmentChoices.length;
@@ -1298,31 +1376,48 @@ void _balancePushPull(List<PlanDay> plan) {
   }
 }
 
+/// Treenikohtainen yläraja suorille sarjoille lihasryhmää kohden (aloittelija 6, keskitaso 8, kokenut 10).
+double sessionCap(String exp) => switch (exp) {
+  'aloittelija' => 6.0,
+  'kokenut' => 10.0,
+  _ => 8.0,
+};
+
+/// Liikepaikan suora kuorma lihasryhmille treenikohtaista ylärajaa varten.
+const _sessionCredit = <String, Map<String, double>>{
+  'KYY': {'etureisi': 1},
+  'KYV': {'etureisi': 1},
+  'YKS': {'etureisi': 1},
+  'POJ': {'etureisi': 1},
+  'LON': {'takareisi': 1},
+  'MAV': {'takareisi': 1},
+  'POK': {'takareisi': 1},
+  'PAK': {'takareisi': .5},
+  'VTY': {'rinta': 1, 'olkapää': .5},
+  'VIN': {'rinta': 1, 'olkapää': .5},
+  'RIE': {'rinta': 1},
+  'PEV': {'rinta': 1},
+  'PTY': {'olkapää': 1},
+  'OSI': {'olkapää': 1},
+  'VVE': {'selkä': 1},
+  'PVE': {'selkä': 1},
+};
+
+/// Päivän suorat sarjat lihasryhmää kohden.
+Map<String, double> _sessionSets(PlanDay d) {
+  final per = <String, double>{};
+  for (final i in d.items.where((i) => i.kind == null)) {
+    for (final e in (_sessionCredit[i.slot] ?? const <String, double>{}).entries) {
+      per[e.key] = (per[e.key] ?? 0) + i.sets * e.value;
+    }
+  }
+  return per;
+}
+
 /// Yhden treenin lihasryhmäkohtainen yläraja (Remmert ym. 2025): karsitaan eristäviä, sitten suurinta.
 void _capPerSession(List<PlanDay> plan, String exp) {
-  final cap = switch (exp) {
-    'aloittelija' => 6.0,
-    'kokenut' => 10.0,
-    _ => 8.0,
-  };
-  const credit = <String, Map<String, double>>{
-    'KYY': {'etureisi': 1},
-    'KYV': {'etureisi': 1},
-    'YKS': {'etureisi': 1},
-    'POJ': {'etureisi': 1},
-    'LON': {'takareisi': 1},
-    'MAV': {'takareisi': 1},
-    'POK': {'takareisi': 1},
-    'PAK': {'takareisi': .5},
-    'VTY': {'rinta': 1, 'olkapää': .5},
-    'VIN': {'rinta': 1, 'olkapää': .5},
-    'RIE': {'rinta': 1},
-    'PEV': {'rinta': 1},
-    'PTY': {'olkapää': 1},
-    'OSI': {'olkapää': 1},
-    'VVE': {'selkä': 1},
-    'PVE': {'selkä': 1},
-  };
+  final cap = sessionCap(exp);
+  const credit = _sessionCredit;
   for (final d in plan) {
     for (var guard = 0; guard < 30; guard++) {
       final per = <String, double>{};

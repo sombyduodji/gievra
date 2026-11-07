@@ -15,7 +15,7 @@ Future<void> seedDemo() async {
     goal: 'lihaskasvu',
     experience: 'keski',
     days: 3,
-    minutes: 60,
+    minutes: 75, // 3 × 75 min riittää lihaskasvun viikkosuositukseen (Viikon kuorma vihreä)
     injuries: const [],
     start: start,
   );
@@ -56,6 +56,7 @@ Future<void> seedDemo() async {
 Future<void> _seedRuns(DateTime today) async {
   settings.sports = true;
   settings.watch = true;
+  settings.restTimer = true; // demossa näkyy palautusajastin (oikeassa sovelluksessa oletus pois)
   final monday = addDays(today, 1 - today.weekday);
   for (var week = 0; week < 8; week++) {
     final ws = addDays(monday, -7 * (7 - week));

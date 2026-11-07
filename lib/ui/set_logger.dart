@@ -205,6 +205,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     final cs = Theme.of(context).colorScheme;
     final step = settings.weightStep;
     return Scaffold(
+      // Palautusajastin kiinteänä alapalkkina: ei siirrä painikkeita sormen alta.
+      bottomNavigationBar: const RestBanner(),
       appBar: AppBar(
         title: ExName(e.name),
         actions: [
@@ -396,7 +398,6 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             },
           ),
           const SizedBox(height: 18),
-          const RestBanner(),
           if (_warming) ...[
             Container(
               padding: const EdgeInsets.all(12),

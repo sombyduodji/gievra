@@ -168,6 +168,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final isToday = w.date == dateOnly(DateTime.now());
     final done = w.exercises.where((e) => e.sets.isNotEmpty).toList();
     return Scaffold(
+      bottomNavigationBar: const RestBanner(),
       appBar: AppBar(
         title: GestureDetector(
           onTap: _rename,
@@ -218,7 +219,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 100),
         children: [
           const SamiBand(height: 4, pattern: false),
-          const Padding(padding: EdgeInsets.only(top: 10), child: RestBanner()),
           if (w.warmup != null)
             Container(
               margin: const EdgeInsets.only(top: 12),

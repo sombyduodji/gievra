@@ -135,11 +135,11 @@ msgstr "ovddas ruovttoluotta"
 msgid "metrit"
 msgstr "mehterat"
 
-#: lib/exercises.dart:634 lib/program.dart:17
+#: lib/exercises.dart:634 lib/program.dart:19
 msgid "Voimanosto"
 msgstr "Fápmolokten"
 
-#: lib/exercises.dart:635 lib/program.dart:329
+#: lib/exercises.dart:635 lib/program.dart:331
 msgid "Jalat"
 msgstr "Juolggit"
 
@@ -167,7 +167,7 @@ msgstr "Gaskarumaš"
 msgid "Kehonpaino"
 msgstr "Rumašdeaddu"
 
-#: lib/exercises.dart:642 lib/program.dart:323
+#: lib/exercises.dart:642 lib/program.dart:325
 msgid "Kahvakuula"
 msgstr "Kettlebell"
 
@@ -175,7 +175,7 @@ msgstr "Kettlebell"
 msgid "Kardio"
 msgstr "Kardio"
 
-#: lib/exercises.dart:644 lib/program.dart:324
+#: lib/exercises.dart:644 lib/program.dart:326
 msgid "Koko keho"
 msgstr "Olles rumaš"
 
@@ -306,34 +306,34 @@ msgstr "Hui buorre"
         ? l10n.t('Kahvakuula: {0}', [l10n.t(kbFocuses[kbFocus]?.$2 ?? kbFocus!)])
         : l10n.t(goals[goal] ?? goal)
 #. {1} = plan.length
-#: lib/program.dart:765
+#: lib/program.dart:767
 msgid "{0} · {1} päivää viikossa"
 msgstr "{0} · {1} beaivvi vahkus"
 
 #. {0} = l10n.t(kbFocuses[kbFocus]?.$2 ?? kbFocus!)
-#: lib/program.dart:767
+#: lib/program.dart:769
 msgid "Kahvakuula: {0}"
 msgstr "Kettlebell: {0}"
 
 #. {0} = w + 1
 #. {1} = l10n.t(plPhases[w])
 #. {2} = (pct * 100).toStringAsFixed(1).replaceAll('.0', '').replaceAll('.', ',')
-#: lib/program.dart:820
+#: lib/program.dart:822
 msgid "Viikko {0}/10 · {1} · {2} %"
 msgstr "Vahkku {0}/10 · {1} · {2} %"
 
-#: lib/program.dart:835
+#: lib/program.dart:837
 msgid "Kevennysviikko: puolet sarjoista, painot −10 %, ei maksimiyrityksiä"
 msgstr ""
 "Geahpedanvahkku: bealli ráidduin, deattut −10 %, ii eanemus deattu "
 "geahččalemiid"
 
 #. {0} = week + 1
-#: lib/program.dart:839
+#: lib/program.dart:841
 msgid "Viikko {0}"
 msgstr "Vahkku {0}"
 
-#: lib/program.dart:873
+#: lib/program.dart:875
 msgid ""
 "Kahvakuulaohjelmassa 3 treenipäivää riittää. Muina päivinä kävelyä "
 "tai muuta kevyttä liikuntaa."
@@ -341,7 +341,7 @@ msgstr ""
 "Kettlebell-prográmmas 3 hárjehallanbeaivvi doarvái. Eará beivviid "
 "vázzin dahje eará geahpas lihkadeapmi."
 
-#: lib/program.dart:879
+#: lib/program.dart:881
 msgid ""
 "Paino merkitään per kuula; tuplakuulaliikkeissä kaksi samanpainoista "
 "kuulaa. Kun kaikki sarjat menevät toistoalueen ylärajalla ja varaa "
@@ -354,7 +354,7 @@ msgstr ""
 "molsso boahtte sturrodahkii (dábálaččat +4 kg) ja álgge vuolimus "
 "rájis."
 
-#: lib/program.dart:885
+#: lib/program.dart:887
 msgid ""
 "Voimapainotus: 3–5 toistoa raskaalla kuulalla, 2–3 min tauot. Raskaat "
 "moninivelliikkeet ensin, pienemmät lopuksi (ACSM:n suositus, Markell "
@@ -364,7 +364,7 @@ msgstr ""
 "vuoiŋŋasteamit. Stuora hárjehusat vuosttažettiin, unnit loahpas "
 "(ACSM:a rávvagat, Markell & Peterson 2019, CC BY 4.0)."
 
-#: lib/program.dart:889
+#: lib/program.dart:891
 msgid ""
 "Lihaskasvupainotus: 6–12 toistoa lähelle uupumusta, 60–90 s tauot. "
 "Sarjoja voi tehdä pareina (esim. punnerrus + soutu) ajan "
@@ -374,7 +374,7 @@ msgstr ""
 "60–90 s vuoiŋŋasteamit. Guokte hárjehusa sáhttá dahkat molsumiin (om. "
 "bággen + geassin) áiggi seastin dihte."
 
-#: lib/program.dart:893
+#: lib/program.dart:895
 msgid ""
 "Kuntopainotus: liikkeet kiertona lyhyin tauoin (30–60 s), 3–5 "
 "kierrosta. Heilautuksissa voima tulee lantiosta, ei käsistä."
@@ -382,7 +382,7 @@ msgstr ""
 "Návccaid deattuhus: hárjehusat jorrun oanehis vuoiŋŋastemiiguin "
 "(30–60 s), 3–5 jorrosa. Šlivgemiin fápmu boahtá alis, ii gieđain."
 
-#: lib/program.dart:897
+#: lib/program.dart:899
 msgid ""
 "Perusta: opettele heilautus ja ylösnousu kevyellä kuulalla ennen "
 "raskaampia liikkeitä. Ylösnousut vuorotellen kummallekin puolelle. "
@@ -395,7 +395,7 @@ msgstr ""
 "teknihkain."
 
 #. {0} = d >= 3 ? 3 : 2
-#: lib/program.dart:906
+#: lib/program.dart:908
 msgid ""
 "Aloittelijan lineaarinen nousu: vuorottele A ja B, {0} kertaa "
 "viikossa. Lisää painoa joka kerta, kun kaikki sarjat menivät läpi."
@@ -403,13 +403,13 @@ msgstr ""
 "Álggaheaddji linnjálaš lassáneapmi: molsso A ja B, {0} geardde "
 "vahkus. Lasit deattu juohke geardde go buot ráiddut lihkostuvve."
 
-#: lib/program.dart:911
+#: lib/program.dart:913
 msgid "Aloittelijalle 3 salipäivää riittää. Muina päivinä kevyttä liikuntaa."
 msgstr ""
 "Álggaheaddjái 3 sállabeaivvi doarvái. Eará beivviid geahpas "
 "lihkadeapmi."
 
-#: lib/program.dart:916
+#: lib/program.dart:918
 msgid ""
 "Voimanostossa 4 päivää riittää tähän ohjelmaan. Lisäpäivät: kevyt "
 "tekniikka tai kardio."
@@ -417,7 +417,7 @@ msgstr ""
 "Fápmoloktemis 4 beaivvi doarvái dán prográmmii. Lassebeaivvit: "
 "geahpas teknihkka dahje kardio."
 
-#: lib/program.dart:920
+#: lib/program.dart:922
 msgid ""
 "10 viikon sykli: 4 vk kasaus, kevennysviikko, 4 vk tehostus, huippu "
 "ja testi. Painot lasketaan arvioidusta maksimista (e1RM)."
@@ -426,7 +426,7 @@ msgstr ""
 "lossudeapmi, alimus dássi ja geahččaleapmi. Deattut "
 "rehkenastojuvvojit árvvoštallon eanemus deattus (e1RM)."
 
-#: lib/program.dart:927
+#: lib/program.dart:929
 msgid ""
 "Aloittelijalle 2–3 salipäivää on suositus (ACSM). Muina päivinä "
 "kevyttä liikuntaa."
@@ -435,18 +435,18 @@ msgstr ""
 "geahpas lihkadeapmi."
 
 #. {0} = d - 3
-#: lib/program.dart:931
+#: lib/program.dart:933
 msgid "Yleiskunnossa 3 salipäivää + {0} kestävyyspäivää (30–45 min reipasta)."
 msgstr ""
 "Oppalaš návccain 3 sállabeaivvi + {0} gierdavašvuođabeaivvi (30–45 "
 "min johtil)."
 
 #. {0} = d - 4
-#: lib/program.dart:935
+#: lib/program.dart:937
 msgid "Rasvanpoltossa 4 salipäivää + {0} kevyttä kardiopäivää."
 msgstr "Buoiddi boaldimis 4 sállabeaivvi + {0} geahpas kardio-beaivvi."
 
-#: lib/program.dart:943
+#: lib/program.dart:945
 msgid ""
 "Pidä painot, sarjoja saa olla vähemmän. Tavoite −0,5–1 % "
 "kehonpainosta viikossa, proteiinia 1,6–2,2 g/kg. Lisäksi 2–3 × 20–40 "
@@ -456,7 +456,7 @@ msgstr ""
 "rumašdeattus vahkus, proteiinna 1,6–2,2 g/kg. Dasa lassin 2–3 × 20–40 "
 "min geahpas kardio sála maŋŋá dahje eará áigge."
 
-#: lib/program.dart:949
+#: lib/program.dart:951
 msgid "Kestävyysliikuntaa 150–300 min viikossa (WHO)."
 msgstr "Gierdavašvuođalihkadeapmi 150–300 min vahkus (WHO)."
 
@@ -464,7 +464,7 @@ msgstr "Gierdavašvuođalihkadeapmi 150–300 min vahkus (WHO)."
 #. {1} = plan.length
 #. {2} = longest.round()
 #. {3} = minutes
-#: lib/program.dart:1073
+#: lib/program.dart:1075
 msgid ""
 "Valitsit {0} liikettä {1} treenipäivälle: pisin treeni kestää noin "
 "{2} min ({3} min toivottu). Lisää treenipäivä, pidennä treeniä tai "
@@ -475,7 +475,7 @@ msgstr ""
 "guhkit hárjehallama dahje guođe muhtin hárjehusaid eret."
 
 #. {0} = longest.round()
-#: lib/program.dart:1078
+#: lib/program.dart:1080
 msgid ""
 "Pisin treeni kestää noin {0} min. Pääliikkeiden tauot ovat pitkiä; "
 "lyhennä tarvittaessa lisäliikkeistä."
@@ -484,7 +484,7 @@ msgstr ""
 "vuoiŋŋasteamit leat guhkit; oanit dárbbu mielde lassehárjehusain."
 
 #. {0} = injuries.map((i) => injuryById(i)?.name ?? i).join(', ')
-#: lib/program.dart:1087
+#: lib/program.dart:1089
 msgid ""
 "Vammatila: {0}. Liikkeitä on vaihdettu tai muokattu. Kipua saa olla "
 "enintään 3–5/10, ja sen pitää rauhoittua seuraavaan aamuun mennessä."
@@ -494,7 +494,7 @@ msgstr ""
 "boahtte iđidii."
 
 #. {0} = chosen.join(', ')
-#: lib/program.dart:1096
+#: lib/program.dart:1098
 msgid ""
 "Rakennettu valitsemiesi liikkeiden ympärille: {0}. Muut liikkeet "
 "täydentävät liikemalleja ja työntö/veto-tasapainoa."
@@ -503,12 +503,12 @@ msgstr ""
 "dievasmahttet lihkadanmálliid ja bággen/geassin-dássedeattu."
 
 #. {0} = usedFavs.join(', ')
-#: lib/program.dart:1108
+#: lib/program.dart:1110
 msgid "Suosikkiliikkeesi treenihistoriasta: {0}."
 msgstr "Du buoremusat liikojuvvon hárjehusat hárjehallanhistorjjás: {0}."
 
 #. {0} = equipment.map((e) => equipmentChoices[e]!.$2.toLowerCase()).join(', ')
-#: lib/program.dart:1114
+#: lib/program.dart:1116
 msgid ""
 "Välineet: {0}. Muita välineitä käytetään vain, jos sopivaa liikettä "
 "ei löydy; kilpaliikkeet tangolla."
@@ -517,7 +517,7 @@ msgstr ""
 "hárjehus ii gávdno; gilvohárjehusat stákkuin."
 
 #. {0} = equipment.map((e) => equipmentChoices[e]!.$2.toLowerCase()).join(', ')
-#: lib/program.dart:1117
+#: lib/program.dart:1119
 msgid ""
 "Välineet: {0}. Muita välineitä käytetään vain, jos sopivaa liikettä "
 "ei löydy."
@@ -525,7 +525,7 @@ msgstr ""
 "Rusttegat: {0}. Eará rusttegiid geavahuvvo dušše jos heivvolaš "
 "hárjehus ii gávdno."
 
-#: lib/program.dart:1127
+#: lib/program.dart:1129
 msgid ""
 "Raskaampi toistoalue: lisäliikkeissä vähemmän toistoja ja isommat "
 "painot. Kasvattaa voimaa, lihaskasvu on yhtä hyvä, kun sarjat viedään "
@@ -536,7 +536,7 @@ msgstr ""
 "go ráiddut dolvojuvvojit lahka váibama (Schoenfeld ja earát 2017, "
 "2021)."
 
-#: lib/program.dart:1135
+#: lib/program.dart:1137
 msgid ""
 "Kevyempi toistoalue: enemmän toistoja ja pienemmät painot. Säästää "
 "niveliä; lihaskasvu on yhtä hyvä, kun sarjat viedään lähelle "
@@ -547,121 +547,134 @@ msgstr ""
 "dolvojuvvojit lahka váibama. Fápmu ovdána njoazibut."
 
 #. {0} = deloadEvery
-#: lib/program.dart:1141
+#: lib/program.dart:1143
 msgid "Kevennysviikko joka {0}. viikko (puolet sarjoista, painot −10 %)."
 msgstr "Geahpedanvahkku juohke {0}. vahkku (bealli ráidduin, deattut −10 %)."
 
-#: lib/program.dart:17
+#. {0} = short.map(l10n.fi).join(', ')
+#. {1} = plan.length
+#. {2} = minutes
+#: lib/program.dart:1166
+msgid ""
+"Viikon sarjamäärä jää alle tavoitteen suosituksen: {0}. {1} × {2} min "
+"ei riitä enempään; lisää treenipäivä tai pidennä treeniä. "
+"Vähemmälläkin kehittyy, kunhan treenaat säännöllisesti."
+msgstr ""
+"Vahku ráidomearri báhcá vuollel ulbmila rávvagiid: {0}. {1} × {2} min "
+"ii doaimma eambbo; lasit hárjehallanbeaivvi dahje guhkit "
+"hárjehallama. Unnibuinge ovdána, go hárjehalat jeavddalaččat."
+
+#: lib/program.dart:19
 msgid "voimanosto"
 msgstr ""
 
-#: lib/program.dart:18 lib/program.dart:194
+#: lib/program.dart:20 lib/program.dart:196
 msgid "lihaskasvu"
 msgstr ""
 
-#: lib/program.dart:18
+#: lib/program.dart:20
 msgid "Lihaskasvu (kehonrakennus)"
 msgstr "Deahkkešattolašvuohta (rumašhuksen)"
 
-#: lib/program.dart:19
+#: lib/program.dart:21
 msgid "rasvanpoltto"
 msgstr ""
 
-#: lib/program.dart:19 lib/ui/intro.dart:313
+#: lib/program.dart:21 lib/ui/intro.dart:319
 msgid "Rasvanpoltto"
 msgstr "Buoiddi boaldin"
 
-#: lib/program.dart:20 lib/program.dart:195
+#: lib/program.dart:22 lib/program.dart:197
 msgid "kunto"
 msgstr ""
 
-#: lib/program.dart:20 lib/ui/intro.dart:320
+#: lib/program.dart:22 lib/ui/intro.dart:326
 msgid "Yleiskunto"
 msgstr "Oppalaš návccat"
 
-#: lib/program.dart:21
+#: lib/program.dart:23
 msgid "vapaa"
 msgstr ""
 
-#: lib/program.dart:21 lib/ui/intro.dart:327
+#: lib/program.dart:23 lib/ui/intro.dart:333
 msgid "Mennään fiiliksellä"
 msgstr "Dovddu mielde"
 
-#: lib/program.dart:193
+#: lib/program.dart:195
 msgid "voima"
 msgstr ""
 
-#: lib/program.dart:193 lib/program.dart:330
+#: lib/program.dart:195 lib/program.dart:332
 msgid "Voima"
 msgstr "Fápmu"
 
-#: lib/program.dart:193
+#: lib/program.dart:195
 msgid "Raskaat tuplakuulaliikkeet, vähän toistoja, pitkät tauot"
 msgstr ""
 "Lossa guovtti kettlebella hárjehusat, unnán geardduheamit, guhkes "
 "vuoiŋŋasteamit"
 
-#: lib/program.dart:194 lib/ui/intro.dart:306
+#: lib/program.dart:196 lib/ui/intro.dart:312
 msgid "Lihaskasvu"
 msgstr "Deahkkešattolašvuohta"
 
-#: lib/program.dart:194
+#: lib/program.dart:196
 msgid "Tuplakuulat, 6–12 toistoa, enemmän sarjoja"
 msgstr "Guokte kettlebella, 6–12 geardduheami, eanet ráiddut"
 
-#: lib/program.dart:195
+#: lib/program.dart:197
 msgid "Kunto ja jaksaminen"
 msgstr "Návccat ja gierdavašvuohta"
 
-#: lib/program.dart:195
+#: lib/program.dart:197
 msgid "Heilautukset ja kierrot lyhyin tauoin"
 msgstr "Šlivgemat ja jorrosat oanehis vuoiŋŋastemiiguin"
 
-#: lib/program.dart:196
+#: lib/program.dart:198
 msgid "perusta"
 msgstr ""
 
-#: lib/program.dart:196
+#: lib/program.dart:198
 msgid "Perusta yhdellä kuulalla"
 msgstr "Vuođđu ovttain kettlebellain"
 
-#: lib/program.dart:196
+#: lib/program.dart:198
 msgid "Heilautus, ylösnousu ja perusliikkeet, sopii aloittajalle"
 msgstr "Šlivgen, čuožžileapmi ja vuođđohárjehusat, heive álggaheaddjái"
 
-#: lib/program.dart:325 lib/ui/home.dart:466 lib/ui/program_view.dart:488
+#: lib/program.dart:327 lib/ui/home.dart:466 lib/ui/program_view.dart:488
 msgid "Ylävartalo"
 msgstr "Bajitoassi"
 
-#: lib/program.dart:326 lib/ui/program_view.dart:489
+#: lib/program.dart:328 lib/ui/program_view.dart:489
 msgid "Alavartalo"
 msgstr "Vuolleoassi"
 
-#: lib/program.dart:327 lib/ui/program_view.dart:490
+#: lib/program.dart:329 lib/ui/program_view.dart:490
 msgid "Työntö"
 msgstr "Bággen"
 
-#: lib/program.dart:328 lib/ui/program_view.dart:491
+#: lib/program.dart:330 lib/ui/program_view.dart:491
 msgid "Veto"
 msgstr "Geassin"
 
-#: lib/program.dart:331
+#: lib/program.dart:333
 msgid "Treeni"
 msgstr "Hárjehallan"
 
-#: lib/program.dart:685 lib/program.dart:686 lib/program.dart:687 lib/program.dart:688
+#: lib/program.dart:687 lib/program.dart:688 lib/program.dart:689 lib/program.dart:690
 msgid "Kasaus"
 msgstr "Čoaggin"
 
-#: lib/program.dart:689
+#: lib/program.dart:691
 msgid "Kevennys"
 msgstr "Geahpedeapmi"
 
-#: lib/program.dart:690 lib/program.dart:691 lib/program.dart:692 lib/program.dart:693
+#: lib/program.dart:692 lib/program.dart:693 lib/program.dart:694 lib/program.dart:695
 msgid "Tehostus"
 msgstr "Lossudeapmi"
 
-#: lib/program.dart:694
+#: lib/program.dart:696
 msgid "Huippu ja testi"
 msgstr "Alimus dássi ja geahččaleapmi"
 
@@ -2443,25 +2456,25 @@ msgstr ""
 "Gáldut: docs/tutkimus/vammatila.md (JOSPT-dikšunrávvagat, Käypä "
 "hoito, BJSM ja earát)."
 
-#: lib/ui/intro.dart:97
+#: lib/ui/intro.dart:103
 msgid "Treenejä on vielä liian vähän ehdotuksiin (vähintään 4)."
 msgstr "Hárjehallamat leat vel menddo unnán evttohusaide (unnimusat 4)."
 
 #. {0} = w
-#: lib/ui/intro.dart:122
+#: lib/ui/intro.dart:128
 msgid "Historiastasi: {0}"
 msgstr "Du historjjás: {0}"
 
-#: lib/ui/intro.dart:231
+#: lib/ui/intro.dart:237
 msgid "Onko sinulla aiempia treenejä?"
 msgstr "Leatgo dus ovddit hárjehallamat?"
 
-#: lib/ui/intro.dart:235
+#: lib/ui/intro.dart:241
 msgid "Käytä treenihistoriaani"
 msgstr "Geavat mu hárjehallanhistorjjá"
 
 #. {0} = n
-#: lib/ui/intro.dart:236
+#: lib/ui/intro.dart:242
 msgid ""
 "{0} treeniä päiväkirjassa: tyyli, päivät, toistot ja suosikkiliikkeet "
 "niistä"
@@ -2469,11 +2482,11 @@ msgstr ""
 "{0} hárjehallama beaivegirjjis: stiila, beaivvit, geardduheamit ja "
 "buoremusat liikojuvvon hárjehusat dain"
 
-#: lib/ui/intro.dart:242
+#: lib/ui/intro.dart:248
 msgid "Tuo treenit FitNotesista tai varmuuskopiosta"
 msgstr "Viečča hárjehallamiid FitNotesis dahje sihkkarvurkemis"
 
-#: lib/ui/intro.dart:243
+#: lib/ui/intro.dart:249
 msgid ""
 "FitNotes (.fitnotes), Gievran varmuuskopio (.zip) tai .md-tiedostot. "
 "Ehdotukset tehdään niistä."
@@ -2481,28 +2494,28 @@ msgstr ""
 "FitNotes (.fitnotes), Gievra sihkkarvurken (.zip) dahje .md-fiillat. "
 "Evttohusat dahkkojuvvojit dain."
 
-#: lib/ui/intro.dart:249
+#: lib/ui/intro.dart:255
 msgid "Tuo valmis ohjelmapohja (.gmd)"
 msgstr "Viečča gárvves prográmmavuođu (.gmd)"
 
-#: lib/ui/intro.dart:250
+#: lib/ui/intro.dart:256
 msgid "Valmentajalta, kaverilta tai verkon ohjelmatyökalulla tehty pohja"
 msgstr "Hárjeheaddji, ustiba dahje neahta prográmmareaiddu ráhkadan vuođđu"
 
-#: lib/ui/intro.dart:264
+#: lib/ui/intro.dart:270
 msgid "Aloitan alusta"
 msgstr "Álggán álggus"
 
-#: lib/ui/intro.dart:264
+#: lib/ui/intro.dart:270
 msgid "Vastaan kysymyksiin itse"
 msgstr "Vástidan gažaldagaide ieš"
 
 #. {0} = _profile!.workouts
-#: lib/ui/intro.dart:274
+#: lib/ui/intro.dart:280
 msgid "{0} treenistä päätelty"
 msgstr "{0} hárjehallamis čuvvojuvvon"
 
-#: lib/ui/intro.dart:282
+#: lib/ui/intro.dart:288
 msgid ""
 "Vastaukset on esitäytetty. Voit muuttaa mitä tahansa seuraavilla "
 "sivuilla ja ohjelmassa."
@@ -2510,7 +2523,7 @@ msgstr ""
 "Vástádusat leat ovdagihtii devdojuvvon. Sáhtát rievdadit juoba maid "
 "boahtte siidduin ja prográmmas."
 
-#: lib/ui/intro.dart:292
+#: lib/ui/intro.dart:298
 msgid ""
 "Jos sinulla on treenihistoriaa, ohjelma voi lähteä siitä: tyyli, "
 "treenipäivät, toistot, sarjat ja suosikkiliikkeesi."
@@ -2519,31 +2532,31 @@ msgstr ""
 "stiila, hárjehallanbeaivvit, geardduheamit, ráiddut ja du buoremusat "
 "liikojuvvon hárjehusat."
 
-#: lib/ui/intro.dart:296
+#: lib/ui/intro.dart:302
 msgid "Mikä on tavoitteesi?"
 msgstr "Mii lea du ulbmil?"
 
-#: lib/ui/intro.dart:300
+#: lib/ui/intro.dart:306
 msgid "Kyykky, penkki ja maastaveto raskaammiksi"
 msgstr "Kyykky, penkki ja maastaveto: lossadit deattut"
 
-#: lib/ui/intro.dart:307
+#: lib/ui/intro.dart:313
 msgid "Kehonrakennus: lisää lihasta"
 msgstr "Rumašhuksen: eanet deahkkeváldi"
 
-#: lib/ui/intro.dart:314
+#: lib/ui/intro.dart:320
 msgid "Pudota rasvaa ja pidä lihakset"
 msgstr "Geahpet buoiddi ja doala dehkiid"
 
-#: lib/ui/intro.dart:321
+#: lib/ui/intro.dart:327
 msgid "Terveys, voima ja jaksaminen"
 msgstr "Dearvvašvuohta, fápmu ja gierdavašvuohta"
 
-#: lib/ui/intro.dart:328
+#: lib/ui/intro.dart:334
 msgid "Kevyt runko-ohjelma, ei stressiä"
 msgstr "Geahpas vuođđoprográmma, ii streassa"
 
-#: lib/ui/intro.dart:333
+#: lib/ui/intro.dart:339
 msgid ""
 "Ohjelma lasketaan tutkimusten ja valmentajien suositusten pohjalta. "
 "Voit vaihtaa sen milloin vain."
@@ -2551,47 +2564,47 @@ msgstr ""
 "Prográmma rehkenastojuvvo dutkamiid ja hárjeheddjiid rávvagiid "
 "vuođul. Sáhtát molsut dan goas beare."
 
-#: lib/ui/intro.dart:334
+#: lib/ui/intro.dart:340
 msgid "Kauanko olet treenannut salilla?"
 msgstr "Man guhká leat hárjehallan sálas?"
 
-#: lib/ui/intro.dart:340
+#: lib/ui/intro.dart:346
 msgid "Isot liikkeet tutuiksi, paino nousee nopeasti"
 msgstr "Stuora hárjehusat dovddusin, deaddu lassána johtilit"
 
-#: lib/ui/intro.dart:341
+#: lib/ui/intro.dart:347
 msgid "Nousu hidastunut, tarvitset rakennetta"
 msgstr "Lassáneapmi lea njoazášuvvon, dárbbašat struktuvrra"
 
-#: lib/ui/intro.dart:342
+#: lib/ui/intro.dart:348
 msgid "Enemmän volyymia ja säännölliset kevennykset"
 msgstr "Eanet voluma ja jeavddalaš geahpedeamit"
 
-#: lib/ui/intro.dart:349
+#: lib/ui/intro.dart:355
 msgid "Millä välineillä treenaat mieluiten?"
 msgstr "Makkár rusttegiiguin hárjehalat buoremusat?"
 
-#: lib/ui/intro.dart:352
+#: lib/ui/intro.dart:358
 msgid "Kaikki käy"
 msgstr "Buot heive"
 
-#: lib/ui/intro.dart:352
+#: lib/ui/intro.dart:358
 msgid "Sali, jossa on kaikkea"
 msgstr "Sálla mas lea buot"
 
-#: lib/ui/intro.dart:357
+#: lib/ui/intro.dart:363
 msgid "Kyykyt, penkit ja soudut tangolla ja käsipainoilla"
 msgstr "Kyykyt, penkit ja soudut stákkuin ja giehtadeattuiguin"
 
-#: lib/ui/intro.dart:358
+#: lib/ui/intro.dart:364
 msgid "Ohjatut liikeradat, helppo oppia ja säätää"
 msgstr "Stivrejuvvon lihkadangeainnut, álki oahppat ja heivehit"
 
-#: lib/ui/intro.dart:359
+#: lib/ui/intro.dart:365
 msgid "Heilautukset, rinnallevedot, ylösnousut, sopii myös kotiin"
 msgstr "Heilautukset, rinnallevedot ja ylösnousut, heive maiddái ruoktot"
 
-#: lib/ui/intro.dart:360
+#: lib/ui/intro.dart:366
 msgid ""
 "Ilman salia: kotona tai ulkona. Leuanvetoihin riittää ovitanko tai "
 "puiston tanko."
@@ -2599,19 +2612,19 @@ msgstr ""
 "Sála haga: ruovttus dahje olgun. Leuanvetoihin doarvái uksastággu "
 "dahje párkka stággu."
 
-#: lib/ui/intro.dart:373
+#: lib/ui/intro.dart:379
 msgid "Kahvakuulatreenin pääpaino"
 msgstr "Kettlebell-hárjehallama váldodeattuhus"
 
-#: lib/ui/intro.dart:377
+#: lib/ui/intro.dart:383
 msgid "Tavallinen ohjelma kahvakuulilla"
 msgstr "Dábálaš prográmma kettlebellaiguin"
 
-#: lib/ui/intro.dart:378
+#: lib/ui/intro.dart:384
 msgid "Liikemallit kuten salilla, kahvakuulaliikkeillä"
 msgstr "Lihkadanmállet nugo sálas, kettlebell-hárjehusaiguin"
 
-#: lib/ui/intro.dart:386
+#: lib/ui/intro.dart:392
 msgid ""
 "Valitse yksi tai useampi. Ohjelma suosii niitä ja käyttää muita vain, "
 "jos sopivaa liikettä ei löydy."
@@ -2619,42 +2632,42 @@ msgstr ""
 "Vállje ovtta dahje eanet. Prográmma ovddida daid ja geavaha earáid "
 "dušše jos heivvolaš hárjehus ii gávdno."
 
-#: lib/ui/intro.dart:387
+#: lib/ui/intro.dart:393
 msgid "Voimanoston kilpaliikkeet tehdään aina tangolla."
 msgstr "Fápmoloktema gilvohárjehusat dahkkojuvvojit álo stákkuin."
 
-#: lib/ui/intro.dart:389
+#: lib/ui/intro.dart:395
 msgid "Mitä liikkeitä haluat tehdä?"
 msgstr "Makkár hárjehusaid háliidat dahkat?"
 
-#: lib/ui/intro.dart:391
+#: lib/ui/intro.dart:397
 msgid "Ohjelma valitsee"
 msgstr "Prográmma vállje"
 
-#: lib/ui/intro.dart:393
+#: lib/ui/intro.dart:399
 msgid "Tutkimuksiin perustuva liikevalinta (suosikkisi mukana)"
 msgstr ""
 "Dutkamiidda vuođđuduvvon hárjehusválljen (du buoremusat liikojuvvon "
 "hárjehusat fárus)"
 
-#: lib/ui/intro.dart:394
+#: lib/ui/intro.dart:400
 msgid "Tutkimuksiin perustuva liikevalinta"
 msgstr "Dutkamiidda vuođđuduvvon hárjehusválljen"
 
-#: lib/ui/intro.dart:400
+#: lib/ui/intro.dart:406
 msgid "Valitsen liikkeet itse"
 msgstr "Válljen hárjehusaid ieš"
 
 #. {0} = _chosen.length
-#: lib/ui/intro.dart:400
+#: lib/ui/intro.dart:406
 msgid "Valitut liikkeet: {0}"
 msgstr "Válljejuvvon hárjehusat: {0}"
 
-#: lib/ui/intro.dart:401
+#: lib/ui/intro.dart:407
 msgid "Ohjelma rakennetaan valitsemiesi liikkeiden ympärille"
 msgstr "Prográmma huksejuvvo du válljen hárjehusaid birra"
 
-#: lib/ui/intro.dart:420
+#: lib/ui/intro.dart:426
 msgid ""
 "Voit myös antaa ohjelman valita ja vaihtaa liikkeitä yhteenvedossa "
 "tai myöhemmin."
@@ -2662,31 +2675,31 @@ msgstr ""
 "Sáhtát maiddái diktit prográmma válljet ja molsut hárjehusaid "
 "čoahkkáigeasus dahje maŋŋelaš."
 
-#: lib/ui/intro.dart:421
+#: lib/ui/intro.dart:427
 msgid "Kuinka monta kertaa viikossa?"
 msgstr "Galle geardde vahkus?"
 
-#: lib/ui/intro.dart:435
+#: lib/ui/intro.dart:441
 msgid "Treenin kesto"
 msgstr "Hárjehallama guhkkodat"
 
-#: lib/ui/intro.dart:447
+#: lib/ui/intro.dart:453
 msgid "Toistoalue lisäliikkeissä"
 msgstr "Geardduhanguovlu lassehárjehusain"
 
-#: lib/ui/intro.dart:452
+#: lib/ui/intro.dart:458
 msgid "Suositus"
 msgstr "Rávvagat"
 
-#: lib/ui/intro.dart:452
+#: lib/ui/intro.dart:458
 msgid "Raskaampi"
 msgstr "Lossadit"
 
-#: lib/ui/intro.dart:452
+#: lib/ui/intro.dart:458
 msgid "Kevyempi"
 msgstr "Geahppasit"
 
-#: lib/ui/intro.dart:459
+#: lib/ui/intro.dart:465
 msgid ""
 "Vähemmän toistoja, isommat painot (esim. 4–6 ja 8–10). Voima kasvaa "
 "nopeammin."
@@ -2694,7 +2707,7 @@ msgstr ""
 "Unnit geardduheamit, stuorát deattut (om. 4–6 ja 8–10). Fápmu lassána "
 "johtilit."
 
-#: lib/ui/intro.dart:460
+#: lib/ui/intro.dart:466
 msgid ""
 "Enemmän toistoja, pienemmät painot (esim. 10–15 ja 13–20). Nivelille "
 "kevyempi."
@@ -2702,7 +2715,7 @@ msgstr ""
 "Eanet geardduheamit, unnit deattut (om. 10–15 ja 13–20). Geahppasit "
 "lađđasiidda."
 
-#: lib/ui/intro.dart:462
+#: lib/ui/intro.dart:468
 msgid ""
 "Tavoitteesi mukainen alue. Lihaskasvu on yhtä hyvä 5–30 toistolla, "
 "kun sarjat viedään lähelle uupumusta."
@@ -2710,34 +2723,34 @@ msgstr ""
 "Du ulbmila guovlu. Deahkkešattolašvuohta lea seamma buorre 5–30 "
 "geardduhemiin, go ráiddut dolvojuvvojit lahka váibama."
 
-#: lib/ui/intro.dart:469
+#: lib/ui/intro.dart:475
 msgid "Liikkeitä, sarjoja ja toistoja voi muokata vielä yhteenvedossa."
 msgstr ""
 "Hárjehusaid, ráidduid ja geardduhemiid sáhttá vel rievdadit "
 "čoahkkáigeasus."
 
-#: lib/ui/intro.dart:473
+#: lib/ui/intro.dart:479
 msgid "Onko sinulla vammoja tai kipuja?"
 msgstr "Leatgo dus roasmmohuvvamat dahje bákčasat?"
 
-#: lib/ui/intro.dart:474
+#: lib/ui/intro.dart:480
 msgid "Ei vammoja"
 msgstr "Ii roasmmohuvvamat"
 
-#: lib/ui/intro.dart:476
+#: lib/ui/intro.dart:482
 msgid "Valitse alueet"
 msgstr "Vállje guovlluid"
 
 #. {0} = _injuries.length
-#: lib/ui/intro.dart:476
+#: lib/ui/intro.dart:482
 msgid "Valittu: {0}"
 msgstr "Válljejuvvon: {0}"
 
-#: lib/ui/intro.dart:477
+#: lib/ui/intro.dart:483
 msgid "Esim. olkapää, alaselkä, polvi, ranne"
 msgstr "Om. oalgi, vuollečielgi, čibbi"
 
-#: lib/ui/intro.dart:486
+#: lib/ui/intro.dart:492
 msgid ""
 "Ohjelma välttää ja muokkaa liikkeitä, jotka yleensä pahentavat "
 "vaivaa. Ei korvaa fysioterapeuttia."
@@ -2745,30 +2758,30 @@ msgstr ""
 "Prográmma garvá ja rievdada hárjehusaid mat dábálaččat heajudit "
 "váttisvuođa. Ii buhtte fysioterapevtta."
 
-#: lib/ui/intro.dart:489
+#: lib/ui/intro.dart:495
 msgid "Arvioidut maksimit"
 msgstr "Árvvoštallon eanemus deattut"
 
-#: lib/ui/intro.dart:507
+#: lib/ui/intro.dart:513
 msgid "Ei treenihistoriaa: syötä arvio"
 msgstr "Ii hárjehallanhistorjá: čále árvvoštallama"
 
 #. {0} = set(pr)
 #. {1} = d(pr.date)
 #. {2} = fmtNum(pr.e1rm.roundToDouble())
-#: lib/ui/intro.dart:512
+#: lib/ui/intro.dart:518
 msgid "🏆 Ennätys: {0} ({1}), arvio {2} kg"
 msgstr "🏆 Rekorda: {0} ({1}), árvvoštallan {2} kg"
 
 #. {0} = set(sug)
 #. {1} = d(sug.date)
-#: lib/ui/intro.dart:522
+#: lib/ui/intro.dart:528
 msgid "Ehdotus: paras 6 kk:n ajalta {0} ({1})"
 msgstr "Evttohus: buoremus 6 mánu áigodagas {0} ({1})"
 
 #. {0} = set(sug)
 #. {1} = d(sug.date)
-#: lib/ui/intro.dart:524
+#: lib/ui/intro.dart:530
 msgid ""
 "Ehdotus: {0} ({1}). Liikettä ei ole tehty puoleen vuoteen: aloita "
 "kevyemmin"
@@ -2776,16 +2789,16 @@ msgstr ""
 "Evttohus: {0} ({1}). Hárjehus ii leat dahkkon jahkebealis: álgge "
 "geahppasit"
 
-#: lib/ui/intro.dart:533
+#: lib/ui/intro.dart:539
 msgid "syötä"
 msgstr "čále"
 
 #. {0} = l
-#: lib/ui/intro.dart:537
+#: lib/ui/intro.dart:543
 msgid "{0}: 1 toiston maksimi (kg)"
 msgstr "{0}: eanemus deaddu 1 geardduhemiin (kg)"
 
-#: lib/ui/intro.dart:546
+#: lib/ui/intro.dart:552
 msgid ""
 "Painot lasketaan näistä. Ehdotus on paras arvioitu maksimi "
 "viimeiseltä 6 kuukaudelta, koska vanha ennätys ei välttämättä kuvaa "
@@ -2797,27 +2810,27 @@ msgstr ""
 
 #. {0} = _i + 1
 #. {1} = _pages
-#: lib/ui/intro.dart:554
+#: lib/ui/intro.dart:560
 msgid "Ohjelma {0}/{1}"
 msgstr "Prográmma {0}/{1}"
 
-#: lib/ui/intro.dart:557
+#: lib/ui/intro.dart:563
 msgid "Ohita – treenaan vapaasti"
 msgstr "Njuikes – hárjehalan friddja"
 
-#: lib/ui/intro.dart:576
+#: lib/ui/intro.dart:582
 msgid "Takaisin"
 msgstr "Ruovttoluotta"
 
-#: lib/ui/intro.dart:580
+#: lib/ui/intro.dart:586
 msgid "Aloita ohjelma"
 msgstr "Álgge prográmma"
 
-#: lib/ui/intro.dart:581
+#: lib/ui/intro.dart:587
 msgid "Seuraava"
 msgstr "Boahtte"
 
-#: lib/ui/intro.dart:593
+#: lib/ui/intro.dart:599
 msgid "Ohjelmasi"
 msgstr "Du prográmma"
 
