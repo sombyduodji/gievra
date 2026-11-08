@@ -48,13 +48,16 @@ void main() {
     settings.setTrainMode('gym');
     await tester.pump();
     expect(find.text('Liikunta'), findsNothing);
-    expect(find.text('Lisää lenkki'), findsNothing);
+    expect(find.text('Aloita liikunta'), findsNothing);
     expect(find.text('Aloita salitreeni'), findsOneWidget);
     // Pelkkä kestävyys: ei valintaa, kestävyysnäkymä.
     settings.setTrainMode('cardio');
     await tester.pump();
     expect(find.text('Sali'), findsNothing);
-    expect(find.text('Lisää lenkki'), findsOneWidget);
+    // Pelkkä kestävyys: yksi painike lajivalintaan, ei pikavalintoja.
+    expect(find.text('Aloita liikunta'), findsOneWidget);
+    expect(find.text('Pyöräily'), findsNothing);
+    expect(find.text('Aloita salitreeni'), findsNothing);
     settings.trainMode = 'gym';
     store.workouts = [];
   });

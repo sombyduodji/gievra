@@ -108,8 +108,8 @@ class WatchCard extends StatelessWidget {
               '',
               () => ask(t('Maksimisyke (lyöntiä/min)'), w.hrMax, (v) => w.hrMax = v, def: 170),
             ),
-            // Kävely- ja juoksulajeissa askeleet (kellosta tai Health Connectista).
-            if (sportOf(w.activity)?.steps ?? false) ...[
+            // Askeleet: kävelylajeissa aina (myös käsin); juoksussa vain, kun ne tulivat Health Connectista.
+            if ((sportOf(w.activity)?.steps ?? false) && (!isRun(w.activity) || w.steps != null)) ...[
               const SizedBox(width: 6),
               box('👣', t('askeleet'), w.steps, '', () => ask(t('Askeleet'), w.steps, (v) => w.steps = v, def: 5000)),
             ],
