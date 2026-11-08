@@ -507,19 +507,21 @@ class Settings extends ChangeNotifier {
 
   /// Vaihtaa treenikansion. Jos uudessa kansiossa on asetukset.md, se otetaan käyttöön,
   /// muuten nykyiset asetukset kirjoitetaan sinne.
-  /// Treenikansion .md-tiedostot (treenit, asetukset, ohjelma) suhteellisina polkuina.
+  /// Treenikansion .md-tiedostot (treenit, asetukset, ohjelma) ja GPS-reitit (.gpx) suhteellisina polkuina.
   static Future<List<String>> mdFiles(Directory dir) async {
     if (!await dir.exists()) return [];
     final out = <String>[];
     try {
       await for (final e in dir.list(recursive: true, followLinks: false)) {
-        if (e is File && e.path.endsWith('.md')) out.add(p.relative(e.path, from: dir.path));
+        if (e is File && (e.path.endsWith('.md') || e.path.endsWith('.gpx'))) {
+          out.add(p.relative(e.path, from: dir.path));
+        }
       }
     } catch (_) {}
     return out;
   }
 
-  /// Kopioi .md-tiedostot kansiosta toiseen. Olemassa olevia ei ylikirjoiteta. Palauttaa (kopioitu, ohitettu).
+  /// Kopioi .md- ja .gpx-tiedostot kansiosta toiseen. Olemassa olevia ei ylikirjoiteta. Palauttaa (kopioitu, ohitettu).
   static Future<(int, int)> copyMdFiles(Directory from, Directory to) async {
     var copied = 0, skipped = 0;
     for (final rel in await mdFiles(from)) {
@@ -775,8 +777,9 @@ class WorkoutStore extends ChangeNotifier {
 
   Future<void> delete(DateTime d, [int session = 1]) async {
     final old = onDay(d).where((x) => x.session == session).firstOrNull;
-    if (old?.route != null) {
-      await files.delete(routeRel(old!));
+    // Vain treenin oma reitti (vvvv-kk-pp[-n].gpx): muokattu tai synkattu route:-rivi ei saa poistaa muuta tiedostoa.
+    if (old?.route != null && routeRel(old!) == routePath(old.date, old.session)) {
+      await files.delete(routeRel(old));
       onLocalChange?.call(routeRel(old));
     }
     await files.delete(workoutPath(d, session));

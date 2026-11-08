@@ -18,7 +18,7 @@ void main() {
       feeling: 4,
       session: 2,
     );
-    expect(w.pace, '5:29 /km');
+    expect(w.pace, '5:29 min/km');
     final md = workoutToMarkdown(w);
     expect(md, contains('activity: Juoksu'));
     expect(md, contains('- Juoksu: 45 min, 8,2 km, 5:29 /km, reipas'));
@@ -29,7 +29,7 @@ void main() {
     );
     expect(r.isEmpty, isFalse);
     expect(shareText(r), contains('Juoksu 7.11.2026'));
-    expect(shareText(r), contains('5:29 /km'));
+    expect(shareText(r), contains('5:29 min/km'));
   });
 
   test('Useampi treeni samana päivänä: omat tiedostot, synkronointi ja tallennus', () async {

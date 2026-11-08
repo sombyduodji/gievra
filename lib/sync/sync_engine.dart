@@ -62,8 +62,8 @@ class SyncResult {
 
 String md5Of(String s) => md5.convert(utf8.encode(s)).toString();
 
-/// Synkronoitavat tiedostot: asetukset, ohjelma ja treenit (vvvv/vvvv-kk-pp.md).
-final _workoutRe = RegExp(r'^(\d{4})/(\d{4}-\d{2}-\d{2})(-\d+)?\.md$');
+/// Synkronoitavat tiedostot: asetukset, ohjelma, treenit (vvvv/vvvv-kk-pp.md) ja niiden GPS-reitit (.gpx).
+final _workoutRe = RegExp(r'^(\d{4})/(\d{4}-\d{2}-\d{2})(-\d+)?\.(md|gpx)$');
 const rootFiles = {'asetukset.md', 'ohjelma.md'};
 
 bool isSyncable(String path) => rootFiles.contains(path) || _workoutRe.hasMatch(path);
@@ -197,7 +197,12 @@ class SyncEngine {
   Future<void> _conflictCopy(String path, String content) async {
     final f = _file(path);
     final stamp = DateTime.now().toIso8601String().substring(0, 16).replaceAll(':', '');
-    final copy = File(p.join(f.parent.path, 'ristiriita-${p.basenameWithoutExtension(f.path)}-$stamp-$deviceName.md'));
+    final copy = File(
+      p.join(
+        f.parent.path,
+        'ristiriita-${p.basenameWithoutExtension(f.path)}-$stamp-$deviceName${p.extension(f.path)}',
+      ),
+    );
     await copy.parent.create(recursive: true);
     await copy.writeAsString(content);
   }

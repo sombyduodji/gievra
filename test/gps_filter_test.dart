@@ -309,4 +309,3 @@ void main() {
     expect(f.diagnostics, contains('pisin väli'));
   });
 }
-

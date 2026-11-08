@@ -82,10 +82,18 @@ class GpsService : Service(), LocationListener {
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .apply { if (open != null) setContentIntent(open) }
             .build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
-        } else {
-            startForeground(NOTIFICATION, n)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+            } else {
+                startForeground(NOTIFICATION, n)
+            }
+        } catch (e: Exception) {
+            // Android 14+: sijaintilupa peruttu tai uudelleenkäynnistys taustalta ei ole sallittu. Ei kaadeta
+            // sovellusta eikä yritetä uudelleen; tallennetut paikannukset jäävät tiedostoon palautusta varten.
+            emit(mapOf("status" to "permission"))
+            stopSelf()
+            return START_NOT_STICKY
         }
         if (!running) {
             try {
@@ -96,6 +104,7 @@ class GpsService : Service(), LocationListener {
             } catch (e: SecurityException) {
                 emit(mapOf("status" to "permission"))
                 stopSelf()
+                return START_NOT_STICKY
             }
         }
         // Jos Android sulkee palvelun muistin vähyyden vuoksi, se käynnistetään uudelleen ja tallennus jatkuu.

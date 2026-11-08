@@ -702,7 +702,7 @@ class _RunCompare extends StatelessWidget {
     String? cmp;
     if (prev != null) {
       final d = (run.paceSecPerKm! - prev.paceSecPerKm!).round();
-      cmp = t('Edellinen {0} ({1}): {2} /km', [
+      cmp = t('Edellinen {0} ({1}): {2} min/km', [
         type == null ? t('juoksu') : t(type.$2).toLowerCase(),
         shortDate(prev.date),
         fmtPace(prev.paceSecPerKm!),

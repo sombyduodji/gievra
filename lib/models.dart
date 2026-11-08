@@ -142,7 +142,8 @@ class Workout {
   }
 
   /// Vauhti min/km (kestävyyslajit).
-  String? get pace => paceSecPerKm == null ? null : '${fmtPace(paceSecPerKm!)} /km';
+  /// Näytöllä "5:06 min/km"; tiedostoon kirjoitetaan ennallaan "5:06 /km" (vanhat tiedostot eivät muutu).
+  String? get pace => paceSecPerKm == null ? null : '${fmtPace(paceSecPerKm!)} min/km';
 
   /// Keskinopeus km/h.
   double? get speedKmh {
@@ -273,7 +274,7 @@ String workoutToMarkdown(Workout w) {
             : w.minutes == null
             ? ''
             : ': ${w.minutes} min'}'
-        '${w.distanceKm == null ? '' : ', ${fileNum(w.distanceKm!)} km'}${w.pace == null ? '' : ', ${w.pace}'}'
+        '${w.distanceKm == null ? '' : ', ${fileNum(w.distanceKm!)} km'}${w.paceSecPerKm == null ? '' : ', ${fmtPace(w.paceSecPerKm!)} /km'}'
         '${w.steps == null ? '' : ', ${w.steps} askelta'}'
         '${w.intensity == null ? '' : ', ${w.intensity}'}',
       );

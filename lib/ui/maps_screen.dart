@@ -104,17 +104,22 @@ class _MapsScreenState extends State<MapsScreen> {
     if (!st.isGranted) return;
     setState(() => _locating = true);
     final src = AndroidGpsSource();
+    // Kesken jäänyt tai käynnissä oleva reitin tallennus: käytetään sen paikannuksia, eikä palvelua pysäytetä
+    // tai tallennettuja paikannuksia poisteta.
+    final recording = await GpsRecorder.pendingSport() != null || await src.running();
     final done = Completer<(double, double)?>();
     final sub = src.events.listen((e) {
       final f = fixFromEvent(e);
       if (f != null && f.accuracy <= 100 && !done.isCompleted) done.complete((f.lat, f.lon));
     });
     try {
-      await src.start(
-        title: t('Haetaan sijaintia'),
-        text: t('Karttojen latausta varten'),
-        channel: t('Reitin tallennus'),
-      );
+      if (!recording) {
+        await src.start(
+          title: t('Haetaan sijaintia'),
+          text: t('Karttojen latausta varten'),
+          channel: t('Reitin tallennus'),
+        );
+      }
       final loc = await done.future.timeout(const Duration(seconds: 60), onTimeout: () => null);
       if (loc != null) {
         await saveLastLocation(loc.$1, loc.$2);
@@ -125,18 +130,19 @@ class _MapsScreenState extends State<MapsScreen> {
       }
     } finally {
       await sub.cancel();
-      await src.stop();
-      await src.clearSaved();
+      if (!recording) {
+        await src.stop();
+        await src.clearSaved();
+      }
       if (mounted) setState(() => _locating = false);
     }
   }
 
-  Future<void> _download(List<MapPack> packs) async {
-    await store.download(packs);
+  Future<void> _download(List<MapPack> packs, {bool update = false}) async {
+    final failed = update ? await store.update(packs) : await store.download(packs);
     _used = await store.usedBytes();
     _selected.clear();
     if (!mounted) return;
-    final failed = store.downloads.values.where((d) => d.error != null).toList();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -146,8 +152,8 @@ class _MapsScreenState extends State<MapsScreen> {
         ),
       ),
     );
-    store.downloads.clear();
     setState(() {});
+    if (_tab == 2) await _refreshInstalled();
   }
 
   /// Tuo karttapaketti tiedostosta (zip tai .pmtiles), esim. Seafilesta, kun verkkolataus ei onnistu.
@@ -418,12 +424,7 @@ class _MapsScreenState extends State<MapsScreen> {
         if (_outdated.isNotEmpty) ...[
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: busy
-                ? null
-                : () async {
-                    await store.update(_outdated);
-                    await _refreshInstalled();
-                  },
+            onPressed: busy ? null : () => _download(_outdated, update: true),
             icon: const Icon(Icons.system_update_alt),
             label: Text(
               t('Päivitä kartat ({0}) · {1}', [

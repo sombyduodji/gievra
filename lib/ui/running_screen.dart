@@ -93,7 +93,7 @@ class RunningScreen extends StatelessWidget {
                 Text(t('Vertailuun tarvitaan kevyitä lenkkejä molemmilta jaksoilta.'), style: sub)
               else ...[
                 Text(
-                  '${fmtPace(trend.pacePrev!)} → ${fmtPace(trend.paceNow!)} /km  '
+                  '${fmtPace(trend.pacePrev!)} → ${fmtPace(trend.paceNow!)} min/km  '
                   '${_diff(trend.paceNow! - trend.pacePrev!)}',
                   style: const TextStyle(fontSize: 16),
                 ),
@@ -120,7 +120,7 @@ class RunningScreen extends StatelessWidget {
               leading: const Text('🏆', style: TextStyle(fontSize: 20)),
               title: Text('${_distName(b.km)}  ${fmtDurationSec(b.sec)}'),
               subtitle: Text(
-                '${fmtPace(b.run.paceSecPerKm!)} /km · ${shortDate(b.run.date)} · ${km(b.run.distanceKm!)} km',
+                '${fmtPace(b.run.paceSecPerKm!)} min/km · ${shortDate(b.run.date)} · ${km(b.run.distanceKm!)} km',
                 style: sub,
               ),
             ),
@@ -137,7 +137,7 @@ class RunningScreen extends StatelessWidget {
               [
                 t('{0} kertaa', [s.runs]),
                 '${km(s.km)} km',
-                if (s.pace != null) '${fmtPace(s.pace!)} /km',
+                if (s.pace != null) '${fmtPace(s.pace!)} min/km',
                 if (s.hrAvg != null) '❤️ ${s.hrAvg}',
               ].join(' · '),
               style: sub,
@@ -286,8 +286,8 @@ class _PacePainter extends CustomPainter {
       tp.paint(c, Offset(2, y));
     }
 
-    label('${fmtPace(lo)} /km', 0);
-    label('${fmtPace(hi)} /km', s.height - 12);
+    label('${fmtPace(lo)} min/km', 0);
+    label('${fmtPace(hi)} min/km', s.height - 12);
   }
 
   @override
