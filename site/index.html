@@ -82,7 +82,23 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>Uutta: GPS ja offline-kartat seitsemässä maassa <span class="badge">0.2.9</span></h2>
+  <h2>Uutta: syke, kalorit ja askeleet kellosta <span class="badge">0.3</span></h2>
+  <div class="feature">
+    <img src="kuvat/health.png" alt="Juoksun Kellon tiedot -kortti: kalorit, keski- ja maksimisyke ja askeleet haettu Health Connectista">
+    <div>
+      <ul>
+        <li><b>Health Connect</b> (Android): treenin jälkeen <i>Kellon tiedot</i> → <b>Health Connect</b>. Kellon sovellus siirtää harjoituksen Health Connectiin, ja Gievra hakee sen: keski- ja maksimisyke, kalorit ja askeleet.</li>
+        <li>Vain tämä treeni, ei koko historiaa: Gievra etsii treenin aikaa lähellä olevan harjoituksen ja kysyy <i>Onko tämä se?</i> – lisää tai ohita.</li>
+        <li>Toimii salitreenissä, käsin kirjatussa liikunnassa ja GPS-lenkissä. Arvot voi edelleen kirjoittaa myös käsin.</li>
+        <li>Vain luku: Gievra ei kirjoita Health Connectiin mitään, eikä tietoja lähetetä verkkoon.</li>
+        <li>Myös: <b>+ Sali</b> ja <b>+ Liikunta</b> vierekkäin etusivulla, ja askeleet nyt myös juoksuun.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>GPS ja offline-kartat seitsemässä maassa <span class="badge">0.2.9</span></h2>
   <div class="feature">
     <img src="kuvat/gps.png" alt="Juoksun reitti kartalla Helsingin Töölönlahdella, aika 41:38">
     <div>
@@ -101,10 +117,10 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div>
       <h3 style="margin:0 0 6px">🗺️ Saatavilla olevat kartat</h3>
       <ul>
-        <li><b>Suomi</b>: 308 kuntaa, koko maa yhtenä tiedostona</li>
-        <li><b>Ruotsi</b>: 290 kommunia · <b>Norja</b>: 357 kommunea ja Huippuvuoret · <b>Tanska</b>: 98 kommunea · <b>Islanti</b>: 61 kuntaa</li>
+        <li><b>Suomi</b>: kaikki 308 kuntaa, kaupungit mukaan lukien (Tilastokeskus 2026), tai koko maa yhtenä tiedostona</li>
+        <li>kunnittain (kaupungit mukaan lukien): <b>Ruotsi</b> 290 kommunia · <b>Norja</b> 357 kommunea ja Huippuvuoret · <b>Tanska</b> 98 kommunea · <b>Islanti</b> 61 kuntaa</li>
         <li><b>Iso-Britannia</b>: 361 paikallishallinnon aluetta (council areas)</li>
-        <li><b>Espanja</b>: 50 maakuntaa (provincias), myös Kanariansaaret</li>
+        <li><b>Espanja</b>: 50 maakuntaa (provincias), myös Kanariansaaret ja Baleaarit</li>
       </ul>
       <p class="sub">Valitse maa ja alueet, tai lataa kartat sijaintisi ympäriltä (myös rajan yli naapurimaahan). Kunnan kartta on tyypillisesti 5–30 Mt.</p>
       <p class="sub"><small>Kartat © OpenStreetMap-tekijät (ODbL). Iso-Britannian aluerajat: ONS, Open Government Licence v3.0.</small></p>
@@ -207,7 +223,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>yli 35 lajia; kävelyssä ja retkeilyssä myös askeleet</li>
         <li>juoksulle oma kehitysnäkymä: lenkin tyyppi, vauhti ja keskinopeus, kilometrit, kevyiden lenkkien vauhti ja syke, ennätykset</li>
         <li>valinnainen GPS: reitti kartalla ja <code>.gpx</code>-tiedostona, offline-kartat Suomeen, Pohjoismaihin, Iso-Britanniaan ja Espanjaan</li>
-        <li>älykellon tiedot (kesto, kalorit, syke) kirjoitetaan toistaiseksi käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
+        <li>älykellon tiedot (syke, kalorit, askeleet) Health Connectista tai käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
       </ul>
     </div>
     <div class="card">
@@ -252,11 +268,12 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 
 <section>
   <h2>Mihin sovellus ottaa yhteyttä?</h2>
-  <p>Tarkistimme sen: Gievran julkaisuversio 0.2.7 asennettiin Android-emulaattoriin, ja jokainen sovelluksen
+  <p>Tarkistimme sen: Gievran julkaisuversio 0.3 asennettiin Android-emulaattoriin, ja jokainen sovelluksen
   avaama verkkoyhteys kirjattiin, kun sovellusta käytettiin (marraskuu 2026).</p>
   <table>
     <tr><th>Käyttöönotto, ohjelma ja salitreeni</th><td>ei yhteyksiä</td></tr>
     <tr><th>GPS-lenkki ja sijainnin haku</th><td>ei yhteyksiä: sijainti ja reitti jäävät puhelimeen</td></tr>
+    <tr><th>Health Connect (syke, kalorit, askeleet)</th><td>ei yhteyksiä: tiedot luetaan puhelimesta, vain luku</td></tr>
     <tr><th>Kartat-näkymä ja karttojen lataus</th><td>vain GitHub (github.com ja release-assets.githubusercontent.com)</td></tr>
     <tr><th>Vikailmoitus ja varmuuskopio</th><td>ei yhteyksiä: Androidin jakovalikko, itse valitsemasi sovellus lähettää</td></tr>
     <tr><th>Taustalla ja käynnistyksessä</th><td>ei yhteyksiä</td></tr>

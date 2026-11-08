@@ -248,25 +248,6 @@ class _HomeScreenState extends State<HomeScreen> {
               (settings.name ?? '').isEmpty ? AppInfo.fullName : '${seGreeting(now)}, ${settings.name}',
               overflow: TextOverflow.ellipsis,
             ),
-            actions: [
-              // Molemmat-tilassa Sali / Kestävyys -vaihto yläpalkissa (ei omaa riviä).
-              if (both)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Builder(
-                    builder: (context) {
-                      final cardio = settings.homeView == 'cardio';
-                      final label = cardio ? t('Kestävyys') : t('Sali');
-                      final icon = Icon(cardio ? Icons.directions_run : Icons.fitness_center, size: 18);
-                      void flip() => settings.setHomeView(cardio ? 'gym' : 'cardio');
-                      // Pitkä nimi (esim. saameksi Gierdavašvuohta) veisi tervehdyksen tilan: pelkkä kuvake.
-                      return label.length > 9
-                          ? IconButton.outlined(tooltip: label, onPressed: flip, icon: icon)
-                          : ActionChip(avatar: icon, label: Text(label), tooltip: t('Vaihda näkymää'), onPressed: flip);
-                    },
-                  ),
-                ),
-            ],
           ),
           drawer: const AppDrawer(),
           body: RefreshIndicator(
@@ -311,9 +292,76 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                if (settings.homeShows == 'cardio')
+                if (settings.trainMode == 'cardio')
                   _CardioHome()
-                else ...[
+                else if (both) ...[
+                  // Molemmat: + Sali ja + Lenkki vierekkäin, muut lajit pikavalintoina; ei näkymän vaihtoa.
+                  const SizedBox(height: 18),
+                  Builder(
+                    builder: (context) {
+                      final acts = store.onDay(today).where((w) => w.activity != null).toList();
+                      final runs = runsOf(store.workouts);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _Cta(
+                                  compact: true,
+                                  label: hasToday ? t('Jatka treeniä') : t('Sali'),
+                                  icon: hasToday ? Icons.play_arrow_rounded : Icons.add_rounded,
+                                  onTap: () => hasToday
+                                      ? (open.length == 1
+                                            ? _open(context, today, open.single)
+                                            : _chooseSession(context, today, open))
+                                      : _startNew(context, today, gymOnly: true),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _Cta(
+                                  compact: true,
+                                  colors: const [Color(0xFF00843D), Sami.green],
+                                  // Kaikki liikunta (ei vain lenkki): oma sivu, jossa lajivalinta (käytetyimmät ensin).
+                                  label: t('Liikunta'),
+                                  icon: Icons.add_rounded,
+                                  onTap: () => _CardioHome._add(context, null),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Tämän päivän valmiit treenit (sali ja liikunta) riveinä.
+                          for (final w in todays.where((w) => !open.contains(w))) _TodayRow(w),
+                          for (final w in acts) _TodayRow(w),
+                          if (hasToday)
+                            Center(
+                              child: TextButton.icon(
+                                onPressed: () => _startNew(context, today, gymOnly: true),
+                                icon: const Icon(Icons.add_rounded, size: 18),
+                                label: Text(t('Toinen salitreeni tälle päivälle')),
+                              ),
+                            ),
+                          if (runs.isNotEmpty)
+                            Center(
+                              child: TextButton.icon(
+                                onPressed: () =>
+                                    Navigator.of(context)
+                                        .push(MaterialPageRoute(builder: (_) => const RunningScreen())),
+                                icon: const Icon(Icons.show_chart, size: 18),
+                                label: Text(t('Juoksun kehitys')),
+                              ),
+                            ),
+                          const SizedBox(height: 6),
+                          const WeightTodayCard(),
+                          if (settings.activePause != null) _PauseCard(),
+                          if (settings.tips && settings.activePause == null) _InsightsCard(),
+                        ],
+                      );
+                    },
+                  ),
+                ] else ...[
                   const SizedBox(height: 18),
                   // Iso painike: jatka keskeneräistä tai aloita uusi. Ohjelman ehdotus näkyy alarivillä;
                   // seuraavassa näkymässä päivän voi vielä vaihtaa.
@@ -433,22 +481,32 @@ class _Cta extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  const _Cta({required this.label, required this.icon, required this.onTap});
+
+  /// Pienempi (kaksi vierekkäin) ja väri: punainen sali, vihreä kestävyys.
+  final bool compact;
+  final List<Color> colors;
+  const _Cta({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.compact = false,
+    this.colors = const [Sami.red, Color(0xFFA3170D)],
+  });
 
   @override
   Widget build(BuildContext context) => Material(
     borderRadius: BorderRadius.circular(18),
     clipBehavior: Clip.antiAlias,
     child: Ink(
-      decoration: const BoxDecoration(gradient: LinearGradient(colors: [Sami.red, Color(0xFFA3170D)])),
+      decoration: BoxDecoration(gradient: LinearGradient(colors: colors)),
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: EdgeInsets.symmetric(vertical: compact ? 16 : 20, horizontal: compact ? 8 : 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 28),
+              Icon(icon, color: Colors.white, size: compact ? 24 : 28),
               const SizedBox(width: 8),
               Flexible(
                 child: Column(
@@ -459,7 +517,7 @@ class _Cta extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: Colors.white, fontSize: compact ? 16 : 18, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -936,6 +994,43 @@ class _CardioHome extends StatelessWidget {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ActivityScreen(workout: w)));
   }
 
+  /// Käytetyimmät lajit pikavalinnoiksi, eniten käytetty ensin (oletuksena juoksu, pyöräily, kävely).
+  static List<String> topSports() {
+    final acts = [
+      for (final w in store.workouts)
+        if (w.activity != null) w,
+    ];
+    final used = acts.map((w) => w.activity!).toSet();
+    final top = [
+      ...sportsByUse(acts.map((w) => w.activity)).where((s) => used.contains(s.name)).map((s) => s.name),
+      ...acts.map((w) => w.activity!).where((a) => sportOf(a) == null).toSet(), // omat lajit (esim. Garmin)
+    ].take(3).toList();
+    for (final d in ['Juoksu', 'Pyöräily', 'Kävely']) {
+      if (top.length < 3 && !top.contains(d)) top.add(d);
+    }
+    return top;
+  }
+
+  /// Pikavalinnat: muut käytetyt lajit ja Muu laji.
+  static Widget chips(BuildContext context, List<String> top) => Wrap(
+    alignment: WrapAlignment.center,
+    spacing: 8,
+    runSpacing: 4,
+    children: [
+      for (final sp in top.skip(1))
+        ActionChip(
+          avatar: Text(sportOf(sp)?.icon ?? '✨'),
+          label: Text(sportName(sp)),
+          onPressed: () => _add(context, sp),
+        ),
+      ActionChip(
+        avatar: const Icon(Icons.more_horiz, size: 18),
+        label: Text(t('Muu laji')),
+        onPressed: () => _add(context, null),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -945,15 +1040,7 @@ class _CardioHome extends StatelessWidget {
       for (final w in store.workouts)
         if (w.activity != null) w,
     ]..sort((a, b) => b.date.compareTo(a.date));
-    // Käytetyimmät lajit pikavalinnoiksi, eniten käytetty ensin (oletuksena juoksu, pyöräily, kävely).
-    final used = acts.map((w) => w.activity!).toSet();
-    final top = [
-      ...sportsByUse(acts.map((w) => w.activity)).where((s) => used.contains(s.name)).map((s) => s.name),
-      ...acts.map((w) => w.activity!).where((a) => sportOf(a) == null).toSet(), // omat lajit (esim. Garmin)
-    ].take(3).toList();
-    for (final d in ['Juoksu', 'Pyöräily', 'Kävely']) {
-      if (top.length < 3 && !top.contains(d)) top.add(d);
-    }
+    final top = topSports();
     final main = top.first;
     final runs = runsOf(store.workouts);
     return Column(
@@ -966,24 +1053,7 @@ class _CardioHome extends StatelessWidget {
           onTap: () => _add(context, main),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            for (final sp in top.skip(1))
-              ActionChip(
-                avatar: Text(sportOf(sp)?.icon ?? '✨'),
-                label: Text(sportName(sp)),
-                onPressed: () => _add(context, sp),
-              ),
-            ActionChip(
-              avatar: const Icon(Icons.more_horiz, size: 18),
-              label: Text(t('Muu laji')),
-              onPressed: () => _add(context, null),
-            ),
-          ],
-        ),
+        chips(context, top),
         // Tämän päivän liikunnat tiiviinä riveinä (avautuvat lukutilaan).
         for (final w in acts.where((w) => w.date == today)) _TodayRow(w),
         const SizedBox(height: 10),

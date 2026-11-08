@@ -120,10 +120,8 @@ void main() {
     store.workouts = [];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    expect(find.widgetWithText(ActionChip, 'Gym'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ActionChip, 'Gym'));
-    await tester.pump();
-    expect(find.text('Add run'), findsOneWidget);
+    expect(find.text('Gym'), findsOneWidget);
+    expect(find.text('Activity'), findsOneWidget);
     tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsOneWidget);

@@ -4,7 +4,7 @@
 class Sport {
   final String name, icon, group;
   final bool distance;
-  final bool steps; // askeleet kirjataan (kävelylajit)
+  final bool steps; // askeleet kirjataan (kävely- ja juoksulajit)
   const Sport(this.name, this.icon, this.group, {this.distance = false, this.steps = false});
 }
 
@@ -14,8 +14,8 @@ const sportGroups = ['Kestävyys', 'Pallo- ja mailapelit', 'Muut lajit'];
 // Lajien nimet pysyvät suomeksi myös saamenkielisessä käyttöliittymässä (natiivitarkistus myöhemmin).
 // l10n: data
 const sports = <Sport>[
-  Sport('Juoksu', '🏃', 'Kestävyys', distance: true),
-  Sport('Hölkkä', '🏃', 'Kestävyys', distance: true),
+  Sport('Juoksu', '🏃', 'Kestävyys', distance: true, steps: true),
+  Sport('Hölkkä', '🏃', 'Kestävyys', distance: true, steps: true),
   Sport('Kävely', '🚶', 'Kestävyys', distance: true, steps: true),
   Sport('Sauvakävely', '🥢', 'Kestävyys', distance: true, steps: true),
   Sport('Pyöräily', '🚴', 'Kestävyys', distance: true),

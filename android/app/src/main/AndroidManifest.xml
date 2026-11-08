@@ -16,6 +16,16 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <!-- Health Connect (valinnainen): syke, harjoitukset, kalorit ja askeleet vain treenin aikaväliltä, vain kun käyttäjä
+         pyytää treenin jälkeen. Kirjasto vaatii Android 8:n; vanhemmissa Health Connect näkyy "ei saatavilla". -->
+    <uses-sdk xmlns:tools="http://schemas.android.com/tools" tools:overrideLibrary="androidx.health.connect.client" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
     <application
         android:label="Gievra"
         android:name="${applicationName}"
@@ -40,6 +50,10 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Health Connect: "miksi sovellus pyytää lupaa" (Android 13 ja vanhemmat) avaa sovelluksen. -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
             <!-- Ohjelmapohja (.gmd): "Avaa sovelluksella" tiedostonhallinnasta, sähköpostista tai viestistä.
                  Tiedostopääte tunnistetaan, kun polku on näkyvissä; muuten Gievra tarjoutuu tuntemattomille
@@ -82,6 +96,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/report_paths" />
         </provider>
+        <!-- Health Connect (Android 14+): lupien käyttötarkoitus avaa sovelluksen. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
