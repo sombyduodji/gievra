@@ -25,6 +25,15 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- Health Connectia käyttävät sovellukset (kellon sovellus, Health Sync …): nimi näkyy "Onko tämä se?"
+             -kortissa pakettinimen sijaan. Ne kaikki julistavat tämän aikomuksen; muita sovelluksia ei näe. -->
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+            <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+        </intent>
     </queries>
     <application
         android:label="Gievra"

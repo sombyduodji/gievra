@@ -98,7 +98,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void initState() {
     super.initState();
     w.minutes ??= 45;
-    w.intensity ??= 'reipas';
     if (widget.recoverGps) WidgetsBinding.instance.addPostFrameCallback((_) => _record(recover: true));
     _restoreDraft(widget.draft);
     _checkMaps();
@@ -151,6 +150,48 @@ class _ActivityScreenState extends State<ActivityScreen> {
       !store.onDay(w.date).any((x) => x.session == w.session);
 
   bool get _hasRoute => w.route != null || w.routeGpx != null;
+
+  /// GPS:llä mitattu aika ja matka näytetään arvoina (ei säätimiä), kunnes käyttäjä haluaa korjata ne.
+  bool _gpsEdit = false;
+  bool get _gpsView =>
+      _hasRoute && _timed && (sportOf(w.activity)?.distance ?? false) && w.distanceKm != null && !_gpsEdit;
+
+  Widget _gpsSummary(ColorScheme cs) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        children: [
+          Expanded(child: SectionLabel(t('📍 Mitattu GPS:llä'))),
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: TextButton.icon(
+              onPressed: _locked ? _unlock : () => setState(() => _gpsEdit = true),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: Text(t('Korjaa')),
+            ),
+          ),
+        ],
+      ),
+      Row(
+        children: [
+          _Metric(value: fmtDurationSec(_sec), unit: '', label: t('aika')),
+          const SizedBox(width: 8),
+          _Metric(value: fmtNum(w.distanceKm!), unit: 'km', label: t('matka')),
+        ],
+      ),
+      if (w.pace != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            children: [
+              _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
+              const SizedBox(width: 8),
+              _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
+            ],
+          ),
+        ),
+    ],
+  );
 
   Future<void> _checkMaps() async {
     if (!_canGps) return;
@@ -446,61 +487,83 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ),
               ],
               if (_canStopwatch) _stopwatch(),
-              if (_timed) ...[
-                SectionLabel(t('Aika')),
-                ValueStepper(
-                  value: fmtDurationSec(_sec),
-                  unit: '',
-                  onMinus: () => setState(() => _setSec(_sec - 60)),
-                  onPlus: () => setState(() => _setSec(_sec + 60)),
-                  onTap: _askTime,
-                ),
-              ] else ...[
-                SectionLabel(t('Kesto')),
-                ValueStepper(
-                  value: '${w.minutes}',
-                  unit: 'min',
-                  onMinus: () => setState(() => w.minutes = (w.minutes! - 5).clamp(5, 600)),
-                  onPlus: () => setState(() => w.minutes = (w.minutes! + 5).clamp(5, 600)),
-                  onTap: () async {
-                    final v = await askNumber(context, t('Kesto (min)'), w.minutes!.toDouble(), decimals: false);
-                    if (v != null && v > 0) setState(() => w.minutes = v.round());
-                  },
-                ),
-              ],
-              if (sport?.distance ?? false) ...[
-                SectionLabel(t('Matka')),
-                ValueStepper(
-                  value: fmtNum(w.distanceKm ?? 0),
-                  unit: 'km',
-                  onMinus: () => setState(() => w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500)),
-                  onPlus: () => setState(() => w.distanceKm = (w.distanceKm ?? 0) + .5),
-                  onTap: () async {
-                    final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5);
-                    if (v != null && v >= 0) setState(() => w.distanceKm = v == 0 ? null : v);
-                  },
-                ),
-                if (w.pace != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(
-                      children: [
-                        _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
-                        const SizedBox(width: 8),
-                        _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
-                      ],
-                    ),
+              // GPS-lenkki: aika ja matka mitattuina arvoina; Korjaa avaa tavalliset säätimet.
+              if (_gpsView)
+                _gpsSummary(cs)
+              else ...[
+                if (_timed) ...[
+                  SectionLabel(t('Aika')),
+                  ValueStepper(
+                    value: fmtDurationSec(_sec),
+                    unit: '',
+                    onMinus: () => setState(() => _setSec(_sec - 60)),
+                    onPlus: () => setState(() => _setSec(_sec + 60)),
+                    onTap: _askTime,
                   ),
+                ] else ...[
+                  SectionLabel(t('Kesto')),
+                  ValueStepper(
+                    value: '${w.minutes}',
+                    unit: 'min',
+                    onMinus: () => setState(() => w.minutes = (w.minutes! - 5).clamp(5, 600)),
+                    onPlus: () => setState(() => w.minutes = (w.minutes! + 5).clamp(5, 600)),
+                    onTap: () async {
+                      final v = await askNumber(context, t('Kesto (min)'), w.minutes!.toDouble(), decimals: false);
+                      if (v != null && v > 0) setState(() => w.minutes = v.round());
+                    },
+                  ),
+                ],
+                if (sport?.distance ?? false) ...[
+                  SectionLabel(t('Matka')),
+                  ValueStepper(
+                    value: fmtNum(w.distanceKm ?? 0),
+                    unit: 'km',
+                    onMinus: () => setState(() => w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500)),
+                    onPlus: () => setState(() => w.distanceKm = (w.distanceKm ?? 0) + .5),
+                    onTap: () async {
+                      final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5);
+                      if (v != null && v >= 0) setState(() => w.distanceKm = v == 0 ? null : v);
+                    },
+                  ),
+                  if (w.pace != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Row(
+                        children: [
+                          _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
+                          const SizedBox(width: 8),
+                          _Metric(
+                            value: fmtNum((w.speedKmh! * 10).round() / 10),
+                            unit: 'km/h',
+                            label: t('keskinopeus'),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ],
               // Askeleet Kellon tiedot -kortissa (Health Connect tai käsin), ei omana kohtanaan.
               SectionLabel(t('Rasitus')),
               SegmentedButton<String>(
                 showSelectedIcon: false,
                 segments: [for (final (k, l, e) in intensities) ButtonSegment(value: k, label: Text('$e ${t(l)}'))],
-                selected: {w.intensity ?? 'reipas'},
-                onSelectionChanged: (v) => setState(() => w.intensity = v.first),
+                // Ei oletusta: rasitus vain, jos käyttäjä valitsee (uudelleen napautus poistaa valinnan).
+                emptySelectionAllowed: true,
+                selected: {?w.intensity},
+                onSelectionChanged: (v) => setState(() => w.intensity = v.firstOrNull),
               ),
-              if (settings.watch) WatchCard(w: w, onChanged: () => setState(() {})),
+              if (settings.watch)
+                WatchCard(
+                  w: w,
+                  onChanged: () async {
+                    setState(() {});
+                    // Jo tallennettu liikunta: kellon tiedot (Health Connect tai käsin) tiedostoon heti, ettei
+                    // takaisin-painike hukkaa niitä. Uusi kirjaus tallentuu Treeni valmis -painikkeella.
+                    if (store.onDay(w.date).any((x) => x.session == w.session && x.activity != null)) {
+                      await store.save(w);
+                    }
+                  },
+                ),
               SectionLabel(t('Miltä tuntui?')),
               FeelingPicker(value: w.feeling, onChanged: (v) => setState(() => w.feeling = v)),
               SectionLabel(t('Muistiinpanot')),
