@@ -42,6 +42,7 @@ h2{font-size:26px;margin:0 0 12px}
 .note{border-left:5px solid var(--yellow);background:var(--surface);border-radius:12px;padding:14px 16px}
 table{border-collapse:collapse;width:100%;background:var(--surface);border-radius:14px;overflow:hidden}
 td,th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td{overflow-wrap:anywhere}
 th{width:34%}
 code{background:var(--line);padding:1px 6px;border-radius:6px}
 section.video{text-align:center;padding-top:8px}
@@ -231,6 +232,23 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       </ul>
     </div>
   </div>
+</section>
+
+<section>
+  <h2>What does the app connect to?</h2>
+  <p>We checked: the Gievra 0.2.7 release was installed on an Android emulator, and every network connection the
+  app opened was logged while it was being used (November 2026).</p>
+  <table>
+    <tr><th>Setup, program and gym workout</th><td>no connections</td></tr>
+    <tr><th>GPS run and finding your location</th><td>no connections: location and route stay on the phone</td></tr>
+    <tr><th>Maps screen and map downloads</th><td>GitHub only (github.com and release-assets.githubusercontent.com)</td></tr>
+    <tr><th>Bug report and backup</th><td>no connections: Android's share menu, the app you choose does the sending</td></tr>
+    <tr><th>In the background and at startup</th><td>no connections</td></tr>
+  </table>
+  <p class="note" style="margin-top:14px">When you download maps, GitHub sees your IP address and which
+  municipality packs you download, but not your location, device identifiers or any account. The app has no
+  analytics, ads, crash reporting or Google Play services. Links (source code, support, OpenStreetMap) open in
+  your browser only when you tap them.</p>
 </section>
 
 <section>

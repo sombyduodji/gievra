@@ -59,6 +59,9 @@ class _MapsScreenState extends State<MapsScreen> {
   String _query = '';
   bool _importing = false;
 
+  /// Välilehden nimi yhdellä rivillä (kapealla näytöllä teksti pienenee eikä katkea kesken sanan).
+  static Widget _oneLine(String s) => FittedBox(fit: BoxFit.scaleDown, child: Text(s, maxLines: 1, softWrap: false));
+
   /// Välilehti: 0 = lataa verkosta, 1 = tuo tiedostosta, 2 = ladatut kartat.
   int _tab = 0;
   List<MapPack> _outdated = const [];
@@ -210,9 +213,13 @@ class _MapsScreenState extends State<MapsScreen> {
             child: SegmentedButton<int>(
               showSelectedIcon: false,
               segments: [
-                ButtonSegment(value: 0, icon: const Icon(Icons.cloud_download_outlined), label: Text(t('Verkosta'))),
-                ButtonSegment(value: 1, icon: const Icon(Icons.file_open_outlined), label: Text(t('Tiedostosta'))),
-                ButtonSegment(value: 2, icon: const Icon(Icons.inventory_2_outlined), label: Text(t('Ladatut'))),
+                ButtonSegment(
+                  value: 0,
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  label: _oneLine(t('Verkosta')),
+                ),
+                ButtonSegment(value: 1, icon: const Icon(Icons.file_open_outlined), label: _oneLine(t('Tiedostosta'))),
+                ButtonSegment(value: 2, icon: const Icon(Icons.inventory_2_outlined), label: _oneLine(t('Ladatut'))),
               ],
               selected: {_tab},
               onSelectionChanged: (v) {
