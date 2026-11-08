@@ -115,7 +115,7 @@ msgstr "geardduheami"
 msgid "sekunnit"
 msgstr "sekunddat"
 
-#: lib/exercises.dart:466 lib/ui/watch.dart:114
+#: lib/exercises.dart:466 lib/ui/watch.dart:115
 msgid "askeleet"
 msgstr "lávkkit"
 
@@ -269,51 +269,51 @@ msgstr "{0} hárjehallama vižžojuvvon."
 msgid "⏱ Palautus ohi – seuraava sarja!"
 msgstr "⏱ Vuoiŋŋasteapmi nohkan – boahtte ráidu!"
 
-#: lib/models.dart:193
+#: lib/models.dart:196
 msgid "väsynyt"
 msgstr "váiban"
 
-#: lib/models.dart:194
+#: lib/models.dart:197
 msgid "huonosti nukuttu"
 msgstr "headjut oađđán"
 
-#: lib/models.dart:195
+#: lib/models.dart:198
 msgid "rankka päivä"
 msgstr "lossa beaivi"
 
-#: lib/models.dart:196
+#: lib/models.dart:199
 msgid "stressi"
 msgstr "streassa"
 
-#: lib/models.dart:197
+#: lib/models.dart:200
 msgid "sairastumassa"
 msgstr "buohccáme"
 
-#: lib/models.dart:198
+#: lib/models.dart:201
 msgid "huono ruokailu"
 msgstr "heajos borran"
 
-#: lib/models.dart:199
+#: lib/models.dart:202
 msgid "kipua"
 msgstr "bákčasat"
 
-#: lib/models.dart:203
+#: lib/models.dart:206
 msgid "Raskas"
 msgstr "Lossat"
 
-#: lib/models.dart:203
+#: lib/models.dart:206
 msgid "Tahmea"
 msgstr "Njoahci"
 
-#: lib/models.dart:203
+#: lib/models.dart:206
 msgid "Ok"
 msgstr "Ok"
 
-#: lib/models.dart:203
+#: lib/models.dart:206
 msgid "Hyvä"
 msgstr "Buorre"
 
-#: lib/models.dart:203
+#: lib/models.dart:206
 msgid "Loistava"
 msgstr "Hui buorre"
 
@@ -2542,7 +2542,7 @@ msgstr ""
 "Sierranas hárjehusat ja liegganeami ráiddut oanehaččat. Ii veaháge "
 "vára: +30 s. Geahpedanvahkus × 0,75."
 
-#: lib/ui/health_sheet.dart:102
+#: lib/ui/health_sheet.dart:99
 msgid ""
 "Health Connect ei ole käytettävissä tässä puhelimessa. Kirjoita syke "
 "ja kalorit käsin."
@@ -2550,15 +2550,15 @@ msgstr ""
 "Health Connect ii leat olámuttos dán telefovnnas. Čále pulssa ja "
 "kaloriijaid gieđain."
 
-#: lib/ui/health_sheet.dart:107
+#: lib/ui/health_sheet.dart:104
 msgid "Health Connect pitää asentaa tai päivittää Play Kaupasta."
 msgstr "Health Connect ferte sajáiduhttit dahje ođasmahttit Play Store:s."
 
-#: lib/ui/health_sheet.dart:114
+#: lib/ui/health_sheet.dart:111
 msgid "Avaa Play Kauppa"
 msgstr "Raba Play Store"
 
-#: lib/ui/health_sheet.dart:124
+#: lib/ui/health_sheet.dart:121
 msgid ""
 "Gievra lukee Health Connectista vain tämän treenin ajalta "
 "harjoituksen, sykkeen, kalorit ja askeleet. Tiedot pysyvät "
@@ -2567,15 +2567,15 @@ msgstr ""
 "Gievra lohká Health Connectis dušše dán hárjehallama áiggi: "
 "hárjehusa, pulssa, kaloriijaid ja lávkkiid. Dieđut báhcet telefovdnii."
 
-#: lib/ui/health_sheet.dart:129
+#: lib/ui/health_sheet.dart:126
 msgid "Anna lupa"
 msgstr "Atte lobi"
 
-#: lib/ui/health_sheet.dart:139
+#: lib/ui/health_sheet.dart:136
 msgid "Tätä treeniä vastaavaa harjoitusta ei vielä löytynyt."
 msgstr "Dán hárjehallamii heivvolaš hárjehus ii gávdnon vel."
 
-#: lib/ui/health_sheet.dart:140
+#: lib/ui/health_sheet.dart:137
 msgid ""
 "Lopeta harjoitus kellosta ja odota, että kellon sovellus siirtää "
 "tiedot Health Connectiin."
@@ -2583,7 +2583,7 @@ msgstr ""
 "Loahpat hárjehusa diimmus ja vuordde ahte diimmu prográmma sirdá "
 "dieđuid Health Connectii."
 
-#: lib/ui/health_sheet.dart:145
+#: lib/ui/health_sheet.dart:142
 msgid ""
 "Siirto kestää yleensä muutaman minuutin. Voit jättää tämän auki ja "
 "tarkistaa välillä."
@@ -2591,59 +2591,59 @@ msgstr ""
 "Sirdin bistá dábálaččat moadde minuhta. Sáhtát guođđit dán rabas ja "
 "dárkkistit gaskkohagaid."
 
-#: lib/ui/health_sheet.dart:152 lib/ui/health_sheet.dart:227
+#: lib/ui/health_sheet.dart:149 lib/ui/health_sheet.dart:223
 msgid "Tarkista uudelleen"
 msgstr "Dárkkis ođđasit"
 
-#: lib/ui/health_sheet.dart:152
+#: lib/ui/health_sheet.dart:149
 msgid "Tarkista"
 msgstr "Dárkkis"
 
-#: lib/ui/health_sheet.dart:163
+#: lib/ui/health_sheet.dart:160
 msgid "Onko tämä se?"
 msgstr "Leago dát dat?"
 
-#: lib/ui/health_sheet.dart:172
+#: lib/ui/health_sheet.dart:169
 msgid "Harjoitus"
 msgstr "Hárjehus"
 
-#: lib/ui/health_sheet.dart:172
+#: lib/ui/health_sheet.dart:169
 msgid "Sykedata treenin ajalta"
 msgstr "Pulsadieđut hárjehallama áiggi"
 
 #. {0} = c.duration.inMinutes
-#: lib/ui/health_sheet.dart:179
+#: lib/ui/health_sheet.dart:176
 msgid "{0} min"
 msgstr "{0} min"
 
 #. {0} = c.kcal
-#: lib/ui/health_sheet.dart:187 lib/ui/watch.dart:158
+#: lib/ui/health_sheet.dart:184 lib/ui/watch.dart:161
 msgid "🔥 {0} kcal"
 msgstr "🔥 {0} kcal"
 
 #. {0} = thousands(c.steps!)
-#: lib/ui/health_sheet.dart:188
+#: lib/ui/health_sheet.dart:185
 msgid "👣 {0} askelta"
 msgstr "👣 {0} lávkki"
 
-#: lib/ui/health_sheet.dart:202
+#: lib/ui/health_sheet.dart:199
 msgid "Ei, seuraava"
 msgstr "Ii, boahtte"
 
-#: lib/ui/health_sheet.dart:202 lib/ui/home.dart:876 lib/ui/home.dart:1094 lib/ui/move_feedback.dart:135 …
+#: lib/ui/health_sheet.dart:199 lib/ui/home.dart:876 lib/ui/home.dart:1094 lib/ui/move_feedback.dart:135 …
 msgid "Ohita"
 msgstr "Njuikes"
 
-#: lib/ui/health_sheet.dart:214 lib/ui/new_workout.dart:265 lib/ui/picker.dart:83
+#: lib/ui/health_sheet.dart:210 lib/ui/new_workout.dart:265 lib/ui/picker.dart:83
 msgid "Lisää"
 msgstr "Lasit"
 
 #. {0} = error ?? ''
-#: lib/ui/health_sheet.dart:225
+#: lib/ui/health_sheet.dart:221
 msgid "Health Connectin luku ei onnistunut: {0}"
 msgstr "Health Connect lohkan ii lihkostuvvan: {0}"
 
-#: lib/ui/health_sheet.dart:237 lib/ui/watch.dart:72
+#: lib/ui/health_sheet.dart:233 lib/ui/watch.dart:73
 msgid "Health Connect"
 msgstr "Health Connect"
 
@@ -5164,7 +5164,7 @@ msgstr "rekorda"
 msgid "kertaa"
 msgstr "geardde"
 
-#: lib/ui/stats_screen.dart:250 lib/ui/watch.dart:98
+#: lib/ui/stats_screen.dart:250 lib/ui/watch.dart:99
 msgid "keskisyke"
 msgstr "gaskamearálaš pulsa"
 
@@ -5437,47 +5437,52 @@ msgstr "Botke"
 msgid "Katkaise yhteys"
 msgstr "Botke oktavuođa"
 
-#: lib/ui/watch.dart:59
+#: lib/ui/watch.dart:60
 msgid "Kellon tiedot"
 msgstr "Diimmu dieđut"
 
-#: lib/ui/watch.dart:69 lib/ui/watch.dart:128
+#: lib/ui/watch.dart:70 lib/ui/watch.dart:130
 msgid "Tiedot haettu Health Connectista"
 msgstr "Dieđut vižžojuvvon Health Connectis"
 
-#: lib/ui/watch.dart:80 lib/ui/workout.dart:497
+#: lib/ui/watch.dart:81 lib/ui/workout.dart:497
 msgid "kesto"
 msgstr "áigi"
 
-#: lib/ui/watch.dart:81
+#: lib/ui/watch.dart:82
 msgid "Kesto kellosta (min)"
 msgstr "Áigi diimmus (min)"
 
-#: lib/ui/watch.dart:90
+#: lib/ui/watch.dart:91
 msgid "kalorit"
 msgstr "kaloriijat"
 
-#: lib/ui/watch.dart:93
+#: lib/ui/watch.dart:94
 msgid "Kalorit (kcal)"
 msgstr "Kaloriijat (kcal)"
 
-#: lib/ui/watch.dart:101
+#: lib/ui/watch.dart:102
 msgid "Keskisyke (lyöntiä/min)"
 msgstr "Gaskamearálaš pulsa (časkkástagat/min)"
 
-#: lib/ui/watch.dart:106
+#: lib/ui/watch.dart:107
 msgid "maksimisyke"
 msgstr "alimus pulsa"
 
-#: lib/ui/watch.dart:109
+#: lib/ui/watch.dart:110
 msgid "Maksimisyke (lyöntiä/min)"
 msgstr "Alimus pulsa (časkkástagat/min)"
 
-#: lib/ui/watch.dart:114
+#: lib/ui/watch.dart:115
 msgid "Askeleet"
 msgstr "Lávkkit"
 
-#: lib/ui/watch.dart:139
+#. {0} = w.healthSource!
+#: lib/ui/watch.dart:131
+msgid "Tiedot haettu Health Connectista ({0})"
+msgstr "Dieđut vižžojuvvon Health Connectis ({0})"
+
+#: lib/ui/watch.dart:142
 msgid ""
 "Hae Health Connectista tai napauta ja kirjoita arvo kellosta. Kellon "
 "kesto korvaa sovelluksen ajastimen. 0 tyhjentää."
@@ -5485,7 +5490,7 @@ msgstr ""
 "Viečča Health Connectis dahje deaddil ja čále árvvu diimmus. Diimmu "
 "áigi buhtte prográmma áigemihttára. 0 sihkku árvvu."
 
-#: lib/ui/watch.dart:142
+#: lib/ui/watch.dart:145
 msgid ""
 "Hae Health Connectista tai napauta ja kirjoita arvo kellosta. 0 "
 "tyhjentää."
@@ -5493,7 +5498,7 @@ msgstr ""
 "Viečča Health Connectis dahje deaddil ja čále árvvu diimmus. 0 sihkku "
 "árvvu."
 
-#: lib/ui/watch.dart:144
+#: lib/ui/watch.dart:147
 msgid ""
 "Napauta ja kirjoita arvo kellosta. Kellon kesto korvaa sovelluksen "
 "ajastimen. 0 tyhjentää."
@@ -5501,7 +5506,7 @@ msgstr ""
 "Deaddil ja čále árvvu diimmus. Diimmu áigi buhtte prográmma "
 "áigemihttára. 0 sihkku árvvu."
 
-#: lib/ui/watch.dart:146
+#: lib/ui/watch.dart:149
 msgid "Napauta ja kirjoita arvo kellosta. 0 tyhjentää."
 msgstr "Deaddil ja čále árvvu diimmus. 0 sihkku árvvu."
 

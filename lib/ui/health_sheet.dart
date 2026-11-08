@@ -19,9 +19,6 @@ Future<bool?> showHealthSheet(BuildContext context, Workout w) => showModalBotto
   builder: (_) => _HealthSheet(w),
 );
 
-/// Treenit, joihin tällä kerralla haettiin tiedot Health Connectista (näkyy Kellon tiedot -kortissa).
-final healthFilled = Expando<bool>('healthFilled');
-
 enum _Step { start, unavailable, update, permission, wait, checking, found, none, error }
 
 class _HealthSheet extends StatefulWidget {
@@ -208,7 +205,6 @@ class _HealthSheetState extends State<_HealthSheet> {
                     style: FilledButton.styleFrom(backgroundColor: Sami.green, foregroundColor: Colors.white),
                     onPressed: () {
                       applyCandidate(widget.w, c, steps: stepsSport);
-                      healthFilled[widget.w] = true;
                       Navigator.pop(context, true);
                     },
                     child: Text(t('Lisää')),

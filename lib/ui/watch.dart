@@ -23,6 +23,7 @@ class WatchCard extends StatelessWidget {
       final v = await askNumber(context, title, (current ?? def).toDouble(), decimals: false);
       if (v == null) return;
       set(v <= 0 ? null : v.round());
+      w.healthSource = null; // käsin muutettu: ei enää pelkkiä Health Connectin tietoja
       onChanged();
     }
 
@@ -116,7 +117,7 @@ class WatchCard extends StatelessWidget {
           ],
         ),
         // Tällä kerralla Health Connectista haetut tiedot: näkyvä merkintä kortin alla.
-        if (healthFilled[w] == true)
+        if (w.healthSource != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Row(
@@ -125,7 +126,9 @@ class WatchCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    t('Tiedot haettu Health Connectista'),
+                    w.healthSource!.isEmpty
+                        ? t('Tiedot haettu Health Connectista')
+                        : t('Tiedot haettu Health Connectista ({0})', [w.healthSource!]),
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Sami.green),
                   ),
                 ),

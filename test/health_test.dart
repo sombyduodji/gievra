@@ -48,6 +48,12 @@ void main() {
     expect(md, allOf(contains('hr_avg: 144'), contains('hr_max: 157'), contains('kcal: 420'), contains('steps: 5600')));
     final back = parseWorkout(md);
     expect((back.hrAvg, back.hrMax, back.kcal, back.steps), (144, 157, 420, 5600));
+    // Lähde säilyy tiedostossa (merkintä näkyy, kun treeni avataan uudelleen).
+    expect(md, contains('watch_source: Health Connect'));
+    expect(back.healthSource, isNotNull);
+    final named = run0()..healthSource = 'Health Sync';
+    expect(workoutToMarkdown(named), contains('watch_source: Health Connect (Health Sync)'));
+    expect(named.copy().healthSource, 'Health Sync');
     final gym = Workout(
       date: day,
       title: 'Koko keho A',
