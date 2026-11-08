@@ -200,6 +200,56 @@ void main() {
     expect(await GpsRecorder.pendingSport(), isNull);
   });
 
+  test('Palautus kahden tauon jälkeen: kumpikaan tauon aikana kuljettu matka ei kerry', () async {
+    var clock = DateTime.utc(2026, 11, 8, 10);
+    final gps = FakeGps();
+    final rec = GpsRecorder(source: gps, now: () => clock);
+    await rec.open('Juoksu', title: 't', text: 'x', channel: 'c');
+    var m = 0.0;
+    Future<void> runFor(int secs, double speed) async {
+      for (var i = 0; i < secs; i++) {
+        clock = clock.add(const Duration(seconds: 1));
+        m += speed;
+        gps.send(east(clock, m));
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    await rec.start();
+    await runFor(200, 3); // 600 m
+    await rec.pause();
+    await runFor(150, 2); // 300 m tauolla
+    await rec.resume();
+    await runFor(200, 3); // 600 m
+    await rec.pause();
+    await runFor(150, 2); // 300 m tauolla
+    await rec.resume();
+    await runFor(100, 3); // 300 m
+    final live = rec.distanceKm;
+    rec.dispose(); // Android sulki sovelluksen
+
+    final again = GpsRecorder(source: gps, now: () => clock);
+    expect(await again.recover(title: 't', text: 'x', channel: 'c'), isTrue);
+    expect(again.distanceKm, closeTo(1.5, 0.05));
+    expect(again.distanceKm, closeTo(live, 0.02));
+    expect(again.filter.segments.where((x) => x.length >= 2).length, 3);
+    await again.discard();
+  });
+
+  test('Signaali: puhelimen kello väärässä ei estä aloitusta', () async {
+    var clock = DateTime.utc(2026, 11, 8, 10);
+    final gps = FakeGps();
+    final rec = GpsRecorder(source: gps, now: () => clock);
+    await rec.open('Juoksu', title: 't', text: 'x', channel: 'c');
+    // GPS-aika on 2 min puhelimen kelloa edellä.
+    gps.send(east(clock.add(const Duration(minutes: 2)), 0));
+    await Future<void>.delayed(Duration.zero);
+    expect(rec.goodSignal, isTrue);
+    clock = clock.add(const Duration(seconds: 10));
+    expect(rec.goodSignal, isFalse);
+    await rec.discard();
+  });
+
   testWidgets('Tallennusnäkymä: signaalin haku, aloitus ja tauko', (tester) async {
     var clock = DateTime.utc(2026, 11, 8, 10);
     final gps = FakeGps();

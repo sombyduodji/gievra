@@ -209,7 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     if (sport != null) {
       final today = dateOnly(DateTime.now());
-      final w = d != null && d.$1.activity == sport
+      final same = d != null && d.$1.activity == sport;
+      final w = same
           ? d.$1
           : Workout(
               date: today,
@@ -219,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => ActivityScreen(workout: w, recoverGps: true, draft: d?.$2),
+          builder: (_) => ActivityScreen(workout: w, recoverGps: true, draft: same ? d.$2 : null),
         ),
       );
       return;
@@ -1030,7 +1031,7 @@ class _CardioHome extends StatelessWidget {
           children: [
             tile('${kmS(km)} km', t('tällä viikolla')),
             const SizedBox(width: 8),
-            tile(runKm > 0 ? fmtPace(runSec / runKm) : '–', t('vauhti /km')),
+            tile(runKm > 0 ? fmtPace(runSec / runKm) : '–', t('vauhti min/km')),
             const SizedBox(width: 8),
             tile(hrs.isEmpty ? '–' : '${(hrs.reduce((a, b) => a + b) / hrs.length).round()}', t('keskisyke')),
           ],
@@ -1040,7 +1041,7 @@ class _CardioHome extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              t('Kevyet lenkit: {0} → {1} /km (4 vk)', [fmtPace(trend.pacePrev!), fmtPace(trend.paceNow!)]),
+              t('Kevyet lenkit: {0} → {1} min/km (4 vk)', [fmtPace(trend.pacePrev!), fmtPace(trend.paceNow!)]),
               textAlign: TextAlign.center,
               style: sub,
             ),

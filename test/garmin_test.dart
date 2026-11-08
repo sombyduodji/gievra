@@ -55,7 +55,7 @@ void main() {
     expect(run.hrAvg, 140);
     expect(run.hrMax, 160);
     expect(run.intensity, 'kova');
-    expect(run.pace, '7:30 /km');
+    expect(run.pace, '7:30 min/km');
     expect(run.notes, contains('nousu 100 m'));
     expect(run.notes, contains('askeltiheys 160 /min'));
     final mill = r.workouts.firstWhere((w) => w.date == DateTime(2025, 5, 5));

@@ -14,7 +14,7 @@ void main() {
     expect(fmtDurationSec(3909), '1:05:09');
     expect(fmtDurationSec(1531), '25:31');
     final r = run(DateTime(2026, 11, 3), 5, 1531);
-    expect(r.pace, '5:06 /km');
+    expect(r.pace, '5:06 min/km');
     expect(r.speedKmh!.toStringAsFixed(1), '11.8');
   });
 

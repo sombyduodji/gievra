@@ -292,8 +292,8 @@ class _RecordScreenState extends State<RecordScreen> {
         Row(
           children: [
             metric(fmtDec(rec.distanceKm, 2), 'km', t('matka')),
-            metric(cur == null ? '–' : fmtPace(cur), '/km', t('vauhti nyt')),
-            metric(avg == null ? '–' : fmtPace(avg), '/km', t('keskivauhti')),
+            metric(cur == null ? '–' : fmtPace(cur), 'min/km', t('vauhti nyt')),
+            metric(avg == null ? '–' : fmtPace(avg), 'min/km', t('keskivauhti')),
           ],
         ),
         const SizedBox(height: 12),

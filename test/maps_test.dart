@@ -181,6 +181,19 @@ void main() {
       expect(File('${tmp.path}/a.pmtiles').readAsStringSync(), 'kartta A versio 2');
       expect(await store.outdated(), isEmpty);
 
+      // Päivitys epäonnistuu (verkko katkeaa): vanha kartta jää käyttöön, latauslista tyhjenee.
+      final good = a;
+      a = utf8.encode('kartta A versio 3');
+      final cat3 = cat();
+      a = utf8.encode('rikki');
+      store.catalog = MapCatalog.fromJson(cat3);
+      final failed = await store.update(await store.outdated());
+      expect(failed.map((d) => d.pack.id), contains('a'));
+      expect(store.downloads, isEmpty);
+      expect(store.installed, contains('a.pmtiles'));
+      expect(File('${tmp.path}/a.pmtiles').readAsBytesSync(), good);
+      expect(tmp.listSync().where((e) => e.path.endsWith('.part')), isEmpty);
+
       await store.deleteFile('b.pmtiles');
       expect(store.installed, {'a.pmtiles'});
       await store.deleteAll();
@@ -188,6 +201,28 @@ void main() {
       expect(await store.installedFiles(), isEmpty);
       expect(await store.usedBytes(), 0);
     });
+  });
+
+  test('Luettelo: tiedostonimi ei voi osoittaa muualle, osoite vain https', () {
+    Map<String, Object> withFile(String f) =>
+        catalogJson(packs: [square('x', 25, 60, 25.5, 60.3, size: 1, sha: 'a' * 64)])
+          ..['overview'] = {'file': f, 'size': 1, 'sha256': 'a' * 64};
+    expect(() => MapCatalog.fromJson(withFile('../../shared_prefs/x.pmtiles')), throwsFormatException);
+    expect(() => MapCatalog.fromJson(withFile('/data/x.pmtiles')), throwsFormatException);
+    expect(() => MapCatalog.fromJson(withFile('Yleis.PMTILES')), throwsFormatException);
+    expect(MapCatalog.fromJson(withFile('yleiskartta.pmtiles')).overview.file, 'yleiskartta.pmtiles');
+    final ftp = catalogJson(packs: const [])..['base'] = 'ftp://example.invalid/';
+    expect(() => MapCatalog.fromJson(ftp), throwsFormatException);
+  });
+
+  test('Keskeneräinen lataus (.part) poistetaan seuraavalla kerralla', () async {
+    final tmp = Directory.systemTemp.createTempSync('gievra-part');
+    final store = MapStore.instance..dirOverride = tmp;
+    File('${tmp.path}/suomi.pmtiles.part').writeAsStringSync('puolikas');
+    await store.load(network: false);
+    expect(tmp.listSync().where((e) => e.path.endsWith('.part')), isEmpty);
+    store.dirOverride = null;
+    tmp.deleteSync(recursive: true);
   });
 
   group('Tuonti tiedostosta', () {

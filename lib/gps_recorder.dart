@@ -121,6 +121,9 @@ class GpsRecorder extends ChangeNotifier {
 
   /// Viimeisin paikannus (signaalin tila) ja sen ikä.
   GpsFix? lastFix;
+
+  /// Puhelimen kello, kun viimeisin paikannus saapui (GPS-aika ja puhelimen kello voivat erota).
+  DateTime? lastFixAt;
   bool gpsDisabled = false;
 
   /// Ajanotto: aloitus ja tauot [alku, loppu); käynnissä olevalla tauolla loppu = null.
@@ -133,7 +136,8 @@ class GpsRecorder extends ChangeNotifier {
   /// Hyvä signaali: viimeisin paikannus alle 5 s vanha ja tarkkuus enintään 20 m.
   bool get goodSignal {
     final f = lastFix;
-    return f != null && f.accuracy <= GpsFilter.startAccuracy && now().difference(f.time).inSeconds < 5;
+    final at = lastFixAt;
+    return f != null && at != null && f.accuracy <= GpsFilter.startAccuracy && now().difference(at).inSeconds < 5;
   }
 
   /// Kesto ilman taukoja.
@@ -167,7 +171,8 @@ class GpsRecorder extends ChangeNotifier {
     for (var k = i + 1; k < pts.length; k++) {
       d += geoDistance(pts[k - 1].lat, pts[k - 1].lon, pts[k].lat, pts[k].lon);
     }
-    if (secs < 10 || d < 20 || now().difference(end.time).inSeconds > 15) return null;
+    final at = lastFixAt;
+    if (secs < 10 || d < 20 || at == null || now().difference(at).inSeconds > 15) return null;
     return secs / (d / 1000);
   }
 
@@ -224,6 +229,7 @@ class GpsRecorder extends ChangeNotifier {
   Future<void> open(String sport, {required String title, required String text, required String channel}) async {
     this.sport = sport;
     _filter = GpsFilter(GpsLimits.forSport(sport));
+    _lastFedTime = null;
     gpsDisabled = !await source.enabled();
     _listen();
     await source.clearSaved();
@@ -241,6 +247,7 @@ class GpsRecorder extends ChangeNotifier {
       final m = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
       sport = m['sport'] as String? ?? '';
       _filter = GpsFilter(GpsLimits.forSport(sport));
+      _lastFedTime = null;
       startedAt = DateTime.tryParse(m['started'] as String? ?? '');
       pauses
         ..clear()
@@ -279,21 +286,27 @@ class GpsRecorder extends ChangeNotifier {
   /// Paikannus suotimelle vain ajanoton käydessä (ei odottaessa eikä tauolla).
   void _feed(GpsFix fix, {required bool live}) {
     lastFix = fix;
+    lastFixAt = live ? now() : fix.time;
     final s = startedAt;
     if (s == null || fix.time.isBefore(s)) return;
     for (final (a, b) in pauses) {
       if (!fix.time.isBefore(a) && (b == null || fix.time.isBefore(b))) return;
     }
-    // Tauon jälkeen uusi osuus: tauon aikana kuljettua matkaa ei lasketa.
-    final lastPause = pauses.isEmpty ? null : pauses.last.$2;
-    if (lastPause != null && _resumeHandled != lastPause && !fix.time.isBefore(lastPause)) {
-      _resumeHandled = lastPause;
-      _filter.breakSegment();
+    // Tauon jälkeen uusi osuus: tauon aikana kuljettua matkaa ei lasketa. Tarkistetaan kaikki tauot, jotka
+    // päättyivät edellisen ja tämän paikannuksen välissä (palautuksessa niitä voi olla useita).
+    final prev = _lastFedTime;
+    for (final (_, b) in pauses) {
+      if (b != null && !fix.time.isBefore(b) && (prev == null || prev.isBefore(b))) {
+        _filter.breakSegment();
+        break;
+      }
     }
+    _lastFedTime = fix.time;
     _filter.add(fix);
   }
 
-  DateTime? _resumeHandled;
+  /// Viimeisimmän suotimelle annetun paikannuksen aika.
+  DateTime? _lastFedTime;
 
   /// Ajanotto käyntiin (signaali löytyi tai "Aloita silti").
   Future<void> start() async {

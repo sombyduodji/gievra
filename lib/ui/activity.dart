@@ -190,6 +190,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       _route = r.segments.isEmpty ? null : r.segments;
       _manual = true;
     });
+    // Reitti luonnokseen heti: tallentimen tiedostot on jo poistettu, joten 3 s:n odotus voisi hukata sen.
+    await _saveDraft();
   }
 
   bool get _timed => sportOf(w.activity)?.distance ?? false;
@@ -474,7 +476,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     padding: const EdgeInsets.only(top: 10),
                     child: Row(
                       children: [
-                        _Metric(value: fmtPace(w.paceSecPerKm!), unit: '/km', label: t('vauhti')),
+                        _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
                         const SizedBox(width: 8),
                         _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
                       ],

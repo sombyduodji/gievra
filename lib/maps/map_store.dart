@@ -23,6 +23,13 @@ const mapCatalogUrl = String.fromEnvironment(
   defaultValue: 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/kartat.json',
 );
 
+/// Karttatiedoston nimi luettelosta: vain pelkkä nimi (a–z, 0–9, -) ja .pmtiles, ettei luettelo voi ohjata
+/// tiedostoa muualle (esim. ../ tai absoluuttinen polku).
+String safeMapFile(String name) {
+  if (!RegExp(r'^[a-z0-9-]+\.pmtiles$').hasMatch(name)) throw FormatException('karttatiedoston nimi ei kelpaa: $name');
+  return name;
+}
+
 class MapPack {
   final String id, name, file, region, sha256;
   final String? se, sv;
@@ -45,7 +52,7 @@ class MapPack {
   factory MapPack.fromJson(Map<String, dynamic> j) => MapPack(
     id: j['id'] as String? ?? p.basenameWithoutExtension(j['file'] as String),
     name: j['name'] as String? ?? j['file'] as String,
-    file: j['file'] as String,
+    file: safeMapFile(j['file'] as String),
     region: j['region'] as String? ?? '',
     sha256: j['sha256'] as String,
     size: j['size'] as int,
@@ -113,12 +120,21 @@ class MapCatalog {
     required this.regions,
   });
 
+  /// Latausosoite vain https:llä (kehitysversiossa myös http, esim. paikallinen testipalvelin).
+  static String _safeBase(String base) {
+    final u = Uri.tryParse(base);
+    if (u == null || !(u.isScheme('https') || (kDebugMode && u.isScheme('http'))) || u.host.isEmpty) {
+      throw FormatException('karttojen osoite ei kelpaa: $base');
+    }
+    return base.endsWith('/') ? base : '$base/';
+  }
+
   factory MapCatalog.fromJson(Map<String, dynamic> j) {
     MapPack pack(Map<String, dynamic> e) => MapPack.fromJson(e);
     return MapCatalog(
       tag: j['tag'] as String,
       osmDate: j['osmDate'] as String? ?? '',
-      base: j['base'] as String,
+      base: _safeBase(j['base'] as String),
       overview: pack({...(j['overview'] as Map<String, dynamic>), 'id': 'yleiskartta', 'name': 'Yleiskartta'}),
       all: pack({...(j['all'] as Map<String, dynamic>), 'id': 'suomi', 'name': 'Suomi'}),
       packs: [for (final e in j['packs'] as List) pack(e as Map<String, dynamic>)],
@@ -171,6 +187,9 @@ class MapStore extends ChangeNotifier {
   bool _cancel = false;
   final _open = <String, PmTilesFile>{};
 
+  /// Lataus katkaistaan, jos dataa ei tule tähän aikaan.
+  static const _stall = Duration(seconds: 30);
+
   Future<Directory> dir() async {
     final d = dirOverride ?? Directory(p.join((await getApplicationSupportDirectory()).path, 'kartat'));
     if (!await d.exists()) await d.create(recursive: true);
@@ -192,9 +211,13 @@ class MapStore extends ChangeNotifier {
     String? err;
     if (network && (refresh || catalog == null)) {
       try {
-        final r = await (clientOverride ?? http.Client())
-            .get(Uri.parse(mapCatalogUrl))
-            .timeout(const Duration(seconds: 15));
+        final client = clientOverride ?? http.Client();
+        final http.Response r;
+        try {
+          r = await client.get(Uri.parse(mapCatalogUrl)).timeout(const Duration(seconds: 15));
+        } finally {
+          if (clientOverride == null) client.close();
+        }
         if (r.statusCode != 200) throw HttpException('HTTP ${r.statusCode}');
         final text = utf8.decode(r.bodyBytes);
         catalog = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
@@ -209,12 +232,17 @@ class MapStore extends ChangeNotifier {
 
   Future<void> _scan() async {
     final d = await dir();
-    installed
-      ..clear()
-      ..addAll([
-        await for (final e in d.list())
-          if (e is File && e.path.endsWith('.pmtiles')) p.basename(e.path),
-      ]);
+    installed.clear();
+    await for (final e in d.list()) {
+      if (e is! File) continue;
+      if (e.path.endsWith('.pmtiles')) installed.add(p.basename(e.path));
+      // Keskeneräinen lataus (sovellus suljettiin kesken): poistetaan, ettei vie tilaa.
+      if (e.path.endsWith('.part') && downloads.isEmpty) {
+        try {
+          await e.delete();
+        } catch (_) {}
+      }
+    }
   }
 
   bool isInstalled(MapPack x) => installed.contains(x.file);
@@ -239,48 +267,68 @@ class MapStore extends ChangeNotifier {
   }
 
   /// Lataa paketit (yleiskartta mukaan, jos puuttuu). Tarkistaa SHA-256:n; keskeneräinen tiedosto ei jää.
-  Future<void> download(List<MapPack> packs) async {
+  /// [replace]: ladataan myös jo asennetut (päivitys); vanha kartta pysyy käytössä, kunnes uusi on tarkistettu.
+  /// Palauttaa epäonnistuneet lataukset (tyhjä = kaikki onnistui). Latauslista tyhjenee aina lopuksi.
+  Future<List<MapDownload>> download(List<MapPack> packs, {bool replace = false}) async {
     final c = catalog;
-    if (c == null) return;
+    if (c == null || downloads.isNotEmpty) return const [];
     final todo = [
       if (!isInstalled(c.overview) && !isInstalled(c.all)) c.overview,
-      ...packs.where((x) => !isInstalled(x)),
+      ...packs.where((x) => replace || !isInstalled(x)),
     ];
     _cancel = false;
     for (final x in todo) {
       downloads[x.file] = MapDownload(x);
     }
     notifyListeners();
-    final client = clientOverride ?? http.Client();
-    for (final x in todo) {
-      if (_cancel) break;
-      final dl = downloads[x.file]!;
-      try {
-        await _fetch(client, c.base, x, dl);
-        dl.done = true;
-        installed.add(x.file);
-        await _setVersion(x.file, x.sha256);
-      } catch (e) {
-        dl.error = '$e';
+    final client = _client = clientOverride ?? http.Client();
+    final failed = <MapDownload>[];
+    try {
+      for (final x in todo) {
+        final dl = downloads[x.file]!;
+        if (_cancel) {
+          dl.error = 'peruttu';
+          failed.add(dl);
+          continue;
+        }
+        try {
+          await _fetch(client, c.base, x, dl);
+          dl.done = true;
+          installed.add(x.file);
+          await _setVersion(x.file, x.sha256);
+        } catch (e) {
+          dl.error = _cancel ? 'peruttu' : '$e';
+          failed.add(dl);
+        }
+        notifyListeners();
       }
+    } finally {
+      _client = null;
+      if (clientOverride == null) client.close();
+      downloads.clear();
       notifyListeners();
     }
-    downloads.removeWhere((_, v) => v.done);
-    notifyListeners();
+    return failed;
   }
 
-  void cancel() => _cancel = true;
+  http.Client? _client;
+
+  /// Keskeyttää latauksen heti, myös jumittuneen (yhteys suljetaan).
+  void cancel() {
+    _cancel = true;
+    if (clientOverride == null) _client?.close();
+  }
 
   Future<void> _fetch(http.Client client, String base, MapPack x, MapDownload dl) async {
     final d = await dir();
     final part = File(p.join(d.path, '${x.file}.part'));
-    final res = await client.send(http.Request('GET', Uri.parse('$base${x.file}')));
+    final res = await client.send(http.Request('GET', Uri.parse('$base${x.file}'))).timeout(_stall);
     if (res.statusCode != 200) throw HttpException('HTTP ${res.statusCode}');
     final sink = part.openWrite();
     final digest = _DigestSink();
     final hasher = sha256.startChunkedConversion(digest);
     try {
-      await for (final chunk in res.stream) {
+      await for (final chunk in res.stream.timeout(_stall)) {
         if (_cancel) throw const HttpException('peruttu');
         sink.add(chunk);
         hasher.add(chunk);
@@ -290,6 +338,7 @@ class MapStore extends ChangeNotifier {
       await sink.close();
       hasher.close();
       if (digest.value.toString() != x.sha256) throw const FormatException('tarkiste ei täsmää');
+      await _open.remove(x.file)?.close(); // päivitys: vanha tiedosto suljetaan ennen korvaamista
       await part.rename(p.join(d.path, x.file));
     } catch (_) {
       await sink.close().catchError((_) {});
@@ -415,13 +464,8 @@ class MapStore extends ChangeNotifier {
     return out;
   }
 
-  /// Päivittää vanhentuneet kartat (lataa uuden version vanhan tilalle).
-  Future<void> update(List<MapPack> packs) async {
-    for (final x in packs) {
-      installed.remove(x.file);
-    }
-    await download(packs);
-  }
+  /// Päivittää vanhentuneet kartat (lataa uuden version vanhan tilalle; epäonnistuessa vanha jää käyttöön).
+  Future<List<MapDownload>> update(List<MapPack> packs) => download(packs, replace: true);
 
   /// Poistaa yhden ladatun kartan tiedostonimellä (myös tuodut ja yleiskartta).
   Future<void> deleteFile(String file) async {
@@ -438,6 +482,7 @@ class MapStore extends ChangeNotifier {
     for (final f in [...installed]) {
       await deleteFile(f);
     }
+    await _scan(); // myös keskeneräisten latausten jäänteet
   }
 
   Future<void> delete(MapPack x) => deleteFile(x.file);
