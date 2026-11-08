@@ -276,7 +276,7 @@ const injuryRegions = <InjuryRegion>[
       "Maastaveto": "Rack pull",
       "Kulmasoutu": "Soutu laitteessa",
       "Pendlay-soutu": "Soutu laitteessa",
-      "T-tankosoutu": "Käsipainosoutu",
+      "T-tankosoutu": "Rintatuettu kulmasoutu käsipainoilla",
       "Venäläinen twisti": "Pallof press",
       "Vatsarutistus": "Lankku",
       "Pystypunnerrus": "Olkapääprässi laitteessa",

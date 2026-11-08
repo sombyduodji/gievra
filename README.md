@@ -83,7 +83,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - tallennetut ohjelmat: vaihda ohjelmaa milloin vain, treenihistoria säilyy
 
 **Liikkeet ja ohjeet**
-- 147 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula (myös kahdella kuulalla) ja kehonpaino
+- 148 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula (myös kahdella kuulalla) ja kehonpaino
 - *Näin teet*: liikeanimaatio ja tekniikkavinkit jokaiselle liikkeelle
 - oikea mittaustapa: lankku sekunteina, askelkyykkykävely askelina, kannot edestakaisina
 
@@ -105,6 +105,15 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - juoksulle oma kehitysnäkymä, erillään salista: lenkin tyyppi (kevyt, palauttava, pitkä, vauhtikestävyys,
   intervallit, kisavauhti, kilpailu), tarkka aika, vauhti min/km ja keskinopeus, kilometrit viikoittain, kevyiden
   lenkkien vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km, puolimaraton, maraton)
+
+**GPS ja offline-kartat (valinnainen)**
+- juoksussa, kävelyssä ja pyöräilyssä valitaan *📍 GPS-tila* tai *Manuaalinen* (esim. juoksumatolla); manuaalisessa
+  tilassa ajanotto, ja aikaa ja matkaa voi korjata kellon tiedoista
+- huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana; paikallaanolo ei kasvata matkaa
+- tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita; keskeytynyt tallennus palautuu
+- reitti näkyy kartalla ja tallentuu `.gpx`-tiedostona treenin viereen
+- OpenStreetMap-kartat kunnittain ilman verkkoyhteyttä: lataus säteen mukaan (juoksu ja kävely 20 km, pyöräily
+  100 km, säädettävä), omat kunnat tai koko Suomi; tuonti tiedostosta; ladattujen karttojen poisto ja päivitys
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
@@ -141,6 +150,12 @@ käännöskorjaukset:
 Gievra on vapaa ohjelma [GNU GPL v3.0](LICENSE) -lisenssillä: saat käyttää, tutkia, muokata ja jakaa sitä,
 kunhan muokatut versiot jaetaan samalla lisenssillä. Sovelluksen käyttämien kirjastojen ja fonttien lisenssit
 näkyvät sovelluksessa (☰ → Tietoa → Avoin lähdekoodi ja lisenssit).
+
+**Kartat:** ladattavat karttapaketit perustuvat OpenStreetMap-aineistoon (© OpenStreetMap contributors) ja
+ovat [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) -lisenssin alaisia (sovelluksen koodista
+erillisinä tiedostoina). Rannikot ja rajat pienillä mittakaavoilla: Natural Earth (public
+domain). Kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Paketit tehdään työkalulla
+`tools/map_extract.py`.
 
 Rakentaminen (Flutter):
 

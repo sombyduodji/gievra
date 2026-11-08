@@ -27,9 +27,47 @@ class _Attachment {
   final String name;
   final String path; // tiedosto levyllä (kopioidaan välimuistiin lähetettäessä)
   bool on;
-  final bool sensitive; // terveystietoa (punnitukset): varoitus ja oletuksena pois
-  _Attachment(this.name, this.path, {this.on = true, this.sensitive = false});
+  final String? warning; // arkaluonteinen (punnitukset, GPS-reitti): varoitus ja oletuksena pois
+  _Attachment(this.name, this.path, {this.on = true, this.warning});
 }
+
+/// Vikailmoituksen oletusliitteet (nimi, polku, valittuna, varoitus): kolme viimeisintä treeniä, niiden GPS-reitit
+/// (oletuksena pois, varoituksen kera), asetukset ja ohjelma sekä punnitukset (oletuksena pois).
+Future<List<(String, String, bool, String?)>> defaultReportAttachments() async {
+  final root = (await store.rootDir()).path;
+  final out = <(String, String, bool, String?)>[];
+  final recent = [...store.workouts]..sort((a, b) => b.date.compareTo(a.date));
+  for (final w in recent.take(3)) {
+    final rel = workoutPath(w.date, w.session);
+    final f = File(p.join(root, rel));
+    if (await f.exists()) out.add((p.basename(rel), f.path, true, null));
+    // GPS-reitti näyttää, missä liikuit: mukana valittavana, oletuksena pois ja varoituksen kera.
+    if (w.route != null) {
+      final g = File(p.join(root, routeRel(w)));
+      if (await g.exists()) out.add((w.route!, g.path, false, _gpxWarning));
+    }
+  }
+  for (final n in ['asetukset.md', 'ohjelma.md']) {
+    final f = File(p.join(root, n));
+    if (await f.exists()) out.add((n, f.path, true, null));
+  }
+  // Punnitukset ovat terveystietoa: mukana valittavana, mutta oletuksena pois ja varoituksen kera.
+  final body = File(p.join(root, bodyFileName));
+  if (await body.exists()) {
+    out.add((
+      bodyFileName,
+      body.path,
+      false,
+      t('⚠ Sisältää punnituksesi ja pituutesi (terveystietoa). Lähetä vain, jos ongelma liittyy painoon.'),
+    ));
+  }
+  return out;
+}
+
+String get _gpxWarning => t(
+  '⚠ Sisältää GPS-reitin: se näyttää, missä liikuit (esim. kodin lähellä). Lähetä vain, jos ongelma liittyy '
+  'reittiin, matkaan tai GPS:ään.',
+);
 
 class _BugReportScreenState extends State<BugReportScreen> {
   static const _channel = MethodChannel('fi.somby.gievra/email');
@@ -53,35 +91,24 @@ class _BugReportScreenState extends State<BugReportScreen> {
     _addDefaults();
   }
 
-  /// Oletusliitteet: kolme viimeisintä treeniä sekä asetukset ja ohjelma, jos ne ovat olemassa.
   Future<void> _addDefaults() async {
-    final root = (await store.rootDir()).path;
-    final recent = [...store.workouts]..sort((a, b) => b.date.compareTo(a.date));
-    for (final w in recent.take(3)) {
-      final rel = workoutPath(w.date, w.session);
-      final f = File(p.join(root, rel));
-      if (await f.exists()) _files.add(_Attachment(p.basename(rel), f.path));
+    for (final (name, path, on, warning) in await defaultReportAttachments()) {
+      _files.add(_Attachment(name, path, on: on, warning: warning));
     }
-    for (final n in ['asetukset.md', 'ohjelma.md']) {
-      final f = File(p.join(root, n));
-      if (await f.exists()) _files.add(_Attachment(n, f.path));
-    }
-    // Punnitukset ovat terveystietoa: mukana valittavana, mutta oletuksena pois ja varoituksen kera.
-    final body = File(p.join(root, bodyFileName));
-    if (await body.exists()) _files.add(_Attachment(bodyFileName, body.path, on: false, sensitive: true));
     if (mounted) setState(() {});
   }
 
   Future<void> _pick({required bool images}) async {
     final picked = await FilePicker.pickFiles(
-      dialogTitle: images ? t('Valitse kuvakaappaukset') : t('Valitse .md-tiedostot'),
+      dialogTitle: images ? t('Valitse kuvakaappaukset') : t('Valitse .md- tai .gpx-tiedostot'),
       type: images ? FileType.image : FileType.any,
     );
     for (final f in picked) {
       final path = f.path;
       if (path == null) continue;
-      if (!images && !f.name.toLowerCase().endsWith('.md')) continue;
-      _files.add(_Attachment(f.name, path));
+      final lower = f.name.toLowerCase();
+      if (!images && !lower.endsWith('.md') && !lower.endsWith('.gpx')) continue;
+      _files.add(_Attachment(f.name, path, on: true, warning: lower.endsWith('.gpx') ? _gpxWarning : null));
     }
     setState(() {});
   }
@@ -196,16 +223,13 @@ class _BugReportScreenState extends State<BugReportScreen> {
               value: a.on,
               onChanged: (v) => setState(() => a.on = v ?? false),
               title: Text(a.name),
-              subtitle: a.sensitive
-                  ? Text(
-                      t(
-                        '⚠ Sisältää punnituksesi ja pituutesi (terveystietoa). Lähetä vain, jos ongelma liittyy painoon.',
-                      ),
-                      style: TextStyle(fontSize: 12, color: cs.error),
-                    )
-                  : null,
+              subtitle: a.warning == null ? null : Text(a.warning!, style: TextStyle(fontSize: 12, color: cs.error)),
               secondary: Icon(
-                a.name.toLowerCase().endsWith('.md') ? Icons.description_outlined : Icons.image_outlined,
+                a.name.toLowerCase().endsWith('.md')
+                    ? Icons.description_outlined
+                    : a.name.toLowerCase().endsWith('.gpx')
+                    ? Icons.route_outlined
+                    : Icons.image_outlined,
                 size: 20,
               ),
             ),
@@ -215,7 +239,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
               OutlinedButton.icon(
                 onPressed: () => _pick(images: false),
                 icon: const Icon(Icons.note_add_outlined, size: 18),
-                label: Text(t('Lisää .md-tiedosto')),
+                label: Text(t('Lisää tiedosto (.md, .gpx)')),
               ),
               OutlinedButton.icon(
                 onPressed: () => _pick(images: true),

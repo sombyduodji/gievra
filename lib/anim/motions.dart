@@ -91,6 +91,7 @@ Motion _benchPress({
   return Motion(
     anchor: Anchor.hip,
     implement: imp,
+    straightHands: true,
     props: floor
         ? const []
         : [Prop(rect: const Rect.fromLTRB(.18, .63, .78, .68), rotate: incline), _benchLegs, _benchLegs2],
@@ -110,6 +111,7 @@ final _dbIncline = _benchPress(torso: -125, incline: 25, imp: Implement.dumbbell
 Motion _ohp({Implement imp = Implement.barbell, bool seated = false}) => Motion(
   anchor: seated ? Anchor.hip : Anchor.feet,
   implement: imp,
+  straightHands: true,
   props: seated ? const [_seat, _seatPost] : const [],
   start: Pose(
     torso: 180,
@@ -135,6 +137,7 @@ final _machinePress = _ohp(imp: Implement.machine, seated: true);
 final _pushPress = Motion(
   anchor: Anchor.feet,
   implement: Implement.barbell,
+  straightHands: true,
   seconds: 1.8,
   start: const Pose(torso: 180, thigh: 20, shin: -18, arm: 35, fore: 170, anchorAt: Offset(.5, _floor)),
   end: const Pose(torso: 180, arm: 178, fore: 180, anchorAt: Offset(.5, _floor)),
@@ -173,6 +176,19 @@ Motion _bentRow({Implement imp = Implement.barbell, double torso = 115}) => Moti
 final _barbellRow = _bentRow();
 final _pendlay = _bentRow(torso: 100);
 final _dbRow = _bentRow(imp: Implement.dumbbell, torso: 105);
+// Rintatuettu kulmasoutu: vatsallaan vinopenkillä (~40°), rinta tukea vasten, käsipainot suorista käsistä
+// kyynärpäät ylös ja taakse. Jalat maassa penkin takana.
+final _chestSupportedRow = Motion(
+  anchor: Anchor.feet,
+  implement: Implement.dumbbell,
+  // Penkki rintakehän alla vartalon suuntaisesti (lantio ~(.42, .47), olkapää ~(.65, .28)); yksi jalka keskellä.
+  props: const [
+    Prop(rect: Rect.fromLTRB(.41, .41, .77, .46), rotate: -40),
+    Prop(rect: Rect.fromLTRB(.57, .45, .605, .92)),
+  ],
+  start: const Pose(torso: 130, thigh: -30, shin: -5, arm: 0, fore: 0, anchorAt: Offset(.28, _floor)),
+  end: const Pose(torso: 130, thigh: -30, shin: -5, arm: -60, fore: 5, anchorAt: Offset(.28, _floor)),
+);
 final _seatedRow = Motion(
   anchor: Anchor.hip,
   implement: Implement.cable,
@@ -799,12 +815,16 @@ final _uprightRow = Motion(
   start: const Pose(torso: 180, arm: 0, fore: 0, anchorAt: Offset(.5, _floor)),
   end: const Pose(torso: 180, arm: 125, fore: -15, anchorAt: Offset(.5, _floor)),
 );
+// Face pull: talja kasvojen korkeudella tai hieman pään yläpuolella. Köysi vedetään otsaa kohti, kyynärpäät
+// korkealla ja ulos; kädet erkanevat korvien viereen (ulkokierto) kuin laittaisi aurinkolasit päähän.
+// Lopussa olkavarsi osoittaa sivulle ja taakse, joten sivukuvassa se näkyy lyhyenä.
 final _facePull = Motion(
   anchor: Anchor.feet,
   implement: Implement.cable,
-  cableFrom: const Offset(.95, .3),
-  start: const Pose(torso: 175, thigh: 10, shin: -10, arm: 88, fore: 88, anchorAt: Offset(.4, _floor)),
-  end: const Pose(torso: 178, thigh: 10, shin: -10, arm: 80, fore: 165, anchorAt: Offset(.4, _floor)),
+  cableFrom: const Offset(.95, .05),
+  straightHands: true,
+  start: const Pose(torso: 178, thigh: 10, shin: -10, arm: 115, fore: 115, anchorAt: Offset(.4, _floor)),
+  end: const Pose(torso: 180, thigh: 10, shin: -10, arm: -100, armLen: .3, fore: 168, anchorAt: Offset(.4, _floor)),
 );
 final _externalRotation = Motion(
   anchor: Anchor.feet,
@@ -994,6 +1014,7 @@ final Map<String, Motion> exerciseMotions = {
   'Pendlay-soutu': _pendlay,
   'T-tankosoutu': _barbellRow,
   'Käsipainosoutu': _dbRow,
+  'Rintatuettu kulmasoutu käsipainoilla': _chestSupportedRow,
   'Alatalja': _seatedRow,
   'Soutu laitteessa': _seatedRow,
   'Leuanveto': _pullUp,

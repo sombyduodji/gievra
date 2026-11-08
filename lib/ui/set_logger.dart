@@ -363,15 +363,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 ],
               ),
             ),
-          SectionLabel(
-            e.name == 'Farmer walk'
-                ? t('Paino per käsi')
-                : pairedKettlebell.contains(e.name)
-                ? t('Paino per kuula (2 kuulaa)')
-                : _m == Measure.reps
-                ? t('Paino')
-                : t('Lisäpaino (0 = oma paino)'),
-          ),
+          SectionLabel(weightTitle(e.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)'))),
           ValueStepper(
             value: fmtNum(_kg),
             unit: 'kg',
@@ -382,6 +374,15 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
             },
           ),
+          if (weightTotal(e.name, _kg) != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                weightTotal(e.name, _kg)!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ),
           SectionLabel(
             t(_m.label)[0].toUpperCase() +
                 t(_m.label).substring(1) +
@@ -478,9 +479,22 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               child: Text(t('Tallenna vastaamatta'), style: const TextStyle(fontSize: 15)),
             ),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(t('Valmis'))),
+            // Erotinviiva: sarjan tallennus yllä, liikkeen lopetus alla.
+            const Divider(height: 24),
+            // Yhtä iso kuin yllä oleva painike, vihreä (tehty).
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Sami.green,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                // Liike valmis: tämän liikkeen palautusta ei enää tarvita (ei muistutusta sarjojen väliin).
+                if (rest.running && rest.exercise == e.name) rest.stop();
+                Navigator.pop(context, true);
+              },
+              icon: const Icon(Icons.check),
+              label: Text(t('Merkitse liike valmiiksi'), style: const TextStyle(fontSize: 15)),
             ),
           ],
           const SizedBox(height: 12),
@@ -585,15 +599,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             t('Korjaa sarja {0}', [widget.index + 1]),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
-          SectionLabel(
-            widget.name == 'Farmer walk'
-                ? t('Paino per käsi')
-                : pairedKettlebell.contains(widget.name)
-                ? t('Paino per kuula (2 kuulaa)')
-                : _m == Measure.reps
-                ? t('Paino')
-                : t('Lisäpaino (0 = oma paino)'),
-          ),
+          SectionLabel(weightTitle(widget.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)'))),
           ValueStepper(
             value: fmtNum(_kg),
             unit: 'kg',
@@ -604,6 +610,15 @@ class _EditSetSheetState extends State<_EditSetSheet> {
               if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
             },
           ),
+          if (weightTotal(widget.name, _kg) != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                weightTotal(widget.name, _kg)!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ),
           SectionLabel(t(_m.label)[0].toUpperCase() + t(_m.label).substring(1)),
           ValueStepper(
             value: '$_reps',
@@ -647,3 +662,22 @@ class _EditSetSheetState extends State<_EditSetSheet> {
     );
   }
 }
+
+/// Painokentän otsikko käsipaino- ja kahvakuulaliikkeissä (null = tavallinen otsikko).
+String? weightTitle(String exercise) {
+  if (pairedKettlebell.contains(exercise)) return t('Paino per kuula (2 kuulaa)');
+  if (exercise == 'Farmer walk' || exercise == 'Renegade-soutu') return t('Paino per käsi (2 painoa)');
+  if (pairedDumbbell.contains(exercise)) return t('Paino per käsipaino (2 käsipainoa)');
+  if (kettlebellOnly(exercise)) return t('Paino per kuula');
+  if (singleWeight.contains(exercise)) {
+    final eq = exerciseEquipment[exercise] ?? const {};
+    return eq.contains(Equip.kahvakuula) ? t('Paino (yksi käsipaino tai kuula)') : t('Paino per käsipaino');
+  }
+  return null;
+}
+
+/// Kahdella painolla: kokonaispaino näkyviin kentän alle.
+String? weightTotal(String exercise, double kg) =>
+    kg > 0 && (pairedKettlebell.contains(exercise) || pairedDumbbell.contains(exercise))
+    ? t('Molemmissa käsissä · yhteensä {0} kg', [fmtNum(kg * 2)])
+    : null;

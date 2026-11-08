@@ -25,3 +25,11 @@ const String? googleWebClientId = null; // asetetaan, kun Drive-synkronointi jul
 /// Google Drive -synkronointi julkaisussa. false = valikossa "tulossa", ei taustasynkronointia.
 /// Koodi ja testit ovat valmiina (lib/sync/); kytke päälle, kun ominaisuus julkaistaan.
 const bool syncReleased = false;
+
+/// Karttojen lähteet ja lisenssit (ks. tools/map_extract.py). Kartan kulmassa näkyy aina [osm], joka avaa
+/// [osmUrl]; Tietoa-ikkunassa on koko lista. Tekijänoikeusmerkintää ei käännetä.
+class MapCredits {
+  static const osm = '© OpenStreetMap contributors';
+  static const osmUrl = 'https://www.openstreetmap.org/copyright';
+  static const odblUrl = 'https://opendatacommons.org/licenses/odbl/1-0/';
+}

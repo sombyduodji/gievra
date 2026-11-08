@@ -72,6 +72,7 @@ const slots = <String, Slot>{
 
 /// Liikemallit liikkeille, jotka eivät ole minkään paikan oletuslistassa.
 const _extraSlot = <String, String>{
+  'Rintatuettu kulmasoutu käsipainoilla': 'VVE',
   'Sumomaastaveto': 'LON',
   'Low bar -kyykky': 'KYY',
   'Askelkyykkykävely': 'YKS',

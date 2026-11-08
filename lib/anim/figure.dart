@@ -15,6 +15,7 @@ enum Implement { none, barbell, dumbbell, cable, machine, kettlebell }
 class Pose {
   final double torso, thigh, shin, arm, fore;
   final double? thigh2, shin2, arm2, fore2; // toinen raaja (askelkyykky, kävely); oletus sama
+  final double armLen; // olkavarren näkyvä pituus (1 = koko; alle 1, kun käsivarsi osoittaa sivulle kohti katsojaa)
   final Offset anchorAt; // kiinnityspiste (0..1 × 0..1), lattia y = 0.92
   const Pose({
     this.torso = 180,
@@ -26,6 +27,7 @@ class Pose {
     this.shin2,
     this.arm2,
     this.fore2,
+    this.armLen = 1,
     this.anchorAt = const Offset(.5, .92),
   });
 
@@ -43,6 +45,7 @@ class Pose {
     shin2: _ln(shin2, o.shin2, shin, o.shin, t),
     arm2: _ln(arm2, o.arm2, arm, o.arm, t),
     fore2: _ln(fore2, o.fore2, fore, o.fore, t),
+    armLen: _l(armLen, o.armLen, t),
     anchorAt: Offset.lerp(anchorAt, o.anchorAt, t)!,
   );
 }
@@ -64,6 +67,10 @@ class Motion {
   final bool bothArmsHold; // tanko molemmissa käsissä (piirretään yksi levy)
   final double seconds; // yksi toisto
   final double scale; // pienennys lattian keskipisteen ympäri, jotta pään yli -liikkeet mahtuvat
+
+  /// Kädet (tanko) kulkevat suoraa linjaa alku- ja loppuasennon välillä, ja kyynärpää lasketaan siitä
+  /// (punnerrukset: tanko ei kaarra sivulle, vaikka olkavarren kulma muuttuu paljon).
+  final bool straightHands;
   const Motion({
     required this.anchor,
     required this.start,
@@ -74,7 +81,57 @@ class Motion {
     this.bothArmsHold = true,
     this.seconds = 2.4,
     this.scale = .8,
+    this.straightHands = false,
   });
+
+  /// Asento hetkellä t (0 = alku, 1 = loppu).
+  Pose at(double t) {
+    final p = start.lerp(end, t);
+    if (!straightHands) return p;
+    // Ranteen paikka olkapäästä: suora viiva alku- ja loppuasennon välillä.
+    Offset wrist(Pose q) => _dir(q.arm) * _arm * q.armLen + _dir(q.fore) * _fore;
+    final w0 = wrist(start), w1 = wrist(end);
+    final target = w0 + (w1 - w0) * t;
+    // Kyynärvarsi pysyy alku- ja loppuasennon suunnassa (punnerruksissa lähes pystyssä, kyynärpää tangon alla).
+    // Olkavarsi osoittaa liikkeen keskellä sivulle, joten sivukuvassa se näkyy lyhyempänä.
+    final elbow = target - _dir(p.fore) * _fore;
+    final len = elbow.distance;
+    double arm, fore = p.fore, armLen;
+    if (len <= _arm) {
+      arm = len < 1e-3 ? p.arm : _deg(elbow);
+      armLen = (len / _arm).clamp(.05, 1.0);
+    } else {
+      (arm, fore) = _reach(target, p.fore);
+      armLen = 1;
+    }
+    return Pose(
+      torso: p.torso,
+      thigh: p.thigh,
+      shin: p.shin,
+      arm: arm,
+      fore: fore,
+      thigh2: p.thigh2,
+      shin2: p.shin2,
+      armLen: armLen,
+      anchorAt: p.anchorAt,
+    );
+  }
+}
+
+double _deg(Offset v) => math.atan2(v.dx, v.dy) * 180 / math.pi;
+
+/// Kahden nivelen käänteiskinematiikka: olkavarren ja kyynärvarren kulmat, joilla ranne on pisteessä [v]
+/// (olkapäästä). Kahdesta ratkaisusta valitaan se, jossa kyynärvarsi on lähimpänä tavallista suuntaa
+/// [foreHint] (punnerruksissa kyynärvarsi pysyy lähes pystyssä ja kyynärpää tangon alla).
+(double, double) _reach(Offset v, double foreHint) {
+  final d = v.distance.clamp((_arm - _fore).abs() + 1e-4, _arm + _fore - 1e-4);
+  final phi = _deg(v);
+  final cosA = ((_arm * _arm + d * d - _fore * _fore) / (2 * _arm * d)).clamp(-1.0, 1.0);
+  final alpha = math.acos(cosA) * 180 / math.pi;
+  double diff(double a) => ((a - foreHint + 540) % 360 - 180).abs();
+  (double, double) sol(double arm) => (arm, _deg(v - _dir(arm) * _arm));
+  final s1 = sol(phi + alpha), s2 = sol(phi - alpha);
+  return diff(s1.$2) <= diff(s2.$2) ? s1 : s2;
 }
 
 // Segmenttien pituudet (kuvan korkeus = 1).
@@ -111,9 +168,9 @@ Joints solve(Pose p, Anchor a) {
   final an = kn + _dir(p.shin) * _shin;
   final kn2 = hip0 + _dir(p.thigh2 ?? p.thigh) * _thigh;
   final an2 = kn2 + _dir(p.shin2 ?? p.shin) * _shin;
-  final el = sh + _dir(p.arm) * _arm;
+  final el = sh + _dir(p.arm) * _arm * p.armLen;
   final wr = el + _dir(p.fore) * _fore;
-  final el2 = sh + _dir(p.arm2 ?? p.arm) * _arm;
+  final el2 = sh + _dir(p.arm2 ?? p.arm) * _arm * p.armLen;
   final wr2 = el2 + _dir(p.fore2 ?? p.fore) * _fore;
   final ref = switch (a) {
     Anchor.feet => an,
@@ -137,7 +194,7 @@ class FigurePainter extends CustomPainter {
     final k = m.scale;
     // Skaalaus lattian keskipisteen (0.5, 0.925) ympäri: lattia pysyy paikallaan.
     Offset P(Offset o) => Offset(ox + (.5 + (o.dx - .5) * k) * s, (.925 + (o.dy - .925) * k) * s);
-    final pose = m.start.lerp(m.end, t);
+    final pose = m.at(t);
     final j = solve(pose, m.anchor);
 
     // Lattia

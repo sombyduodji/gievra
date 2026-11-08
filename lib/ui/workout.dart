@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../rest.dart';
 import '../app_state.dart';
 import '../models.dart';
 import '../program.dart';
@@ -34,6 +35,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Workout get w => widget.workout;
   late final _notes = TextEditingController(text: w.notes);
   Timer? _tick;
+  Timer? _notesSave;
 
   bool get _isToday => w.date == dateOnly(DateTime.now());
 
@@ -47,6 +49,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     if (_isToday && w.started != null) {
       _tick = Timer.periodic(const Duration(seconds: 30), (_) => mounted ? setState(() {}) : null);
     }
+    // Muistiinpanot tallentuvat 2 s kirjoittamisen jälkeen (ei vasta kentästä poistuttaessa).
+    _notes.addListener(() {
+      _notesSave?.cancel();
+      _notesSave = Timer(const Duration(seconds: 2), _save);
+    });
   }
 
   int? get _elapsed {
@@ -93,7 +100,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Future<void> _log(ExerciseEntry e) async {
     final it = _planItem(e.name);
     final p = settings.program;
-    await Navigator.of(context).push(
+    final doneNow = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => SetLoggerScreen(
           date: w.date,
@@ -106,8 +113,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
     w.exercises.removeWhere((x) => x.sets.isEmpty && x != e);
     if (e.sets.isEmpty) w.exercises.remove(e);
+    if (doneNow == true && e.sets.isNotEmpty) w.doneMoves.add(e.name);
     setState(() {});
     await _save();
+  }
+
+  /// Liike tehty: merkitty valmiiksi tai ohjelman työsarjat täynnä.
+  bool _isDone(ExerciseEntry e) {
+    if (w.doneMoves.contains(e.name)) return true;
+    final it = _planItem(e.name);
+    return it != null && e.workSets.length >= it.sets;
   }
 
   Future<void> _rename() async {
@@ -130,6 +145,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   Future<void> _finish() async {
+    rest.stop(); // treeni valmis: ei palautusmuistutusta
     if (_isToday && _elapsed != null && !w.watchTime) w.minutes = _elapsed; // kellon kesto voittaa ajastimen
     await _save();
     if (!mounted) return;
@@ -156,6 +172,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   void dispose() {
     _tick?.cancel();
+    _notesSave?.cancel();
     w.notes = _notes.text;
     if (!w.isEmpty) store.save(w);
     _notes.dispose();
@@ -267,6 +284,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       children: [
                         Row(
                           children: [
+                            if (_isDone(e))
+                              const Padding(
+                                padding: EdgeInsets.only(right: 8),
+                                child: Icon(Icons.check_circle, color: Sami.green, size: 22),
+                              ),
                             Expanded(
                               child: ExName(e.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                             ),

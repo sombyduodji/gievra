@@ -84,6 +84,9 @@ class Workout {
 
   /// Päivän syyt (väsynyt, huonosti nukuttu …): seuraavalla kerralla ei nosteta painoja niiden takia.
   List<String> dayReasons = [];
+
+  /// Liikkeet, jotka on merkitty valmiiksi (Merkitse liike valmiiksi).
+  Set<String> doneMoves = {};
   String? programDay; // ohjelmapäivän pysyvä nimi (esim. "Koko keho A"), vaikka otsikko olisi oma
   int session; // saman päivän treenin numero: 1 = vvvv-kk-pp.md, 2 = vvvv-kk-pp-2.md …
   String? activity; // urheilulaji tai liikunta (esim. Juoksu); null = salitreeni
@@ -94,6 +97,12 @@ class Workout {
   int? kcal, hrAvg, hrMax; // sykemittarin tai älykellon tiedot (valinnainen)
   int? steps; // askeleet (kävely ja muut kävelylajit, valinnainen)
   bool watchTime; // kesto tuli kellosta (ei sovelluksen ajastimesta)
+
+  /// GPS-reitin tiedostonimi (.gpx samassa kansiossa kuin .md), esim. 2026-11-08-2.gpx.
+  String? route;
+
+  /// Tallentamaton reitti GPX-tekstinä: kirjoitetaan tiedostoksi, kun treeni tallennetaan (ei .md:hen).
+  String? routeGpx;
 
   Workout({
     required DateTime date,
@@ -237,6 +246,7 @@ String workoutToMarkdown(Workout w) {
   if (w.seconds != null) b.writeln('time: ${fmtDurationSec(w.seconds!)}');
   if (w.runType != null) b.writeln('run_type: ${w.runType}');
   if (w.steps != null) b.writeln('steps: ${w.steps}');
+  if (w.route != null) b.writeln('route: ${w.route}');
   if (w.kcal != null) b.writeln('kcal: ${w.kcal}');
   if (w.hrAvg != null) b.writeln('hr_avg: ${w.hrAvg}');
   if (w.hrMax != null) b.writeln('hr_max: ${w.hrMax}');
@@ -247,6 +257,7 @@ String workoutToMarkdown(Workout w) {
     );
   }
   if (w.dayReasons.isNotEmpty) b.writeln('day_feeling: ${w.dayReasons.join(', ')}');
+  if (w.doneMoves.isNotEmpty) b.writeln('done: ${w.doneMoves.join('; ')}');
   b
     ..writeln('tags: [treeni]')
     ..writeln('---')
@@ -360,6 +371,9 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   int? num(String k) => neg(k) ? null : int.tryParse(RegExp(r'\d+').firstMatch(meta[k] ?? '')?[0] ?? '');
   w.kcal = num('kcal');
   w.steps = num('steps');
+  // Reitti: vain tiedostonimi samasta kansiosta (ei polkuja).
+  final route = meta['route']?.trim();
+  if (route != null && RegExp(r'^[\w.-]+\.gpx$').hasMatch(route)) w.route = route;
   if (w.steps == 0) w.steps = null;
   w.hrAvg = num('hr_avg');
   w.hrMax = num('hr_max');
@@ -378,6 +392,10 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
     for (final r in (meta['day_feeling'] ?? '').split(','))
       if (r.trim().isNotEmpty) r.trim(),
   ];
+  w.doneMoves = {
+    for (final r in (meta['done'] ?? '').split(';'))
+      if (r.trim().isNotEmpty) exerciseRenames[r.trim()] ?? r.trim(),
+  };
   w.minutes = num('duration');
   w.seconds = parseDurationSec(meta['time'] ?? '');
   final rt = meta['run_type']?.trim();

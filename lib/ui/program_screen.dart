@@ -1,3 +1,5 @@
+import 'maxes_editor.dart';
+
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
@@ -57,6 +59,12 @@ class ProgramScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MaxesScreen())),
+                    icon: const Icon(Icons.emoji_events_outlined),
+                    label: Text(t('Muokkaa ennätyksiä')),
+                  ),
+                  const SizedBox(height: 8),
                   FilledButton(onPressed: intro, child: Text(t('Tee uusi ohjelma'))),
                   const SizedBox(height: 8),
                   const _SavedPrograms(),
