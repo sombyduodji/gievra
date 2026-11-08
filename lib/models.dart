@@ -98,6 +98,9 @@ class Workout {
   int? steps; // askeleet (kävely ja muut kävelylajit, valinnainen)
   bool watchTime; // kesto tuli kellosta (ei sovelluksen ajastimesta)
 
+  /// Kellon tietojen lähde, kun ne haettiin Health Connectista (esim. "Health Sync"; tyhjä = sovellusta ei tiedetä).
+  String? healthSource;
+
   /// GPS-reitin tiedostonimi (.gpx samassa kansiossa kuin .md), esim. 2026-11-08-2.gpx.
   String? route;
 
@@ -251,6 +254,9 @@ String workoutToMarkdown(Workout w) {
   if (w.kcal != null) b.writeln('kcal: ${w.kcal}');
   if (w.hrAvg != null) b.writeln('hr_avg: ${w.hrAvg}');
   if (w.hrMax != null) b.writeln('hr_max: ${w.hrMax}');
+  if (w.healthSource case final src?) {
+    b.writeln('watch_source: Health Connect${src.isEmpty ? '' : ' ($src)'}');
+  }
   if (w.feeling != null) b.writeln('feeling: ${w.feeling} ${feelingOf(w.feeling)!.$2} ${feelingOf(w.feeling)!.$3}');
   if (w.moveFeeling.isNotEmpty) {
     b.writeln(
@@ -379,6 +385,8 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   w.hrAvg = num('hr_avg');
   w.hrMax = num('hr_max');
   w.watchTime = (meta['duration'] ?? '').contains('kello');
+  final src = RegExp(r'^Health Connect(?: \((.*)\))?$').firstMatch(meta['watch_source']?.trim() ?? '');
+  if (src != null) w.healthSource = src[1] ?? '';
   final day = meta['day']?.trim();
   if (day != null && day.isNotEmpty) w.programDay = day;
   w.feeling = int.tryParse(RegExp(r'^\d').firstMatch(meta['feeling'] ?? '')?[0] ?? '');

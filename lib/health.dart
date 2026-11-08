@@ -90,6 +90,7 @@ void applyCandidate(Workout w, HealthCandidate c, {bool steps = false}) {
   if (c.hrMax != null) w.hrMax = c.hrMax;
   if (c.kcal != null) w.kcal = c.kcal;
   if (steps && (c.steps ?? 0) > 0) w.steps = c.steps;
+  w.healthSource = c.app;
 }
 
 /// Kanava Android-puolelle (HealthBridge.kt).

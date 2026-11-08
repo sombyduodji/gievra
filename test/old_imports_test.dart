@@ -44,4 +44,38 @@ void main() {
       expect(monthlyCounts(r.workouts, DateTime(2026, 10, 31), months: 12).last, (DateTime(2026, 10), 2, 1));
     });
   }
+
+  test('v0.2.9 (GPS, kellon tiedot, valmiit liikkeet): kaikki kentät luetaan ja tiedostot pysyvät samoina', () {
+    final files = _files('v0.2.9');
+    final r = readMdFiles(files);
+    expect(r.workouts.length, 3);
+    for (final w in r.workouts) {
+      final path = files.keys.firstWhere(
+        (k) => k.endsWith('${isoDate(w.date)}${w.session > 1 ? '-${w.session}' : ''}.md'),
+      );
+      expect(workoutToMarkdown(w), files[path], reason: path);
+    }
+    final gym = r.workouts.firstWhere((w) => w.activity == null);
+    expect((gym.minutes, gym.watchTime, gym.kcal, gym.hrAvg, gym.hrMax, gym.feeling), (58, true, 410, 118, 161, 4));
+    expect(gym.doneMoves, {'Takakyykky'});
+    expect(gym.exercises.first.sets.last.pr, isTrue);
+    expect(gym.healthSource, isNull);
+    final run = r.workouts.firstWhere((w) => w.activity == 'Juoksu');
+    expect(
+      (run.route, run.runType, run.intensity, run.seconds, run.distanceKm),
+      ('2026-11-04.gpx', 'kevyt', 'reipas', 1910, 6.1),
+    );
+    final walk = r.workouts.firstWhere((w) => w.activity == 'Kävely');
+    expect((walk.session, walk.steps, walk.kcal), (2, 4100, 160));
+  });
+
+  test('v0.3.2: Health Connectin lähde ja juoksun askeleet säilyvät', () {
+    final files = _files('v0.3.2');
+    final w = readMdFiles(files).workouts.single;
+    expect(
+      (w.healthSource, w.steps, w.hrAvg, w.hrMax, w.kcal, w.intensity),
+      ('Health Sync', 5600, 144, 157, 420, null),
+    );
+    expect(workoutToMarkdown(w), files.values.single);
+  });
 }
