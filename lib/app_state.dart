@@ -821,11 +821,16 @@ class IoTrainingFiles implements TrainingFiles {
     final dir = await store.rootDir();
     final out = <String, String>{};
     if (!await dir.exists()) return out;
-    await for (final e in dir.list(recursive: true, followLinks: false)) {
-      if (e is File && (e.path.endsWith('.md') || e.path.endsWith('.gmd'))) {
-        try {
-          out[p.relative(e.path, from: dir.path).replaceAll(r'\', '/')] = await e.readAsString();
-        } catch (_) {}
+    final files = <File>[
+      await for (final e in dir.list(recursive: true, followLinks: false))
+        if (e is File && (e.path.endsWith('.md') || e.path.endsWith('.gmd'))) e,
+    ];
+    // Luetaan 32 tiedostoa kerrallaan rinnakkain: satojen treenien kansio aukeaa nopeammin kuin yksi kerrallaan.
+    for (var i = 0; i < files.length; i += 32) {
+      final chunk = files.sublist(i, i + 32 > files.length ? files.length : i + 32);
+      final texts = await Future.wait(chunk.map((f) => f.readAsString().then<String?>((t) => t, onError: (_) => null)));
+      for (var j = 0; j < chunk.length; j++) {
+        if (texts[j] != null) out[p.relative(chunk[j].path, from: dir.path).replaceAll(r'\', '/')] = texts[j]!;
       }
     }
     return out;

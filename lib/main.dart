@@ -20,11 +20,18 @@ import 'ui/onboarding.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Käynnistyksen ajoitus mittauksiin: --dart-define=STARTUP_TIMING=true
+  const timing = bool.fromEnvironment('STARTUP_TIMING');
+  final sw = Stopwatch()..start();
   await initializeDateFormatting('fi');
   await settings.load();
+  final tSettings = sw.elapsedMilliseconds;
   if (isDemo) await seedDemo();
   await store.reload();
+  final tStore = sw.elapsedMilliseconds;
   await sync.load();
+  // ignore: avoid_print
+  if (timing) print('STARTUP asetukset $tSettings ms, treenit ${tStore - tSettings} ms (${store.workouts.length})');
   // Palautus ohi: värinä, ääni ja lyhyt ilmoitus (vain kun sovellus on auki).
   rest.onDone = () {
     // Androidilla ilmoitus soittaa valitun äänen ja värisee; ilman ilmoituslupaa (tai verkossa) varalla tämä.

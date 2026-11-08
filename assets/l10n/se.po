@@ -173,7 +173,7 @@ msgstr "Kettlebell"
 
 #: lib/exercises.dart:642
 msgid "Kardio"
-msgstr "Kardio"
+msgstr "Gierdavašvuohta"
 
 #: lib/exercises.dart:643 lib/program.dart:326
 msgid "Koko keho"
@@ -430,7 +430,7 @@ msgid ""
 "tekniikka tai kardio."
 msgstr ""
 "Fápmoloktemis 4 beaivvi doarvái dán prográmmii. Lassebeaivvit: "
-"geahpas teknihkka dahje kardio."
+"geahpas teknihkka dahje gierdavašvuođahárjehallan."
 
 #: lib/program.dart:922
 msgid ""
@@ -459,7 +459,7 @@ msgstr ""
 #. {0} = d - 4
 #: lib/program.dart:937
 msgid "Rasvanpoltossa 4 salipäivää + {0} kevyttä kardiopäivää."
-msgstr "Buoiddi boaldimis 4 sállabeaivvi + {0} geahpas kardio-beaivvi."
+msgstr "Buoiddi boaldimis 4 sállabeaivvi + {0} geahpas gierdavašvuođabeaivvi."
 
 #: lib/program.dart:945
 msgid ""
@@ -469,7 +469,7 @@ msgid ""
 msgstr ""
 "Doala deattuid, ráidduid sáhttá leat unnit. Ulbmil −0,5–1 % "
 "rumašdeattus vahkus, proteiinna 1,6–2,2 g/kg. Dasa lassin 2–3 × 20–40 "
-"min geahpas kardio sála maŋŋá dahje eará áigge."
+"min geahpas gierdavašvuođahárjehallan sála maŋŋá dahje eará áigge."
 
 #: lib/program.dart:951
 msgid "Kestävyysliikuntaa 150–300 min viikossa (WHO)."
@@ -736,7 +736,7 @@ msgstr "ii geassin rattiid guvlui (suhkan) vahkus"
 
 #: lib/program_check.dart:170
 msgid "ei kyykkymallia"
-msgstr "ii kyykky-lihkadus"
+msgstr "ii kyykky-lihkadus (om. Takakyykky)"
 
 #: lib/program_check.dart:171
 msgid "ei lonkkasaranaa"
@@ -1382,7 +1382,7 @@ msgstr "Leaktogierdavašvuohta"
 
 #: lib/sports.dart:73
 msgid "Tempo: reipas, mutta hallittu"
-msgstr "Tempo: johtil, muhto stivrejuvvon"
+msgstr "Leaktu: johtil, muhto stivrejuvvon"
 
 #: lib/sports.dart:74
 msgid "intervallit"
@@ -2504,7 +2504,7 @@ msgstr "vahku ráidu"
 
 #: lib/ui/home.dart:511
 msgid "Kardio / keskivartalo"
-msgstr "Kardio / gaskarumaš"
+msgstr "Gierdavašvuohta / gaskarumaš"
 
 #: lib/ui/home.dart:513
 msgid "Ennätys"
@@ -2778,7 +2778,7 @@ msgstr ""
 
 #: lib/ui/import_export.dart:195
 msgid "Kardio/aika muistiinpanoihin"
-msgstr "Kardio/áigi notáhtaide"
+msgstr "Gierdavašvuohta/áigi notáhtaide"
 
 #: lib/ui/import_export.dart:196
 msgid "Uusia omia liikkeitä"
@@ -3134,7 +3134,9 @@ msgstr "Sálla mas lea buot"
 
 #: lib/ui/intro.dart:387
 msgid "Kyykyt, penkit ja soudut tangolla ja käsipainoilla"
-msgstr "Kyykyt, penkit ja soudut stákkuin ja giehtadeattuiguin"
+msgstr ""
+"Hárjehusat stákkuin ja giehtadeattuiguin (om. Takakyykky, "
+"Penkkipunnerrus, Kulmasoutu)"
 
 #: lib/ui/intro.dart:388
 msgid "Ohjatut liikeradat, helppo oppia ja säätää"
@@ -3142,7 +3144,9 @@ msgstr "Stivrejuvvon lihkadangeainnut, álki oahppat ja heivehit"
 
 #: lib/ui/intro.dart:389
 msgid "Heilautukset, rinnallevedot, ylösnousut, sopii myös kotiin"
-msgstr "Heilautukset, rinnallevedot ja ylösnousut, heive maiddái ruoktot"
+msgstr ""
+"Kettlebell-hárjehusat (om. swing, clean, get-up), heive maiddái "
+"ruoktot"
 
 #: lib/ui/intro.dart:390
 msgid ""
@@ -3703,7 +3707,7 @@ msgstr "Iežat hárjehus"
 
 #: lib/ui/picker.dart:53
 msgid "Liikkeen nimi, esim. Kaapelisoutu yhdellä kädellä"
-msgstr "Hárjehusa namma, om. Kaapelisoutu yhdellä kädellä"
+msgstr "Hárjehusa namma, om. Kábelsuhkan ovtta gieđain"
 
 #: lib/ui/picker.dart:56
 msgid "Lihasryhmä"
