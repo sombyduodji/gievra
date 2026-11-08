@@ -116,6 +116,9 @@ const fitnotesNames = {
   'Seated Cable Row': 'Alatalja',
   'Dumbbell Row': 'Käsipainosoutu',
   'One-Arm Dumbbell Row': 'Käsipainosoutu',
+  'Chest Supported Dumbbell Row': 'Rintatuettu kulmasoutu käsipainoilla',
+  'Chest-Supported Dumbbell Row': 'Rintatuettu kulmasoutu käsipainoilla',
+  'Incline Dumbbell Row': 'Rintatuettu kulmasoutu käsipainoilla',
   'T-Bar Row': 'T-tankosoutu',
   'Cable Face Pull': 'Face pull',
   'Face Pull': 'Face pull',
@@ -218,7 +221,7 @@ Future<Uint8List> exportZip() async {
   final archive = Archive();
   if (await root.exists()) {
     await for (final f in root.list(recursive: true, followLinks: false)) {
-      if (f is! File || !f.path.endsWith('.md')) continue;
+      if (f is! File || !(f.path.endsWith('.md') || f.path.endsWith('.gpx'))) continue;
       final rel = p.relative(f.path, from: root.path).replaceAll('\\', '/');
       archive.addFile(ArchiveFile.bytes('Treenit/$rel', await f.readAsBytes()));
     }
@@ -258,11 +261,16 @@ ImportResult readZip(List<int> bytes) {
   final archive = ZipDecoder().decodeBytes(bytes);
   final list = <Workout>[];
   String? settingsMd, programMd, bodyMd;
+  final routes = <String, String>{}; // reittitiedoston nimi -> GPX
   var sets = 0;
   for (final f in archive.files) {
     if (!f.isFile) continue;
     final base = p.basename(f.name);
     final text = utf8.decode(f.content, allowMalformed: true);
+    if (base.endsWith('.gpx')) {
+      routes[base] = text;
+      continue;
+    }
     if (base == settingsFileName) {
       settingsMd = text;
       continue;
@@ -282,6 +290,15 @@ ImportResult readZip(List<int> bytes) {
       sets += w.exercises.fold(0, (a, e) => a + e.sets.length);
       list.add(w);
     } catch (_) {}
+  }
+  // Reitit mukaan treeneille, joiden .md viittaa niihin; kirjoitetaan tallennettaessa (store.saveMany).
+  for (final w in list) {
+    final gpx = routes[w.route];
+    if (gpx != null) {
+      w.routeGpx = gpx;
+    } else {
+      w.route = null; // reittitiedosto puuttuu varmuuskopiosta
+    }
   }
   list.sort((a, b) => a.date.compareTo(b.date));
   return ImportResult(

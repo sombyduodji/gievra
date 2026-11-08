@@ -4,4 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Vain debug-käännös: emulaattoritestien paikallinen karttapalvelin (http). Julkaisu käyttää https:ää. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

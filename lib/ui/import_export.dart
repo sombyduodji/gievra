@@ -299,7 +299,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           tile(
             Icons.archive_outlined,
             t('Vie varmuuskopio (.zip)'),
-            t('Kaikki .md-tiedostot ja asetukset.md yhdessä zip-tiedostossa.'),
+            t('Kaikki .md-tiedostot, reitit (.gpx) ja asetukset.md yhdessä zip-tiedostossa.'),
             _export,
           ),
           tile(

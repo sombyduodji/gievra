@@ -225,6 +225,11 @@ const exerciseCues = <String, List<String>>{
     "Vedä käsipaino lantion suuntaan",
     "Kyynärpää lähellä kylkeä, ei kiertoa",
   ],
+  "Rintatuettu kulmasoutu käsipainoilla": [
+    "Vatsallaan vinopenkillä (30–45°), rinta tukea vasten, jalat maassa",
+    "Vedä kyynärpäät ylös ja taakse, lapaluut yhteen",
+    "Rinta pysyy penkissä, laske hallitusti suoriksi käsiksi",
+  ],
   "T-tankosoutu": [
     "Tanko jalkojen välissä, kahva rinnan alla",
     "Selkä suorana ~45°, polvet koukussa",
@@ -296,9 +301,9 @@ const exerciseCues = <String, List<String>>{
     "Kyynärpäät enintään hartioiden korkeudelle",
   ],
   "Face pull": [
-    "Köysi korkealla, ote ylhäältä",
-    "Vedä köyttä otsaa kohti, kyynärpäät korkealla",
-    "Käännä kädet lopussa ulos ja taakse",
+    "Talja kasvojen korkeudelle tai hieman pään yläpuolelle, köysi ylhäältä",
+    "Vedä köyttä otsaa kohti, kyynärpäät korkealla ja ulos",
+    "Kädet erilleen korvien viereen kuin laittaisit aurinkolasit päähän",
   ],
   "Push press": [
     "Tanko etuolkapäillä, ote kuin pystypunnerruksessa",

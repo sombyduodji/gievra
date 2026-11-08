@@ -1,0 +1,75 @@
+import 'gps_filter.dart';
+
+// Reitti GPX 1.1 -tiedostona treenin .md-tiedoston vieressä (sama nimi, pääte .gpx). Avautuu myös Garminin,
+// Stravan, OsmAndin ym. ohjelmissa. Vain suodatetut pisteet ja ajat; ei laitetunnisteita.
+
+String _esc(String s) =>
+    s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+
+String _iso(DateTime t) => '${t.toUtc().toIso8601String().split('.').first}Z';
+
+String routeToGpx(List<List<TrackPoint>> segments, {required String name, String? type, String? desc}) {
+  final b = StringBuffer()
+    ..writeln('<?xml version="1.0" encoding="UTF-8"?>')
+    ..writeln(
+      '<gpx version="1.1" creator="Gievra" xmlns="http://www.topografix.com/GPX/1/1" '
+      'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+      'xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">',
+    )
+    ..writeln('  <trk>')
+    ..writeln('    <name>${_esc(name)}</name>');
+  if (desc != null) b.writeln('    <desc>${_esc(desc)}</desc>');
+  if (type != null) b.writeln('    <type>${_esc(type)}</type>');
+  for (final seg in segments) {
+    if (seg.isEmpty) continue;
+    b.writeln('    <trkseg>');
+    for (final p in seg) {
+      b.writeln(
+        '      <trkpt lat="${p.lat.toStringAsFixed(6)}" lon="${p.lon.toStringAsFixed(6)}"><time>${_iso(p.time)}</time></trkpt>',
+      );
+    }
+    b.writeln('    </trkseg>');
+  }
+  b
+    ..writeln('  </trk>')
+    ..writeln('</gpx>');
+  return b.toString();
+}
+
+final _seg = RegExp(r'<trkseg>(.*?)</trkseg>', dotAll: true);
+final _pt = RegExp(r'<trkpt\s+([^>]*?)/?>(.*?)(?:</trkpt>|(?=<trkpt)|$)', dotAll: true);
+final _lat = RegExp(r'''lat\s*=\s*["']([-\d.]+)["']''');
+final _lon = RegExp(r'''lon\s*=\s*["']([-\d.]+)["']''');
+final _time = RegExp(r'<time>\s*([^<]+?)\s*</time>');
+
+/// Lukee GPX-reitin osuuksina (myös muiden ohjelmien tekemät). Pisteet ilman aikaa saavat ajan null-arvon sijaan
+/// edellisen pisteen ajan; rikkinäiset pisteet ohitetaan.
+List<List<TrackPoint>> parseGpx(String text) {
+  final out = <List<TrackPoint>>[];
+  for (final s in _seg.allMatches(text)) {
+    final seg = <TrackPoint>[];
+    DateTime? last;
+    for (final m in _pt.allMatches(s[1]!)) {
+      final lat = double.tryParse(_lat.firstMatch(m[1]!)?[1] ?? '');
+      final lon = double.tryParse(_lon.firstMatch(m[1]!)?[1] ?? '');
+      if (lat == null || lon == null || lat.abs() > 90 || lon.abs() > 180) continue;
+      final t = DateTime.tryParse(_time.firstMatch(m[2] ?? '')?[1] ?? '') ?? last;
+      if (t == null) continue;
+      last = t;
+      seg.add(TrackPoint(t, lat, lon));
+    }
+    if (seg.isNotEmpty) out.add(seg);
+  }
+  return out;
+}
+
+/// Reitin pituus metreinä (osuuksien sisällä; katkoja ei lasketa).
+double routeLength(List<List<TrackPoint>> segments) {
+  var d = 0.0;
+  for (final s in segments) {
+    for (var i = 1; i < s.length; i++) {
+      d += geoDistance(s[i - 1].lat, s[i - 1].lon, s[i].lat, s[i].lon);
+    }
+  }
+  return d;
+}

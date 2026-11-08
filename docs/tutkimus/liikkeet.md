@@ -151,11 +151,12 @@ Simão et al. 2012 (Sports Medicine 42:251) found that the exercise done first i
 | Käsipainosoutu | Toinen käsi ja polvi penkillä, selkä suorana / Vedä käsipaino lantion suuntaan / Kyynärpää lähellä kylkeä, ei kiertoa | Trunk 80–90, one knee on a flat bench, working arm hanging (shoulder 90), elbow 0. → Dumbbell at the hip, elbow 95, shoulder −15. |
 | T-tankosoutu | Tanko jalkojen välissä, kahva rinnan alla / Selkä suorana ~45°, polvet koukussa / Vedä kahva rintaan, purista lapaluut | T-bar or landmine handle, trunk 45, knee 25, arms hanging. → Handle at the chest, elbow 95. |
 | Pendlay-soutu | Vartalo lähes vaakatasossa, tanko lattiassa / Räjähtävä veto alarintaan / Laske tanko lattiaan joka toistolla | Barbell on the floor, trunk 80–90, hip 95, knee 30. → Bar touches the lower chest, elbow 90, trunk unchanged. |
-| Face pull | Köysi korkealla, ote ylhäältä / Vedä köyttä otsaa kohti, kyynärpäät korkealla / Käännä kädet lopussa ulos ja taakse | High cable with rope, standing, shoulder 95, elbow 5. → Hands beside the ears, elbows at shoulder height and pulled back, elbow 110, arms rotated outward. |
+| Face pull | Talja kasvojen korkeudelle tai hieman pään yläpuolelle, köysi ylhäältä / Vedä köyttä otsaa kohti, kyynärpäät korkealla ja ulos / Kädet erilleen korvien viereen kuin laittaisit aurinkolasit päähän | Cable at face height or just above the head, rope, standing, arms reaching forward and up. → Hands pass the face and finish beside the head (ears/temples), elbows high, out and slightly back, arms rotated outward (90/90). Corrected 2026-11-08: the cable was at chest height and the hands ended in front of the face. |
 | Hyperextensio | Lonkat tyynyn reunalla, nilkat tukien alla / Laske ylävartalo hallitusti, selkä suorana / Nouse suoraan linjaan, älä yliojenna | 45° back-extension bench, hip 90–100 with the trunk hanging down, hands crossed on the chest. → Body in a straight line along the 45° angle, hip 0. |
 | Suorin käsin ylätalja | Seiso taljan edessä, pieni eteenkallistus / Kädet lähes suorina, kyynärkulma pysyy / Vedä tanko reisiin hartiat alhaalla | High cable, straight bar, trunk 20–30, shoulder 120, elbow 10–15. → Bar at the thighs, shoulder 0–10. |
 | Rack pull | Tanko telineessä polvien kohdalla / Selkä neutraali, hartiat tangon päällä / Ojenna lantio ja polvet, älä yliojenna | Barbell on pins at knee height in a rack, trunk 35, hip 45, knee 25. → Standing. |
 | Soutu laitteessa | Rinta tyynyä vasten, istuin säädetty / Vedä kahvat kylkiin, lapaluut yhteen / Palauta hallitusti kädet suoriksi | Seated machine with chest pad, trunk 0, shoulder 90, elbow 0. → Elbow 95, shoulder −25. |
+| Rintatuettu kulmasoutu käsipainoilla | Vatsallaan vinopenkillä (30–45°), rinta tukea vasten, jalat maassa / Vedä kyynärpäät ylös ja taakse, lapaluut yhteen / Rinta pysyy penkissä, laske hallitusti suoriksi käsiksi | Prone on an incline bench at about 40°, chest on the pad, feet on the floor, dumbbells hanging from straight arms (neutral grip). → Elbows pulled up and back, elbow about 90, shoulder −60. Added 2026-11-08 at a user's request; sources below. |
 
 ### Olkapäät
 | Exercise | Cues | Start → End |
@@ -220,6 +221,18 @@ Simão et al. 2012 (Sports Medicine 42:251) found that the exercise done first i
   - https://www.strengthlog.com/floor-press/
 - ACE body-part categories: https://www.acefitness.org/resources/everyone/exercise-library/
 - Elixia.fi (the Finnish RDL name): https://www.elixia.fi/harjoitukset/romanian-deadlift
+
+**Chest-supported dumbbell row (added 2026-11-08), search-result summaries:** bench 30–45°, chest stays on the pad, neutral grip, elbows up and back, flaring the elbows and lifting the chest off the pad are common errors.
+  - https://www.hevyapp.com/exercises/chest-supported-incline-row-dumbbell/
+  - https://www.coachweb.com/back-exercises/9105/incline-bench-row
+  - https://gravitus.com/guides/exercises/chest-supported-row
+  - https://sweat.com/exercises/chest-supported-dumbbell-row
+
+**Face pull (corrected 2026-11-08), search-result summaries:** pulley at face height or just above the head (higher = more lower trapezius), pull toward the forehead not the chin, elbows high and out, hands separate to beside the ears with external rotation; common errors: pulling to the chest, turning it into a rope curl, leaning back.
+  - https://powerliftingtechnique.com/face-pulls/
+  - https://www.gymshark.com/blog/article/how-to-do-face-pulls
+  - https://www.garagegymreviews.com/face-pulls
+  - https://weighttraining.guide/exercises/cable-face-pull
 
 **Seen only as search-result summaries (not opened):**
 - Simão et al. 2012, Exercise Order in Resistance Training, Sports Medicine 42(3):251–265. Listed at https://read.qxmd.com/read/22292516/exercise-order-in-resistance-training and https://link.springer.com/article/10.2165%2F11597240-000000000-00000. The 2021 meta-analysis (Eur J Sport Sci) appeared in the same search summary.

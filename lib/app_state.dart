@@ -21,6 +21,12 @@ void Function(String path)? onLocalChange;
 
 String workoutPath(DateTime d, [int session = 1]) => '${d.year}/${isoDate(d)}${session > 1 ? '-$session' : ''}.md';
 
+/// Treenin GPS-reitti samassa kansiossa: vvvv/vvvv-kk-pp[-n].gpx.
+String routePath(DateTime d, [int session = 1]) => workoutPath(d, session).replaceFirst(RegExp(r'\.md$'), '.gpx');
+
+/// Reittitiedoston polku treenikansiossa .md-tiedoston nimen perusteella.
+String routeRel(Workout w) => '${w.date.year}/${w.route}';
+
 /// Saman päivän treenin numero tiedostonimestä (vvvv-kk-pp-2.md -> 2).
 int sessionFromName(String base) =>
     int.tryParse(RegExp(r'^\d{4}-\d{2}-\d{2}-(\d+)\.md$').firstMatch(base)?[1] ?? '') ?? 1;
@@ -637,6 +643,15 @@ class Settings extends ChangeNotifier {
 
   void addCustomExercise(String n) => addCustomExercises({n: ownCategory});
 
+  /// Oma liike pois (esim. yhdistetty valmiiseen liikkeeseen). Treenit eivät muutu.
+  void removeCustomExercise(String n) {
+    if (!customExercises.contains(n)) return;
+    customExercises = [...customExercises]..remove(n);
+    customCategory.remove(n);
+    customMeasure.remove(n);
+    _persist();
+  }
+
   /// nimi -> kategoria
   void addCustomExercises(Map<String, String> names) {
     final add = names.keys.where((n) => !customExercises.contains(n)).toList();
@@ -715,7 +730,22 @@ class WorkoutStore extends ChangeNotifier {
   /// Seuraava vapaa treeninumero päivälle.
   int nextSession(DateTime d) => onDay(d).fold(0, (a, w) => w.session > a ? w.session : a) + 1;
 
+  /// Kirjoittaa treenin tallentamattoman reitin .gpx-tiedostoksi ja liittää sen treeniin.
+  Future<void> _writeRoute(Workout w) async {
+    final gpx = w.routeGpx;
+    if (gpx == null) return;
+    final rel = routePath(w.date, w.session);
+    await files.write(rel, gpx);
+    onLocalChange?.call(rel);
+    w.route = rel.split('/').last;
+    w.routeGpx = null;
+  }
+
+  /// Treenin reitti GPX-tekstinä (null = ei reittiä tai tiedosto puuttuu).
+  Future<String?> readRoute(Workout w) async => w.routeGpx ?? (w.route == null ? null : files.read(routeRel(w)));
+
   Future<String> save(Workout w) async {
+    await _writeRoute(w);
     final path = await files.write(workoutPath(w.date, w.session), workoutToMarkdown(w));
     onLocalChange?.call(workoutPath(w.date, w.session));
     workouts
@@ -734,6 +764,7 @@ class WorkoutStore extends ChangeNotifier {
       if (onDay(w.date).any((x) => x.session == w.session)) continue;
       final rel = workoutPath(w.date, w.session);
       if (await files.exists(rel)) continue;
+      await _writeRoute(w);
       await files.write(rel, workoutToMarkdown(w));
       onLocalChange?.call(workoutPath(w.date, w.session));
       n++;
@@ -743,6 +774,11 @@ class WorkoutStore extends ChangeNotifier {
   }
 
   Future<void> delete(DateTime d, [int session = 1]) async {
+    final old = onDay(d).where((x) => x.session == session).firstOrNull;
+    if (old?.route != null) {
+      await files.delete(routeRel(old!));
+      onLocalChange?.call(routeRel(old));
+    }
     await files.delete(workoutPath(d, session));
     onLocalChange?.call(workoutPath(d, session));
     workouts.removeWhere((x) => x.date == dateOnly(d) && x.session == session);

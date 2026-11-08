@@ -63,6 +63,7 @@ const Map<String, List<String>> exerciseCatalog = {
     'Kulmasoutu',
     'Alatalja',
     'Käsipainosoutu',
+    'Rintatuettu kulmasoutu käsipainoilla',
     'T-tankosoutu',
     'Pendlay-soutu',
     'Selän ojennus',
@@ -247,6 +248,7 @@ const exerciseEquipment = <String, Set<Equip>>{
   'Kulmasoutu': {_t},
   'Alatalja': {_ta},
   'Käsipainosoutu': {_k},
+  'Rintatuettu kulmasoutu käsipainoilla': {_k},
   'T-tankosoutu': {_t},
   'Pendlay-soutu': {_t},
   'Selän ojennus': {_bw, _l},
@@ -514,7 +516,39 @@ const kettlebellSizes = [4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 20.0, 24.0, 28.0
 double nextKettlebell(double kg) => kettlebellSizes.firstWhere((s) => s > kg + .01, orElse: () => kg + 4);
 
 /// Kerroin volyymille: tuplakahvakuulaliikkeissä 2 (kaksi kuulaa), muuten 1.
-int loadMultiplier(String exercise) => pairedKettlebell.contains(exercise) ? 2 : 1;
+/// Kaksi käsipainoa (tai kuulaa) yhtä aikaa: kirjataan yhden paino, yhteensä kaksinkertainen.
+const pairedDumbbell = {
+  'Käsipainopenkki',
+  'Vinokäsipainopenkki',
+  'Käsipainoaukaisu',
+  'Rintatuettu kulmasoutu käsipainoilla',
+  'Käsipainopystypunnerrus',
+  'Arnold-punnerrus',
+  'Vipunosto sivulle',
+  'Vipunosto eteen',
+  'Takaolkavipunosto',
+  'Hauiskääntö käsipainoilla',
+  'Vasarakääntö',
+  'Bulgarialainen askelkyykky',
+  'Askelkyykkykävely',
+  'Askelnousu',
+  'Farmer walk',
+  'Renegade-soutu',
+};
+
+/// Yksi käsipaino tai kuula: yhden käden liike tai yksi paino molemmin käsin.
+const singleWeight = {
+  'Käsipainosoutu',
+  'Keskittynyt hauiskääntö',
+  'Goblet-kyykky',
+  'Ojentajapunnerrus pään yli',
+  'Yhden jalan maastaveto',
+  'Matkalaukkukanto',
+  'Venäläinen twisti',
+};
+
+/// Kokonaiskuorma volyymiin: kahdella painolla kirjattu paino kahdesti.
+int loadMultiplier(String exercise) => pairedKettlebell.contains(exercise) || pairedDumbbell.contains(exercise) ? 2 : 1;
 
 /// "Jäikö varaa?" mittaustavan mukaan: toistoliikkeissä toistoja varastossa, aikaliikkeissä
 /// olisiko jaksanut pidempään, matkaliikkeissä pidemmälle. Arvot 0 / 1 / 3 kuten RIR.
@@ -570,10 +604,25 @@ const _aliases = {
   'Maastaveto': ['deadlift', 'mave'],
   'Sumomaastaveto': ['sumo'],
   'Pystypunnerrus': ['overhead press', 'ohp', 'military press'],
+  'Käsipainopystypunnerrus': [
+    'pystypunnerrus käsipainoilla',
+    'käsipainopunnerrus',
+    'dumbbell shoulder press',
+    'dumbbell overhead press',
+    'db shoulder press',
+  ],
   'Leuanveto': ['leuat', 'pull up', 'chin up'],
   'Ylätalja': ['lat pulldown', 'pulldown', 'pull down'],
   'Alatalja': ['seated row', 'cable row'],
   'Kulmasoutu': ['barbell row', 'bent over row'],
+  'Rintatuettu kulmasoutu käsipainoilla': [
+    'tuettu soutu',
+    'rintatuettu soutu',
+    'chest supported row',
+    'chest-supported dumbbell row',
+    'incline dumbbell row',
+    'seal row',
+  ],
   'Askelkyykky': ['lunge', 'askel'],
   'Askelkyykkykävely': ['walking lunge', 'lunge', 'askel'],
   'Bulgarialainen askelkyykky': ['bulgarian', 'split squat'],
@@ -688,3 +737,6 @@ Color groupColor(BodyGroup g) => switch (g) {
   BodyGroup.upper => Sami.blue,
   BodyGroup.core => Sami.green,
 };
+
+/// Hakusanat liikkeelle (omien liikkeiden yhdistämistä varten).
+List<String> aliasesOf(String exercise) => _aliases[exercise] ?? const [];

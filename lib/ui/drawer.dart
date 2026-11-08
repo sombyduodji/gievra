@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'maps_screen.dart';
 import 'licenses_screen.dart';
 import 'stats_screen.dart';
 import '../sync/sync_service.dart';
@@ -103,15 +104,15 @@ class AppDrawer extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.file_open_outlined),
-                title: Text(t('Tuo ohjelmapohja')),
-                subtitle: Text(t('.gmd-tiedosto valmentajalta, kaverilta tai verkosta')),
-                onTap: () async {
-                  // Valikko pysyy auki dialogin ajan, jotta konteksti on voimassa; suljetaan lopuksi.
-                  await importTemplate(context);
-                  if (context.mounted) Navigator.pop(context);
+                leading: const Icon(Icons.insights),
+                title: Text(t('Edistyminen ja tilastot')),
+                subtitle: Text(t('Viikko- ja kuukausikoosteet, fiilis, voimakehitys')),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StatsScreen()));
                 },
               ),
+              const Divider(indent: 18, endIndent: 18),
               ListTile(
                 leading: const Icon(Icons.healing),
                 title: Text(t('Vammatila')),
@@ -141,15 +142,6 @@ class AppDrawer extends StatelessWidget {
                   settings.activePause == null ? showPauseDialog(context) : settings.endPause();
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.insights),
-                title: Text(t('Edistyminen ja tilastot')),
-                subtitle: Text(t('Viikko- ja kuukausikoosteet, fiilis, voimakehitys')),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StatsScreen()));
-                },
-              ),
               // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
               if (!isDemo && syncReleased)
                 ListenableBuilder(
@@ -175,6 +167,17 @@ class AppDrawer extends StatelessWidget {
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ImportExportScreen()));
                   },
                 ),
+              // Harvoin tarvittava, siksi tuonnin vieressä eikä ohjelman alla.
+              ListTile(
+                leading: const Icon(Icons.file_open_outlined),
+                title: Text(t('Tuo ohjelmapohja')),
+                subtitle: Text(t('.gmd-tiedosto valmentajalta, kaverilta tai verkosta')),
+                onTap: () async {
+                  // Valikko pysyy auki dialogin ajan, jotta konteksti on voimassa; suljetaan lopuksi.
+                  await importTemplate(context);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
               const Divider(indent: 18, endIndent: 18),
               ListTile(
                 leading: const Icon(Icons.info_outline),
@@ -502,6 +505,14 @@ class _SettingsSection extends StatelessWidget {
             value: settings.watch,
             onChanged: settings.setWatch,
           ),
+          // Offline-kartat GPS-reiteille (vain Androidissa).
+          if (!isDemo && Platform.isAndroid)
+            ListTile(
+              title: Text(t('Kartat')),
+              subtitle: Text(t('Offline-kartat GPS-reiteille: lataa alue tai kunnat'), style: sub),
+              trailing: const Icon(Icons.map_outlined),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MapsScreen())),
+            ),
           SwitchListTile(
             title: Text(t('Vinkit ja edistyminen')),
             subtitle: Text(t('Edistyminen etusivulla ja kevennysviikon ehdotukset.'), style: sub),
@@ -655,6 +666,15 @@ Future<void> showAbout(BuildContext context) async {
               'reunuksista. Kalenterissa kuukaudet näkyvät myös pohjoissaameksi.',
             ),
           ),
+          _h(t('Kartat')),
+          Text(
+            t(
+              'Karttatiedot {0}, lisenssi ODbL 1.0. Rannikot ja rajat pienillä mittakaavoilla: Natural Earth '
+              '(public domain). Kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0.',
+              [MapCredits.osm],
+            ),
+          ),
+          TextButton(onPressed: () => _open(MapCredits.osmUrl), child: const Text(MapCredits.osm)),
           const SizedBox(height: 8),
           TextButton.icon(
             onPressed: () =>

@@ -6,7 +6,10 @@ import '../sports.dart';
 import '../running.dart';
 import '../program_edit.dart';
 import '../app_info.dart';
+import '../gps_recorder.dart';
 import '../app_state.dart';
+import '../custom_merge.dart';
+import '../drafts.dart';
 import '../exercises.dart';
 import '../insights.dart';
 import '../models.dart';
@@ -142,6 +145,98 @@ Future<void> _chooseSession(BuildContext context, DateTime d, List<Workout> ws) 
 
 class _HomeScreenState extends State<HomeScreen> {
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+
+  @override
+  void initState() {
+    super.initState();
+    _resume();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkMoves());
+  }
+
+  /// Omat liikkeet, jotka vastaavat valmista liikettä: sama nimi yhdistetään, samankaltaisesta kysytään.
+  Future<void> _checkMoves() async {
+    if (isDemo || settings.customExercises.isEmpty) return;
+    final matches = findMoveMatches(settings.customExercises, builtinExercises(), declined: await declinedMatches());
+    for (final m in matches) {
+      if (!mounted) return;
+      if (m.identical) {
+        final n = await mergeMove(m);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              t('Oma liike {0} yhdistettiin Gievran liikkeeseen {1} ({2} treeniä).', [m.custom, trName(m.builtin), n]),
+            ),
+          ),
+        );
+        continue;
+      }
+      final same = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: Text(t('Ovatko nämä sama liike?')),
+          content: Text(
+            t(
+              'Oma liikkeesi: {0}\nGievran liike: {1}\n\nJos ovat, treenisi, ohjelmasi ja ennätyksesi siirtyvät '
+              'Gievran liikkeelle, ja saat sen liikeohjeen ja animaation.',
+              [m.custom, trName(m.builtin)],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Eri liikkeet'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Sama liike, yhdistä'))),
+          ],
+        ),
+      );
+      if (same == true) {
+        final n = await mergeMove(m);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t('Yhdistetty: {0} treeniä siirtyi liikkeelle {1}.', [n, trName(m.builtin)]))),
+        );
+      } else if (same == false) {
+        await declineMatch(m);
+      }
+    }
+  }
+
+  /// Android sulki sovelluksen kesken: ensin kesken jäänyt GPS-tallennus (jatkuu siitä), muuten keskeneräinen
+  /// liikuntakirjaus (lomake ennen Tallenna-painiketta).
+  Future<void> _resume() async {
+    final sport = await GpsRecorder.pendingSport();
+    final d = await ActivityDraft.load();
+    if (!mounted) return;
+    if (sport != null) {
+      final today = dateOnly(DateTime.now());
+      final w = d != null && d.$1.activity == sport
+          ? d.$1
+          : Workout(
+              date: today,
+              title: sport,
+              activity: sport,
+              session: store.onDay(today).isEmpty ? 1 : store.nextSession(today),
+            );
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ActivityScreen(workout: w, recoverGps: true, draft: d?.$2),
+        ),
+      );
+      return;
+    }
+    if (d == null) return;
+    final (w, extra) = d;
+    // Samalle päivälle tallennettu treeni samalla numerolla: luonnos on jo tallennettu.
+    if (store.onDay(w.date).any((x) => x.session == w.session && x.activity == w.activity)) {
+      await ActivityDraft.clear();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ActivityScreen(workout: w, draft: extra),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

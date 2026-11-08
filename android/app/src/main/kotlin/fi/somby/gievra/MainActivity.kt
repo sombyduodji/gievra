@@ -3,9 +3,11 @@ package fi.somby.gievra
 import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
@@ -69,6 +71,43 @@ class MainActivity : FlutterActivity() {
                 else -> return@setMethodCallHandler result.notImplemented()
             }
             result.success(null)
+        }
+        // Reitin tallennus (ks. GpsService.kt): paikannukset tapahtumina, ohjaus metodeina.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/gps").setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(args: Any?, events: EventChannel.EventSink) {
+                    GpsService.sink = { events.success(it) }
+                }
+
+                override fun onCancel(args: Any?) {
+                    GpsService.sink = null
+                }
+            },
+        )
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/gpsctl").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    GpsService.start(
+                        this,
+                        call.argument<String>("title") ?: "Gievra",
+                        call.argument<String>("text") ?: "",
+                        call.argument<String>("channel") ?: "GPS",
+                    )
+                    result.success(null)
+                }
+                "stop" -> {
+                    GpsService.stop(this)
+                    result.success(null)
+                }
+                "running" -> result.success(GpsService.running)
+                "enabled" -> result.success(GpsService.gpsEnabled(this))
+                "rawPath" -> result.success(GpsService.rawFile(this).path)
+                "settings" -> {
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
         }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/email").setMethodCallHandler { call, result ->
             if (call.method != "send") {

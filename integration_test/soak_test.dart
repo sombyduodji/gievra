@@ -3,6 +3,7 @@
 //     --dart-define=SOAK_SECONDS=900 --dart-define=FITNOTES=C:\polku\FitNotes_Backup.fitnotes
 // Kierros: FitNotes-tuonti, varmuuskopion vienti ja palautus, treenien ja liikunnan tallennus ja poisto,
 // päänäkymien piirto. Muisti (RSS) mitataan joka kierroksella; lopussa verrataan alkua ja loppua.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,11 @@ import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/body.dart';
+import 'package:treenipaivakirja/gps_filter.dart';
+import 'package:treenipaivakirja/gps_recorder.dart';
+import 'package:treenipaivakirja/gpx.dart';
+import 'package:treenipaivakirja/maps/map_store.dart';
+import 'package:treenipaivakirja/maps/map_view.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/import_export.dart';
 import 'package:treenipaivakirja/models.dart';
@@ -25,6 +31,7 @@ import 'package:treenipaivakirja/ui/workout.dart';
 import 'package:treenipaivakirja/ui/home.dart';
 import 'package:treenipaivakirja/ui/import_export.dart';
 import 'package:treenipaivakirja/ui/program_screen.dart';
+import 'package:treenipaivakirja/ui/record_screen.dart';
 import 'package:treenipaivakirja/ui/stats_screen.dart';
 
 const _seconds = int.fromEnvironment('SOAK_SECONDS', defaultValue: 60);
@@ -48,6 +55,85 @@ Future<void> _show(WidgetTester t, Widget w, [String? name]) async {
     await t.pump(const Duration(milliseconds: 100));
   }
   (_times[name ?? w.runtimeType.toString()] ??= []).add(sw.elapsedMilliseconds);
+}
+
+/// Keksitty GPS-lähde: paikannukset syötetään testistä (ei oikeita sijainteja).
+class _FakeGps implements GpsSource {
+  final ctl = StreamController<Map<String, Object?>>.broadcast();
+  final saved = <GpsFix>[];
+  void send(GpsFix f) {
+    saved.add(f);
+    ctl.add({'t': f.time.millisecondsSinceEpoch, 'lat': f.lat, 'lon': f.lon, 'acc': f.accuracy});
+  }
+
+  @override
+  Stream<Map<String, Object?>> get events => ctl.stream;
+  @override
+  Future<bool> enabled() async => true;
+  @override
+  Future<void> start({required String title, required String text, required String channel}) async {}
+  @override
+  Future<void> stop() async {}
+  @override
+  Future<bool> running() async => false;
+  @override
+  Future<List<GpsFix>> savedFixes() async => List.of(saved);
+  @override
+  Future<void> clearSaved() async => saved.clear();
+  @override
+  Future<void> openSettings() async {}
+}
+
+/// GPS-kierros: tallennusnäkymä keksityllä 600 m reitillä (tauko mukana), reitti .gpx:ksi ja takaisin,
+/// ja jos testikartta on saatavilla (työpöytä), reitti offline-kartalla.
+Future<void> _gpsRound(WidgetTester t, Directory dir, DateTime day) async {
+  var clock = DateTime.now();
+  final gps = _FakeGps();
+  final rec = GpsRecorder(source: gps, now: () => clock);
+  await _show(t, RecordScreen(sport: 'Juoksu', recorder: rec), 'RecordScreen');
+  const lat0 = 69.9078, lon0 = 27.0263; // keksitty piste Utsjoella
+  final klon = 1 / (111320 * 0.3434);
+  for (var i = 0; i < 200; i++) {
+    clock = clock.add(const Duration(seconds: 1));
+    gps.send(GpsFix(clock, lat0 + (i % 50) * 0.00002, lon0 + i * 3 * klon, 5));
+    if (i == 3) await rec.start();
+    if (i == 100) await rec.pause();
+    if (i == 120) await rec.resume();
+    if (i % 20 == 0) await t.pump(const Duration(milliseconds: 50));
+  }
+  final r = await rec.finish(name: 'Juoksu');
+  expect(r, isNotNull);
+  expect(r!.distanceKm, greaterThan(0.3));
+  rec.dispose();
+  final w = Workout(date: day, activity: 'Juoksu', session: 3)
+    ..routeGpx = r.gpx
+    ..seconds = r.seconds
+    ..distanceKm = r.distanceKm;
+  await store.save(w);
+  final back = parseGpx((await store.readRoute(store.onDay(day).firstWhere((x) => x.session == 3)))!);
+  expect(back, isNotEmpty);
+  final fixture = File('test/fixtures/kartta-testi.pmtiles');
+  if (await fixture.exists()) {
+    final mapDir = Directory('${dir.path}${Platform.pathSeparator}kartat')..createSync(recursive: true);
+    await fixture.copy('${mapDir.path}${Platform.pathSeparator}testi.pmtiles');
+    MapStore.instance
+      ..dirOverride = mapDir
+      ..installed.clear();
+    await _show(
+      t,
+      Scaffold(
+        body: SizedBox(
+          height: 400,
+          child: RouteMap(segments: back, fallback: const SizedBox()),
+        ),
+      ),
+      'RouteMap',
+    );
+    await t.pumpWidget(const SizedBox());
+    await MapStore.instance.closeAll();
+    MapStore.instance.dirOverride = null;
+  }
+  await store.delete(day, 3);
 }
 
 void main() {
@@ -162,6 +248,7 @@ void main() {
         ),
       );
       await t.pumpWidget(const SizedBox());
+      await _gpsRound(t, dir, day);
 
       // 5. Puhdas pöytä seuraavalle kierrokselle.
       await dir.delete(recursive: true);

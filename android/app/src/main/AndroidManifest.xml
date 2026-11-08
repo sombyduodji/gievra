@@ -9,6 +9,13 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <!-- Valinnainen reitin tallennus (GPS): sijainti vain tallennuksen ajan, etualapalveluna ilmoituksen kanssa.
+         Taustasijaintia ("Salli aina") ei tarvita, koska tallennus aloitetaan aina sovelluksesta. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <application
         android:label="Gievra"
         android:name="${applicationName}"
@@ -64,6 +71,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <receiver android:name=".RestAlarmReceiver" android:exported="false" />
+        <service android:name=".GpsService" android:exported="false" android:foregroundServiceType="location" />
         <!-- Vikailmoituksen liitteet sähköpostisovellukselle (ks. MainActivity). -->
         <provider
             android:name="androidx.core.content.FileProvider"

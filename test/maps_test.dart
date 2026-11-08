@@ -1,0 +1,245 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:treenipaivakirja/maps/map_store.dart';
+import 'package:treenipaivakirja/maps/pmtiles.dart';
+
+// test/fixtures/kartta-testi.pmtiles: pieni pala Inarin erämaata (zoom 11–13), tehty työkalulla
+// tools/map_extract.py. Karttatiedot © OpenStreetMap contributors, ODbL 1.0.
+
+/// Laatan koordinaatit pisteelle.
+(int, int) tileXY(double lat, double lon, int z) {
+  final n = 1 << z;
+  final r = lat * math.pi / 180;
+  return (((lon + 180) / 360 * n).floor(), ((1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * n).floor());
+}
+
+/// Keksitty kunta: neliö (lon, lat) -kulmista.
+Map<String, Object> square(String id, double w, double s, double e, double n, {int size = 1000, String? sha}) => {
+  'id': id,
+  'name': id,
+  'file': '$id.pmtiles',
+  'region': 'Testimaakunta',
+  'size': size,
+  'sha256': sha ?? '0' * 64,
+  'bbox': [w, s, e, n],
+  'shape': [
+    [
+      [w, s],
+      [e, s],
+      [e, n],
+      [w, n],
+      [w, s],
+    ],
+  ],
+};
+
+Map<String, Object> catalogJson({List<Map<String, Object>>? packs, Map<String, Object>? overview}) => {
+  'format': 1,
+  'tag': 'kartat-testi',
+  'osmDate': '2026-11-07',
+  'base': 'https://example.invalid/kartat/',
+  'overview': overview ?? {'file': 'yleiskartta.pmtiles', 'size': 10, 'sha256': '0' * 64},
+  'all': {'file': 'suomi.pmtiles', 'size': 100, 'sha256': '0' * 64},
+  'regions': ['Testimaakunta'],
+  'packs': packs ?? [square('etela', 25.0, 60.0, 25.5, 60.3), square('pohjoinen', 25.0, 61.0, 25.5, 61.3)],
+};
+
+void main() {
+  test('Laattojen numerointi sama kuin PMTiles-määrittelyssä', () {
+    expect([zxyToTileId(0, 0, 0), zxyToTileId(1, 0, 0), zxyToTileId(1, 0, 1), zxyToTileId(1, 1, 1)], [0, 1, 2, 3]);
+    expect(zxyToTileId(1, 1, 0), 4);
+    expect(zxyToTileId(2, 0, 0), 5);
+  });
+
+  test('Karttatiedoston luku: laatta löytyy alueelta, ei muualta', () async {
+    final f = await PmTilesFile.open('test/fixtures/kartta-testi.pmtiles');
+    expect((f.minZoom, f.maxZoom), (11, 13));
+    expect(f.bounds.$1, closeTo(27.0, 0.01));
+    final (x, y) = tileXY(68.905, 27.015, 13);
+    final tile = await f.tile(13, x, y);
+    expect(tile, isNotNull);
+    expect(tile![0], 0x1a); // MVT: ensimmäinen kenttä on taso (layer)
+    expect(await f.tile(13, x + 50, y), isNull);
+    expect(await f.tile(5, 17, 7), isNull); // zoom ei tiedostossa
+    await f.close();
+  });
+
+  test('Luettelo: kunta pisteessä ja kunnat säteen sisällä', () {
+    final c = MapCatalog.fromJson(catalogJson());
+    expect(c.packAt(60.1, 25.2)?.id, 'etela');
+    expect(c.packAt(60.5, 25.2), isNull); // välissä "merta"
+    // Pisteestä 60.1 N pohjoiseen kuntaan on ~78 km.
+    expect(c.packsWithin(60.1, 25.2, 20).map((x) => x.id), ['etela']);
+    expect(c.packsWithin(60.1, 25.2, 100).map((x) => x.id), ['etela', 'pohjoinen']);
+    expect(c.packs.first.distanceKm(60.1, 25.2), 0);
+    expect(c.packs.last.distanceKm(60.1, 25.2), closeTo(100.0, 25));
+  });
+
+  group('Lataus', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('gievra-kartat'));
+    tearDown(() {
+      MapStore.instance
+        ..dirOverride = null
+        ..clientOverride = null
+        ..catalog = null
+        ..installed.clear()
+        ..downloads.clear();
+      tmp.deleteSync(recursive: true);
+    });
+
+    test('Tarkiste täsmää: tiedosto asennetaan; väärä tarkiste: ei jälkiä', () async {
+      final good = utf8.encode('kunnan kartta');
+      final over = utf8.encode('yleiskartta');
+      final cat = catalogJson(
+        packs: [
+          square('hyva', 25, 60, 25.5, 60.3, size: good.length, sha: sha256.convert(good).toString()),
+          square('rikki', 26, 60, 26.5, 60.3, size: 5, sha: 'f' * 64),
+        ],
+        overview: {'file': 'yleiskartta.pmtiles', 'size': over.length, 'sha256': sha256.convert(over).toString()},
+      );
+      final store = MapStore.instance
+        ..dirOverride = tmp
+        ..clientOverride = MockClient.streaming((req, _) async {
+          final name = req.url.pathSegments.last;
+          final body = switch (name) {
+            'kartat.json' => utf8.encode(jsonEncode(cat)),
+            'hyva.pmtiles' => good,
+            'yleiskartta.pmtiles' => over,
+            _ => utf8.encode('väärä sisältö'),
+          };
+          return http.StreamedResponse(Stream.value(body), 200);
+        });
+      expect(await store.load(refresh: true), isNull);
+      expect(store.catalog!.packs.length, 2);
+      await store.download(store.catalog!.packs);
+      expect(store.installed, {'hyva.pmtiles', 'yleiskartta.pmtiles'});
+      expect(File('${tmp.path}/hyva.pmtiles').readAsStringSync(), 'kunnan kartta');
+      expect(tmp.listSync().where((e) => e.path.endsWith('.part')), isEmpty);
+      expect(File('${tmp.path}/rikki.pmtiles').existsSync(), isFalse);
+      expect(store.covers(60.1, 25.2), isTrue);
+      expect(store.covers(60.1, 26.2), isFalse);
+      // Luettelo jää talteen: toimii ilman verkkoa.
+      store.catalog = null;
+      store.clientOverride = MockClient((_) async => http.Response('', 500));
+      expect(await store.load(), isNull);
+      expect(store.catalog, isNotNull);
+      await store.delete(store.catalog!.packs.first);
+      expect(store.covers(60.1, 25.2), isFalse);
+    });
+  });
+
+  group('Ladatut kartat', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('gievra-ladatut'));
+    tearDown(() {
+      MapStore.instance
+        ..dirOverride = null
+        ..clientOverride = null
+        ..catalog = null
+        ..installed.clear()
+        ..downloads.clear();
+      tmp.deleteSync(recursive: true);
+    });
+
+    test('Päivitys tunnistetaan ja ladataan; poisto vapauttaa tilan', () async {
+      var a = utf8.encode('kartta A v1');
+      final b = utf8.encode('kartta B');
+      Map<String, Object> cat() => catalogJson(
+        packs: [
+          square('a', 25, 60, 25.5, 60.3, size: a.length, sha: sha256.convert(a).toString()),
+          square('b', 26, 60, 26.5, 60.3, size: b.length, sha: sha256.convert(b).toString()),
+        ],
+      );
+      final store = MapStore.instance
+        ..dirOverride = tmp
+        ..clientOverride = MockClient.streaming((req, _) async {
+          final body = switch (req.url.pathSegments.last) {
+            'kartat.json' => utf8.encode(jsonEncode(cat())),
+            'a.pmtiles' => a,
+            _ => b,
+          };
+          return http.StreamedResponse(Stream.value(body), 200);
+        });
+      await store.load(refresh: true);
+      await store.download(store.catalog!.packs);
+      expect((await store.installedFiles()).map((e) => e.$1).toSet(), {'a.pmtiles', 'b.pmtiles'});
+      expect(await store.outdated(), isEmpty);
+
+      // Uusi versio julkaistaan: vain A on vanhentunut.
+      a = utf8.encode('kartta A versio 2');
+      await store.load(refresh: true);
+      expect((await store.outdated()).map((x) => x.id), ['a']);
+      await store.update(await store.outdated());
+      expect(File('${tmp.path}/a.pmtiles').readAsStringSync(), 'kartta A versio 2');
+      expect(await store.outdated(), isEmpty);
+
+      await store.deleteFile('b.pmtiles');
+      expect(store.installed, {'a.pmtiles'});
+      await store.deleteAll();
+      expect(store.installed, isEmpty);
+      expect(await store.installedFiles(), isEmpty);
+      expect(await store.usedBytes(), 0);
+    });
+  });
+
+  group('Tuonti tiedostosta', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('gievra-karttatuonti'));
+    tearDown(() {
+      MapStore.instance
+        ..dirOverride = null
+        ..catalog = null
+        ..installed.clear();
+      tmp.deleteSync(recursive: true);
+    });
+
+    Map<String, Object> catalogFor(List<int> pmtiles, {String? sha}) => catalogJson(
+      packs: [
+        square('testi', 27.0, 68.9, 27.03, 68.91, size: pmtiles.length, sha: sha ?? sha256.convert(pmtiles).toString()),
+      ],
+    );
+
+    String zipOf(Map<String, List<int>> files) {
+      final a = Archive();
+      for (final e in files.entries) {
+        a.addFile(ArchiveFile.bytes(e.key, e.value));
+      }
+      final path = '${tmp.path}/paketti.zip';
+      File(path).writeAsBytesSync(ZipEncoder().encodeBytes(a));
+      return path;
+    }
+
+    test('Zip-paketti: luettelo ja kartta asennetaan, tarkiste tarkistetaan', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final store = MapStore.instance..dirOverride = maps;
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final zip = zipOf({'kartat.json': utf8.encode(jsonEncode(catalogFor(pm))), 'testi.pmtiles': pm});
+      expect(await store.importFiles([zip]), 1);
+      expect(store.installed, {'testi.pmtiles'});
+      expect(store.catalog!.packs.single.id, 'testi');
+      expect(store.covers(68.905, 27.015), isTrue);
+      expect(Directory('${maps.path}/tuonti').existsSync(), isFalse);
+    });
+
+    test('Väärä tarkiste tai muu kuin kartta: ei asenneta', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final store = MapStore.instance..dirOverride = maps;
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final bad = zipOf({'kartat.json': utf8.encode(jsonEncode(catalogFor(pm, sha: 'f' * 64))), 'testi.pmtiles': pm});
+      await expectLater(store.importFiles([bad]), throwsFormatException);
+      expect(store.installed, isEmpty);
+      final notMap = '${tmp.path}/roska.pmtiles';
+      File(notMap).writeAsStringSync('ei kartta');
+      await expectLater(store.importFiles([notMap]), throwsA(anything));
+      expect(maps.listSync().whereType<File>().where((f) => f.path.endsWith('.pmtiles')), isEmpty);
+    });
+  });
+}

@@ -48,6 +48,7 @@ const exerciseEnglish = <String, String>{
   'Kulmasoutu': 'Barbell Row',
   'Alatalja': 'Seated Cable Row',
   'Käsipainosoutu': 'Dumbbell Row',
+  'Rintatuettu kulmasoutu käsipainoilla': 'Chest-Supported Dumbbell Row',
   'T-tankosoutu': 'T-Bar Row',
   'Pendlay-soutu': 'Pendlay Row',
   'Selän ojennus': 'Back Extension',
