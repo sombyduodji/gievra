@@ -82,7 +82,23 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>New: GPS and offline maps in seven countries <span class="badge">0.2.9</span></h2>
+  <h2>New: heart rate, calories and steps from your watch <span class="badge">0.3</span></h2>
+  <div class="feature">
+    <img src="../kuvat/en/health.png" alt="A run's Watch data card: calories, average and max heart rate and steps fetched from Health Connect">
+    <div>
+      <ul>
+        <li><b>Health Connect</b> (Android): after a workout, <i>Watch data</i> → <b>Health Connect</b>. Your watch app moves the session to Health Connect, and Gievra fetches average and max heart rate, calories and steps.</li>
+        <li>Only this workout, not your whole history: Gievra looks for the session close to the workout's time and asks <i>Is this the one?</i> – add or skip.</li>
+        <li>Works for gym workouts, manually logged activities and GPS runs. You can still type the values by hand.</li>
+        <li>Read only: Gievra writes nothing to Health Connect, and no data is sent online.</li>
+        <li>Also: <b>+ Gym</b> and <b>+ Activity</b> side by side on the home screen, and steps for running too.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>GPS and offline maps in seven countries <span class="badge">0.2.9</span></h2>
   <div class="feature">
     <img src="../kuvat/en/gps.png" alt="A run route on a map around Töölönlahti in Helsinki, time 41:38">
     <div>
@@ -101,10 +117,10 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div>
       <h3 style="margin:0 0 6px">🗺️ Available maps</h3>
       <ul>
-        <li><b>Finland</b>: 308 municipalities, or the whole country as one file</li>
-        <li><b>Sweden</b>: 290 municipalities · <b>Norway</b>: 357 municipalities and Svalbard · <b>Denmark</b>: 98 municipalities · <b>Iceland</b>: 61 municipalities</li>
+        <li><b>Finland</b>: all 308 municipalities, towns and cities included (Statistics Finland 2026), or the whole country as one file</li>
+        <li>by municipality (cities included): <b>Sweden</b> 290 · <b>Norway</b> 357 and Svalbard · <b>Denmark</b> 98 · <b>Iceland</b> 61</li>
         <li><b>United Kingdom</b>: 361 local authority districts</li>
-        <li><b>Spain</b>: 50 provinces, including the Canary Islands</li>
+        <li><b>Spain</b>: 50 provinces, including the Canary and Balearic Islands</li>
       </ul>
       <p class="sub">Choose a country and areas, or download the maps around your location (also across a border). A municipality map is typically 5–30 MB.</p>
       <p class="sub"><small>Maps © OpenStreetMap contributors (ODbL). UK boundaries: ONS, Open Government Licence v3.0.</small></p>
@@ -207,7 +223,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>over 35 sports; walking and hiking also record steps</li>
         <li>running has its own progress view: run type, pace and average speed, kilometers, easy-run pace and heart rate, records</li>
         <li>optional GPS: route on a map and as a <code>.gpx</code> file, offline maps for Finland, the Nordic countries, the UK and Spain</li>
-        <li>smartwatch data (duration, calories, heart rate) is entered by hand for now; Garmin Connect activities can be imported as a CSV file</li>
+        <li>smartwatch data (heart rate, calories, steps) from Health Connect or by hand; Garmin Connect activities can be imported as a CSV file</li>
       </ul>
     </div>
     <div class="card">
@@ -252,11 +268,12 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 
 <section>
   <h2>What does the app connect to?</h2>
-  <p>We checked: the Gievra 0.2.7 release was installed on an Android emulator, and every network connection the
+  <p>We checked: the Gievra 0.3 release was installed on an Android emulator, and every network connection the
   app opened was logged while it was being used (November 2026).</p>
   <table>
     <tr><th>Setup, program and gym workout</th><td>no connections</td></tr>
     <tr><th>GPS run and finding your location</th><td>no connections: location and route stay on the phone</td></tr>
+    <tr><th>Health Connect (heart rate, calories, steps)</th><td>no connections: read on the phone, read only</td></tr>
     <tr><th>Maps screen and map downloads</th><td>GitHub only (github.com and release-assets.githubusercontent.com)</td></tr>
     <tr><th>Bug report and backup</th><td>no connections: Android's share menu, the app you choose does the sending</td></tr>
     <tr><th>In the background and at startup</th><td>no connections</td></tr>

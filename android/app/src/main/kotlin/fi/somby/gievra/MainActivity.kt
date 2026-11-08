@@ -2,6 +2,7 @@ package fi.somby.gievra
 
 import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.core.content.FileProvider
@@ -9,10 +10,50 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import androidx.health.connect.client.PermissionController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : FlutterActivity() {
     private var openChannel: MethodChannel? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var healthResult: MethodChannel.Result? = null
+    private var healthAsked: Set<String> = emptySet()
+    private val healthContract = PermissionController.createRequestPermissionResultContract()
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    @Deprecated("FlutterActivity ei tue ActivityResult-rekisteriä; Health Connectin lupakysely palaa tänne")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != HEALTH_REQUEST) return
+        val granted = try {
+            healthContract.parseResult(resultCode, data)
+        } catch (e: Exception) {
+            emptySet()
+        }
+        healthResult?.success(granted.containsAll(healthAsked))
+        healthResult = null
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != HEALTH_REQUEST) return
+        val granted = permissions.filterIndexed { i, _ -> grantResults.getOrNull(i) == PackageManager.PERMISSION_GRANTED }.toSet()
+        healthResult?.success(granted.containsAll(healthAsked))
+        healthResult = null
+    }
+
+    companion object {
+        private const val HEALTH_REQUEST = 4711
+    }
     private var pendingText: String? = null
 
     /// Avattu tai jaettu tiedosto (ohjelmapohja .gmd) tekstinä. Enintään 1 Mt; sisällön tarkistaa Dart.
@@ -105,6 +146,71 @@ class MainActivity : FlutterActivity() {
                 "settings" -> {
                     startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                     result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+        // Health Connect (ks. HealthBridge.kt): saatavuus, luvat ja treenin aikavälin ehdokkaat.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/health").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "status" -> result.success(HealthBridge.status(this))
+                "granted" -> scope.launch {
+                    try {
+                        result.success(HealthBridge.granted(this@MainActivity).containsAll(HealthBridge.readPermissions))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "request" -> {
+                    val write = call.argument<Boolean>("write") == true && BuildConfig.DEBUG
+                    healthAsked = if (write) HealthBridge.readPermissions + HealthBridge.writePermissions else HealthBridge.readPermissions
+                    healthResult = result
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 34) {
+                            // Android 14+: Health Connect -luvat ovat tavallisia ajonaikaisia lupia.
+                            requestPermissions(healthAsked.toTypedArray(), HEALTH_REQUEST)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            startActivityForResult(healthContract.createIntent(this, healthAsked), HEALTH_REQUEST)
+                        }
+                    } catch (e: Exception) {
+                        healthResult = null
+                        result.error("health", e.message, null)
+                    }
+                }
+                "candidates" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.candidates(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "debugInsert" -> {
+                    if (!BuildConfig.DEBUG) return@setMethodCallHandler result.notImplemented()
+                    scope.launch {
+                        try {
+                            HealthBridge.debugInsert(
+                                this@MainActivity,
+                                (call.argument<Number>("start") ?: 0).toLong(),
+                                (call.argument<Number>("end") ?: 0).toLong(),
+                                call.argument<Int>("type") ?: 56,
+                                call.argument<Int>("bpm") ?: 140,
+                            )
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("health", e.message, null)
+                        }
+                    }
+                }
+                "settings" -> {
+                    try {
+                        startActivity(Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS"))
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
                 }
                 else -> result.notImplemented()
             }

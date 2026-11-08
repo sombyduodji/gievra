@@ -12,7 +12,6 @@ import '../gpx.dart';
 import '../maps/map_store.dart';
 import '../maps/map_view.dart';
 import '../models.dart';
-import '../share_text.dart' show thousands;
 import '../sports.dart';
 import '../theme.dart';
 import 'maps_screen.dart';
@@ -313,11 +312,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         title: Text(w.activity == null ? t('Liikunta') : sportName(w.activity!)),
         actions: [
           if (_locked) LockButton(onTap: _unlock),
-          if (!_locked && w.activity != null && !(_canGps && !_manual))
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilledButton.tonal(onPressed: _save, child: Text(t('Tallenna ✓'))),
-            ),
+          // Tallennus vain sivun lopussa (vihreä Treeni valmis!, kuten salitreenissä), ei yläpalkissa.
         ],
       ),
       body: ListView(
@@ -497,23 +492,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     ),
                   ),
               ],
-              // Kävelylajeissa askeleet (esim. puhelimesta tai kellosta).
-              if (sport?.steps ?? false) ...[
-                SectionLabel(t('Askeleet')),
-                ValueStepper(
-                  value: thousands(w.steps ?? 0),
-                  unit: t('askelta'),
-                  onMinus: () => setState(() {
-                    final v = ((w.steps ?? 0) - 500).clamp(0, 200000);
-                    w.steps = v == 0 ? null : v;
-                  }),
-                  onPlus: () => setState(() => w.steps = ((w.steps ?? 0) + 500).clamp(0, 200000)),
-                  onTap: () async {
-                    final v = await askNumber(context, t('Askeleet'), (w.steps ?? 0).toDouble(), decimals: false);
-                    if (v != null && v >= 0 && v <= 200000) setState(() => w.steps = v == 0 ? null : v.round());
-                  },
-                ),
-              ],
+              // Askeleet Kellon tiedot -kortissa (Health Connect tai käsin), ei omana kohtanaan.
               SectionLabel(t('Rasitus')),
               SegmentedButton<String>(
                 showSelectedIcon: false,
@@ -536,12 +515,20 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                 ),
               ),
-              const SizedBox(height: 18),
-              FilledButton(
-                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                onPressed: _save,
-                child: Text(t('Tallenna'), style: TextStyle(fontSize: 17)),
-              ),
+              // Lukitussa (tallennetussa) liikunnassa ei Tallenna-painiketta; muokkaus avaa sen.
+              if (!_locked) ...[
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Sami.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: _save,
+                  icon: const Icon(Icons.flag_rounded),
+                  label: Text(t('Treeni valmis!'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                ),
+              ],
             ],
           ],
         ]),

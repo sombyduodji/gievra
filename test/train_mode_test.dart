@@ -21,7 +21,7 @@ void main() {
     expect((Settings()..applyMarkdown(md)).trainMode, 'cardio');
   });
 
-  testWidgets('Etusivu: Molemmat-tilassa Sali / Kestävyys -valinta, muuten ei', (tester) async {
+  testWidgets('Etusivu: Molemmat-tilassa + Sali ja + Liikunta vierekkäin, muuten yksi painike', (tester) async {
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -39,24 +39,21 @@ void main() {
     ];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    // Yläpalkin vaihto näyttää nykyisen näkymän; napautus vaihtaa toiseen.
-    expect(find.widgetWithText(ActionChip, 'Sali'), findsOneWidget);
-    expect(find.text('Lisää lenkki'), findsNothing);
-    await tester.tap(find.widgetWithText(ActionChip, 'Sali'));
-    await tester.pump();
-    expect(settings.homeView, 'cardio');
-    expect(find.text('Lisää lenkki'), findsOneWidget);
-    expect(find.widgetWithText(ActionChip, 'Kestävyys'), findsOneWidget);
-    expect(find.textContaining('6 km', findRichText: true), findsOneWidget); // tämän päivän lenkki
+    // Molemmat: + Sali ja + Liikunta vierekkäin, muut lajit pikavalintoina, tämän päivän lenkki rivinä.
+    expect(find.text('Sali'), findsOneWidget);
+    expect(find.text('Liikunta'), findsOneWidget);
+    expect(find.text('Pyöräily'), findsNothing); // lajit omalla sivulla, ei pikavalintoina
+    expect(find.textContaining('6 km', findRichText: true), findsOneWidget);
     // Pelkkä sali: ei valintaa, vanha etusivu.
     settings.setTrainMode('gym');
     await tester.pump();
-    expect(find.widgetWithText(ActionChip, 'Sali'), findsNothing);
+    expect(find.text('Liikunta'), findsNothing);
     expect(find.text('Lisää lenkki'), findsNothing);
+    expect(find.text('Aloita salitreeni'), findsOneWidget);
     // Pelkkä kestävyys: ei valintaa, kestävyysnäkymä.
     settings.setTrainMode('cardio');
     await tester.pump();
-    expect(find.widgetWithText(ActionChip, 'Kestävyys'), findsNothing);
+    expect(find.text('Sali'), findsNothing);
     expect(find.text('Lisää lenkki'), findsOneWidget);
     settings.trainMode = 'gym';
     store.workouts = [];

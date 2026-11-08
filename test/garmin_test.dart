@@ -79,7 +79,7 @@ void main() {
     expect(r2.workouts.last.session, run.session);
   });
 
-  test('Kävelyssä askeleet omaan kenttäänsä, juoksussa muistiinpanoihin', () {
+  test('Kävelyssä ja juoksussa askeleet omaan kenttäänsä', () {
     final walk =
         '$header\n'
         'Kävely,2025-05-11 18:00:00,false,"Iltakävely","4.00","250","00:50:00","100","120","1.5","110","120",'
@@ -94,9 +94,9 @@ void main() {
     expect(md, contains('steps: 6200'));
     expect(md, contains('6200 askelta'));
     expect(parseWorkout(md).steps, 6200);
-    // Juoksussa askeleet jäävät muistiinpanoihin.
+    // Juoksussakin askeleet omaan kenttäänsä (juoksu kirjaa askeleet).
     final (run, _) = readGarminCsv(csv, const []);
-    expect(run.workouts.last.steps, isNull);
-    expect(run.workouts.last.notes, contains('askeleet 15000'));
+    expect(run.workouts.last.steps, 15000);
+    expect(run.workouts.last.notes, isNot(contains('askeleet')));
   });
 }

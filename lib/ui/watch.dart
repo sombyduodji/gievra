@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models.dart';
+import '../sports.dart';
+import '../theme.dart';
+import 'health_sheet.dart';
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -50,7 +54,26 @@ class WatchCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionLabel(t('Kellon tiedot')),
+        Row(
+          children: [
+            Expanded(child: SectionLabel(t('Kellon tiedot'))),
+            // Syke ja kalorit kellosta Health Connectin kautta (Android) tai käsin napauttamalla ruutuja.
+            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: FilledButton.tonalIcon(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    if (await showHealthSheet(context, w) != true) return;
+                    onChanged();
+                    messenger.showSnackBar(SnackBar(content: Text(t('Tiedot haettu Health Connectista'))));
+                  },
+                  icon: const Icon(Icons.favorite_outline, size: 18),
+                  label: Text(t('Health Connect')),
+                ),
+              ),
+          ],
+        ),
         Row(
           children: [
             if (withDuration) ...[
@@ -85,16 +108,43 @@ class WatchCard extends StatelessWidget {
               '',
               () => ask(t('Maksimisyke (lyöntiä/min)'), w.hrMax, (v) => w.hrMax = v, def: 170),
             ),
+            // Kävely- ja juoksulajeissa askeleet (kellosta tai Health Connectista).
+            if (sportOf(w.activity)?.steps ?? false) ...[
+              const SizedBox(width: 6),
+              box('👣', t('askeleet'), w.steps, '', () => ask(t('Askeleet'), w.steps, (v) => w.steps = v, def: 5000)),
+            ],
           ],
         ),
+        // Tällä kerralla Health Connectista haetut tiedot: näkyvä merkintä kortin alla.
+        if (healthFilled[w] == true)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.favorite, size: 14, color: Sami.green),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    t('Tiedot haettu Health Connectista'),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Sami.green),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            withDuration
-                ? t('Napauta ja kirjoita arvo kellosta. Kellon kesto korvaa sovelluksen ajastimen. 0 tyhjentää.')
-                : t('Napauta ja kirjoita arvo kellosta. 0 tyhjentää.'),
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-          ),
+          child: Text(switch ((withDuration, !kIsWeb && defaultTargetPlatform == TargetPlatform.android)) {
+            (true, true) => t(
+              'Hae Health Connectista tai napauta ja kirjoita arvo kellosta. Kellon kesto korvaa sovelluksen '
+              'ajastimen. 0 tyhjentää.',
+            ),
+            (false, true) => t('Hae Health Connectista tai napauta ja kirjoita arvo kellosta. 0 tyhjentää.'),
+            (true, false) => t(
+              'Napauta ja kirjoita arvo kellosta. Kellon kesto korvaa sovelluksen ajastimen. 0 tyhjentää.',
+            ),
+            (false, false) => t('Napauta ja kirjoita arvo kellosta. 0 tyhjentää.'),
+          }, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
         ),
       ],
     );

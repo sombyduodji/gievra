@@ -5,5 +5,10 @@
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Vain debug-käännös: emulaattoritestien paikallinen karttapalvelin (http). Julkaisu käyttää https:ää. -->
+    <!-- Vain debug-käännös: Health Connect -testitietojen kirjoitus emulaattorilla (julkaisu vain lukee). -->
+    <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
+    <uses-permission android:name="android.permission.health.WRITE_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.WRITE_STEPS" />
     <application android:usesCleartextTraffic="true" />
 </manifest>

@@ -15,6 +15,7 @@ plugins {
 
 android {
     namespace = "fi.somby.gievra"
+    buildFeatures { buildConfig = true } // BuildConfig.DEBUG: Health Connect -testitiedot vain kehitysversiossa
     compileSdk = 37 // permission_handler_android vaatii 37
     ndkVersion = flutter.ndkVersion
 
@@ -68,4 +69,7 @@ flutter {
 dependencies {
     // FileProvider vikailmoituksen liitteille (MainActivity).
     implementation("androidx.core:core:1.13.1")
+    // Health Connect (syke ja kalorit kellosta treenin jälkeen, vain luku; ks. HealthBridge.kt).
+    implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }

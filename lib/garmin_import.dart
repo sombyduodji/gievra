@@ -199,7 +199,7 @@ const _cPower = ['Keskiteho', 'Avg Power'];
       if (garminNum(c.get(r, _cAscent)) case final v?) 'nousu ${v.round()} m',
       if (garminNum(c.get(r, _cCad)) case final v?) 'askeltiheys ${v.round()} /min',
       if (te != null) 'aerobinen TE ${fileNum(te)}',
-      // Kävelylajeissa askeleet omaan kenttäänsä, muissa muistiinpanoihin.
+      // Kävely- ja juoksulajeissa askeleet omaan kenttäänsä, muissa muistiinpanoihin.
       if (!(sportOf(sport)?.steps ?? false))
         if (garminNum(c.get(r, _cSteps)) case final v?) 'askeleet ${v.round()}',
       if (garminNum(c.get(r, _cPower)) case final v?) 'keskiteho ${v.round()} W',
