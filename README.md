@@ -120,6 +120,17 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - tuonti FitNotesista ja Garmin Connectista (suoritusten CSV-vienti: laji, aika, matka, kesto, kalorit ja syke),
   varmuuskopio zip-tiedostona, yksittäisten `.md`-tiedostojen tuonti
 
+## Mihin sovellus ottaa yhteyttä?
+
+Tarkistettu julkaisuversiolla 0.2.7 Android-emulaattorissa (marraskuu 2026): jokainen sovelluksen avaama
+verkkoyhteys kirjattiin käytön aikana.
+
+- käyttöönotto, ohjelma, salitreeni, GPS-lenkki, sijainnin haku, käynnistys ja taustalla: **ei yhteyksiä**
+- Kartat-näkymä ja karttojen lataus: **vain GitHub** (github.com, release-assets.githubusercontent.com); GitHub
+  näkee IP-osoitteen ja ladatut kuntapaketit, ei sijaintia, laitteen tunnisteita eikä tiliä
+- vikailmoitus ja varmuuskopio: Androidin jakovalikko, itse valitsemasi sovellus lähettää
+- ei analytiikkaa, mainoksia, kaatumisraportointia eikä Googlen Play-palveluita
+
 ## Kielet
 
 | Kieli | Tila |

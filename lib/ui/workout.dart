@@ -717,7 +717,7 @@ class _RunCompare extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${type?.$3 ?? '🏃'} ${fmtPace(run.paceSecPerKm!)} /km · ${fmtNum((run.speedKmh! * 10).round() / 10)} km/h',
+            '${type?.$3 ?? '🏃'} ${fmtPace(run.paceSecPerKm!)} min/km · ${fmtNum((run.speedKmh! * 10).round() / 10)} km/h',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           if (cmp != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(cmp)),
