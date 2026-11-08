@@ -12,16 +12,32 @@ import 'package:path_provider/path_provider.dart';
 
 import 'pmtiles.dart';
 
-// Offline-kartat: kuntakohtaiset OpenStreetMap-paketit (tools/map_extract.py, tools/map_catalog.py) ladataan
+// Offline-kartat: kuntakohtaiset (muissa maissa kommuner, council areas, provinciat …) OpenStreetMap-paketit (tools/map_extract.py, tools/map_catalog.py) ladataan
 // GitHubin karttajulkaisusta sovelluksen omaan kansioon (ei treenikansioon: gigatavuja ei synkata eikä
 // varmuuskopioida, ja ne voi aina ladata uudelleen). Sijaintia ei lähetetä minnekään: kunta ja etäisyydet
 // lasketaan laitteella luettelon rajoista.
 
-/// Luettelon osoite (karttajulkaisun liite; uusi karttaversio = uusi tagi). Testeissä ja emulaattorilla: --dart-define=MAP_CATALOG=http://10.0.2.2:8095/kartat.json
+/// Suomen luettelon osoite (karttajulkaisun liite; uusi karttaversio = uusi tagi). Käytetään, jos maaluetteloa ei
+/// saada. Testeissä ja emulaattorilla: --dart-define=MAP_CATALOG=http://10.0.2.2:8095/kartat.json
 const mapCatalogUrl = String.fromEnvironment(
   'MAP_CATALOG',
   defaultValue: 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/kartat.json',
 );
+
+/// Maaluettelo: maat ja niiden luetteloiden osoitteet (Suomi, Ruotsi, Norja, Tanska, Islanti, Iso-Britannia, Espanja).
+const mapIndexUrl = String.fromEnvironment(
+  'MAP_INDEX',
+  defaultValue: 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/maat.json',
+);
+
+/// Verkko-osoite vain https:llä (kehitysversiossa myös http, esim. paikallinen testipalvelin).
+String safeMapUrl(String url) {
+  final u = Uri.tryParse(url);
+  if (u == null || !(u.isScheme('https') || (kDebugMode && u.isScheme('http'))) || u.host.isEmpty) {
+    throw FormatException('karttojen osoite ei kelpaa: $url');
+  }
+  return url;
+}
 
 /// Karttatiedoston nimi luettelosta: vain pelkkä nimi (a–z, 0–9, -) ja .pmtiles, ettei luettelo voi ohjata
 /// tiedostoa muualle (esim. ../ tai absoluuttinen polku).
@@ -32,6 +48,9 @@ String safeMapFile(String name) {
 
 class MapPack {
   final String id, name, file, region, sha256;
+
+  /// Maa (ISO 3166-1 -koodi pienillä kirjaimilla), jonka luettelossa paketti on.
+  final String country;
   final String? se, sv;
   final int size;
   final List<double> bbox; // w, s, e, n
@@ -47,9 +66,11 @@ class MapPack {
     required this.shape,
     this.se,
     this.sv,
+    this.country = 'fi',
   });
 
-  factory MapPack.fromJson(Map<String, dynamic> j) => MapPack(
+  factory MapPack.fromJson(Map<String, dynamic> j, {String country = 'fi'}) => MapPack(
+    country: country,
     id: j['id'] as String? ?? p.basenameWithoutExtension(j['file'] as String),
     name: j['name'] as String? ?? j['file'] as String,
     file: safeMapFile(j['file'] as String),
@@ -107,7 +128,17 @@ List<List<(double, double)>> _shape(List? raw) => [
 
 class MapCatalog {
   final String tag, osmDate, base;
-  final MapPack overview, all;
+
+  /// Maa (fi, se, no, dk, is, gb, es), sen nimet (fi, en, se, local) ja pakettien yksikkö (kommun, council …).
+  final String country, unit;
+  final Map<String, String> names;
+
+  /// Aluerajojen lähde (esim. Tilastokeskus tai OpenStreetMap).
+  final String boundaries;
+  final MapPack overview;
+
+  /// Koko maa yhtenä tiedostona (vain, jos se on alle GitHubin 2 GiB:n rajan).
+  final MapPack? all;
   final List<MapPack> packs;
   final List<String> regions;
   const MapCatalog({
@@ -118,29 +149,49 @@ class MapCatalog {
     required this.all,
     required this.packs,
     required this.regions,
+    this.country = 'fi',
+    this.unit = 'kunta',
+    this.names = const {'fi': 'Suomi', 'en': 'Finland', 'se': 'Suopma', 'local': 'Suomi'},
+    this.boundaries = 'Tilastokeskus, CC BY 4.0',
   });
 
-  /// Latausosoite vain https:llä (kehitysversiossa myös http, esim. paikallinen testipalvelin).
   static String _safeBase(String base) {
-    final u = Uri.tryParse(base);
-    if (u == null || !(u.isScheme('https') || (kDebugMode && u.isScheme('http'))) || u.host.isEmpty) {
-      throw FormatException('karttojen osoite ei kelpaa: $base');
-    }
+    safeMapUrl(base);
     return base.endsWith('/') ? base : '$base/';
   }
 
   factory MapCatalog.fromJson(Map<String, dynamic> j) {
-    MapPack pack(Map<String, dynamic> e) => MapPack.fromJson(e);
+    final cc = j['country'] as String? ?? 'fi';
+    if (!RegExp(r'^[a-z]{2}$').hasMatch(cc)) throw FormatException('maakoodi ei kelpaa: $cc');
+    final fi = cc == 'fi';
+    MapPack pack(Map<String, dynamic> e) => MapPack.fromJson(e, country: cc);
+    final all = j['all'] as Map<String, dynamic>?;
     return MapCatalog(
+      country: cc,
+      unit: j['unit'] as String? ?? 'kunta',
+      names: j['names'] == null
+          ? const {'fi': 'Suomi', 'en': 'Finland', 'se': 'Suopma', 'local': 'Suomi'}
+          : {for (final e in (j['names'] as Map).entries) '${e.key}': '${e.value}'},
+      boundaries: j['boundaries'] as String? ?? 'Tilastokeskus, CC BY 4.0',
       tag: j['tag'] as String,
       osmDate: j['osmDate'] as String? ?? '',
       base: _safeBase(j['base'] as String),
-      overview: pack({...(j['overview'] as Map<String, dynamic>), 'id': 'yleiskartta', 'name': 'Yleiskartta'}),
-      all: pack({...(j['all'] as Map<String, dynamic>), 'id': 'suomi', 'name': 'Suomi'}),
+      overview: pack({
+        ...(j['overview'] as Map<String, dynamic>),
+        'id': fi ? 'yleiskartta' : '$cc-yleiskartta',
+        'name': 'Yleiskartta',
+      }),
+      all: all == null ? null : pack({...all, 'id': fi ? 'suomi' : '$cc-koko', 'name': 'Koko maa'}),
       packs: [for (final e in j['packs'] as List) pack(e as Map<String, dynamic>)],
       regions: [for (final r in (j['regions'] as List? ?? const [])) r as String],
     );
   }
+
+  /// Maan nimi käyttöliittymän kielellä.
+  String label(String lang) => names[lang] ?? names['en'] ?? country;
+
+  /// Välimuistin tiedostonimi: Suomi kartat.json (vanhat versiot), muut `<maa>.json`.
+  String get cacheName => country == 'fi' ? 'kartat.json' : '$country.json';
 
   /// Kunta, jossa piste on (null = Suomen ulkopuolella tai merellä).
   MapPack? packAt(double lat, double lon) => packs.where((x) => x.contains(lat, lon)).firstOrNull;
@@ -181,7 +232,52 @@ class MapStore extends ChangeNotifier {
   @visibleForTesting
   http.Client? clientOverride;
 
-  MapCatalog? catalog;
+  /// Maiden luettelot (Suomi ensin) ja Kartat-näkymässä valittu maa.
+  final catalogs = <String, MapCatalog>{};
+  String country = 'fi';
+
+  /// Valitun maan luettelo (null, kun yhtään luetteloa ei ole).
+  MapCatalog? get catalog => catalogs[country] ?? catalogs.values.firstOrNull;
+  set catalog(MapCatalog? c) {
+    if (c == null) {
+      catalogs.clear();
+    } else {
+      _add(c);
+      country = c.country;
+    }
+  }
+
+  void _add(MapCatalog c) {
+    catalogs[c.country] = c;
+    // Suomi ensin, muut aakkosjärjestyksessä maakoodin mukaan.
+    final sorted = catalogs.values.toList()
+      ..sort((a, b) => a.country == 'fi' ? -1 : (b.country == 'fi' ? 1 : a.country.compareTo(b.country)));
+    catalogs
+      ..clear()
+      ..addEntries([for (final x in sorted) MapEntry(x.country, x)]);
+  }
+
+  /// Kaikkien maiden kaikki tiedostot (yleiskartat, koko maa, paketit).
+  Iterable<MapPack> get allPacks => catalogs.values.expand((c) => [c.overview, ?c.all, ...c.packs]);
+
+  /// Paketti, jonka alueella piste on (mikä tahansa maa).
+  MapPack? packAt(double lat, double lon) {
+    for (final c in catalogs.values) {
+      final k = c.packAt(lat, lon);
+      if (k != null) return k;
+    }
+    return null;
+  }
+
+  /// Paketit enintään [km] päässä pisteestä kaikista maista (lähin ensin): rajan yli ulottuu naapurimaahan.
+  List<MapPack> packsWithin(double lat, double lon, double km) {
+    final list = [
+      for (final c in catalogs.values)
+        for (final x in c.packsWithin(lat, lon, km)) (x, x.distanceKm(lat, lon)),
+    ]..sort((a, b) => a.$2.compareTo(b.$2));
+    return [for (final e in list) e.$1];
+  }
+
   final installed = <String>{}; // tiedostonimet
   final downloads = <String, MapDownload>{};
   bool _cancel = false;
@@ -196,39 +292,65 @@ class MapStore extends ChangeNotifier {
     return d;
   }
 
-  /// Luettelo: ensin tallennettu kopio, sitten verkosta (jos [refresh]). Palauttaa virheen tekstinä tai null.
-  /// [network] false: vain tallennettu luettelo ja ladatut tiedostot (nopea, ei verkkoa).
+  /// Luettelot: ensin tallennetut kopiot, sitten verkosta (jos [refresh]): maaluettelo ja jokaisen maan luettelo.
+  /// Jos maaluetteloa ei saada, haetaan pelkkä Suomen luettelo. Palauttaa virheen tekstinä tai null.
+  /// [network] false: vain tallennetut luettelot ja ladatut tiedostot (nopea, ei verkkoa).
   Future<String?> load({bool refresh = false, bool network = true}) async {
     final d = await dir();
-    final cached = File(p.join(d.path, 'kartat.json'));
-    if (catalog == null && await cached.exists()) {
-      try {
-        catalog = MapCatalog.fromJson(jsonDecode(await cached.readAsString()) as Map<String, dynamic>);
-      } catch (_) {}
+    if (catalogs.isEmpty) {
+      await for (final e in d.list()) {
+        final n = p.basename(e.path);
+        if (e is! File || !_isCatalogName(n)) continue;
+        try {
+          _add(MapCatalog.fromJson(jsonDecode(await e.readAsString()) as Map<String, dynamic>));
+        } catch (_) {}
+      }
     }
     await _scan();
-    notifyListeners(); // tallennettu luettelo näkyy heti, verkosta haku jatkuu taustalla
+    notifyListeners(); // tallennetut luettelot näkyvät heti, verkosta haku jatkuu taustalla
     String? err;
-    if (network && (refresh || catalog == null)) {
-      try {
-        final client = clientOverride ?? http.Client();
-        final http.Response r;
-        try {
-          r = await client.get(Uri.parse(mapCatalogUrl)).timeout(const Duration(seconds: 15));
-        } finally {
-          if (clientOverride == null) client.close();
-        }
+    if (network && (refresh || catalogs.isEmpty)) {
+      final client = clientOverride ?? http.Client();
+      Future<String> get(String url) async {
+        final r = await client.get(Uri.parse(safeMapUrl(url))).timeout(const Duration(seconds: 15));
         if (r.statusCode != 200) throw HttpException('HTTP ${r.statusCode}');
-        final text = utf8.decode(r.bodyBytes);
-        catalog = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
-        await cached.writeAsString(text);
+        return utf8.decode(r.bodyBytes);
+      }
+
+      Future<void> fetch(String url, {String? expect}) async {
+        final text = await get(url);
+        final c = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
+        if (expect != null && c.country != expect) throw FormatException('luettelon maa ${c.country} ≠ $expect');
+        _add(c);
+        await File(p.join(d.path, c.cacheName)).writeAsString(text);
+      }
+
+      try {
+        List<(String, String)> countries;
+        try {
+          final index = jsonDecode(await get(mapIndexUrl)) as Map<String, dynamic>;
+          countries = [
+            for (final e in index['countries'] as List) ((e as Map)['id'] as String, e['catalog'] as String),
+          ];
+        } catch (_) {
+          countries = [('fi', mapCatalogUrl)]; // vanha julkaisu ilman maaluetteloa
+        }
+        final errors = <String>[];
+        await Future.wait([
+          for (final (cc, url) in countries) fetch(url, expect: cc).catchError((Object e) => errors.add('$cc: $e')),
+        ]);
+        if (errors.isNotEmpty && catalogs.isEmpty) err = errors.join('; ');
       } catch (e) {
         err = '$e';
+      } finally {
+        if (clientOverride == null) client.close();
       }
     }
     notifyListeners();
     return err;
   }
+
+  static bool _isCatalogName(String n) => n == 'kartat.json' || RegExp(r'^[a-z]{2}\.json$').hasMatch(n);
 
   Future<void> _scan() async {
     final d = await dir();
@@ -247,13 +369,15 @@ class MapStore extends ChangeNotifier {
 
   bool isInstalled(MapPack x) => installed.contains(x.file);
 
-  /// Onko pisteen kohdalla tarkka kartta (kunta tai koko Suomi ladattu).
+  /// Onko pisteen kohdalla tarkka kartta (alueen paketti tai koko maa ladattu).
   bool covers(double lat, double lon) {
-    final c = catalog;
-    if (c == null) return false;
-    if (isInstalled(c.all)) return true;
-    final k = c.packAt(lat, lon);
-    return k != null && isInstalled(k);
+    for (final c in catalogs.values) {
+      // Suomi: koko maa kattaa myös merialueet (kuten ennenkin).
+      if (c.country == 'fi' && c.all != null && isInstalled(c.all!)) return true;
+      final k = c.packAt(lat, lon);
+      if (k != null && (isInstalled(k) || (c.all != null && isInstalled(c.all!)))) return true;
+    }
+    return false;
   }
 
   /// Ladattujen karttojen koko tavuina.
@@ -270,10 +394,13 @@ class MapStore extends ChangeNotifier {
   /// [replace]: ladataan myös jo asennetut (päivitys); vanha kartta pysyy käytössä, kunnes uusi on tarkistettu.
   /// Palauttaa epäonnistuneet lataukset (tyhjä = kaikki onnistui). Latauslista tyhjenee aina lopuksi.
   Future<List<MapDownload>> download(List<MapPack> packs, {bool replace = false}) async {
-    final c = catalog;
-    if (c == null || downloads.isNotEmpty) return const [];
+    if (catalogs.isEmpty || downloads.isNotEmpty) return const [];
+    // Jokaisen maan yleiskartta mukaan, jos sitä (tai koko maata) ei vielä ole.
+    final countries = packs.isEmpty ? {country} : {for (final x in packs) x.country};
     final todo = [
-      if (!isInstalled(c.overview) && !isInstalled(c.all)) c.overview,
+      for (final cc in countries)
+        if (catalogs[cc] case final c? when !isInstalled(c.overview) && !(c.all != null && isInstalled(c.all!)))
+          c.overview,
       ...packs.where((x) => replace || !isInstalled(x)),
     ];
     _cancel = false;
@@ -292,7 +419,7 @@ class MapStore extends ChangeNotifier {
           continue;
         }
         try {
-          await _fetch(client, c.base, x, dl);
+          await _fetch(client, catalogs[x.country]!.base, x, dl);
           dl.done = true;
           installed.add(x.file);
           await _setVersion(x.file, x.sha256);
@@ -380,17 +507,14 @@ class MapStore extends ChangeNotifier {
           staged[n] = await File(path).copy(p.join(tmp.path, n));
         }
       }
-      // Luettelo ensin: sillä tarkistetaan kartat.
-      final cat = staged.remove('kartat.json');
-      if (cat != null) {
-        final text = await cat.readAsString();
-        catalog = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
-        await File(p.join(d.path, 'kartat.json')).writeAsString(text);
+      // Luettelot ensin: niillä tarkistetaan kartat.
+      for (final n in staged.keys.where(_isCatalogName).toList()) {
+        final text = await staged.remove(n)!.readAsString();
+        final c = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
+        catalog = c;
+        await File(p.join(d.path, c.cacheName)).writeAsString(text);
       }
-      final known = {
-        for (final x in [...?catalog?.packs, if (catalog != null) catalog!.overview, if (catalog != null) catalog!.all])
-          x.file: x,
-      };
+      final known = {for (final x in allPacks) x.file: x};
       var n = 0;
       for (final e in staged.entries) {
         final f = await PmTilesFile.open(e.value.path); // heittää, jos ei PMTiles v3
@@ -411,7 +535,7 @@ class MapStore extends ChangeNotifier {
     }
   }
 
-  static bool _importable(String name) => name == 'kartat.json' || RegExp(r'^[a-z0-9-]+\.pmtiles$').hasMatch(name);
+  static bool _importable(String name) => _isCatalogName(name) || RegExp(r'^[a-z0-9-]+\.pmtiles$').hasMatch(name);
 
   // Asennettujen karttojen tarkisteet (asennetut.json): päivitys tunnistetaan, kun luettelon tarkiste muuttuu.
   Future<File> _versionsFile() async => File(p.join((await dir()).path, 'asennetut.json'));
@@ -450,12 +574,10 @@ class MapStore extends ChangeNotifier {
 
   /// Ladatut kartat, joista luettelossa on uudempi versio (tarkiste tai koko eroaa).
   Future<List<MapPack>> outdated() async {
-    final c = catalog;
-    if (c == null) return [];
     final v = await _versions();
     final d = await dir();
     final out = <MapPack>[];
-    for (final x in [c.overview, c.all, ...c.packs]) {
+    for (final x in allPacks) {
       if (!installed.contains(x.file)) continue;
       final known = v[x.file];
       final size = await File(p.join(d.path, x.file)).length();

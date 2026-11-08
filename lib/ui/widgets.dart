@@ -525,3 +525,55 @@ class TrainModePicker extends StatelessWidget {
     onSelectionChanged: (s) => onChanged(s.first),
   );
 }
+
+/// Valmiin (tallennetun) treenin lukutila: sisältöä voi vierittää ja lukea, mutta napautus kysyy ensin,
+/// muokataanko tallennettua treeniä. [ask] palauttaa true, kun käyttäjä haluaa muokata.
+class EditGuard extends StatelessWidget {
+  final bool locked;
+  final VoidCallback onTap;
+  final Widget child;
+  const EditGuard({super.key, required this.locked, required this.onTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) => locked
+      ? GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: AbsorbPointer(child: child),
+        )
+      : child;
+}
+
+/// Kysyy, muokataanko tallennettua treeniä (true = muokataan).
+Future<bool> askEditSaved(BuildContext context) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Muokataanko tallennettua treeniä?')),
+        content: Text(t('Treeni on merkitty valmiiksi. Muutokset tallentuvat sen tiedostoon.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Muokkaa'))),
+        ],
+      ),
+    ) ==
+    true;
+
+/// Lukutilan lukko yläpalkin oikeassa reunassa: kertoo, että treeni on tallennettu; napautus kysyy, muokataanko.
+class LockButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const LockButton({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 4),
+    child: IconButton(
+      tooltip: t('Tallennettu treeni: muokkaa'),
+      onPressed: onTap,
+      icon: const Icon(Icons.lock_outline, color: Sami.green),
+    ),
+  );
+}
+
+/// Sarjojen määrä oikeassa luvussa: 1 sarja, 2 sarjaa.
+String setsLabel(int n) => n == 1 ? t('1 sarja') : t('{0} sarjaa', [n]);
