@@ -82,7 +82,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>Uutta: GPS ja offline-kartat <span class="badge">0.2.6</span></h2>
+  <h2>Uutta: GPS ja offline-kartat seitsemässä maassa <span class="badge">0.2.9</span></h2>
   <div class="feature">
     <img src="kuvat/gps.png" alt="Juoksun reitti kartalla Helsingin Töölönlahdella, aika 41:38">
     <div>
@@ -91,15 +91,31 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>Huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana. Paikallaanolo ei kasvata matkaa.</li>
         <li>Tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita.</li>
         <li>Reitti näkyy kartalla ja tallentuu <code>.gpx</code>-tiedostona treenin viereen: avoin muoto, aukeaa muissakin sovelluksissa.</li>
-        <li><b>Offline-kartat kunnittain:</b> lataa kunnat säteen mukaan (juoksu ja kävely 20 km, pyöräily 100 km, säädettävä), valitse itse tai koko Suomi. Kartat toimivat ilman verkkoa, ja ne voi poistaa matkan jälkeen tai päivittää.</li>
+        <li><b>Offline-kartat seitsemässä maassa:</b> Suomi, Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia paikallishallinnon alueittain ja Espanja maakunnittain. Lataa säteen mukaan (juoksu ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli) tai valitse alueet itse. Kartat toimivat ilman verkkoa, ja ne voi poistaa matkan jälkeen tai päivittää.</li>
       </ul>
       <p class="sub"><small>Kuvan reitti on keksitty esimerkki. Kartat © OpenStreetMap-tekijät (ODbL).</small></p>
+    </div>
+  </div>
+  <div class="feature" style="margin-top:14px">
+    <img src="kuvat/kartat.png" alt="Kartat-näkymä: maavalinta, jossa Suomi, Espanja, Islanti, Iso-Britannia, Norja, Ruotsi ja Tanska">
+    <div>
+      <h3 style="margin:0 0 6px">🗺️ Saatavilla olevat kartat</h3>
+      <ul>
+        <li><b>Suomi</b>: 308 kuntaa, koko maa yhtenä tiedostona</li>
+        <li><b>Ruotsi</b>: 290 kommunia · <b>Norja</b>: 357 kommunea ja Huippuvuoret · <b>Tanska</b>: 98 kommunea · <b>Islanti</b>: 61 kuntaa</li>
+        <li><b>Iso-Britannia</b>: 361 paikallishallinnon aluetta (council areas)</li>
+        <li><b>Espanja</b>: 50 maakuntaa (provincias), myös Kanariansaaret</li>
+      </ul>
+      <p class="sub">Valitse maa ja alueet, tai lataa kartat sijaintisi ympäriltä (myös rajan yli naapurimaahan). Kunnan kartta on tyypillisesti 5–30 Mt.</p>
+      <p class="sub"><small>Kartat © OpenStreetMap-tekijät (ODbL). Iso-Britannian aluerajat: ONS, Open Government Licence v3.0.</small></p>
     </div>
   </div>
   <div class="grid" style="margin-top:14px">
     <div class="card">
       <h3>💪 Salille</h3>
       <ul>
+        <li>tiiviimpi etusivu: tämän päivän treenit riveinä ja viikkokalenteri, kuukausi yhdellä napautuksella</li>
+        <li>valmis treeni lukittuu 🔒: muokkaus kysyy ensin, eikä palautusajastin tai painoehdotukset enää näy</li>
         <li><i>Merkitse liike valmiiksi</i>: vihreä painike pysäyttää palautusajastimen, tehdyt liikkeet saavat ✓:n</li>
         <li>paino per käsipaino tai kahvakuula, kahdella painolla myös kokonaispaino</li>
         <li>ennätysten muokkaus ilman uutta ohjelmaa</li>
@@ -190,7 +206,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>lenkin lisäys yhdellä napautuksella, käytetyimmät lajit ensin</li>
         <li>yli 35 lajia; kävelyssä ja retkeilyssä myös askeleet</li>
         <li>juoksulle oma kehitysnäkymä: lenkin tyyppi, vauhti ja keskinopeus, kilometrit, kevyiden lenkkien vauhti ja syke, ennätykset</li>
-        <li>valinnainen GPS: reitti kartalla ja <code>.gpx</code>-tiedostona, offline-kartat kunnittain</li>
+        <li>valinnainen GPS: reitti kartalla ja <code>.gpx</code>-tiedostona, offline-kartat Suomeen, Pohjoismaihin, Iso-Britanniaan ja Espanjaan</li>
         <li>älykellon tiedot (kesto, kalorit, syke) kirjoitetaan toistaiseksi käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
       </ul>
     </div>

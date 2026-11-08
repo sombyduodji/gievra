@@ -92,14 +92,47 @@ class _MapsScreenState extends State<MapsScreen> {
       _loading = false;
       _error = store.catalog == null ? (err ?? '') : null;
       _refreshInstalled();
-      if (loc != null) _setCenter(loc.$1, loc.$2);
+      if (loc != null) {
+        _setCenter(loc.$1, loc.$2);
+        // Maa sijainnin mukaan (esim. Ruotsissa lomalla: Ruotsin kommuner valmiina).
+        final here = store.packAt(loc.$1, loc.$2);
+        if (here != null) store.country = here.country;
+      }
     });
   }
 
   void _setCenter(double lat, double lon) {
     _center = (lat, lon);
-    _centerName = store.catalog?.packAt(lat, lon)?.label(uiLang);
+    final k = store.packAt(lat, lon);
+    _centerName = k == null ? null : _withCountry(k.label(uiLang), k.country);
   }
+
+  /// Nimi ja maa, kun paketti ei ole Suomesta (esim. "Stockholms kommun, Ruotsi").
+  String _withCountry(String name, String cc) =>
+      cc == 'fi' || store.catalogs[cc] == null ? name : '$name, ${store.catalogs[cc]!.label(uiLang)}';
+
+  // Pakettien yksikkö maan mukaan: kunnat (Pohjoismaat), alueet (Iso-Britannian council areas), maakunnat (Espanjan
+  // provinciat).
+  String _unit(MapCatalog c) => switch (c.unit) {
+    'council' => 'alue',
+    'provincia' => 'maakunta',
+    _ => 'kunta',
+  };
+  String _pickLabel(MapCatalog c) => switch (_unit(c)) {
+    'alue' => t('Valitse alueet'),
+    'maakunta' => t('Valitse maakunnat'),
+    _ => t('Valitse kunnat'),
+  };
+  String _searchHint(MapCatalog c) => switch (_unit(c)) {
+    'alue' => t('Hae aluetta'),
+    'maakunta' => t('Hae maakuntaa'),
+    _ => t('Hae kuntaa'),
+  };
+  String _count(MapCatalog c, int n, String size) => switch (_unit(c)) {
+    'alue' => t('{0} aluetta · {1}', [n, size]),
+    'maakunta' => t('{0} maakuntaa · {1}', [n, size]),
+    _ => t('{0} kuntaa · {1}', [n, size]),
+  };
 
   /// Sijainti kerran GPS:llä (enintään minuutti); ei tallennusta.
   Future<void> _locate() async {
@@ -126,7 +159,13 @@ class _MapsScreenState extends State<MapsScreen> {
       final loc = await done.future.timeout(const Duration(seconds: 60), onTimeout: () => null);
       if (loc != null) {
         await saveLastLocation(loc.$1, loc.$2);
-        if (mounted) setState(() => _setCenter(loc.$1, loc.$2));
+        if (mounted) {
+          setState(() {
+            _setCenter(loc.$1, loc.$2);
+            final here = store.packAt(loc.$1, loc.$2);
+            if (here != null) store.country = here.country;
+          });
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(t('Sijaintia ei löytynyt. Valitse kunnat listasta.'))));
@@ -188,11 +227,17 @@ class _MapsScreenState extends State<MapsScreen> {
     label: Text(_importing ? t('Tuodaan…') : t('Tuo karttapaketti tiedostosta')),
   );
 
+  /// Ladattava koko: puuttuvat paketit ja niiden maiden yleiskartat, joita ei vielä ole.
   int _sizeOf(Iterable<MapPack> packs) {
-    final c = store.catalog!;
-    final todo = packs.where((x) => !store.isInstalled(x));
-    final over = store.isInstalled(c.overview) || store.isInstalled(c.all) ? 0 : c.overview.size;
-    return todo.fold<int>(0, (a, x) => a + x.size) + (todo.isEmpty ? 0 : over);
+    final todo = packs.where((x) => !store.isInstalled(x)).toList();
+    var over = 0;
+    for (final cc in {for (final x in todo) x.country}) {
+      final c = store.catalogs[cc];
+      if (c != null && !store.isInstalled(c.overview) && !(c.all != null && store.isInstalled(c.all!))) {
+        over += c.overview.size;
+      }
+    }
+    return todo.fold<int>(0, (a, x) => a + x.size) + over;
   }
 
   @override
@@ -288,28 +333,63 @@ class _MapsScreenState extends State<MapsScreen> {
                         const SizedBox(height: 8),
                         Builder(
                           builder: (context) {
-                            final within = c.packsWithin(_center!.$1, _center!.$2, _radius);
+                            final within = store.packsWithin(_center!.$1, _center!.$2, _radius);
                             final size = _sizeOf(within);
+                            final missing = within.where((x) => !store.isInstalled(x)).length;
+                            final kunnat = within.every((x) => _unit(store.catalogs[x.country] ?? c) == 'kunta');
                             return FilledButton(
                               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                               onPressed: busy || size == 0 ? null : () => _download(within),
                               child: Text(
                                 size == 0
                                     ? t('Alueen kartat on ladattu ✓')
-                                    : t('Lataa {0} kuntaa · {1}', [
-                                        within.where((x) => !store.isInstalled(x)).length,
-                                        fmtBytes(size),
-                                      ]),
+                                    : kunnat
+                                    ? t('Lataa {0} kuntaa · {1}', [missing, fmtBytes(size)])
+                                    : t('Lataa {0} karttaa · {1}', [missing, fmtBytes(size)]),
                               ),
                             );
                           },
                         ),
                       ],
-                      SectionLabel(t('Valitse kunnat')),
+                      SectionLabel(_pickLabel(c)),
+                      if (store.catalogs.length > 1) ...[
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(c.country),
+                          initialValue: c.country,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: t('Maa'),
+                            isDense: true,
+                            prefixIcon: const Icon(Icons.public),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          items: [
+                            // Suomi ensin, muut aakkosjärjestyksessä käyttöliittymän kielellä.
+                            for (final x
+                                in store.catalogs.values.toList()..sort(
+                                  (a, b) => a.country == 'fi'
+                                      ? -1
+                                      : b.country == 'fi'
+                                      ? 1
+                                      : a.label(uiLang).compareTo(b.label(uiLang)),
+                                ))
+                              DropdownMenuItem(
+                                value: x.country,
+                                child: Text(
+                                  x.label(uiLang) == x.names['local']
+                                      ? x.label(uiLang)
+                                      : '${x.label(uiLang)} · ${x.names['local']}',
+                                ),
+                              ),
+                          ],
+                          onChanged: busy ? null : (v) => setState(() => store.country = v ?? store.country),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                       TextField(
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.search),
-                          hintText: t('Hae kuntaa'),
+                          hintText: _searchHint(c),
                           isDense: true,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                         ),
@@ -318,29 +398,30 @@ class _MapsScreenState extends State<MapsScreen> {
                       const SizedBox(height: 6),
                       for (final r in c.regions) _region(r, c, sub),
                       const SizedBox(height: 6),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(t('Koko Suomi')),
-                        subtitle: Text(t('Yksi tiedosto, {0}', [fmtBytes(c.all.size)]), style: sub),
-                        trailing: store.isInstalled(c.all)
-                            ? TextButton(onPressed: busy ? null : () => _delete(c.all), child: Text(t('Poista')))
-                            : OutlinedButton(
-                                onPressed: busy ? null : () => _download([c.all]),
-                                child: Text(t('Lataa')),
-                              ),
-                      ),
+                      if (c.all case final all?)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(c.country == 'fi' ? t('Koko Suomi') : t('Koko maa: {0}', [c.label(uiLang)])),
+                          subtitle: Text(t('Yksi tiedosto, {0}', [fmtBytes(all.size)]), style: sub),
+                          trailing: store.isInstalled(all)
+                              ? TextButton(onPressed: busy ? null : () => _delete(all), child: Text(t('Poista')))
+                              : OutlinedButton(
+                                  onPressed: busy ? null : () => _download([all]),
+                                  child: Text(t('Lataa')),
+                                ),
+                        ),
                       if (_selected.isNotEmpty)
                         FilledButton(
                           onPressed: busy
                               ? null
                               : () => _download([
-                                  for (final x in c.packs)
+                                  for (final x in store.allPacks)
                                     if (_selected.contains(x.file)) x,
                                 ]),
                           child: Text(
                             t('Lataa valitut ({0}) · {1}', [
                               _selected.length,
-                              fmtBytes(_sizeOf(c.packs.where((x) => _selected.contains(x.file)))),
+                              fmtBytes(_sizeOf(store.allPacks.where((x) => _selected.contains(x.file)))),
                             ]),
                           ),
                         ),
@@ -348,10 +429,16 @@ class _MapsScreenState extends State<MapsScreen> {
                       Text(t('Ladattu: {0}', [fmtBytes(_used)])),
                       const SizedBox(height: 4),
                       Text(
-                        t('Karttatiedot {0} ({1}), lisenssi ODbL. Kuntarajat: Tilastokeskus, CC BY 4.0.', [
-                          MapCredits.osm,
-                          c.osmDate,
-                        ]),
+                        c.country == 'fi'
+                            ? t('Karttatiedot {0} ({1}), lisenssi ODbL. Kuntarajat: Tilastokeskus, CC BY 4.0.', [
+                                MapCredits.osm,
+                                c.osmDate,
+                              ])
+                            : t('Karttatiedot {0} ({1}), lisenssi ODbL. Aluerajat: {2}.', [
+                                MapCredits.osm,
+                                c.osmDate,
+                                c.boundaries,
+                              ]),
                         style: sub,
                       ),
                     ],
@@ -398,9 +485,16 @@ class _MapsScreenState extends State<MapsScreen> {
     }
   }
 
-  String _fileLabel(String f) =>
-      store.catalog?.packs.where((x) => x.file == f).firstOrNull?.label(uiLang) ??
-      (f == 'yleiskartta.pmtiles' ? t('Yleiskartta') : (f == 'suomi.pmtiles' ? t('Koko Suomi') : f));
+  /// Ladatun tiedoston nimi: alue (ja maa, jos muu kuin Suomi), yleiskartta tai koko maa.
+  String _fileLabel(String f) {
+    for (final c in store.catalogs.values) {
+      if (c.overview.file == f) return c.country == 'fi' ? t('Yleiskartta') : '${t('Yleiskartta')}: ${c.label(uiLang)}';
+      if (c.all?.file == f) return c.country == 'fi' ? t('Koko Suomi') : t('Koko maa: {0}', [c.label(uiLang)]);
+      final x = c.packs.where((x) => x.file == f).firstOrNull;
+      if (x != null) return _withCountry(x.label(uiLang), c.country);
+    }
+    return f == 'yleiskartta.pmtiles' ? t('Yleiskartta') : (f == 'suomi.pmtiles' ? t('Koko Suomi') : f);
+  }
 
   Future<void> _deleteAll() async {
     final ok = await showDialog<bool>(
@@ -501,18 +595,7 @@ class _MapsScreenState extends State<MapsScreen> {
       Text(t('Ladattu: {0}', [fmtBytes(_used)])),
       if (store.installed.isNotEmpty) ...[
         const SizedBox(height: 6),
-        Text(
-          [
-            for (final f in store.installed.toList()..sort())
-              store.catalog?.packs.where((x) => x.file == f).firstOrNull?.label(uiLang) ??
-                  (f == 'yleiskartta.pmtiles'
-                      ? t('Yleiskartta')
-                      : f == 'suomi.pmtiles'
-                      ? t('Koko Suomi')
-                      : f),
-          ].join(', '),
-          style: sub,
-        ),
+        Text([for (final f in store.installed.toList()..sort()) _fileLabel(f)].join(', '), style: sub),
       ],
     ],
   );
@@ -565,7 +648,7 @@ class _MapsScreenState extends State<MapsScreen> {
       title: Text(r),
       subtitle: Text(
         have == 0
-            ? t('{0} kuntaa · {1}', [packs.length, fmtBytes(size)])
+            ? _count(c, packs.length, fmtBytes(size))
             : t('{0}/{1} ladattu · {2}', [have, packs.length, fmtBytes(size)]),
         style: sub,
       ),
@@ -583,7 +666,7 @@ class _MapsScreenState extends State<MapsScreen> {
                       _selected.addAll(all);
                     }
                   }),
-            child: Text(t('Valitse koko maakunta')),
+            child: Text(c.country == 'fi' ? t('Valitse koko maakunta') : t('Valitse koko alue')),
           ),
         ),
         for (final x in packs)

@@ -39,22 +39,24 @@ void main() {
     ];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    expect(find.text('Kestävyys'), findsOneWidget);
+    // Yläpalkin vaihto näyttää nykyisen näkymän; napautus vaihtaa toiseen.
+    expect(find.widgetWithText(ActionChip, 'Sali'), findsOneWidget);
     expect(find.text('Lisää lenkki'), findsNothing);
-    await tester.tap(find.text('Kestävyys'));
+    await tester.tap(find.widgetWithText(ActionChip, 'Sali'));
     await tester.pump();
     expect(settings.homeView, 'cardio');
     expect(find.text('Lisää lenkki'), findsOneWidget);
-    expect(find.text('6 km'), findsOneWidget); // tämän viikon kilometrit
+    expect(find.widgetWithText(ActionChip, 'Kestävyys'), findsOneWidget);
+    expect(find.textContaining('6 km', findRichText: true), findsOneWidget); // tämän päivän lenkki
     // Pelkkä sali: ei valintaa, vanha etusivu.
     settings.setTrainMode('gym');
     await tester.pump();
-    expect(find.text('Kestävyys'), findsNothing);
+    expect(find.widgetWithText(ActionChip, 'Sali'), findsNothing);
     expect(find.text('Lisää lenkki'), findsNothing);
     // Pelkkä kestävyys: ei valintaa, kestävyysnäkymä.
     settings.setTrainMode('cardio');
     await tester.pump();
-    expect(find.text('Kestävyys'), findsNothing);
+    expect(find.widgetWithText(ActionChip, 'Kestävyys'), findsNothing);
     expect(find.text('Lisää lenkki'), findsOneWidget);
     settings.trainMode = 'gym';
     store.workouts = [];

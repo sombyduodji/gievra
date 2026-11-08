@@ -291,6 +291,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
+  /// Tallennettu liikunta avautuu lukutilaan (ei luonnos eikä palautettu GPS-tallennus); muokkaus kysyy ensin.
+  late bool _locked =
+      widget.draft == null &&
+      !widget.recoverGps &&
+      store.onDay(w.date).any((x) => x.session == w.session && x.activity != null);
+
+  Future<void> _unlock() async {
+    if (await askEditSaved(context) && mounted) setState(() => _locked = false);
+  }
+
+  List<Widget> _guard(List<Widget> xs) =>
+      !_locked ? xs : [xs.first, for (final x in xs.skip(1)) EditGuard(locked: true, onTap: _unlock, child: x)];
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -299,7 +312,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       appBar: AppBar(
         title: Text(w.activity == null ? t('Liikunta') : sportName(w.activity!)),
         actions: [
-          if (w.activity != null && !(_canGps && !_manual))
+          if (_locked) LockButton(onTap: _unlock),
+          if (!_locked && w.activity != null && !(_canGps && !_manual))
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilledButton.tonal(onPressed: _save, child: Text(t('Tallenna ✓'))),
@@ -308,7 +322,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
-        children: [
+        children: _guard([
           const SamiBand(height: 4, pattern: false),
           if (w.activity == null) ...[
             for (final g in sportGroups) ...[
@@ -530,7 +544,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               ),
             ],
           ],
-        ],
+        ]),
       ),
     );
   }

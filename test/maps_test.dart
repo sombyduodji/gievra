@@ -225,6 +225,125 @@ void main() {
     tmp.deleteSync(recursive: true);
   });
 
+  group('Useampi maa', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('gievra-maat'));
+    tearDown(() {
+      MapStore.instance
+        ..dirOverride = null
+        ..clientOverride = null
+        ..catalog = null
+        ..country = 'fi'
+        ..installed.clear()
+        ..downloads.clear();
+      tmp.deleteSync(recursive: true);
+    });
+
+    // Keksitty raja-alue: Suomen kunta ja Ruotsin kommun vierekkäin (lon 24,0–24,2 ja 23,8–24,0).
+    List<int> bytes(String s) => utf8.encode(s);
+    final fiPack = bytes('fi kunta'), sePack = bytes('se kommun'), seOver = bytes('se yleiskartta');
+    final fiOver = bytes('fi yleiskartta');
+    Map<String, Object> fiCat() => catalogJson(
+      packs: [square('rajakunta', 24.0, 65.8, 24.2, 66.0, size: fiPack.length, sha: sha256.convert(fiPack).toString())],
+      overview: {'file': 'yleiskartta.pmtiles', 'size': fiOver.length, 'sha256': sha256.convert(fiOver).toString()},
+    );
+    Map<String, Object> seCat({String country = 'se'}) => {
+      ...catalogJson(
+        packs: [
+          {
+            ...square(
+              'se-rajakommun',
+              23.8,
+              65.8,
+              24.0,
+              66.0,
+              size: sePack.length,
+              sha: sha256.convert(sePack).toString(),
+            ),
+            'region': 'Norrbottens län',
+          },
+        ],
+        overview: {
+          'file': 'se-yleiskartta.pmtiles',
+          'size': seOver.length,
+          'sha256': sha256.convert(seOver).toString(),
+        },
+      ),
+      'format': 2,
+      'country': country,
+      'unit': 'kommun',
+      'names': {'fi': 'Ruotsi', 'en': 'Sweden', 'se': 'Ruoŧŧa', 'local': 'Sverige'},
+      'boundaries': '© OpenStreetMap contributors (ODbL)',
+    }..remove('all');
+
+    MockClient server({String seCountry = 'se'}) => MockClient.streaming((req, _) async {
+      final body = switch (req.url.pathSegments.last) {
+        'maat.json' => bytes(
+          jsonEncode({
+            'format': 2,
+            'countries': [
+              {'id': 'fi', 'catalog': 'https://example.invalid/kartat/kartat.json'},
+              {'id': 'se', 'catalog': 'https://example.invalid/pohjola/se.json'},
+            ],
+          }),
+        ),
+        'kartat.json' => bytes(jsonEncode(fiCat())),
+        'se.json' => bytes(jsonEncode(seCat(country: seCountry))),
+        'rajakunta.pmtiles' => fiPack,
+        'se-rajakommun.pmtiles' => sePack,
+        'se-yleiskartta.pmtiles' => seOver,
+        'yleiskartta.pmtiles' => fiOver,
+        _ => bytes('?'),
+      };
+      return http.StreamedResponse(Stream.value(body), 200);
+    });
+
+    test('Maaluettelo: Suomi ja Ruotsi, säde rajan yli, Ruotsin paketin mukana Ruotsin yleiskartta', () async {
+      final store = MapStore.instance
+        ..dirOverride = tmp
+        ..clientOverride = server();
+      expect(await store.load(refresh: true), isNull);
+      expect(store.catalogs.keys, ['fi', 'se']);
+      expect(store.catalogs['se']!.label('fi'), 'Ruotsi');
+      expect(store.catalogs['se']!.all, isNull);
+      // Rajalla: 10 km säde ottaa molemmat maat, lähin ensin.
+      final near = store.packsWithin(65.9, 24.05, 10);
+      expect(near.map((x) => x.id), ['rajakunta', 'se-rajakommun']);
+      expect(store.packAt(65.9, 23.9)!.country, 'se');
+
+      expect(await store.download([store.catalogs['se']!.packs.single]), isEmpty);
+      expect(store.installed, {'se-yleiskartta.pmtiles', 'se-rajakommun.pmtiles'});
+      expect(store.covers(65.9, 23.9), isTrue);
+      expect(store.covers(65.9, 24.1), isFalse);
+
+      // Tallennetut luettelot riittävät ilman verkkoa.
+      store
+        ..catalog = null
+        ..clientOverride = MockClient((_) async => http.Response('', 500));
+      expect(await store.load(), isNull);
+      expect(store.catalogs.keys, ['fi', 'se']);
+      expect(File('${tmp.path}/se.json').existsSync(), isTrue);
+    });
+
+    test('Väärän maan luettelo hylätään; vanha julkaisu ilman maaluetteloa: vain Suomi', () async {
+      final store = MapStore.instance
+        ..dirOverride = tmp
+        ..clientOverride = server(seCountry: 'no');
+      await store.load(refresh: true);
+      expect(store.catalogs.keys, ['fi']);
+
+      store
+        ..catalog = null
+        ..clientOverride = MockClient.streaming((req, _) async {
+          final last = req.url.pathSegments.last;
+          if (last == 'maat.json') return http.StreamedResponse(Stream.value(bytes('')), 404);
+          return http.StreamedResponse(Stream.value(bytes(jsonEncode(fiCat()))), 200);
+        });
+      expect(await store.load(refresh: true), isNull);
+      expect(store.catalogs.keys, ['fi']);
+    });
+  });
+
   group('Tuonti tiedostosta', () {
     late Directory tmp;
     setUp(() => tmp = Directory.systemTemp.createTempSync('gievra-karttatuonti'));

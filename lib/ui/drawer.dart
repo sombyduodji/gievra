@@ -674,6 +674,15 @@ Future<void> showAbout(BuildContext context) async {
               [MapCredits.osm],
             ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            t(
+              'Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti ja Espanja {0} (ODbL). Iso-Britannia: '
+              'Office for National Statistics, Open Government Licence v3.0; sisältää OS:n aineistoa '
+              '© Crown copyright and database right 2024.',
+              [MapCredits.osm],
+            ),
+          ),
           TextButton(onPressed: () => _open(MapCredits.osmUrl), child: const Text(MapCredits.osm)),
           const SizedBox(height: 8),
           TextButton.icon(

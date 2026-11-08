@@ -39,6 +39,16 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   bool get _isToday => w.date == dateOnly(DateTime.now());
 
+  /// Valmiiksi merkitty treeni avautuu lukutilaan; muokkaus kysyy ensin.
+  late bool _locked = w.minutes != null || w.feeling != null;
+
+  Future<void> _unlock() async {
+    if (await askEditSaved(context) && mounted) setState(() => _locked = false);
+  }
+
+  List<Widget> _guard(List<Widget> xs) =>
+      !_locked ? xs : [xs.first, for (final x in xs.skip(1)) EditGuard(locked: true, onTap: _unlock, child: x)];
+
   @override
   void initState() {
     super.initState();
@@ -185,10 +195,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final isToday = w.date == dateOnly(DateTime.now());
     final done = w.exercises.where((e) => e.sets.isNotEmpty).toList();
     return Scaffold(
-      bottomNavigationBar: const RestBanner(),
+      // Valmiissa (lukitussa) treenissä ei palautusajastinta.
+      bottomNavigationBar: _locked ? null : const RestBanner(),
       appBar: AppBar(
         title: GestureDetector(
-          onTap: _rename,
+          onTap: () => _locked ? _unlock() : _rename(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -197,7 +208,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 '${isToday ? t('Tänään') : longDateYear(w.date)}'
                 '${w.session > 1 ? ' · ${w.session}. treeni' : ''}'
                 '${w.minutes != null
-                    ? ' · kesto ${fmtDuration(w.minutes!)}'
+                    ? ' · ${t('kesto {0}', [fmtDuration(w.minutes!)])}'
                     : isToday && _elapsed != null
                     ? ' · ⏱ ${fmtDuration(_elapsed!)}'
                     : ''}',
@@ -209,7 +220,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) => switch (v) {
-              'rename' => _rename(),
+              'rename' => _locked ? _unlock() : _rename(),
               'share' => shareWorkout(context, w),
               _ => _deleteWorkout(),
             },
@@ -219,22 +230,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               PopupMenuItem(value: 'delete', child: Text(t('Poista treeni'))),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilledButton.tonal(onPressed: _finish, child: Text(t('Valmis ✓'))),
-          ),
+          // Valmis-painike vain listan lopussa (vihreä "Treeni valmis!"), ei yläpalkissa.
+          if (_locked) LockButton(onTap: _unlock),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Sami.yellow,
-        foregroundColor: Colors.black,
-        onPressed: _addExercise,
-        icon: const Icon(Icons.add),
-        label: Text(t('Liike'), style: TextStyle(fontWeight: FontWeight.w700)),
-      ),
+      floatingActionButton: _locked
+          ? null
+          : FloatingActionButton.extended(
+              backgroundColor: Sami.yellow,
+              foregroundColor: Colors.black,
+              onPressed: _addExercise,
+              icon: const Icon(Icons.add),
+              label: Text(t('Liike'), style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 100),
-        children: [
+        children: _guard([
           const SamiBand(height: 4, pattern: false),
           if (w.warmup != null)
             Container(
@@ -293,7 +304,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                               child: ExName(e.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                             ),
                             Text(
-                              t('{0} sarjaa', [e.workSets.length]),
+                              setsLabel(e.workSets.length),
                               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                             ),
                           ],
@@ -328,7 +339,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               ),
             ),
-          if (widget.planDay != null && settings.program != null) ...[
+          // Lukitussa treenissä vain tehty: ei jäljellä olevia liikkeitä eikä painoehdotuksia.
+          if (!_locked && widget.planDay != null && settings.program != null) ...[
             for (final it in widget.planDay!.items.where((i) => !done.any((e) => e.name == i.exercise)))
               Padding(
                 padding: const EdgeInsets.only(top: 10),
@@ -358,7 +370,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 ),
               ),
           ],
-          if (done.isNotEmpty)
+          if (done.isNotEmpty && !_locked)
             Padding(
               padding: const EdgeInsets.only(top: 18),
               child: FilledButton.icon(
@@ -409,7 +421,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             onEditingComplete: _save,
           ),
-        ],
+        ]),
       ),
     );
   }

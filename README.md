@@ -66,6 +66,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   tai toisessa sovelluksessa
 - treenin ajastin, *Treeni valmis!* ja vertailu edelliseen kertaan, useampi treeni samana päivänä
   (*Lisää uusi treeni*), jakaminen
+- valmis treeni lukittuu 🔒: avautuu lukutilaan, ja muokkaus kysyy ensin; ei palautusajastinta eikä painoehdotuksia
 
 **Valmiit treeniohjelmat**
 - lyhyt aloituskysely: tavoite (voimanosto, lihaskasvu, rasvanpoltto, yleiskunto, fiiliksellä), kokemus,
@@ -112,8 +113,10 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana; paikallaanolo ei kasvata matkaa
 - tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita; keskeytynyt tallennus palautuu
 - reitti näkyy kartalla ja tallentuu `.gpx`-tiedostona treenin viereen
-- OpenStreetMap-kartat kunnittain ilman verkkoyhteyttä: lataus säteen mukaan (juoksu ja kävely 20 km, pyöräily
-  100 km, säädettävä), omat kunnat tai koko Suomi; tuonti tiedostosta; ladattujen karttojen poisto ja päivitys
+- OpenStreetMap-kartat ilman verkkoyhteyttä: Suomi, Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia
+  paikallishallinnon alueittain (council areas) ja Espanja maakunnittain (provincias); lataus säteen mukaan (juoksu
+  ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli), omat alueet tai koko maa; tuonti tiedostosta;
+  ladattujen karttojen poisto ja päivitys
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
@@ -165,8 +168,10 @@ näkyvät sovelluksessa (☰ → Tietoa → Avoin lähdekoodi ja lisenssit).
 **Kartat:** ladattavat karttapaketit perustuvat OpenStreetMap-aineistoon (© OpenStreetMap contributors) ja
 ovat [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) -lisenssin alaisia (sovelluksen koodista
 erillisinä tiedostoina). Rannikot ja rajat pienillä mittakaavoilla: Natural Earth (public
-domain). Kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Paketit tehdään työkalulla
-`tools/map_extract.py`.
+domain). Suomen kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Ruotsin, Norjan, Tanskan, Islannin ja
+Espanjan aluerajat: OpenStreetMap (ODbL). Iso-Britannian alueet: Office for National Statistics, Open Government
+Licence v3.0; sisältää OS:n aineistoa © Crown copyright and database right 2024. Paketit tehdään työkaluilla
+`tools/map_extract.py`, `tools/osm_bounds.py`, `tools/ons_bounds.py` ja `tools/map_country.py`.
 
 Rakentaminen (Flutter):
 
