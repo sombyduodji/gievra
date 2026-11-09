@@ -156,7 +156,7 @@ verkkoyhteys kirjattiin käytön aikana.
 | Kieli | Tila |
 |---|---|
 | **Suomi** | oletus, koko sovellus; liikkeiden ja lajien nimet suomeksi, englanniksi tai molemmilla (asetus) |
-| **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä, kaikki tekstit ja lajien nimet. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden nimet suomeksi, englanniksi tai molemmilla (asetus); liikeohjeet suomeksi. |
+| **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä, kaikki tekstit ja lajien nimet. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden nimet suomeksi, englanniksi tai molemmilla (asetus); vammatilan ohjeet suomeksi tai englanniksi (asetus); liikeohjeet suomeksi. |
 | **English** | koko käyttöliittymä (oikoluettu Hunspellilla); liikkeiden ja lajien nimet aina englanniksi; haku löytää molemmilla kielillä. Tiedostot tallentuvat aina samassa muodossa, joten kieltä voi vaihtaa milloin vain. |
 
 Korjaukset käännöksiin ovat erityisen tervetulleita, ks. [docs/kaannokset.md](docs/kaannokset.md).
@@ -172,7 +172,9 @@ painoja. Vammatila ei korvaa lääkärin tai fysioterapeutin arviota.
 **Palaute on enemmän kuin tervetullutta!** Virheet, puuttuvat liikkeet, oudon näköiset liikeohjeet, ideat ja
 käännöskorjaukset:
 
-- sovelluksessa: ☰ → *Ilmoita ongelmasta* (liitteeksi treenitiedostot ja kuvakaappaukset) tai *Lähetä palautetta*
+- sovelluksessa: ☰ → *Ilmoita ongelmasta* (vinkit siitä, mitä liittää; liitteeksi treenitiedostot, tuontitiedostot ja
+  kuvakaappaukset; mukana puhelimen malli ja asetukset, ei sijaintia) tai *Lähetä palautetta*. Kirjoittaa voi suomeksi,
+  saameksi tai englanniksi.
 - sähköposti: [treeni@somby.fi](mailto:treeni@somby.fi)
 - GitHubissa: [virheilmoitukset ja ehdotukset](../../issues)
 
@@ -219,7 +221,7 @@ Gievra on ja pysyy maksuttomana. Jos se on sinulle hyödyllinen, voit tarjota ka
 ---
 
 **In English:** Gievra (North Sámi for *strong*) is a free, open-source training log for the gym and sports,
-in Finnish and English, with an experimental North Sámi interface. Workouts are plain
+fully in Finnish and English, with an experimental North Sámi interface (injury guidance in Finnish or English). Workouts are plain
 Markdown files in a folder you choose; no account, no ads, no tracking. It builds evidence-based programs
 (including kettlebell programs), prefills warm-up sets, adapts suggestions to your feedback, and shares programs
 as `.gmd` templates. Try the demo and program builder in your browser:
