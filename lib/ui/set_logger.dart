@@ -238,6 +238,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 children: [
                   if (exerciseMotions[e.name] != null)
                     Center(child: FigureAnimation(motion: exerciseMotions[e.name]!, size: 200)),
+                  if ((exerciseCues[e.name] ?? const <String>[]).isNotEmpty)
+                    LangNotice(t('Liikevinkit ovat saatavilla vain suomeksi.'), show: uiLang != 'fi'),
                   for (final c in exerciseCues[e.name] ?? const <String>[])
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
@@ -295,9 +297,9 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               child: Text(
                 [
                   if (_inj.avoid.isNotEmpty)
-                    '⚠️ ${t('Vammatila ({0}): tätä liikettä kannattaa välttää.', [_inj.avoid.join(', ')])}'
+                    '⚠️ ${t('Vammatila ({0}): tätä liikettä kannattaa välttää.', [_inj.avoid.map(t).join(', ')])}'
                         '${_inj.substitute != null ? ' ${t('Kokeile: {0}.', [_inj.substitute])}' : ''}',
-                  if (widget.note != null) '🩹 ${widget.note}' else ..._inj.modify.map((m) => '🩹 $m'),
+                  if (widget.note != null) '🩹 ${trNote(widget.note!)}' else ..._inj.modify.map((m) => '🩹 ${t(m)}'),
                   if (settings.injuries.isNotEmpty)
                     t('Kipua enintään 3–5/10, ja sen pitää rauhoittua aamuun mennessä.'),
                 ].join('\n'),

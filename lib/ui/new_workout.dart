@@ -326,7 +326,7 @@ class _EquipmentTile extends StatelessWidget {
                 children: [
                   Text(eq.icon, style: const TextStyle(fontSize: 28)),
                   const SizedBox(height: 4),
-                  Text(eq.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+                  Text(t(eq.name), textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
                 ],
               ),
             ),

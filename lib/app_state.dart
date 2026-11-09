@@ -70,6 +70,7 @@ class TrainingStyle {
 }
 
 class Settings extends ChangeNotifier {
+  // l10n: data
   static const defaultEquipment = [
     Equipment('🚶', 'Kävelymatto'),
     Equipment('🚴', 'Kuntopyörä'),
@@ -107,6 +108,8 @@ class Settings extends ChangeNotifier {
   String get homeShows => trainMode == 'both' ? homeView : trainMode;
 
   /// Liikkeiden nimet näytössä: 'fi' suomeksi, 'en' englanniksi, 'both' molemmat. Tiedostoihin aina suomeksi.
+  /// Saamenkielisessä käyttöliittymässä vammatilan ohjeet: 'fi' suomeksi tai 'en' englanniksi.
+  String healthLang = 'fi';
   String moveNames = 'fi'; // suomen- ja saamenkielinen käyttöliittymä; englanniksi aina 'en'
   bool watch = false; // sykemittarin / älykellon tiedot näkyvissä
   bool restTimer = false; // palautusajastin sarjan tallennuksen jälkeen (oletus pois)
@@ -319,6 +322,7 @@ class Settings extends ChangeNotifier {
       ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
       ..writeln('mode: $trainMode')
       ..writeln('move_names: $moveNames')
+      ..writeln('health_lang: $healthLang')
       ..writeln('watch: $watch')
       ..writeln('hc_import: $hcImport')
       ..writeln('ongoing_note: $ongoingNote')
@@ -424,6 +428,9 @@ class Settings extends ChangeNotifier {
           case 'move_names':
             moveNames = const {'fi', 'en', 'both'}.contains(v) ? v : 'fi';
             nameMode = moveNames;
+          case 'health_lang':
+            healthLang = v == 'en' ? 'en' : 'fi';
+            healthTextLang = healthLang;
           case 'watch':
             watch = v == 'true';
           case 'hc_import':
@@ -638,6 +645,12 @@ class Settings extends ChangeNotifier {
 
   void setWatch(bool v) {
     watch = v;
+    _persist();
+  }
+
+  void setHealthLang(String v) {
+    healthLang = v;
+    healthTextLang = v;
     _persist();
   }
 

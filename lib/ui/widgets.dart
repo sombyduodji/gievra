@@ -286,30 +286,112 @@ class LanguagePicker extends StatelessWidget {
     if (code == 'se') {
       // Ilmoitus käyttöliittymän nykyisellä kielellä (suomi tai englanti) ja saameksi.
       final en = isEnglish;
+      // Vammatilan ohjeita ei ole saameksi: valinta suomi/englanti heti tässä (myös aloituksessa).
+      var health = en ? 'en' : settings.healthLang;
+      final scroll = ScrollController();
       final ok = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          icon: const Center(child: LangFlag('se', height: 28)),
-          title: const Text('Davvisámegiella · geahččaleapmi'),
-          content: Text(
-            '${en ? 'The North Sámi interface is experimental: the translations are machine translations checked '
-                      'with a Sámi spell checker, and they still await review by a native speaker. Exercise names '
-                      'are in Finnish or English (choose in Settings) and exercise instructions in Finnish. '
-                      'Workout files stay in Finnish.' : 'Pohjoissaamenkielinen käyttöliittymä on kokeellinen: käännökset ovat konekäännöksiä, jotka on '
-                      'tarkistettu saamen oikolukijalla, ja ne odottavat vielä natiivipuhujan tarkistusta. Liikkeiden '
-                      'nimet ovat suomeksi tai englanniksi (valinta asetuksissa) ja liikeohjeet suomeksi. '
-                      'Treenitiedostot pysyvät suomeksi.'}\n\n'
-            'Sámegiel geavahanlávdi lea geahččaleapmi: jorgalusat leat mašiidnajorgalusat, dárkkistuvvon '
-            'Divvun-čállinmeattáhusdárkkistusain. Hárjehusaid namat leat suomagillii dahje eaŋgalsgillii '
-            '(válljejuvvo ásahusain).\n\n${en ? 'Continue?' : 'Jatketaanko?'} · Joatkitgo?',
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setState) => AlertDialog(
+            icon: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Sami.red, size: 32),
+                SizedBox(width: 10),
+                LangFlag('se', height: 28),
+              ],
+            ),
+            title: const Text('Davvisámegiella · geahččaleapmi'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: Scrollbar(
+                    controller: scroll,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: scroll,
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Sami.red.withValues(alpha: .10),
+                              border: Border.all(color: Sami.red, width: 1.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              en
+                                  ? 'WARNING: Not everything is translated. Injury mode guidance is not available in Sámi: '
+                                        'choose below whether it is shown in Finnish or English. Exercise instructions are in '
+                                        'Finnish. The rest are machine translations checked only with a spell checker, not yet '
+                                        'by a native speaker: they may contain errors.'
+                                  : 'VAROITUS: Kaikkea ei ole käännetty. Vammatilan ohjeita ei ole saameksi: valitse alta, '
+                                        'näytetäänkö ne suomeksi vai englanniksi. Liikeohjeet ovat suomeksi. Muut käännökset '
+                                        'ovat konekäännöksiä, jotka on tarkistettu vain oikolukijalla, ei vielä natiivipuhujalla: '
+                                        'niissä voi olla virheitä.',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'VÁRUHUS: Sámegiel geavahanlávdi lea geahččaleapmi. Buot ii leat jorgaluvvon: vahátrávvagat eai '
+                            'leat sámegillii, vállje vuolábealde, čájehuvvojitgo dat suomagillii vai eaŋgalsgillii. '
+                            'Hárjehusaid rávvagat leat suomagillii. Eará jorgalusat leat '
+                            'mašiidnajorgalusat, maid ii leat vel dárkkistan sámegielat olmmoš, dušše čállinmeattáhusdárkkistus. '
+                            'Sáhttet leat boasttuvuođat.',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            en
+                                ? 'Exercise names are in Finnish or English (choose in Settings). Workout files stay in Finnish.'
+                                : 'Liikkeiden nimet ovat suomeksi tai englanniksi (valinta asetuksissa). Treenitiedostot pysyvät '
+                                      'suomeksi.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  '${en ? 'Injury guidance' : 'Vammatilan ohjeet'} · Vahátrávvagat',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(value: 'fi', label: Text('Suomi')),
+                    ButtonSegment(value: 'en', label: Text('English')),
+                  ],
+                  selected: {health},
+                  onSelectionChanged: (v) => setState(() => health = v.first),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${en ? 'You can change this later in Settings.' : 'Voit vaihtaa tämän myöhemmin asetuksista.'} '
+                  '· Sáhtát rievdadit dán maŋŋelis ásahusain.',
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                Text('${en ? 'Continue?' : 'Jatketaanko?'} · Joatkitgo?'),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(en ? 'No · Ii' : 'Ei · Ii')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(en ? 'Yes · Juo' : 'Kyllä · Juo')),
+            ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(en ? 'No · Ii' : 'Ei · Ii')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(en ? 'Yes · Juo' : 'Kyllä · Juo')),
-          ],
         ),
       );
       if (ok != true) return;
+      settings.setHealthLang(health);
     }
     await settings.setLang(code);
   }
@@ -618,4 +700,27 @@ Future<String?> pickSport(BuildContext context, String message) async {
     ),
   );
   return v == null || v.isEmpty ? null : v;
+}
+
+/// Huomautus sisällöstä, jota ei ole käyttöliittymän kielellä (esim. vammatila saameksi englanniksi, liikevinkit vain
+/// suomeksi). Näkyy vain, kun [show] on tosi.
+class LangNotice extends StatelessWidget {
+  final String text;
+  final bool show;
+  const LangNotice(this.text, {super.key, this.show = true});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Sami.red.withValues(alpha: .08),
+        border: Border.all(color: Sami.red.withValues(alpha: .6)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text('⚠️ $text', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+    );
+  }
 }

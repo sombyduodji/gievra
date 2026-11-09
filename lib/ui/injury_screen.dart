@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../exercises.dart' show exerciseLabel;
 import '../injuries.dart';
 import '../program.dart';
 import '../theme.dart';
@@ -37,7 +38,7 @@ class _InjuryScreenState extends State<InjuryScreen> {
           title: Text(t('Päivitetäänkö ohjelma?')),
           content: Text(t('Ohjelman liikkeet valitaan uudelleen vammojen mukaan. Aloituspäivä ja viikko säilyvät.')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ei')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Ei'))),
             FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Päivitä'))),
           ],
         ),
@@ -76,6 +77,12 @@ class _InjuryScreenState extends State<InjuryScreen> {
         children: [
           const SamiBand(height: 4, pattern: false),
           const SizedBox(height: 12),
+          LangNotice(
+            settings.healthLang == 'en'
+                ? t('Ei saatavilla saameksi: vammatilan ohjeet näkyvät englanniksi.')
+                : t('Ei saatavilla saameksi: vammatilan ohjeet näkyvät suomeksi.'),
+            show: uiLang == 'se',
+          ),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -114,18 +121,18 @@ class _InjuryScreenState extends State<InjuryScreen> {
                   value: _sel.contains(r.id),
                   onChanged: (v) => setState(() => v == true ? _sel.add(r.id) : _sel.remove(r.id)),
                 ),
-                title: Text(r.name),
+                title: Text(t(r.name)),
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(r.explanation, style: const TextStyle(fontSize: 13)),
+                  Text(t(r.explanation), style: const TextStyle(fontSize: 13)),
                   if (r.avoid.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(t('Vältä aluksi: {0}', [r.avoid.join(', ')]), style: sub),
+                    Text(t('Vältä aluksi: {0}', [r.avoid.map(exerciseLabel).join(', ')]), style: sub),
                   ],
                   if (r.recommended.isNotEmpty)
                     Text(t('Yleensä hyvin siedetyt: {0}', [r.recommended.join(', ')]), style: sub),
-                  if (r.tendon.isNotEmpty) ...[const SizedBox(height: 6), Text(r.tendon, style: sub)],
+                  if (r.tendon.isNotEmpty) ...[const SizedBox(height: 6), Text(t(r.tendon), style: sub)],
                 ],
               ),
             ),

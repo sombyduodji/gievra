@@ -308,7 +308,7 @@ class _IntroScreenState extends State<IntroScreen> {
       _q(t('Mikä on tavoitteesi?'), [
         _from('goal'),
         _choice(
-          'Voimanosto',
+          t('Voimanosto'),
           t('Kyykky, penkki ja maastaveto raskaammiksi'),
           _goal == 'voimanosto',
           () => _goal = 'voimanosto',

@@ -113,8 +113,21 @@ class _TreeniAppState extends State<TreeniApp> {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(top: false, left: false, right: false, child: child ?? const SizedBox.shrink()),
     ),
-    // Ensimmäisellä käynnistyskerralla kysytään nimi.
-    home: settings.name == null || settings.name!.isEmpty
+    home: const _StartGate(),
+  );
+}
+
+/// Ensimmäinen näkymä asetusten mukaan: nimi kysymättä → aloitus, ohjelma valitsematta → ohjelmakysely, muuten
+/// etusivu. Oma kuuntelija eikä MaterialAppin home: kielen vaihto rakentaa MaterialAppin uudelleen, mutta
+/// navigaattori (yhteinen GlobalKey) säilyy, eikä vaihtunut home enää päivittynyt (englanniksi ja saameksi
+/// aloitussivu jäi näkyviin nimen antamisen jälkeen).
+class _StartGate extends StatelessWidget {
+  const _StartGate();
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: settings,
+    builder: (context, _) => settings.name == null || settings.name!.isEmpty
         ? const OnboardingScreen()
         : !settings.introDone
         ? const IntroScreen(firstRun: true)

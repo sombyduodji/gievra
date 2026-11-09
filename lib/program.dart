@@ -1293,7 +1293,9 @@ void _placeChosen(
       if (target != null) break;
     }
     final compound = slots[slot]?.compound ?? false;
-    final note = injuryStatus(x, injuries).avoid.isEmpty ? null : 'Varo: ${injuryStatus(x, injuries).avoid.join(', ')}';
+    final note = injuryStatus(x, injuries).avoid.isEmpty
+        ? null
+        : l10n.fi('Varo: {0}', [injuryStatus(x, injuries).avoid.join(', ')]);
     if (target != null) {
       final (lo, hi) = measureOf(x) == measureOf(target.exercise) && repRangeOverride[x] == null
           ? (target.lo, target.hi)
@@ -1334,7 +1336,7 @@ void _placeChosen(
     final sub = injuryStatus(c, injuries).substitute;
     if (sub != null && injuryStatus(sub, injuries).avoid.isEmpty) return (sub, null);
   }
-  return (candidates.first, 'Varo: ${injuryStatus(candidates.first, injuries).avoid.join(', ')}');
+  return (candidates.first, l10n.fi('Varo: {0}', [injuryStatus(candidates.first, injuries).avoid.join(', ')]));
 }
 
 const _push = {'VTY', 'VIN', 'PTY', 'RIE', 'KP', 'PEV'};

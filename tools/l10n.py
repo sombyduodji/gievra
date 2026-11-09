@@ -93,7 +93,50 @@ def extract():
                     continue
                 e = found.setdefault(v, {'refs': [], 'args': []})
                 e['refs'].append(f'{rel}:{line_of(src, m.end() + lit.start)}')
+    # Vammatilan aineisto (lib/injury_data.dart, generoitu): käännettävät kentät näytetään t()-kutsulla
+    # (nimi, selitys, jänneohje ja liikekohtaiset muutosohjeet); liikkeiden nimet ja tunnisteet eivät.
+    inj = os.path.join(ROOT, 'lib', 'injury_data.dart')
+    if os.path.exists(inj):
+        for v, ln in injury_texts(open(inj, encoding='utf-8').read()):
+            e = found.setdefault(v, {'refs': [], 'args': []})
+            e['refs'].append(f'lib/injury_data.dart:{ln}')
     return found
+
+
+def injury_texts(src):
+    """InjuryRegion(id, nimi, selitys, [vältettävät], {liike: muutosohje}, {liike: korvaava}, jänneohje, [suositellut]):
+    palauttaa (teksti, rivi) nimelle, selitykselle, jänneohjeelle ja muutosohjeille."""
+    body_start = src.find('const injuryRegions')
+    tok = re.compile(r'"((?:[^"\\]|\\.)*)"|([\[\]{}(),:])')
+    out = []
+    starts = [m.start() for m in re.finditer(r'InjuryRegion\(', src[body_start:])]
+    for i, st in enumerate(starts):
+        a = body_start + st + len('InjuryRegion')
+        b = body_start + starts[i + 1] if i + 1 < len(starts) else len(src)
+        depth, top, maps, inmap, prev = 0, [], 0, None, None
+        for m in tok.finditer(src, a, b):
+            lit, p = m.group(1), m.group(2)
+            if p:
+                if p in '([{':
+                    depth += 1
+                    if p == '{':
+                        maps += 1
+                        inmap = maps
+                elif p in ')]}':
+                    depth -= 1
+                    if p == '}':
+                        inmap = None
+                prev = p
+                continue
+            val = lit.encode().decode('unicode_escape').encode('latin-1').decode('utf-8') if '\\' in lit else lit
+            ln = src.count('\n', 0, m.start()) + 1
+            if depth == 1:
+                top.append((val, ln))
+            elif inmap == 1 and prev == ':' and val.strip():
+                out.append((val, ln))
+            prev = 'lit'
+        out += [x for k, x in enumerate(top) if k in (1, 2, 3) and x[0].strip()]
+    return out
 
 
 def esc(s):

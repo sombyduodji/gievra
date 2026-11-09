@@ -6,6 +6,30 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: en\n"
 
+#: lib/app_state.dart:75
+msgid "Kävelymatto"
+msgstr "Walking pad"
+
+#: lib/app_state.dart:76
+msgid "Kuntopyörä"
+msgstr "Exercise bike"
+
+#: lib/app_state.dart:77
+msgid "Crosstrainer"
+msgstr "Cross trainer"
+
+#: lib/app_state.dart:78
+msgid "Porraskone"
+msgstr "Stair climber"
+
+#: lib/app_state.dart:79
+msgid "Soutulaite"
+msgstr "Rowing machine"
+
+#: lib/app_state.dart:80
+msgid "Venyttely"
+msgstr "Stretching"
+
 #: lib/exercises.dart:565
 msgid "Jäikö varaa?"
 msgstr "Reps in reserve?"
@@ -135,7 +159,7 @@ msgstr "round trips"
 msgid "metrit"
 msgstr "meters"
 
-#: lib/exercises.dart:682 lib/program.dart:19
+#: lib/exercises.dart:682 lib/program.dart:19 lib/ui/intro.dart:311
 msgid "Voimanosto"
 msgstr "Powerlifting"
 
@@ -187,7 +211,7 @@ msgstr "Recent"
 msgid "Omat"
 msgstr "Custom"
 
-#: lib/exercises.dart:695 lib/ui/set_logger.dart:523
+#: lib/exercises.dart:695 lib/ui/set_logger.dart:525
 msgid "Lämmittely"
 msgstr "Warm-up"
 
@@ -266,12 +290,12 @@ msgstr "almost all exercises: {0}"
 msgid "edellinen treeni {0} päivää sitten: aloita kevyemmin"
 msgstr "last workout {0} days ago: start lighter"
 
-#: lib/l10n.dart:5
+#: lib/l10n.dart:6
 msgid "…"
 msgstr "…"
 
 #. {0} = n
-#: lib/l10n.dart:9
+#: lib/l10n.dart:10
 msgid "Tuotiin {0} treeniä."
 msgstr "Imported {0} workouts."
 
@@ -598,6 +622,11 @@ msgstr ""
 "min isn't enough for more; add a training day or lengthen the "
 "workout. You'll still progress with less, as long as you train "
 "regularly."
+
+#. {0} = injuryStatus(x, injuries).avoid.join(', ')
+#: lib/program.dart:1298 lib/program.dart:1339
+msgid "Varo: {0}"
+msgstr "Caution: {0}"
 
 #: lib/program.dart:19
 msgid "voimanosto"
@@ -1140,7 +1169,7 @@ msgid "{0} askelta"
 msgstr "{0} steps"
 
 #. {0} = sets
-#: lib/share_text.dart:29 lib/ui/widgets.dart:580
+#: lib/share_text.dart:29 lib/ui/widgets.dart:662
 msgid "{0} sarjaa"
 msgstr "{0} sets"
 
@@ -1735,7 +1764,7 @@ msgstr "Enter a weight of 20–400 kg."
 msgid "Pituus"
 msgstr "Height"
 
-#: lib/ui/body_screen.dart:36 lib/ui/set_logger.dart:366 lib/ui/set_logger.dart:602
+#: lib/ui/body_screen.dart:36 lib/ui/set_logger.dart:368 lib/ui/set_logger.dart:604
 msgid "Paino"
 msgstr "Weight"
 
@@ -1745,7 +1774,7 @@ msgstr "Weight"
 msgid "Edellinen {0} kg ({1})"
 msgstr "Previous {0} kg ({1})"
 
-#: lib/ui/body_screen.dart:86 lib/ui/drawer.dart:428
+#: lib/ui/body_screen.dart:86 lib/ui/drawer.dart:451
 msgid "Paino ja pituus"
 msgstr "Weight and height"
 
@@ -1769,7 +1798,7 @@ msgstr "No weigh-ins yet. Add your weight on the home screen or here."
 msgid "painoindeksi"
 msgstr "BMI"
 
-#: lib/ui/body_screen.dart:139 lib/ui/new_workout.dart:224 lib/ui/widgets.dart:557
+#: lib/ui/body_screen.dart:139 lib/ui/new_workout.dart:224 lib/ui/widgets.dart:639
 msgid "Muokkaa"
 msgstr "Edit"
 
@@ -1781,7 +1810,7 @@ msgstr ""
 "Saved in the workout folder as kehonpaino.md, and included in backups "
 "and imports."
 
-#: lib/ui/bug_report.dart:61
+#: lib/ui/bug_report.dart:51
 msgid ""
 "⚠ Sisältää punnituksesi ja pituutesi (terveystietoa). Lähetä vain, "
 "jos ongelma liittyy painoon."
@@ -1789,7 +1818,7 @@ msgstr ""
 "⚠ Contains your weigh-ins and height (health data). Only send it if "
 "the problem is about weight."
 
-#: lib/ui/bug_report.dart:68
+#: lib/ui/bug_report.dart:76
 msgid ""
 "⚠ Sisältää GPS-reitin: se näyttää, missä liikuit (esim. kodin "
 "lähellä). Lähetä vain, jos ongelma liittyy reittiin, matkaan tai "
@@ -1799,66 +1828,146 @@ msgstr ""
 "home). Send it only if the problem is about the route, distance or "
 "GPS."
 
-#: lib/ui/bug_report.dart:80
+#: lib/ui/bug_report.dart:89
 msgid "Treeni ei tallennu tai katoaa"
 msgstr "Workout doesn't save or disappears"
 
-#: lib/ui/bug_report.dart:81
+#: lib/ui/bug_report.dart:90
 msgid "Tuonti ei onnistu"
 msgstr "Import fails"
 
-#: lib/ui/bug_report.dart:82
+#: lib/ui/bug_report.dart:91
 msgid "Vienti tai varmuuskopio ei onnistu"
 msgstr "Export or backup fails"
 
-#: lib/ui/bug_report.dart:83
+#: lib/ui/bug_report.dart:92
 msgid "Ohjelma tai ehdotus näyttää väärältä"
 msgstr "Program or suggestion looks wrong"
 
-#: lib/ui/bug_report.dart:84
+#: lib/ui/bug_report.dart:93
 msgid "Sovellus kaatuu tai jumittuu"
 msgstr "App crashes or freezes"
 
-#: lib/ui/bug_report.dart:85
+#: lib/ui/bug_report.dart:94
+msgid "GPS, kartat tai korkeustiedot"
+msgstr "GPS, maps or elevation data"
+
+#: lib/ui/bug_report.dart:95
+msgid "Health Connect -tuonti"
+msgstr "Health Connect import"
+
+#: lib/ui/bug_report.dart:96
+msgid "Käännösvirhe tai väärä kieli"
+msgstr "Translation error or wrong language"
+
+#: lib/ui/bug_report.dart:97
 msgid "Muu ongelma tai ehdotus"
 msgstr "Other problem or suggestion"
 
-#: lib/ui/bug_report.dart:103
+#: lib/ui/bug_report.dart:102
+msgid ""
+"Tuoreimmat treenitiedostot ovat mukana. Kerro, minkä päivän treeni "
+"katosi tai jäi tallentumatta."
+msgstr ""
+"Your latest workout files are included. Tell us which day's workout "
+"disappeared or wasn't saved."
+
+#: lib/ui/bug_report.dart:104
+msgid ""
+"Liitä tiedosto, jonka tuonti epäonnistui (Lisää tiedosto), jos siinä "
+"ei ole mitään, mitä et halua jakaa. Kerro, mistä sovelluksesta se on."
+msgstr ""
+"Attach the file that failed to import (Add file) if it contains "
+"nothing you don't want to share. Tell us which app it's from."
+
+#: lib/ui/bug_report.dart:107
+msgid ""
+"Kerro, minne yritit viedä (kansio, jakaminen) ja mikä virheilmoitus "
+"tuli. Kuvakaappaus auttaa."
+msgstr ""
+"Tell us where you tried to export (folder, sharing) and what error "
+"message appeared. A screenshot helps."
+
+#: lib/ui/bug_report.dart:108
+msgid ""
+"Ohjelma ja asetukset ovat mukana. Kerro, mikä ehdotus näytti väärältä "
+"ja mitä odotit."
+msgstr ""
+"Your program and settings are included. Tell us which suggestion "
+"looked wrong and what you expected."
+
+#: lib/ui/bug_report.dart:109
+msgid ""
+"Kerro, mitä teit juuri ennen ja toistuuko ongelma. Kuvakaappaus "
+"auttaa, jos sovellus jumittuu."
+msgstr ""
+"Tell us what you did just before and whether the problem repeats. A "
+"screenshot helps if the app freezes."
+
+#: lib/ui/bug_report.dart:111
+msgid ""
+"Jos ongelma koskee reittiä tai matkaa, valitse lenkin GPS-reitti "
+"(.gpx) alta. Ladattujen karttojen ja korkeustietojen määrä on mukana "
+"automaattisesti, alueiden nimet eivät."
+msgstr ""
+"If the problem is about the route or distance, select the run's GPS "
+"route (.gpx) below. The number of downloaded maps and elevation files "
+"is included automatically, the area names are not."
+
+#: lib/ui/bug_report.dart:114
+msgid ""
+"Kerro, mikä sovellus tai kello tallentaa tiedot Health Connectiin ja "
+"mitä jäi tuomatta."
+msgstr ""
+"Tell us which app or watch saves the data to Health Connect and what "
+"wasn't imported."
+
+#: lib/ui/bug_report.dart:115
+msgid "Kirjoita väärä teksti ja oikea muoto. Lisää kuvakaappaus näkymästä."
+msgstr ""
+"Write the wrong text and the correct form. Add a screenshot of the "
+"screen."
+
+#: lib/ui/bug_report.dart:149
 msgid "Valitse kuvakaappaukset"
 msgstr "Choose screenshots"
 
-#: lib/ui/bug_report.dart:103
-msgid "Valitse .md- tai .gpx-tiedostot"
-msgstr "Choose .md or .gpx files"
+#: lib/ui/bug_report.dart:149
+msgid "Valitse tiedostot"
+msgstr "Choose files"
 
 #. {0} = e
-#: lib/ui/bug_report.dart:167 lib/ui/import_export.dart:35
+#: lib/ui/bug_report.dart:233 lib/ui/import_export.dart:35
 msgid "Virhe: {0}"
 msgstr "Error: {0}"
 
-#: lib/ui/bug_report.dart:178 lib/ui/drawer.dart:196
+#: lib/ui/bug_report.dart:244 lib/ui/drawer.dart:196
 msgid "Ilmoita ongelmasta"
 msgstr "Report a problem"
 
-#: lib/ui/bug_report.dart:183
+#: lib/ui/bug_report.dart:249
 msgid "Mikä ei toimi?"
 msgstr "What isn't working?"
 
-#: lib/ui/bug_report.dart:199
+#: lib/ui/bug_report.dart:278
 msgid "Mitä tapahtui?"
 msgstr "What happened?"
 
-#: lib/ui/bug_report.dart:205
+#: lib/ui/bug_report.dart:284
 msgid "Esim. mitä teit, mitä odotit ja mitä tapahtui. Toistuuko ongelma?"
 msgstr ""
 "E.g. what you did, what you expected and what happened. Does the "
 "problem repeat?"
 
-#: lib/ui/bug_report.dart:211
+#: lib/ui/bug_report.dart:285 lib/ui/drawer.dart:787
+msgid "Voit kirjoittaa suomeksi, saameksi tai englanniksi."
+msgstr "You can write in Finnish, Sámi or English."
+
+#: lib/ui/bug_report.dart:291
 msgid "Liitteet"
 msgstr "Attachments"
 
-#: lib/ui/bug_report.dart:214
+#: lib/ui/bug_report.dart:294
 msgid ""
 "Treenitiedostot auttavat selvittämään tallennus-, tuonti- ja "
 "vientiongelmia. Ne sisältävät treenisi ja muistiinpanosi: poista "
@@ -1868,15 +1977,20 @@ msgstr ""
 "contain your workouts and notes: uncheck anything you don't want to "
 "send."
 
-#: lib/ui/bug_report.dart:242
-msgid "Lisää tiedosto (.md, .gpx)"
-msgstr "Add a file (.md, .gpx)"
+#. {0} = store.workouts.length - _shown
+#: lib/ui/bug_report.dart:322
+msgid "Näytä vanhempia treenejä ({0} lisää)"
+msgstr "Show older workouts ({0} more)"
 
-#: lib/ui/bug_report.dart:247
+#: lib/ui/bug_report.dart:331
+msgid "Lisää tiedosto"
+msgstr "Add file"
+
+#: lib/ui/bug_report.dart:336
 msgid "Lisää kuvakaappaus"
 msgstr "Add screenshot"
 
-#: lib/ui/bug_report.dart:254
+#: lib/ui/bug_report.dart:343
 msgid ""
 "Ota kuvakaappaus ongelmasta (yleensä virta- ja äänenvoimakkuus alas "
 "-näppäimet yhtä aikaa) ja lisää se tästä."
@@ -1884,20 +1998,23 @@ msgstr ""
 "Take a screenshot of the problem (usually the power and volume down "
 "buttons at the same time) and add it here."
 
-#: lib/ui/bug_report.dart:263
+#: lib/ui/bug_report.dart:352
 msgid "Avaa sähköposti ja lähetä"
 msgstr "Open email and send"
 
 #. {0} = AppInfo.feedbackEmail
-#: lib/ui/bug_report.dart:268
+#: lib/ui/bug_report.dart:357
 msgid ""
 "Viesti lähtee omasta sähköpostistasi osoitteeseen {0}. Mukana on myös "
-"sovelluksen versio ja puhelimen käyttöjärjestelmä. Mitään ei lähetetä "
-"ennen kuin painat sähköpostissa Lähetä."
+"sovelluksen versio, puhelimen malli ja Android-versio, kieli- ja "
+"näyttöasetukset sekä ladattujen karttojen määrä (ei sijaintia). Näet "
+"kaiken sähköpostissa, eikä mitään lähetetä ennen kuin painat siellä "
+"Lähetä."
 msgstr ""
 "The message is sent from your own email to {0}. It also includes the "
-"app version and the phone's operating system. Nothing is sent until "
-"you tap Send in your email app."
+"app version, phone model and Android version, language and display "
+"settings and the number of downloaded maps (no location). You see "
+"everything in the email, and nothing is sent until you tap Send there."
 
 #. {0} = AppInfo.author
 #: lib/ui/drawer.dart:77 lib/ui/program_template.dart:86
@@ -1924,7 +2041,7 @@ msgstr "Progress and statistics"
 msgid "Viikko- ja kuukausikoosteet, fiilis, voimakehitys"
 msgstr "Weekly and monthly summaries, feeling, strength progress"
 
-#: lib/ui/drawer.dart:119 lib/ui/injury_screen.dart:71
+#: lib/ui/drawer.dart:119 lib/ui/injury_screen.dart:72
 msgid "Vammatila"
 msgstr "Injury mode"
 
@@ -1973,7 +2090,7 @@ msgstr ".gmd file from a coach, friend or the web"
 msgid "Tietoa"
 msgstr "About"
 
-#: lib/ui/drawer.dart:190 lib/ui/drawer.dart:757 lib/ui/drawer.dart:835
+#: lib/ui/drawer.dart:190 lib/ui/drawer.dart:780 lib/ui/drawer.dart:865
 msgid "Lähetä palautetta"
 msgstr "Send feedback"
 
@@ -1981,7 +2098,7 @@ msgstr "Send feedback"
 msgid "Tallennus, tuonti, vienti… liitteineen"
 msgstr "Saving, import, export… with attachments"
 
-#: lib/ui/drawer.dart:205 lib/ui/drawer.dart:797
+#: lib/ui/drawer.dart:205 lib/ui/drawer.dart:827
 msgid "Osallistu ja tue"
 msgstr "Get involved and support"
 
@@ -2002,7 +2119,7 @@ msgstr "Version {0}"
 msgid "Miksi sinua kutsutaan?"
 msgstr "What should we call you?"
 
-#: lib/ui/drawer.dart:244 lib/ui/injury_screen.dart:72 lib/ui/maxes_editor.dart:152 lib/ui/program_template.dart:43 …
+#: lib/ui/drawer.dart:244 lib/ui/injury_screen.dart:73 lib/ui/maxes_editor.dart:152 lib/ui/program_template.dart:43 …
 msgid "Tallenna"
 msgstr "Save"
 
@@ -2069,18 +2186,30 @@ msgid "Painon lisäys (kg)"
 msgstr "Weight increment (kg)"
 
 #: lib/ui/drawer.dart:368
-msgid "Liikkeiden nimet"
-msgstr "Exercise names"
+msgid "Vammatilan ohjeet"
+msgstr "Injury guidance"
 
-#: lib/ui/drawer.dart:376
+#: lib/ui/drawer.dart:374 lib/ui/drawer.dart:399
 msgid "Suomi"
 msgstr "Finnish"
 
-#: lib/ui/drawer.dart:384 lib/ui/widgets.dart:517
+#: lib/ui/drawer.dart:384
+msgid ""
+"Vammatilan ohjeita ei ole käännetty saameksi: valitse, näytetäänkö ne "
+"suomeksi vai englanniksi."
+msgstr ""
+"Injury guidance isn't translated into Sámi: choose whether it's shown "
+"in Finnish or English."
+
+#: lib/ui/drawer.dart:391
+msgid "Liikkeiden nimet"
+msgstr "Exercise names"
+
+#: lib/ui/drawer.dart:407 lib/ui/widgets.dart:599
 msgid "Molemmat"
 msgstr "Both"
 
-#: lib/ui/drawer.dart:395
+#: lib/ui/drawer.dart:418
 msgid ""
 "Liikkeiden ja lajien nimet. Haku löytää ne aina molemmilla kielillä, "
 "ja tiedostoihin nimet tallentuvat suomeksi."
@@ -2088,11 +2217,11 @@ msgstr ""
 "Exercise and sport names. Search always finds them in both languages, "
 "and files always store the names in Finnish."
 
-#: lib/ui/drawer.dart:401 lib/ui/onboarding.dart:97
+#: lib/ui/drawer.dart:424 lib/ui/onboarding.dart:97
 msgid "Mitä treenaat?"
 msgstr "What do you train?"
 
-#: lib/ui/drawer.dart:410
+#: lib/ui/drawer.dart:433
 msgid ""
 "Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja "
 "muut lajit. Molemmat: etusivulla valinta Sali / Kestävyys."
@@ -2100,11 +2229,11 @@ msgstr ""
 "Gym: gym workouts and a program. Cardio: running, cycling, skiing and "
 "other sports. Both: choose Gym / Cardio on the home screen."
 
-#: lib/ui/drawer.dart:417
+#: lib/ui/drawer.dart:440
 msgid "Kehonpainon seuranta"
 msgstr "Body weight tracking"
 
-#: lib/ui/drawer.dart:419
+#: lib/ui/drawer.dart:442
 msgid ""
 "Tämän päivän paino etusivulla, painon kehitys ja painoindeksi "
 "tilastoissa. Punnitse milloin haluat."
@@ -2112,15 +2241,15 @@ msgstr ""
 "Today's weight on the home screen, weight trend and BMI in "
 "statistics. Weigh yourself whenever you like."
 
-#: lib/ui/drawer.dart:431
+#: lib/ui/drawer.dart:454
 msgid "Lisää punnitus ja pituus"
 msgstr "Add a weigh-in and your height"
 
-#: lib/ui/drawer.dart:442
+#: lib/ui/drawer.dart:465
 msgid "Palautusajastin"
 msgstr "Rest timer"
 
-#: lib/ui/drawer.dart:445
+#: lib/ui/drawer.dart:468
 msgid ""
 "Sarjan tallennus käynnistää palautuksen: raskaissa ja lähellä "
 "maksimia pidempi, kevennysviikolla lyhyempi. Ohjelman liikkeillä "
@@ -2130,27 +2259,27 @@ msgstr ""
 "efforts, shorter during a deload week. Program exercises use the "
 "program's rest."
 
-#: lib/ui/drawer.dart:461
+#: lib/ui/drawer.dart:484
 msgid "Ilmoitusääni"
 msgstr "Alert sound"
 
-#: lib/ui/drawer.dart:474
+#: lib/ui/drawer.dart:497
 msgid "Kello"
 msgstr "Chime"
 
-#: lib/ui/drawer.dart:475
+#: lib/ui/drawer.dart:498
 msgid "Värinä"
 msgstr "Vibrate"
 
-#: lib/ui/drawer.dart:490
+#: lib/ui/drawer.dart:513
 msgid "Kuuntele"
 msgstr "Listen"
 
-#: lib/ui/drawer.dart:502
+#: lib/ui/drawer.dart:525
 msgid "Ilmoitus käynnissä olevasta treenistä"
 msgstr "Notification for a workout in progress"
 
-#: lib/ui/drawer.dart:504
+#: lib/ui/drawer.dart:527
 msgid ""
 "Pudotusvalikossa näkyy esim. \"Salitreeni käynnissä\" ja kulunut aika, "
 "kunnes treeni on valmis."
@@ -2158,11 +2287,11 @@ msgstr ""
 "The notification shade shows e.g. \"Gym workout in progress\" and the "
 "time elapsed until the workout is done."
 
-#: lib/ui/drawer.dart:511
+#: lib/ui/drawer.dart:534
 msgid "Sykemittari ja älykello"
 msgstr "Heart rate monitor and smartwatch"
 
-#: lib/ui/drawer.dart:513
+#: lib/ui/drawer.dart:536
 msgid ""
 "Kirjaa kellosta kesto, kalorit sekä keski- ja maksimisyke treeneihin "
 "ja liikuntaan."
@@ -2170,11 +2299,11 @@ msgstr ""
 "Log duration, calories, and average and max heart rate from your "
 "watch for workouts and activities."
 
-#: lib/ui/drawer.dart:522 lib/ui/health_import.dart:49
+#: lib/ui/drawer.dart:545 lib/ui/health_import.dart:49
 msgid "Lisää tehty liikunta Health Connectista"
 msgstr "Add completed exercise from Health Connect"
 
-#: lib/ui/drawer.dart:525
+#: lib/ui/drawer.dart:548
 msgid ""
 "Etusivulle painike, josta kellon tai muun sovelluksen Health "
 "Connectiin tallentama liikunta lisätään Gievraan: laji, aika, matka, "
@@ -2184,83 +2313,83 @@ msgstr ""
 "saved to Health Connect into Gievra: sport, time, distance, heart "
 "rate, calories and steps."
 
-#: lib/ui/drawer.dart:536 lib/ui/drawer.dart:694 lib/ui/maps_screen.dart:410
+#: lib/ui/drawer.dart:559 lib/ui/drawer.dart:717 lib/ui/maps_screen.dart:410
 msgid "Kartat"
 msgstr "Maps"
 
-#: lib/ui/drawer.dart:537
+#: lib/ui/drawer.dart:560
 msgid "Offline-kartat GPS-reiteille: lataa alue tai kunnat"
 msgstr "Offline maps for GPS routes: download an area or municipalities"
 
-#: lib/ui/drawer.dart:542
+#: lib/ui/drawer.dart:565
 msgid "Vinkit ja edistyminen"
 msgstr "Tips and progress"
 
-#: lib/ui/drawer.dart:543
+#: lib/ui/drawer.dart:566
 msgid "Edistyminen etusivulla ja kevennysviikon ehdotukset."
 msgstr "Progress on the home screen and deload week suggestions."
 
-#: lib/ui/drawer.dart:548
+#: lib/ui/drawer.dart:571
 msgid "Ehdota kevennystä (viikon välein)"
 msgstr "Suggest a deload (interval in weeks)"
 
-#: lib/ui/drawer.dart:569
+#: lib/ui/drawer.dart:592
 msgid "Treenikansio (.md)"
 msgstr "Workout folder (.md)"
 
-#: lib/ui/drawer.dart:571
+#: lib/ui/drawer.dart:594
 msgid ""
 "Valitse esim. Nextcloud-, Seafile-, ownCloud- tai Drive-synkattu "
 "kansio."
 msgstr "Choose e.g. a Nextcloud, Seafile, ownCloud or Drive synced folder."
 
-#: lib/ui/drawer.dart:582
+#: lib/ui/drawer.dart:605
 msgid "Palauta oletuskansio"
 msgstr "Restore default folder"
 
-#: lib/ui/drawer.dart:585
+#: lib/ui/drawer.dart:608
 msgid "Lämmittelylaitteet"
 msgstr "Warm-up machines"
 
-#: lib/ui/drawer.dart:589
+#: lib/ui/drawer.dart:612
 msgid "Palauta"
 msgstr "Restore"
 
-#: lib/ui/drawer.dart:594
+#: lib/ui/drawer.dart:617
 msgid "Laitteita voi lisätä ja poistaa uuden treenin Muokkaa-napista."
 msgstr "You can add and remove machines with the Edit button in a new workout."
 
-#: lib/ui/drawer.dart:636
+#: lib/ui/drawer.dart:659
 msgid "verkkodemo"
 msgstr "web demo"
 
-#: lib/ui/drawer.dart:636
+#: lib/ui/drawer.dart:659
 msgid "työpöytä"
 msgstr "desktop"
 
 #. {0} = info.version
 #. {1} = platform
-#: lib/ui/drawer.dart:647
+#: lib/ui/drawer.dart:670
 msgid "Versio {0} ({1})"
 msgstr "Version {0} ({1})"
 
-#: lib/ui/drawer.dart:656
+#: lib/ui/drawer.dart:679
 msgid "Maksuton ja avoin treenipäiväkirja salille ja kuntoiluun."
 msgstr "A free and open training log for the gym and fitness."
 
-#: lib/ui/drawer.dart:659
+#: lib/ui/drawer.dart:682
 msgid "Tekijä"
 msgstr "Author"
 
-#: lib/ui/drawer.dart:668 lib/ui/drawer.dart:838
+#: lib/ui/drawer.dart:691 lib/ui/drawer.dart:868
 msgid "GitHub"
 msgstr "GitHub"
 
-#: lib/ui/drawer.dart:671
+#: lib/ui/drawer.dart:694
 msgid "Treenit ovat sinun"
 msgstr "Your workouts are yours"
 
-#: lib/ui/drawer.dart:674
+#: lib/ui/drawer.dart:697
 msgid ""
 "Jokainen treeni tallentuu tavallisena Markdown-tiedostona (.md) "
 "valitsemaasi kansioon, yksi tiedosto treeniä kohden. Tiedostot "
@@ -2273,11 +2402,11 @@ msgstr ""
 "for example, Obsidian, and they move between devices via Nextcloud, "
 "Seafile, ownCloud or Drive."
 
-#: lib/ui/drawer.dart:680
+#: lib/ui/drawer.dart:703
 msgid "Tietosuoja"
 msgstr "Privacy"
 
-#: lib/ui/drawer.dart:683
+#: lib/ui/drawer.dart:706
 msgid ""
 "Sovelluksessa ei ole tiliä, mainoksia eikä analytiikkaa, eikä se "
 "lähetä tietoja minnekään. Treenit pysyvät omassa kansiossasi."
@@ -2285,11 +2414,11 @@ msgstr ""
 "The app has no account, ads or analytics, and it doesn't send data "
 "anywhere. Your workouts stay in your own folder."
 
-#: lib/ui/drawer.dart:687
+#: lib/ui/drawer.dart:710
 msgid "Saamelainen teema"
 msgstr "Sámi theme"
 
-#: lib/ui/drawer.dart:690
+#: lib/ui/drawer.dart:713
 msgid ""
 "Värit ja aurinko/kuu-ympyrä tulevat saamen lipusta, ja koristenauha "
 "on lainattu gáktin reunuksista. Kalenterissa kuukaudet näkyvät myös "
@@ -2300,7 +2429,7 @@ msgstr ""
 "dress). In the calendar, months are also shown in Northern Sámi."
 
 #. {0} = MapCredits.osm
-#: lib/ui/drawer.dart:697
+#: lib/ui/drawer.dart:720
 msgid ""
 "Karttatiedot {0}, lisenssi ODbL 1.0. Rannikot ja rajat pienillä "
 "mittakaavoilla: Natural Earth (public domain). Kunta- ja "
@@ -2311,7 +2440,7 @@ msgstr ""
 "boundaries: Statistics Finland, CC BY 4.0."
 
 #. {0} = MapCredits.osm
-#: lib/ui/drawer.dart:705
+#: lib/ui/drawer.dart:728
 msgid ""
 "Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti ja Espanja "
 "{0} (ODbL). Iso-Britannia: Office for National Statistics, Open "
@@ -2323,7 +2452,7 @@ msgstr ""
 "Open Government Licence v3.0; contains OS data © Crown copyright and "
 "database right 2024."
 
-#: lib/ui/drawer.dart:714
+#: lib/ui/drawer.dart:737
 msgid ""
 "Korkeustiedot (Suomi): Maanmittauslaitos, Korkeusmalli 10 m (2019), "
 "CC BY 4.0; muunnettu Gievraa varten 25 metrin ruudukoksi."
@@ -2331,7 +2460,7 @@ msgstr ""
 "Elevation data (Finland): National Land Survey of Finland, Elevation "
 "model 10 m (2019), CC BY 4.0; converted to a 25 m grid for Gievra."
 
-#: lib/ui/drawer.dart:721
+#: lib/ui/drawer.dart:744
 msgid ""
 "Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia ja "
 "Espanja): Copernicus DEM GLO-30, muunnettu Gievraa varten noin 30 "
@@ -2341,40 +2470,48 @@ msgstr ""
 "Spain): Copernicus DEM GLO-30, converted to a grid of about 30 m for "
 "Gievra."
 
-#: lib/ui/drawer.dart:738
+#: lib/ui/drawer.dart:761
 msgid "Avoin lähdekoodi ja lisenssit"
 msgstr "Open source and licenses"
 
-#: lib/ui/drawer.dart:746
+#: lib/ui/drawer.dart:769
 msgid "Lisenssit"
 msgstr "Licenses"
 
-#: lib/ui/drawer.dart:748 lib/ui/drawer.dart:788 lib/ui/drawer.dart:878
+#: lib/ui/drawer.dart:771 lib/ui/drawer.dart:818 lib/ui/drawer.dart:908
 msgid "Sulje"
 msgstr "Close"
 
-#: lib/ui/drawer.dart:762
+#: lib/ui/drawer.dart:785
 msgid "Virheet, puuttuvat liikkeet, toiveet ja ideat ovat tervetulleita."
 msgstr "Bugs, missing exercises, wishes and ideas are welcome."
 
-#: lib/ui/drawer.dart:773
+#: lib/ui/drawer.dart:790
+msgid ""
+"Jos jokin ei toimi, käytä mieluummin Ilmoita ongelmasta: se liittää "
+"mukaan tarvittavat tiedot."
+msgstr ""
+"If something doesn't work, use Report a problem instead: it attaches "
+"the information needed."
+
+#: lib/ui/drawer.dart:803
 msgid "Osoite kopioitu"
 msgstr "Address copied"
 
-#: lib/ui/drawer.dart:775 lib/ui/drawer.dart:967
+#: lib/ui/drawer.dart:805 lib/ui/drawer.dart:997
 msgid "Kopioi"
 msgstr "Copy"
 
-#: lib/ui/drawer.dart:784
+#: lib/ui/drawer.dart:814
 msgid "Avaa sähköposti"
 msgstr "Open email"
 
-#: lib/ui/drawer.dart:787
+#: lib/ui/drawer.dart:817
 msgid "Tee ilmoitus GitHubissa"
 msgstr "Report on GitHub"
 
 #. {0} = AppInfo.fullName
-#: lib/ui/drawer.dart:803
+#: lib/ui/drawer.dart:833
 msgid ""
 "{0} on maksuton ja avoin sovellus kaikille salista ja kuntoilusta "
 "kiinnostuneille. Siinä ei ole mainoksia, tilauksia eikä maksullisia "
@@ -2383,7 +2520,7 @@ msgstr ""
 "{0} is a free and open app for everyone interested in the gym and "
 "fitness. It has no ads, subscriptions or paid add-ons, and never will."
 
-#: lib/ui/drawer.dart:811
+#: lib/ui/drawer.dart:841
 msgid ""
 "Gievra on vapaa ohjelma GNU GPL v3.0 -lisenssillä: sen lähdekoodia "
 "saa käyttää, tutkia, muokata ja jakaa, kunhan muokatut versiot "
@@ -2396,41 +2533,41 @@ msgstr ""
 "are shared under the same license. The app uses open source "
 "libraries, listed under About → Open source and licenses."
 
-#: lib/ui/drawer.dart:818
+#: lib/ui/drawer.dart:848
 msgid "Näin voit auttaa"
 msgstr "How you can help"
 
-#: lib/ui/drawer.dart:820
+#: lib/ui/drawer.dart:850
 msgid "Ehdota liikkeitä:"
 msgstr "Suggest exercises:"
 
-#: lib/ui/drawer.dart:820
+#: lib/ui/drawer.dart:850
 msgid "kerro, jos luettelosta puuttuu salilla yleinen liike."
 msgstr "let us know if a common gym exercise is missing from the list."
 
-#: lib/ui/drawer.dart:821
+#: lib/ui/drawer.dart:851
 msgid "Ilmoita virheistä:"
 msgstr "Report bugs:"
 
-#: lib/ui/drawer.dart:821
+#: lib/ui/drawer.dart:851
 msgid "kerro, jos jokin ei toimi tai treeni ei tallennu oikein."
 msgstr ""
 "let us know if something doesn't work or a workout isn't saved "
 "correctly."
 
-#: lib/ui/drawer.dart:822
+#: lib/ui/drawer.dart:852
 msgid "Ehdota ideoita:"
 msgstr "Suggest ideas:"
 
-#: lib/ui/drawer.dart:822
+#: lib/ui/drawer.dart:852
 msgid "uusia ominaisuuksia, tilastoja tai käyttöliittymän muutoksia."
 msgstr "new features, statistics or UI changes."
 
-#: lib/ui/drawer.dart:823
+#: lib/ui/drawer.dart:853
 msgid "Saavutettavuus:"
 msgstr "Accessibility:"
 
-#: lib/ui/drawer.dart:823
+#: lib/ui/drawer.dart:853
 msgid ""
 "kerro, mikä helpottaisi käyttöä esimerkiksi näkö- tai liikuntavamman "
 "kanssa."
@@ -2438,27 +2575,27 @@ msgstr ""
 "tell us what would make the app easier to use, for example with a "
 "visual or mobility impairment."
 
-#: lib/ui/drawer.dart:824
+#: lib/ui/drawer.dart:854
 msgid "Käännökset:"
 msgstr "Translations:"
 
-#: lib/ui/drawer.dart:824
+#: lib/ui/drawer.dart:854
 msgid "auta tuomaan sovellus saameksi."
 msgstr "help bring the app to Sámi."
 
-#: lib/ui/drawer.dart:825
+#: lib/ui/drawer.dart:855
 msgid "Osallistu kehitykseen:"
 msgstr "Contribute to development:"
 
-#: lib/ui/drawer.dart:825
+#: lib/ui/drawer.dart:855
 msgid "lähdekoodi on avointa, ja korjaukset ovat tervetulleita."
 msgstr "the source code is open, and fixes are welcome."
 
-#: lib/ui/drawer.dart:841
+#: lib/ui/drawer.dart:871
 msgid "Miksi tukea?"
 msgstr "Why support?"
 
-#: lib/ui/drawer.dart:844
+#: lib/ui/drawer.dart:874
 msgid ""
 "Sovelluksen kehittäminen ja ylläpito tehdään vapaa-ajalla. "
 "Tarjoamalla kahvit tuet suoraan tätä työtä:"
@@ -2466,11 +2603,11 @@ msgstr ""
 "The app is developed and maintained in my free time. By buying me a "
 "coffee, you directly support this work:"
 
-#: lib/ui/drawer.dart:850
+#: lib/ui/drawer.dart:880
 msgid "sovellus pysyy maksuttomana ja mainoksettomana kaikille"
 msgstr "the app stays free and ad-free for everyone"
 
-#: lib/ui/drawer.dart:854
+#: lib/ui/drawer.dart:884
 msgid ""
 "sovellus pysyy ajan tasalla, ja Windows- ja Linux-versiot "
 "valmistuvat, kun sovellus on hiottu valmiiksi"
@@ -2478,15 +2615,15 @@ msgstr ""
 "the app stays up to date, and the Windows and Linux versions get done "
 "once the app is polished"
 
-#: lib/ui/drawer.dart:858
+#: lib/ui/drawer.dart:888
 msgid "saamenkielinen versio ja uudet ominaisuudet etenevät nopeammin"
 msgstr "the Sámi version and new features progress faster"
 
-#: lib/ui/drawer.dart:866
+#: lib/ui/drawer.dart:896
 msgid "Buy me a coffee"
 msgstr "Buy me a coffee"
 
-#: lib/ui/drawer.dart:871
+#: lib/ui/drawer.dart:901
 msgid ""
 "Tuki on vapaaehtoista eikä avaa mitään lisäominaisuuksia: sovellus "
 "pysyy kaikille maksuttomana."
@@ -2494,30 +2631,30 @@ msgstr ""
 "Support is voluntary and doesn't unlock any extra features: the app "
 "stays free for everyone."
 
-#: lib/ui/drawer.dart:875
+#: lib/ui/drawer.dart:905
 msgid "Giitu! Kiitos, että tuet sovellusta!"
 msgstr "Giitu! Thank you for supporting the app!"
 
-#: lib/ui/drawer.dart:889
+#: lib/ui/drawer.dart:919
 msgid "Tauko treenaamisesta"
 msgstr "Break from training"
 
-#: lib/ui/drawer.dart:897
+#: lib/ui/drawer.dart:927
 msgid "🤒 Sairas"
 msgstr "🤒 Sick"
 
-#: lib/ui/drawer.dart:898
+#: lib/ui/drawer.dart:928
 msgid "🏖 Loma"
 msgstr "🏖 Vacation"
 
 #. {0} = start.day
 #. {1} = start.month
 #. {2} = start.year
-#: lib/ui/drawer.dart:906
+#: lib/ui/drawer.dart:936
 msgid "Alkoi {0}.{1}.{2}"
 msgstr "Started {1}/{0}/{2}"
 
-#: lib/ui/drawer.dart:921
+#: lib/ui/drawer.dart:951
 msgid ""
 "Lepää ja parane. Tauko päättyy, kun kirjaat seuraavan treenin. Sen "
 "jälkeen sovellus ehdottaa noin kahden viikon ajan kevyempiä kuormia "
@@ -2527,7 +2664,7 @@ msgstr ""
 "After that, the app suggests lighter loads and fewer sets for about "
 "two weeks, depending on the length of the break."
 
-#: lib/ui/drawer.dart:926
+#: lib/ui/drawer.dart:956
 msgid ""
 "Tauko päättyy, kun kirjaat seuraavan treenin. Lyhyt loma ei juuri "
 "vaikuta voimaan; pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä "
@@ -2537,29 +2674,29 @@ msgstr ""
 "barely affects strength; after a longer one, the app suggests lighter "
 "loads at first."
 
-#: lib/ui/drawer.dart:935
+#: lib/ui/drawer.dart:965
 msgid "Aloita tauko"
 msgstr "Start break"
 
-#: lib/ui/drawer.dart:957
+#: lib/ui/drawer.dart:987
 msgid "Kopioidaanko treenit?"
 msgstr "Copy workouts?"
 
 #. {0} = oldFiles.length
-#: lib/ui/drawer.dart:959
+#: lib/ui/drawer.dart:989
 msgid "Nykyisessä kansiossa on {0} tiedostoa (treenit, asetukset ja ohjelma)."
 msgstr "The current folder has {0} files (workouts, settings and program)."
 
-#: lib/ui/drawer.dart:960
+#: lib/ui/drawer.dart:990
 msgid "Uusi kansio on tyhjä."
 msgstr "The new folder is empty."
 
 #. {0} = newFiles.length
-#: lib/ui/drawer.dart:960
+#: lib/ui/drawer.dart:990
 msgid "Uudessa kansiossa on jo {0} .md-tiedostoa."
 msgstr "The new folder already has {0} .md files."
 
-#: lib/ui/drawer.dart:961
+#: lib/ui/drawer.dart:991
 msgid ""
 "Kopioidaanko treenit uuteen kansioon? Uuden kansion tiedostoja ei "
 "ylikirjoiteta, ja alkuperäiset jäävät myös vanhaan kansioon."
@@ -2567,68 +2704,68 @@ msgstr ""
 "Copy the workouts to the new folder? Files in the new folder won't be "
 "overwritten, and the originals also stay in the old folder."
 
-#: lib/ui/drawer.dart:966
+#: lib/ui/drawer.dart:996
 msgid "Älä kopioi"
 msgstr "Don't copy"
 
 #. {0} = c
 #. {1} = sk
-#: lib/ui/drawer.dart:979
+#: lib/ui/drawer.dart:1009
 msgid "Kopioitu {0} tiedostoa, {1} oli jo uudessa kansiossa. "
 msgstr "Copied {0} files, {1} were already in the new folder. "
 
 #. {0} = c
-#: lib/ui/drawer.dart:980
+#: lib/ui/drawer.dart:1010
 msgid "Kopioitu {0} tiedostoa. "
 msgstr "Copied {0} files. "
 
 #. {0} = e
-#: lib/ui/drawer.dart:982
+#: lib/ui/drawer.dart:1012
 msgid "Kopiointi epäonnistui: {0}"
 msgstr "Copying failed: {0}"
 
 #. {0} = msg
 #. {1} = store.workouts.length
-#: lib/ui/drawer.dart:988
+#: lib/ui/drawer.dart:1018
 msgid "{0}Löytyi {1} treeniä."
 msgstr "{0}Found {1} workouts."
 
-#: lib/ui/drawer.dart:1007
+#: lib/ui/drawer.dart:1037
 msgid "Kevyt kuorma (yli 12 toistoa)"
 msgstr "Light load (over 12 reps)"
 
-#: lib/ui/drawer.dart:1008
+#: lib/ui/drawer.dart:1038
 msgid "Keskiraskas (6–12 toistoa)"
 msgstr "Moderate (6–12 reps)"
 
-#: lib/ui/drawer.dart:1009
+#: lib/ui/drawer.dart:1039
 msgid "Raskas (1–5 toistoa tai lähellä maksimia)"
 msgstr "Heavy (1–5 reps or near max)"
 
-#: lib/ui/drawer.dart:1016
+#: lib/ui/drawer.dart:1046
 msgid "Palautusajat"
 msgstr "Rest times"
 
-#: lib/ui/drawer.dart:1027
+#: lib/ui/drawer.dart:1057
 msgid "ohjelmasi oletus"
 msgstr "your program's default"
 
-#: lib/ui/drawer.dart:1027
+#: lib/ui/drawer.dart:1057
 msgid "oletus"
 msgstr "default"
 
 #. {0} = _mmss(defs[c])
 #. {1} = settings.restAdjust[c] > 0 ? '+' : ''
 #. {2} = settings.restAdjust[c]
-#: lib/ui/drawer.dart:1028
+#: lib/ui/drawer.dart:1058
 msgid "oletus {0}, oma säätö {1}{2} s"
 msgstr "default {0}, your adjustment {1}{2} s"
 
-#: lib/ui/drawer.dart:1069
+#: lib/ui/drawer.dart:1099
 msgid "Palauta oletukset"
 msgstr "Restore defaults"
 
-#: lib/ui/drawer.dart:1073
+#: lib/ui/drawer.dart:1103
 msgid ""
 "Eristävät liikkeet ja lämmittelysarjat lyhyemmin. Ei varaa: +30 s. "
 "Kevennysviikolla × 0,75."
@@ -3386,11 +3523,11 @@ msgstr ""
 "A synced folder (Nextcloud, Seafile…) is already a backup in itself: "
 "the files are ordinary .md files."
 
-#: lib/ui/injury_screen.dart:37
+#: lib/ui/injury_screen.dart:38
 msgid "Päivitetäänkö ohjelma?"
 msgstr "Update the program?"
 
-#: lib/ui/injury_screen.dart:38
+#: lib/ui/injury_screen.dart:39
 msgid ""
 "Ohjelman liikkeet valitaan uudelleen vammojen mukaan. Aloituspäivä ja "
 "viikko säilyvät."
@@ -3398,15 +3535,27 @@ msgstr ""
 "The program's exercises will be chosen again based on your injuries. "
 "The start date and week are kept."
 
-#: lib/ui/injury_screen.dart:41 lib/ui/maps_screen.dart:480
+#: lib/ui/injury_screen.dart:41 lib/ui/move_feedback.dart:103
+msgid "Ei"
+msgstr "No"
+
+#: lib/ui/injury_screen.dart:42 lib/ui/maps_screen.dart:480
 msgid "Päivitä"
 msgstr "Update"
 
-#: lib/ui/injury_screen.dart:72 lib/ui/move_feedback.dart:133 lib/ui/move_select.dart:30 lib/ui/new_workout.dart:224 …
+#: lib/ui/injury_screen.dart:73 lib/ui/move_feedback.dart:133 lib/ui/move_select.dart:30 lib/ui/new_workout.dart:224 …
 msgid "Valmis"
 msgstr "Done"
 
-#: lib/ui/injury_screen.dart:88
+#: lib/ui/injury_screen.dart:82
+msgid "Ei saatavilla saameksi: vammatilan ohjeet näkyvät englanniksi."
+msgstr "Not available in Sámi: injury guidance is shown in English."
+
+#: lib/ui/injury_screen.dart:83
+msgid "Ei saatavilla saameksi: vammatilan ohjeet näkyvät suomeksi."
+msgstr "Not available in Sámi: injury guidance is shown in Finnish."
+
+#: lib/ui/injury_screen.dart:95
 msgid ""
 "Vammatila ei tee diagnoosia eikä korvaa fysioterapeutin tai lääkärin "
 "arviota. Se ehdottaa varovaisia muutoksia harjoitteluun. Jos kipu on "
@@ -3418,29 +3567,29 @@ msgstr ""
 "training. If the pain is severe, gets worse or doesn't ease within a "
 "couple of weeks, see a professional."
 
-#: lib/ui/injury_screen.dart:98
+#: lib/ui/injury_screen.dart:105
 msgid "Punaiset liput: milloin lääkäriin"
 msgstr "Red flags: when to see a doctor"
 
-#: lib/ui/injury_screen.dart:104
+#: lib/ui/injury_screen.dart:111
 msgid "Kipuasteikko ja paluu kuormaan"
 msgstr "Pain scale and returning to load"
 
-#: lib/ui/injury_screen.dart:107
+#: lib/ui/injury_screen.dart:114
 msgid "Missä vaiva on?"
 msgstr "Where is the problem?"
 
-#. {0} = r.avoid.join(', ')
-#: lib/ui/injury_screen.dart:124
+#. {0} = r.avoid.map(exerciseLabel).join(', ')
+#: lib/ui/injury_screen.dart:131
 msgid "Vältä aluksi: {0}"
 msgstr "Avoid at first: {0}"
 
 #. {0} = r.recommended.join(', ')
-#: lib/ui/injury_screen.dart:127
+#: lib/ui/injury_screen.dart:134
 msgid "Yleensä hyvin siedetyt: {0}"
 msgstr "Usually well tolerated: {0}"
 
-#: lib/ui/injury_screen.dart:133
+#: lib/ui/injury_screen.dart:140
 msgid ""
 "Lähteet: docs/tutkimus/vammatila.md (JOSPT-hoitosuositukset, Käypä "
 "hoito, BJSM ym.)."
@@ -4450,10 +4599,6 @@ msgstr "Weight too heavy?"
 msgid "Kyllä"
 msgstr "Yes"
 
-#: lib/ui/move_feedback.dart:103
-msgid "Ei"
-msgstr "No"
-
 #: lib/ui/move_feedback.dart:111
 msgid "Vaikuttiko jokin muu?"
 msgstr "Did something else affect it?"
@@ -4545,7 +4690,7 @@ msgstr "New machine, e.g. Airbike"
 msgid "Aloita treeni →"
 msgstr "Start workout →"
 
-#: lib/ui/new_workout.dart:285 lib/ui/set_logger.dart:444
+#: lib/ui/new_workout.dart:285 lib/ui/set_logger.dart:446
 msgid "Ohita lämmittely"
 msgstr "Skip warm-up"
 
@@ -4637,7 +4782,7 @@ msgstr "Muscle group"
 msgid "Mitataan"
 msgstr "Measured in"
 
-#. {0} = st.avoid.join(', ')
+#. {0} = st.avoid.map(t).join(', ')
 #: lib/ui/picker.dart:99
 msgid "Vältä ({0})"
 msgstr "Avoid ({0})"
@@ -5250,7 +5395,11 @@ msgstr "How to do it"
 msgid "Kokeellinen ohje"
 msgstr "Experimental guide"
 
-#: lib/ui/set_logger.dart:255
+#: lib/ui/set_logger.dart:242
+msgid "Liikevinkit ovat saatavilla vain suomeksi."
+msgstr "Exercise tips are only available in Finnish."
+
+#: lib/ui/set_logger.dart:257
 msgid ""
 "⚠️ Kokeellinen: animaatio ja vinkit ovat suuntaa antavia eikä niitä "
 "ole vielä tarkistanut ammattilainen. Varmista oikea tekniikka "
@@ -5263,80 +5412,80 @@ msgstr ""
 "coach or physiotherapist before lifting heavy weights. If the guide "
 "looks odd, let us know: ☰ → Report a problem."
 
-#: lib/ui/set_logger.dart:276
+#: lib/ui/set_logger.dart:278
 msgid "Tavoite"
 msgstr "Goal"
 
 #. {0} = fmtNum(widget.target!.restSec / 60)
-#: lib/ui/set_logger.dart:277
+#: lib/ui/set_logger.dart:279
 msgid "tauko {0} min"
 msgstr "rest {0} min"
 
 #. {0} = widget.target!.label
 #. {1} = e.workSets.length
 #. {2} = widget.target!.sets
-#: lib/ui/set_logger.dart:281
+#: lib/ui/set_logger.dart:283
 msgid "{0} · tehty {1}/{2}"
 msgstr "{0} · done {1}/{2}"
 
-#. {0} = _inj.avoid.join(', ')
-#: lib/ui/set_logger.dart:298
+#. {0} = _inj.avoid.map(t).join(', ')
+#: lib/ui/set_logger.dart:300
 msgid "Vammatila ({0}): tätä liikettä kannattaa välttää."
 msgstr "Injury mode ({0}): best to avoid this exercise."
 
 #. {0} = _inj.substitute
-#: lib/ui/set_logger.dart:299
+#: lib/ui/set_logger.dart:301
 msgid "Kokeile: {0}."
 msgstr "Try: {0}."
 
-#: lib/ui/set_logger.dart:302
+#: lib/ui/set_logger.dart:304
 msgid "Kipua enintään 3–5/10, ja sen pitää rauhoittua aamuun mennessä."
 msgstr "Pain at most 3–5/10, and it should settle by the next morning."
 
-#: lib/ui/set_logger.dart:313
+#: lib/ui/set_logger.dart:315
 msgid "Edellinen kerta: "
 msgstr "Last time: "
 
-#: lib/ui/set_logger.dart:316
+#: lib/ui/set_logger.dart:318
 msgid "ei aiempaa"
 msgstr "no previous"
 
-#: lib/ui/set_logger.dart:321
+#: lib/ui/set_logger.dart:323
 msgid "Paras: "
 msgstr "Best: "
 
 #. {0} = fmtSet(e.name, SetEntry(_sugg.kg, _sugg.reps))
-#: lib/ui/set_logger.dart:345
+#: lib/ui/set_logger.dart:347
 msgid "Ehdotus: {0}"
 msgstr "Suggestion: {0}"
 
-#: lib/ui/set_logger.dart:359
+#: lib/ui/set_logger.dart:361
 msgid "Käytä"
 msgstr "Use"
 
-#: lib/ui/set_logger.dart:366 lib/ui/set_logger.dart:602
+#: lib/ui/set_logger.dart:368 lib/ui/set_logger.dart:604
 msgid "Lisäpaino (0 = oma paino)"
 msgstr "Added weight (0 = bodyweight)"
 
-#: lib/ui/set_logger.dart:373 lib/ui/set_logger.dart:609
+#: lib/ui/set_logger.dart:375 lib/ui/set_logger.dart:611
 msgid "Paino (kg)"
 msgstr "Weight (kg)"
 
-#: lib/ui/set_logger.dart:389
+#: lib/ui/set_logger.dart:391
 msgid " (per puoli)"
 msgstr " (per side)"
 
 #. {0} = _warmIdx + 1
 #. {1} = _warm.length
-#: lib/ui/set_logger.dart:413
+#: lib/ui/set_logger.dart:415
 msgid "Lämmittely {0}/{1}"
 msgstr "Warm-up {0}/{1}"
 
-#: lib/ui/set_logger.dart:421
+#: lib/ui/set_logger.dart:423
 msgid "työsarjat"
 msgstr "working sets"
 
-#: lib/ui/set_logger.dart:427
+#: lib/ui/set_logger.dart:429
 msgid ""
 "Esitäytetty: muuta painoa tai toistoja vapaasti. Lämmittelysarjat "
 "eivät vaikuta ehdotuksiin."
@@ -5344,64 +5493,64 @@ msgstr ""
 "Prefilled: change the weight or reps freely. Warm-up sets don't "
 "affect suggestions."
 
-#: lib/ui/set_logger.dart:437
+#: lib/ui/set_logger.dart:439
 msgid "Tallenna lämmittelysarja"
 msgstr "Save warm-up set"
 
 #. {0} = reserveWords(_m).question[0].toLowerCase()
 #. {1} = reserveWords(_m).question.substring(1)
-#: lib/ui/set_logger.dart:449
+#: lib/ui/set_logger.dart:451
 msgid "Tallenna sarja – {0}{1}"
 msgstr "Save set – {0}{1}"
 
-#: lib/ui/set_logger.dart:479
+#: lib/ui/set_logger.dart:481
 msgid "Tallenna vastaamatta"
 msgstr "Save without answering"
 
-#: lib/ui/set_logger.dart:497
+#: lib/ui/set_logger.dart:499
 msgid "Merkitse liike valmiiksi"
 msgstr "Mark move as done"
 
 #. {0} = i + 1 - e.sets.take(i).where((s) => s.warmup).length
-#: lib/ui/set_logger.dart:524
+#: lib/ui/set_logger.dart:526
 msgid "Sarja {0}"
 msgstr "Set {0}"
 
-#: lib/ui/set_logger.dart:552
+#: lib/ui/set_logger.dart:554
 msgid "Napauta sarjaa korjataksesi, pyyhkäise vasemmalle poistaaksesi."
 msgstr "Tap a set to edit it, swipe left to delete it."
 
 #. {0} = widget.index + 1
-#: lib/ui/set_logger.dart:599
+#: lib/ui/set_logger.dart:601
 msgid "Korjaa sarja {0}"
 msgstr "Edit set {0}"
 
-#: lib/ui/set_logger.dart:668
+#: lib/ui/set_logger.dart:670
 msgid "Paino per kuula (2 kuulaa)"
 msgstr "Weight per kettlebell (2 kettlebells)"
 
-#: lib/ui/set_logger.dart:669
+#: lib/ui/set_logger.dart:671
 msgid "Paino per käsi (2 painoa)"
 msgstr "Weight per hand (2 weights)"
 
-#: lib/ui/set_logger.dart:670
+#: lib/ui/set_logger.dart:672
 msgid "Paino per käsipaino (2 käsipainoa)"
 msgstr "Weight per dumbbell (2 dumbbells)"
 
-#: lib/ui/set_logger.dart:671
+#: lib/ui/set_logger.dart:673
 msgid "Paino per kuula"
 msgstr "Weight per kettlebell"
 
-#: lib/ui/set_logger.dart:674
+#: lib/ui/set_logger.dart:676
 msgid "Paino (yksi käsipaino tai kuula)"
 msgstr "Weight (one dumbbell or kettlebell)"
 
-#: lib/ui/set_logger.dart:674
+#: lib/ui/set_logger.dart:676
 msgid "Paino per käsipaino"
 msgstr "Weight per dumbbell"
 
 #. {0} = fmtNum(kg * 2)
-#: lib/ui/set_logger.dart:682
+#: lib/ui/set_logger.dart:684
 msgid "Molemmissa käsissä · yhteensä {0} kg"
 msgstr "In both hands · total {0} kg"
 
@@ -5855,27 +6004,27 @@ msgstr "Good afternoon"
 msgid "Hyvää iltaa"
 msgstr "Good evening"
 
-#: lib/ui/widgets.dart:553
+#: lib/ui/widgets.dart:635
 msgid "Muokataanko tallennettua treeniä?"
 msgstr "Edit the saved workout?"
 
-#: lib/ui/widgets.dart:554
+#: lib/ui/widgets.dart:636
 msgid "Treeni on merkitty valmiiksi. Muutokset tallentuvat sen tiedostoon."
 msgstr "The workout is marked as done. Changes are saved to its file."
 
-#: lib/ui/widgets.dart:572
+#: lib/ui/widgets.dart:654
 msgid "Tallennettu treeni: muokkaa"
 msgstr "Saved workout: edit"
 
-#: lib/ui/widgets.dart:580
+#: lib/ui/widgets.dart:662
 msgid "1 sarja"
 msgstr "1 set"
 
-#: lib/ui/widgets.dart:589
+#: lib/ui/widgets.dart:671
 msgid "Mikä laji tämä on?"
 msgstr "Which activity is this?"
 
-#: lib/ui/widgets.dart:617
+#: lib/ui/widgets.dart:699
 msgid "Ohita, älä tuo"
 msgstr "Skip, don't import"
 
@@ -5909,7 +6058,7 @@ msgstr "Delete workout"
 msgid "Liike"
 msgstr "Exercise"
 
-#. {0} = w.warmup!.equipment
+#. {0} = t(w.warmup!.equipment)
 #. {1} = w.warmup!.minutes
 #: lib/ui/workout.dart:263
 msgid "Lämmittely · {0} {1} min"
@@ -6036,3 +6185,810 @@ msgstr "Previous {0} ({1}): {2} min/km"
 #: lib/ui/workout.dart:716
 msgid "juoksu"
 msgstr "run"
+
+#: lib/injury_data.dart:37 lib/injury_data.dart:39 lib/injury_data.dart:41 lib/injury_data.dart:43
+msgid ""
+"kapeampi ote (n. 1,5 × hartialeveys), kyynärpäät n. 45° vartalosta, "
+"liikerata kivuttomaan syvyyteen"
+msgstr ""
+"narrower grip (about 1.5 × shoulder width), elbows about 45° from the "
+"body, range of motion to a pain-free depth"
+
+#: lib/injury_data.dart:44 lib/injury_data.dart:45
+msgid "neutraali ote (kämmenet vastakkain), loiva kulma, ei syvää alaasentoa"
+msgstr "neutral grip (palms facing), shallow angle, no deep bottom position"
+
+#: lib/injury_data.dart:46 lib/injury_data.dart:47
+msgid ""
+"vain jos kivuton: kevyt, neutraali ote, kädet hieman eteen "
+"(lapalinjaan)"
+msgstr ""
+"only if pain-free: light, neutral grip, arms slightly forward (in the "
+"scapular plane)"
+
+#: lib/injury_data.dart:48 lib/injury_data.dart:49
+msgid "kevyt, kädet n. 30° eteen, korkeintaan hartiatasolle"
+msgstr "light, arms about 30° forward, at most to shoulder height"
+
+#: lib/injury_data.dart:50 lib/injury_data.dart:51 lib/injury_data.dart:52
+msgid "lyhyt liikerata, ei syvää venytystä takana"
+msgstr "short range of motion, no deep stretch at the back"
+
+#: lib/injury_data.dart:53 lib/injury_data.dart:54
+msgid ""
+"neutraali ote tai vastaote, ei täyteen ylöskurotukseen, ylätalja aina "
+"eteen"
+msgstr ""
+"neutral or underhand grip, not to full overhead reach, lat pulldown "
+"always to the front"
+
+#: lib/injury_data.dart:55 lib/injury_data.dart:56
+msgid "leveämpi ote tangosta; jos olkapää kipeytyy, vaihda"
+msgstr "wider grip on the bar; if the shoulder starts to hurt, switch"
+
+#: lib/injury_data.dart:57
+msgid "kädet korokkeella, kyynärpäät lähellä vartaloa"
+msgstr "hands on a raised surface, elbows close to the body"
+
+#: lib/injury_data.dart:23
+msgid "Olkapää (kiertäjäkalvosin / pinne)"
+msgstr "Shoulder (rotator cuff / impingement)"
+
+#: lib/injury_data.dart:24
+msgid ""
+"Olkapään etu- tai sivuosan kipu, joka pahenee käden nostossa "
+"hartiatason yläpuolelle tai painaessa. Usein taustalla on "
+"kiertäjäkalvosimen jänteen ärtyminen. Asteittain lisättävä "
+"voimaharjoittelu auttaa yleensä paremmin kuin täysi lepo."
+msgstr ""
+"Pain at the front or side of the shoulder that gets worse when "
+"lifting the arm above shoulder height or pressing. Often caused by an "
+"irritated rotator cuff tendon. Gradually progressed strength training "
+"usually helps more than complete rest."
+
+#: lib/injury_data.dart:70
+msgid ""
+"Kiertäjäkalvosimen jänteelle tehoaa asteittain raskaampi "
+"vastusharjoittelu. Ulkokierto kuminauhalla tai taljalla on hyvä "
+"lisäliike (ei katalogissa). Kipua saa olla enintään 3–5/10, ja sen "
+"pitää rauhoittua seuraavaan aamuun mennessä."
+msgstr ""
+"The rotator cuff tendon responds to gradually heavier resistance "
+"training. External rotation with a band or cable is a good extra "
+"exercise (not in the catalog). Pain may be at most 3–5/10 and should "
+"settle by the next morning."
+
+#: lib/injury_data.dart:80 lib/injury_data.dart:82 lib/injury_data.dart:84 lib/injury_data.dart:86 …
+msgid ""
+"ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle "
+"(esim. pyyhe tai lauta rinnalla)"
+msgstr ""
+"grip under 1.5 × shoulder width, stop the bar 4–6 cm above the chest "
+"(e.g. a towel or board on the chest)"
+
+#: lib/injury_data.dart:89 lib/injury_data.dart:90
+msgid "neutraali ote, ei syvää alaasentoa"
+msgstr "neutral grip, no deep bottom position"
+
+#: lib/injury_data.dart:91 lib/injury_data.dart:92 lib/injury_data.dart:93
+msgid "kädet eivät ylitä vartalon keskilinjaa, lyhyt liikerata"
+msgstr "hands don't cross the midline of the body, short range of motion"
+
+#: lib/injury_data.dart:94
+msgid "ei rintaa lattiaan asti"
+msgstr "not all the way to the floor with the chest"
+
+#: lib/injury_data.dart:95 lib/injury_data.dart:96
+msgid "vain kivuttomaan korkeuteen, kevyt"
+msgstr "only to a pain-free height, light"
+
+#: lib/injury_data.dart:97
+msgid "kevyt, ilman rullausta"
+msgstr "light, without rolling"
+
+#: lib/injury_data.dart:75
+msgid "Olkapään AC-nivel (solisluun pää)"
+msgstr "Shoulder AC joint (end of the collarbone)"
+
+#: lib/injury_data.dart:76
+msgid ""
+"Kipu olkapään päällä, solisluun ulkopäässä. Se pahenee penkissä "
+"alaasennossa, dipeissä ja kun käsi viedään vartalon yli. Kipu on "
+"tyypillinen paljon penkkiä punnertavilla."
+msgstr ""
+"Pain on top of the shoulder, at the outer end of the collarbone. It "
+"gets worse at the bottom of the bench press, in dips and when the arm "
+"is brought across the body. Common in people who bench a lot."
+
+#: lib/injury_data.dart:114 lib/injury_data.dart:115 lib/injury_data.dart:116
+msgid "kapeampi ote, ei syvää alaasentoa"
+msgstr "narrower grip, no deep bottom position"
+
+#: lib/injury_data.dart:117 lib/injury_data.dart:118
+msgid "leveämpi ote, ei pakotettua ulkokiertoa"
+msgstr "wider grip, no forced external rotation"
+
+#: lib/injury_data.dart:119
+msgid "lyhyt liikerata, kädet edessä"
+msgstr "short range of motion, hands in front"
+
+#: lib/injury_data.dart:120 lib/injury_data.dart:121
+msgid "ei roikkumista ääriasennossa"
+msgstr "no hanging in the end position"
+
+#: lib/injury_data.dart:122
+msgid "neutraali ote, kevyt"
+msgstr "neutral grip, light"
+
+#: lib/injury_data.dart:110
+msgid "Olkapää (epävakaus / sijoiltaanmeno eteen)"
+msgstr "Shoulder (instability / anterior dislocation)"
+
+#: lib/injury_data.dart:111
+msgid ""
+"Tunne, että olkapää \"lähtee paikoiltaan\", tai aiempi sijoiltaanmeno. "
+"Riskiasento on käsi sivulla ja kierrettynä taakse. Jos olkapää on "
+"mennyt sijoiltaan, harjoittelu pitää suunnitella fysioterapeutin "
+"kanssa."
+msgstr ""
+"A feeling that the shoulder is \"slipping out\", or a previous "
+"dislocation. The risky position is the arm out to the side and "
+"rotated back. If the shoulder has dislocated, plan training with a "
+"physiotherapist."
+
+#: lib/injury_data.dart:140 lib/injury_data.dart:141 lib/injury_data.dart:142 lib/injury_data.dart:143 …
+msgid "käytä vetoremmejä, kevennä"
+msgstr "use lifting straps, reduce the load"
+
+#: lib/injury_data.dart:146 lib/injury_data.dart:147 lib/injury_data.dart:148 lib/injury_data.dart:149
+msgid "neutraali ote tai vastaote, remmit"
+msgstr "neutral or underhand grip, straps"
+
+#: lib/injury_data.dart:150
+msgid "neutraali ote, remmit"
+msgstr "neutral grip, straps"
+
+#: lib/injury_data.dart:151
+msgid "EZ-tanko tai vaihda käsipainoihin"
+msgstr "EZ bar or switch to dumbbells"
+
+#: lib/injury_data.dart:152
+msgid "köysikahva, neutraali ote"
+msgstr "rope handle, neutral grip"
+
+#: lib/injury_data.dart:136
+msgid "Kyynärpää ulkosivu (tenniskyynärpää)"
+msgstr "Outer elbow (tennis elbow)"
+
+#: lib/injury_data.dart:137
+msgid ""
+"Kipu kyynärpään ulkosivulla. Se pahenee puristaessa ja nostaessa "
+"kämmen alaspäin. Taustalla on ranteen ojentajien jänteen ärtyminen. "
+"Asteittain lisättävä ranteen ojennusharjoittelu on hoidon perusta."
+msgstr ""
+"Pain on the outer side of the elbow. It gets worse when gripping and "
+"lifting palm down. The cause is an irritated tendon of the wrist "
+"extensors. Gradually progressed wrist extension training is the basis "
+"of treatment."
+
+#: lib/injury_data.dart:155
+msgid ""
+"Hoidon ydin on ranteen ojennusliike kevyellä käsipainolla (ei "
+"katalogissa). Aloita ensin isometrisellä pidolla, sitten hitaasti "
+"ylös ja alas. Lisää kuormaa vähitellen. Kipua saa olla enintään "
+"3–5/10, ja sen pitää rauhoittua seuraavaan aamuun mennessä."
+msgstr ""
+"The core of treatment is wrist extension with a light dumbbell (not "
+"in the catalog). Start with an isometric hold, then slowly up and "
+"down. Increase the load gradually. Pain may be at most 3–5/10 and "
+"should settle by the next morning."
+
+#: lib/injury_data.dart:164
+msgid "kevyt, hidas, kipurajan alapuolella; tämä on myös kuntoutusliike"
+msgstr "light, slow, below the pain threshold; this is also a rehab exercise"
+
+#: lib/injury_data.dart:165 lib/injury_data.dart:166 lib/injury_data.dart:167
+msgid "kevennä, EZ-tanko tai vasaraote"
+msgstr "reduce the load, EZ bar or hammer grip"
+
+#: lib/injury_data.dart:168 lib/injury_data.dart:169
+msgid "kevyt, rajattu liikerata"
+msgstr "light, limited range of motion"
+
+#: lib/injury_data.dart:170 lib/injury_data.dart:171 lib/injury_data.dart:172
+msgid "vetoremmit"
+msgstr "lifting straps"
+
+#: lib/injury_data.dart:160
+msgid "Kyynärpää sisäsivu (golfkyynärpää)"
+msgstr "Inner elbow (golfer's elbow)"
+
+#: lib/injury_data.dart:161
+msgid ""
+"Kipu kyynärpään sisäsivulla. Se pahenee puristaessa, ranteen "
+"koukistuksessa ja kämmen ylöspäin tehtävissä vedoissa. Hoito on "
+"samantapainen kuin tenniskyynärpäässä."
+msgstr ""
+"Pain on the inner side of the elbow. It gets worse when gripping, "
+"flexing the wrist and in palm-up pulls. Treatment is similar to "
+"tennis elbow."
+
+#: lib/injury_data.dart:175
+msgid ""
+"Ranteen koukistus kevyellä painolla, ensin isometrinen pito ja sitten "
+"hidas liike. Näyttö on vähäistä mutta suuntaa antavaa."
+msgstr ""
+"Wrist flexion with a light weight, first an isometric hold and then a "
+"slow movement. The evidence is limited but indicative."
+
+#: lib/injury_data.dart:184 lib/injury_data.dart:185 lib/injury_data.dart:186
+msgid "kevyt, ei täyteen ojennukseen alhaalla, hidas tempo"
+msgstr "light, not to full extension at the bottom, slow tempo"
+
+#: lib/injury_data.dart:187 lib/injury_data.dart:188 lib/injury_data.dart:189
+msgid "ei ristiotetta, molemmat kämmenet itseen päin + remmit"
+msgstr "no mixed grip, both palms facing you + straps"
+
+#: lib/injury_data.dart:190
+msgid "myötäote (kämmenet itseen päin)"
+msgstr "overhand grip (palms facing you)"
+
+#: lib/injury_data.dart:180
+msgid "Kyynärtaive (hauiksen alapään jänne)"
+msgstr "Elbow crease (distal biceps tendon)"
+
+#: lib/injury_data.dart:181
+msgid ""
+"Kipu kyynärtaipeessa hauiksen jänteessä. Se pahenee raskaissa "
+"hauiskäännöissä ja kämmen ylöspäin tehtävissä vedoissa. Jos tunsit "
+"äkillisen napsahduksen ja kyynärtaipeeseen tuli mustelma tai hauiksen "
+"muoto muuttui, hakeudu lääkäriin heti. Repeämä hoidetaan usein "
+"leikkauksella muutaman viikon sisällä."
+msgstr ""
+"Pain in the elbow crease at the biceps tendon. It gets worse with "
+"heavy biceps curls and palm-up pulls. If you felt a sudden pop and "
+"the elbow crease bruised or the shape of the biceps changed, see a "
+"doctor immediately. A rupture is often operated on within a few weeks."
+
+#: lib/injury_data.dart:206
+msgid "nyrkkien tai käsipainojen varassa, ranne suorana"
+msgstr "on fists or dumbbells, wrist straight"
+
+#: lib/injury_data.dart:207 lib/injury_data.dart:208
+msgid "kyynärvarsien varassa"
+msgstr "on the forearms"
+
+#: lib/injury_data.dart:209 lib/injury_data.dart:210 lib/injury_data.dart:211 lib/injury_data.dart:212 …
+msgid "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa"
+msgstr "bar at the base of the palm, wrist in line with the forearm"
+
+#: lib/injury_data.dart:214 lib/injury_data.dart:215
+msgid "ranne suorana, leveämpi ote; jos ei onnistu, vaihda"
+msgstr "wrist straight, wider grip; if that doesn't work, switch"
+
+#: lib/injury_data.dart:216 lib/injury_data.dart:217
+msgid "EZ-tanko tai käsipainot neutraalilla otteella"
+msgstr "EZ bar or dumbbells with a neutral grip"
+
+#: lib/injury_data.dart:202
+msgid "Ranne / käsi"
+msgstr "Wrist / hand"
+
+#: lib/injury_data.dart:203
+msgid ""
+"Kipu ranteessa tai kädessä. Se pahenee usein, kun ranne on "
+"taivutettuna taakse kuorman alla, esimerkiksi punnerruksessa tai "
+"etukyykyn telineotteessa. Jos kipu alkoi kaatumisesta käden varaan, "
+"käy lääkärissä (veneluun murtuma ei aina näy heti)."
+msgstr ""
+"Pain in the wrist or hand. It often gets worse when the wrist is bent "
+"back under load, for example in push-ups or the front squat rack "
+"position. If the pain started from falling on your hand, see a doctor "
+"(a scaphoid fracture doesn't always show at first)."
+
+#: lib/injury_data.dart:234
+msgid "tanko lapojen päälle, ei niskanikamille; tai vaihda Low bar -kyykkyyn"
+msgstr ""
+"bar on the shoulder blades, not on the neck vertebrae; or switch to "
+"the low-bar squat"
+
+#: lib/injury_data.dart:235
+msgid "älä vedä päästä, kädet rinnalla"
+msgstr "don't pull on your head, hands on the chest"
+
+#: lib/injury_data.dart:236 lib/injury_data.dart:237
+msgid "niska neutraalina, katse n. 2 m eteen"
+msgstr "neck neutral, eyes about 2 m ahead"
+
+#: lib/injury_data.dart:238 lib/injury_data.dart:239
+msgid "kevennä, älä työnnä päätä eteen"
+msgstr "reduce the load, don't push your head forward"
+
+#: lib/injury_data.dart:240
+msgid "älä paina päätä penkkiin"
+msgstr "don't press your head into the bench"
+
+#: lib/injury_data.dart:241
+msgid "jos roikkuminen pahentaa, vaihda"
+msgstr "if hanging makes it worse, switch"
+
+#: lib/injury_data.dart:242
+msgid "kevyt, hartiat rentona"
+msgstr "light, shoulders relaxed"
+
+#: lib/injury_data.dart:230
+msgid "Niska"
+msgstr "Neck"
+
+#: lib/injury_data.dart:231
+msgid ""
+"Niskan ja hartioiden kipu ja jäykkyys ilman vammaa. Liikkeessä "
+"pysyminen ja asteittainen niska-hartiaseudun vahvistaminen auttavat "
+"yleensä. Jos käteen säteilee kipua ja siinä on puutumista tai "
+"heikkoutta, hakeudu arvioon."
+msgstr ""
+"Neck and shoulder pain and stiffness without an injury. Staying "
+"active and gradually strengthening the neck and shoulder area usually "
+"help. If pain radiates into the arm with numbness or weakness, get it "
+"assessed."
+
+#: lib/injury_data.dart:254 lib/injury_data.dart:255 lib/injury_data.dart:256 lib/injury_data.dart:257
+msgid "kevennä 30–50 %, syvyys kivuttomaan (esim. laatikolle)"
+msgstr "reduce the load by 30–50 %, depth to pain-free (e.g. to a box)"
+
+#: lib/injury_data.dart:258 lib/injury_data.dart:259
+msgid "kevennä tai nosta korokkeelta, selkä neutraalina"
+msgstr "reduce the load or lift from blocks, back neutral"
+
+#: lib/injury_data.dart:260
+msgid "kevyt, lyhyempi liikerata"
+msgstr "light, shorter range of motion"
+
+#: lib/injury_data.dart:261 lib/injury_data.dart:262 lib/injury_data.dart:263
+msgid "kevennä tai korvaa tuetulla soudulla"
+msgstr "reduce the load or replace with a supported row"
+
+#: lib/injury_data.dart:264
+msgid "ei niin syvälle, että lantio irtoaa penkistä"
+msgstr "not so deep that the hips lift off the bench"
+
+#: lib/injury_data.dart:265
+msgid "osittainen liikerata, ei yliojennusta"
+msgstr "partial range of motion, no hyperextension"
+
+#: lib/injury_data.dart:266 lib/injury_data.dart:267 lib/injury_data.dart:268
+msgid "lyhyt liikerata tai korvaa"
+msgstr "short range of motion or replace"
+
+#: lib/injury_data.dart:269 lib/injury_data.dart:270
+msgid "istuen selkätuella tai korvaa"
+msgstr "seated with back support or replace"
+
+#: lib/injury_data.dart:250
+msgid "Alaselkä (epäspesifi selkäkipu)"
+msgstr "Lower back (non-specific back pain)"
+
+#: lib/injury_data.dart:251
+msgid ""
+"Alaselän kipu ilman tiettyä vammaa on yleistä ja menee yleensä ohi. "
+"Liikkeessä pysyminen kohtuullisesta kivusta huolimatta nopeuttaa "
+"toipumista, eikä vuodelepoa suositella. Kevennä kuormia ja liikerataa "
+"hetkeksi, mutta jatka harjoittelua."
+msgstr ""
+"Lower back pain without a specific injury is common and usually goes "
+"away. Staying active despite moderate pain speeds up recovery, and "
+"bed rest isn't recommended. Reduce loads and range of motion for a "
+"while, but keep training."
+
+#: lib/injury_data.dart:294
+msgid ""
+"aloita isometrisellä puristuksella (esim. pallo polvien välissä), "
+"kevyt, kipu ≤3/10; lisää vähitellen"
+msgstr ""
+"start with an isometric squeeze (e.g. a ball between the knees), "
+"light, pain ≤3/10; increase gradually"
+
+#: lib/injury_data.dart:295 lib/injury_data.dart:296 lib/injury_data.dart:297 lib/injury_data.dart:298
+msgid "kapeampi asento, syvyys kivuttomaan"
+msgstr "narrower stance, depth to pain-free"
+
+#: lib/injury_data.dart:299 lib/injury_data.dart:300
+msgid "lyhyempi askel, ei sivusuuntaista venytystä"
+msgstr "shorter step, no sideways stretch"
+
+#: lib/injury_data.dart:301
+msgid "jalat hartialeveydelle"
+msgstr "feet shoulder-width apart"
+
+#: lib/injury_data.dart:289
+msgid "Nivunen (lähentäjät)"
+msgstr "Groin (adductors)"
+
+#: lib/injury_data.dart:290
+msgid ""
+"Kipu nivusessa reiden sisäsivulla. Se pahenee jalkojen puristuksessa, "
+"leveissä asennoissa ja suunnanmuutoksissa. Lähentäjien asteittainen "
+"vahvistaminen on hoidon perusta."
+msgstr ""
+"Pain in the groin on the inner thigh. It gets worse when squeezing "
+"the legs together, in wide stances and with changes of direction. "
+"Gradual strengthening of the adductors is the basis of treatment."
+
+#: lib/injury_data.dart:313 lib/injury_data.dart:314 lib/injury_data.dart:315
+msgid "lyhyempi askel, takajalan lonkkaa ei venytetä ääriasentoon"
+msgstr "shorter step, don't stretch the back leg's hip to the end position"
+
+#: lib/injury_data.dart:316 lib/injury_data.dart:317 lib/injury_data.dart:318 lib/injury_data.dart:456 …
+msgid "syvyys kivuttomaan"
+msgstr "depth to pain-free"
+
+#: lib/injury_data.dart:319
+msgid "pieni liike, jalat lattiassa"
+msgstr "small movement, feet on the floor"
+
+#: lib/injury_data.dart:309
+msgid "Lonkan etuosa (lonkankoukistaja)"
+msgstr "Front of the hip (hip flexor)"
+
+#: lib/injury_data.dart:310
+msgid ""
+"Kipu lonkan etuosassa tai nivusessa. Se pahenee jalan nostossa ja kun "
+"takajalan lonkka venyy askelkyykyssä. Kevennä jalannostoja hetkeksi "
+"ja vahvista vähitellen."
+msgstr ""
+"Pain at the front of the hip or in the groin. It gets worse when "
+"lifting the leg and when the back leg's hip stretches in a lunge. "
+"Reduce leg raises for a while and strengthen gradually."
+
+#: lib/injury_data.dart:331
+msgid ""
+"aloita isometrisellä painalluksella, kevyt; ei syvää lonkan "
+"koukistusta"
+msgstr "start with an isometric press, light; no deep hip flexion"
+
+#: lib/injury_data.dart:332
+msgid "jalat eivät ylitä keskilinjaa"
+msgstr "feet don't cross the midline"
+
+#: lib/injury_data.dart:333 lib/injury_data.dart:334 lib/injury_data.dart:335
+msgid "lantio tasan, polvi varpaiden linjassa, lyhyt liikerata"
+msgstr "hips level, knee in line with the toes, short range of motion"
+
+#: lib/injury_data.dart:336 lib/injury_data.dart:337
+msgid "polvet eivät painu sisään, kohtuullinen syvyys"
+msgstr "knees don't cave in, moderate depth"
+
+#: lib/injury_data.dart:338
+msgid ""
+"jos kipeän puolen päällä oleminen pahentaa, tee polvet koukussa tai "
+"vaihda"
+msgstr ""
+"if lying on the painful side makes it worse, do it with knees bent or "
+"switch"
+
+#: lib/injury_data.dart:327
+msgid "Lonkan ulkosivu (pakaralihasten jänne)"
+msgstr "Outer hip (gluteal tendon)"
+
+#: lib/injury_data.dart:328
+msgid ""
+"Kipu lonkan ulkosivulla. Se pahenee usein kyljellään maatessa, jalat "
+"ristissä istuessa ja yhdellä jalalla seistessä. Jänne ärtyy "
+"puristuksesta, kun reisi viedään vartalon keskilinjan yli. Siksi "
+"näitä asentoja kannattaa välttää, mutta lihasta vahvistaa."
+msgstr ""
+"Pain on the outer side of the hip. It often gets worse lying on your "
+"side, sitting with legs crossed and standing on one leg. The tendon "
+"gets irritated by compression when the thigh crosses the midline of "
+"the body, so avoid these positions but strengthen the muscle."
+
+#: lib/injury_data.dart:341
+msgid ""
+"Ensin loitontajien isometriset pidot, sitten asteittain raskaampi "
+"kuormitus. Käytä vähän puristusta aiheuttavia asentoja."
+msgstr ""
+"First isometric holds for the abductors, then gradually heavier "
+"loading. Use positions with little compression."
+
+#: lib/injury_data.dart:350 lib/injury_data.dart:351 lib/injury_data.dart:352 lib/injury_data.dart:353 …
+msgid "syvyys kivuttomaan, hieman leveämpi asento, varpaat ulos"
+msgstr "depth to pain-free, slightly wider stance, toes out"
+
+#: lib/injury_data.dart:356
+msgid "rajattu syvyys, polvet eivät tule rintaan"
+msgstr "limited depth, knees don't come to the chest"
+
+#: lib/injury_data.dart:357
+msgid "kokeile sumoasentoa tai korotusta"
+msgstr "try a sumo stance or an elevated start"
+
+#: lib/injury_data.dart:358 lib/injury_data.dart:359
+msgid "etujalan lonkka ei syvälle"
+msgstr "front leg's hip not deep"
+
+#: lib/injury_data.dart:360
+msgid "polvet vain vaakatasoon"
+msgstr "knees only to horizontal"
+
+#: lib/injury_data.dart:346
+msgid "Lonkka (nipistys syvässä koukistuksessa / FAI)"
+msgstr "Hip (pinching in deep flexion / FAI)"
+
+#: lib/injury_data.dart:347
+msgid ""
+"Lonkan etuosan nipistävä kipu syvässä kyykyssä tai kun polvi tuodaan "
+"rintaan. Harjoittelua voi yleensä jatkaa rajaamalla syvyyttä ja "
+"muuttamalla asentoa. Jatkuva kipu vaatii fysioterapeutin arvion."
+msgstr ""
+"Pinching pain at the front of the hip in a deep squat or when the "
+"knee is brought to the chest. Training can usually continue by "
+"limiting depth and changing the stance. Persistent pain needs a "
+"physiotherapist's assessment."
+
+#: lib/injury_data.dart:372 lib/injury_data.dart:373 lib/injury_data.dart:374 lib/injury_data.dart:375 …
+msgid ""
+"osittainen liikerata (n. 0–45/60°), syvyys kivuttomaan; laatikko "
+"auttaa"
+msgstr ""
+"partial range of motion (about 0–45/60°), depth to pain-free; a box "
+"helps"
+
+#: lib/injury_data.dart:379 lib/injury_data.dart:418
+msgid "rajattu syvyys"
+msgstr "limited depth"
+
+#: lib/injury_data.dart:380
+msgid "liikerata 90°→45°, ei aivan suoraksi; kevyt"
+msgstr "range of motion 90°→45°, not fully straight; light"
+
+#: lib/injury_data.dart:381 lib/injury_data.dart:382 lib/injury_data.dart:383
+msgid "lyhyt liikerata, ylävartalo hieman eteen"
+msgstr "short range of motion, upper body slightly forward"
+
+#: lib/injury_data.dart:368
+msgid "Polven etuosa (patellofemoraalikipu)"
+msgstr "Front of the knee (patellofemoral pain)"
+
+#: lib/injury_data.dart:369
+msgid ""
+"Kipu polvilumpion ympärillä tai takana. Se pahenee kyykyssä, "
+"portaissa ja pitkään istuessa. Lonkan ja reiden lihasten "
+"vahvistaminen on paras hoito. Säädä kyykyn syvyys kivun mukaan."
+msgstr ""
+"Pain around or behind the kneecap. It gets worse in squats, on stairs "
+"and when sitting for a long time. Strengthening the hip and thigh "
+"muscles is the best treatment. Adjust squat depth according to pain."
+
+#: lib/injury_data.dart:395
+msgid ""
+"vaihe 1: isometrinen pito 5 × 45 s, n. 70 % maksimista, 2 min tauot; "
+"vaihe 2: raskas hidas, 3 s ylös / 3 s alas"
+msgstr ""
+"phase 1: isometric hold 5 × 45 s, about 70 % of maximum, 2 min rests; "
+"phase 2: heavy slow, 3 s up / 3 s down"
+
+#: lib/injury_data.dart:396 lib/injury_data.dart:397 lib/injury_data.dart:398 lib/injury_data.dart:399
+msgid "raskas hidas tempo (3 s / 3 s), syvyys kipurajan mukaan, 3 krt/vk"
+msgstr "heavy slow tempo (3 s / 3 s), depth by pain threshold, 3 times a week"
+
+#: lib/injury_data.dart:400 lib/injury_data.dart:401
+msgid "hidas tempo, syvyys kivun mukaan"
+msgstr "slow tempo, depth by pain"
+
+#: lib/injury_data.dart:402
+msgid "hidas, ei hyppäävää liikettä"
+msgstr "slow, no bouncing"
+
+#: lib/injury_data.dart:391
+msgid "Polven etuosa lumpion alla (hyppääjän polvi)"
+msgstr "Front of the knee below the kneecap (jumper's knee)"
+
+#: lib/injury_data.dart:392
+msgid ""
+"Paikallinen kipu heti polvilumpion alapuolella jänteessä. Se pahenee "
+"hypyissä ja syvässä kyykyssä. Jänne paranee asteittain lisättävällä "
+"raskaalla ja hitaalla kuormituksella, ei levolla."
+msgstr ""
+"Local pain in the tendon just below the kneecap. It gets worse with "
+"jumps and deep squats. The tendon heals with gradually progressed "
+"heavy, slow loading, not with rest."
+
+#: lib/injury_data.dart:405
+msgid ""
+"Vaihe 1: isometriset pidot kipua lievittämään. Vaihe 2: raskas hidas "
+"vastus (HSR), noin 3 krt/vk ja 12 vk, kuorma noin 15 RM:stä 6 RM:ään. "
+"Vaihe 3: nopeat liikkeet ja hypyt, vasta kun raskas kuormitus sujuu. "
+"Kipu saa olla enintään 3–5/10."
+msgstr ""
+"Phase 1: isometric holds to ease pain. Phase 2: heavy slow resistance "
+"(HSR), about 3 times a week for 12 weeks, load from about 15 RM to 6 "
+"RM. Phase 3: fast movements and jumps, only once heavy loading goes "
+"well. Pain may be at most 3–5/10."
+
+#: lib/injury_data.dart:414 lib/injury_data.dart:415 lib/injury_data.dart:416 lib/injury_data.dart:417
+msgid "ei syvää kuormitettua koukistusta, ei kiertoa polvessa"
+msgstr "no deep loaded flexion, no twisting at the knee"
+
+#: lib/injury_data.dart:419
+msgid "ristisidevammassa vain fysioterapeutin ohjeen mukaan (usein 90°→45°)"
+msgstr ""
+"with a ligament injury only as instructed by a physiotherapist (often "
+"90°→45°)"
+
+#: lib/injury_data.dart:410
+msgid "Polvi (kierukka / eturistiside), lyhyesti"
+msgstr "Knee (meniscus / ACL), in brief"
+
+#: lib/injury_data.dart:411
+msgid ""
+"Jos polvi turposi vamman jälkeen, lukittuu, pettää tai napsahti, se "
+"kuuluu lääkärin tai fysioterapeutin arvioon ennen raskasta "
+"harjoittelua. Leikkauksen jälkeen noudata saamaasi kuntoutusohjelmaa."
+msgstr ""
+"If the knee swelled after an injury, locks, gives way or popped, it "
+"needs a doctor's or physiotherapist's assessment before heavy "
+"training. After surgery, follow the rehabilitation program you were "
+"given."
+
+#: lib/injury_data.dart:431
+msgid "aloita isometrisellä pidolla, sitten kevyt dynaaminen; kipu ≤4/10"
+msgstr "start with an isometric hold, then light dynamic; pain ≤4/10"
+
+#: lib/injury_data.dart:432
+msgid "kevyt, lyhyt liikerata, lisää vähitellen"
+msgstr "light, short range of motion, increase gradually"
+
+#: lib/injury_data.dart:433 lib/injury_data.dart:434 lib/injury_data.dart:435
+msgid "kevennä selvästi"
+msgstr "reduce the load clearly"
+
+#: lib/injury_data.dart:436 lib/injury_data.dart:437
+msgid "lyhyt liikerata"
+msgstr "short range of motion"
+
+#: lib/injury_data.dart:427
+msgid "Takareisi (äkillinen revähdys)"
+msgstr "Hamstring (acute strain)"
+
+#: lib/injury_data.dart:428
+msgid ""
+"Äkillinen pistävä kipu takareidessä, esimerkiksi juostessa tai "
+"raskaassa vedossa. Lievässä revähdyksessä kuntoutus aloitetaan "
+"muutaman päivän sisällä kevyellä kuormalla. Jos tunsit napsahduksen "
+"istuinkyhmyn kohdalla, tuli laaja mustelma tai kävely ei onnistu, käy "
+"lääkärissä heti (jänteen irtorepeämä voi vaatia leikkausta)."
+msgstr ""
+"Sudden sharp pain in the hamstring, for example when running or in a "
+"heavy pull. With a mild strain, rehabilitation starts within a few "
+"days with a light load. If you felt a pop at the sitting bone, got a "
+"large bruise or can't walk, see a doctor immediately (a tendon "
+"avulsion may need surgery)."
+
+#: lib/injury_data.dart:444
+msgid ""
+"Nordic hamstring otetaan takaisin, kun kivuton juoksu ja kuormitettu "
+"venytys onnistuvat. Se vähentää uusien takareisivammojen riskiä."
+msgstr ""
+"Nordic hamstring curls are brought back once pain-free running and "
+"loaded stretching go well. They reduce the risk of new hamstring "
+"injuries."
+
+#: lib/injury_data.dart:453
+msgid "makuulla (lonkka suorana), ei istuen; aloita isometrisellä"
+msgstr "lying (hip straight), not seated; start with isometrics"
+
+#: lib/injury_data.dart:454 lib/injury_data.dart:455
+msgid "korotukselta tai Rack pull"
+msgstr "from an elevation or rack pull"
+
+#: lib/injury_data.dart:459 lib/injury_data.dart:460
+msgid "ylävartalo pystyssä"
+msgstr "upper body upright"
+
+#: lib/injury_data.dart:461
+msgid "vasta myöhemmin, osittainen liikerata"
+msgstr "only later, partial range of motion"
+
+#: lib/injury_data.dart:449
+msgid "Takareisi istuinkyhmyn kohdalla (proksimaalinen jänne)"
+msgstr "Hamstring at the sitting bone (proximal tendon)"
+
+#: lib/injury_data.dart:450
+msgid ""
+"Syvä kipu pakaran alaosassa istuinkyhmyssä. Se pahenee istuessa, "
+"eteentaivutuksissa ja venyttäessä. Jänne ärtyy puristuksesta, kun "
+"lonkka on koukussa. Siksi syviä lonkan koukistuksia ja venyttelyä "
+"vältetään aluksi."
+msgstr ""
+"Deep pain in the lower buttock at the sitting bone. It gets worse "
+"when sitting, bending forward and stretching. The tendon gets "
+"irritated by compression when the hip is flexed, so deep hip flexion "
+"and stretching are avoided at first."
+
+#: lib/injury_data.dart:469
+msgid ""
+"Ensin isometriset pidot lonkka suorana (esim. Hip thrust -pito, "
+"Reiden koukistus makuulla). Lisää lonkan koukistusta ja kuormaa "
+"vähitellen."
+msgstr ""
+"First isometric holds with the hip straight (e.g. hip thrust hold, "
+"lying leg curl). Increase hip flexion and load gradually."
+
+#: lib/injury_data.dart:478
+msgid "aloita tästä; hidas 3 s ylös / 3 s alas"
+msgstr "start here; slow 3 s up / 3 s down"
+
+#: lib/injury_data.dart:479
+msgid ""
+"raskas hidas, kuormaa lisätään kivun mukaan; kantapään "
+"kiinnityskohdan kivussa ei kantapäätä portaan alapuolelle"
+msgstr ""
+"heavy slow, load is increased by pain; with pain at the heel "
+"attachment, don't drop the heel below the step"
+
+#: lib/injury_data.dart:480 lib/injury_data.dart:481
+msgid "kivun mukaan"
+msgstr "by pain"
+
+#: lib/injury_data.dart:482
+msgid "kevyt, jos jänne kipeytyy"
+msgstr "light, if the tendon gets sore"
+
+#: lib/injury_data.dart:474
+msgid "Pohje / akillesjänne"
+msgstr "Calf / Achilles tendon"
+
+#: lib/injury_data.dart:475
+msgid ""
+"Kipu ja aamujäykkyys akillesjänteessä tai pohkeessa. Jänne kestää ja "
+"paranee asteittain lisättävällä kuormituksella. Kipua saa olla "
+"harjoituksen aikana kohtuullisesti, kunhan se rauhoittuu seuraavaan "
+"aamuun mennessä."
+msgstr ""
+"Pain and morning stiffness in the Achilles tendon or calf. The tendon "
+"tolerates and heals with gradually progressed loading. Moderate pain "
+"during training is fine as long as it settles by the next morning."
+
+#: lib/injury_data.dart:485
+msgid ""
+"Pohjenousuja vähintään 3 krt/vk niin raskaasti kuin kipu sallii. HSR: "
+"noin 3–4 sarjaa, 15 RM:stä 6 RM:ään 12 viikossa. Toipuminen kestää "
+"usein 3–6 kk."
+msgstr ""
+"Calf raises at least 3 times a week as heavy as pain allows. HSR: "
+"about 3–4 sets, from 15 RM to 6 RM over 12 weeks. Recovery often "
+"takes 3–6 months."
+
+#: lib/injury_data.dart:494 lib/injury_data.dart:495 lib/injury_data.dart:496 lib/injury_data.dart:497 …
+msgid "kevennä, kapeampi ote, ei alas rintaan asti"
+msgstr "reduce the load, narrower grip, not all the way down to the chest"
+
+#: lib/injury_data.dart:499
+msgid "kevyt, lyhyt liikerata, ei venytystä"
+msgstr "light, short range of motion, no stretch"
+
+#: lib/injury_data.dart:500
+msgid "kädet korokkeella, lyhyt liike"
+msgstr "hands on a raised surface, short movement"
+
+#: lib/injury_data.dart:501
+msgid "rajattu liikerata"
+msgstr "limited range of motion"
+
+#: lib/injury_data.dart:490
+msgid "Rinta (rintalihaksen venähdys)"
+msgstr "Chest (pec strain)"
+
+#: lib/injury_data.dart:491
+msgid ""
+"Kipu rintalihaksessa tai kainalon etureunassa penkkipunnerruksen "
+"jälkeen. Kevennä ja lyhennä liikerataa, ja välttele syviä venytyksiä. "
+"Jos tunsit napsahduksen ja kainaloon tai olkavarteen tuli mustelma "
+"tai rinnan muoto muuttui, hakeudu lääkäriin heti (repeämä leikataan "
+"usein viikkojen sisällä)."
+msgstr ""
+"Pain in the chest muscle or at the front of the armpit after bench "
+"pressing. Reduce the load and shorten the range of motion, and avoid "
+"deep stretches. If you felt a pop and the armpit or upper arm bruised "
+"or the shape of the chest changed, see a doctor immediately (a "
+"rupture is often operated on within weeks)."
