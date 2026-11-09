@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app_state.dart';
 import '../exercises.dart';
 import '../models.dart';
+import '../sports.dart';
 import '../theme.dart';
 import '../l10n.dart';
 
@@ -577,3 +578,44 @@ class LockButton extends StatelessWidget {
 
 /// Sarjojen määrä oikeassa luvussa: 1 sarja, 2 sarjaa.
 String setsLabel(int n) => n == 1 ? t('1 sarja') : t('{0} sarjaa', [n]);
+
+/// Lajivalinta toisen sovelluksen lajille: [message] kertoo, mistä on kyse. null = ohita (ei tuoda).
+Future<String?> pickSport(BuildContext context, String message) async {
+  final cs = Theme.of(context).colorScheme;
+  final v = await showDialog<String>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => AlertDialog(
+      title: Text(t('Mikä laji tämä on?')),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message),
+            for (final g in sportGroups) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                child: Text(t(g), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final s in sports.where((s) => s.group == g && !s.retired))
+                    ActionChip(
+                      avatar: Text(s.icon),
+                      label: Text(sportName(s.name)),
+                      onPressed: () => Navigator.pop(ctx, s.name),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, ''), child: Text(t('Ohita, älä tuo')))],
+    ),
+  );
+  return v == null || v.isEmpty ? null : v;
+}

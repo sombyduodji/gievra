@@ -115,6 +115,13 @@ class Settings extends ChangeNotifier {
   List<int> restAdjust = [0, 0, 0];
   int deloadEvery = 6;
 
+  /// Etusivun "Lisää tehty liikunta Health Connectista" (Android; oletus pois).
+  bool hcImport = false;
+  void setHcImport(bool v) {
+    hcImport = v;
+    _persist();
+  }
+
   /// GPS-reitin korjaus poluille lajeittain (metrit 3–10, 0 = pois); puuttuva laji = 5 m.
   Map<String, int> snapDefaults = {};
   int snapFor(String sport) => snapDefaults[sport] ?? 5;
@@ -299,6 +306,7 @@ class Settings extends ChangeNotifier {
       ..writeln('mode: $trainMode')
       ..writeln('move_names: $moveNames')
       ..writeln('watch: $watch')
+      ..writeln('hc_import: $hcImport')
       ..writeln('rest_timer: $restTimer')
       ..writeln('rest_sound: $restSound')
       ..writeln('rest_adjust: ${restAdjust.join(', ')}')
@@ -402,6 +410,8 @@ class Settings extends ChangeNotifier {
             nameMode = moveNames;
           case 'watch':
             watch = v == 'true';
+          case 'hc_import':
+            hcImport = v == 'true';
           case 'rest_timer':
             restTimer = v == 'true';
           case 'rest_adjust':

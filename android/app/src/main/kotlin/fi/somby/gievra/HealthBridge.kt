@@ -5,15 +5,18 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
+import androidx.health.connect.client.units.Length
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -32,12 +35,16 @@ object HealthBridge {
         HealthPermission.getReadPermission(StepsRecord::class),
     )
 
+    /** Tehdyn liikunnan lisääminen (asetus, oletus pois): lisäksi matka. Kysytään vasta, kun toimintoa käytetään. */
+    val importPermissions = readPermissions + HealthPermission.getReadPermission(DistanceRecord::class)
+
     /** Kehitysversion testitiedot emulaattorille (vain debug-manifestissa on kirjoitusluvat). */
     val writePermissions = setOf(
         HealthPermission.getWritePermission(ExerciseSessionRecord::class),
         HealthPermission.getWritePermission(HeartRateRecord::class),
         HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getWritePermission(StepsRecord::class),
+        HealthPermission.getWritePermission(DistanceRecord::class),
     )
 
     /** available, update (Health Connect -sovellus pitää asentaa tai päivittää) tai unavailable. */
@@ -66,27 +73,86 @@ object HealthBridge {
         }
     }
 
-    /** Syke (keskiarvo, maksimi), kalorit ja askeleet aikaväliltä. */
-    private suspend fun stats(context: Context, start: Instant, end: Instant): Map<String, Any?> {
+    /**
+     * Syke (keskiarvo, maksimi), kalorit, askeleet ja matka aikaväliltä.
+     *
+     * [origin] = harjoituksen tallentaneen sovelluksen paketti. Askeleet, matka ja kalorit luetaan ensin saman
+     * sovelluksen tietueista (osuus aikavälille), koska Health Connectin kokonaissumma poistaa päällekkäisyydet
+     * sovellusten etusijan mukaan: esim. kävelymaton sovelluksen 12 058 askelta korvautuisivat puhelimen samalla
+     * ajalla laskemilla muutamalla askeleella. Jos sovellus ei tallentanut niitä, käytetään kokonaissummaa.
+     */
+    private suspend fun stats(context: Context, start: Instant, end: Instant, origin: String? = null): Map<String, Any?> {
         val c = client(context)
         val hr = c.readRecords(
             ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(start, end), pageSize = 5000),
         ).records.flatMap { r -> r.samples.filter { !it.time.isBefore(start) && !it.time.isAfter(end) } }
-        val kcal = try {
-            c.aggregate(
-                AggregateRequest(setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL), TimeRangeFilter.between(start, end)),
-            )[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories
+        val span = TimeRangeFilter.between(start, end)
+        val origins = if (origin == null) emptySet() else setOf(DataOrigin(origin))
+
+        /**
+         * Saman sovelluksen tietueiden summa aikavälillä ilman päällekkäisyyksiä: pisin tietue ensin, sitten muista vain
+         * se osa, jota aiemmat eivät jo kata (sovellus voi tallentaa sekä koko harjoituksen summan että minuuttikohtaiset
+         * tietueet). Arvo jaetaan tietueen ajalle tasaisesti.
+         */
+        fun sumOnce(items: List<Triple<Instant, Instant, Double>>): Double {
+            val covered = mutableListOf<Pair<Long, Long>>()
+            var total = 0.0
+            for ((rs, re, v) in items.sortedByDescending { it.second.toEpochMilli() - it.first.toEpochMilli() }) {
+                val a = maxOf(rs, start).toEpochMilli()
+                val b = minOf(re, end).toEpochMilli()
+                if (b <= a) continue
+                var free = b - a
+                for ((ca, cb) in covered) free -= maxOf(0L, minOf(b, cb) - maxOf(a, ca))
+                val len = re.toEpochMilli() - rs.toEpochMilli()
+                total += if (len <= 0) (if (free > 0) v else 0.0) else v * maxOf(0L, free).toDouble() / len
+                covered += a to b
+            }
+            return total
+        }
+
+        suspend fun ownSteps(): Long? = if (origins.isEmpty()) null else try {
+            val rs = c.readRecords(ReadRecordsRequest(StepsRecord::class, span, dataOriginFilter = origins, pageSize = 5000))
+            sumOnce(rs.records.map { Triple(it.startTime, it.endTime, it.count.toDouble()) }).toLong().takeIf { it > 0 }
         } catch (e: Throwable) {
             null
         }
-        val steps = try {
-            c.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end)))[
-                StepsRecord.COUNT_TOTAL
-            ]
+
+        suspend fun ownMeters(): Double? = if (origins.isEmpty()) null else try {
+            val rs = c.readRecords(ReadRecordsRequest(DistanceRecord::class, span, dataOriginFilter = origins, pageSize = 5000))
+            sumOnce(rs.records.map { Triple(it.startTime, it.endTime, it.distance.inMeters) }).takeIf { it > 0 }
         } catch (e: Throwable) {
             null
+        }
+
+        suspend fun ownKcal(): Double? = if (origins.isEmpty()) null else try {
+            val rs = c.readRecords(
+                ReadRecordsRequest(TotalCaloriesBurnedRecord::class, span, dataOriginFilter = origins, pageSize = 5000),
+            )
+            sumOnce(rs.records.map { Triple(it.startTime, it.endTime, it.energy.inKilocalories) }).takeIf { it > 0 }
+        } catch (e: Throwable) {
+            null
+        }
+
+        val kcal = ownKcal() ?: try {
+            c.aggregate(AggregateRequest(setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL), span))[
+                TotalCaloriesBurnedRecord.ENERGY_TOTAL
+            ]?.inKilocalories
+        } catch (e: Throwable) {
+            null
+        }
+        val steps = ownSteps() ?: try {
+            c.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), span))[StepsRecord.COUNT_TOTAL]
+        } catch (e: Throwable) {
+            null
+        }
+        val meters = ownMeters() ?: try {
+            c.aggregate(AggregateRequest(setOf(DistanceRecord.DISTANCE_TOTAL), span))[DistanceRecord.DISTANCE_TOTAL]
+                ?.inMeters
+        } catch (e: Throwable) {
+            null // ei lupaa matkaan tai ei tietoa
         }
         return mapOf(
+            "meters" to meters,
             "steps" to steps?.toInt(),
             "hrAvg" to if (hr.isEmpty()) null else hr.map { it.beatsPerMinute }.average().toInt(),
             "hrMax" to hr.maxOfOrNull { it.beatsPerMinute }?.toInt(),
@@ -113,13 +179,36 @@ object HealthBridge {
                 "title" to s.title,
                 "type" to s.exerciseType,
                 "app" to appLabel(context, s.metadata.dataOrigin.packageName),
-            ) + stats(context, s.startTime, s.endTime)
+            ) + stats(context, s.startTime, s.endTime, s.metadata.dataOrigin.packageName)
         }
         val own = stats(context, start, end)
         if ((own["hrCount"] as Int) > 0) {
             out += mapOf("kind" to "heartRate", "start" to startMs, "end" to endMs, "app" to "") + own
         }
         return out
+    }
+
+    /**
+     * Tehty liikunta päivältä [startMs, endMs): Health Connectin harjoitukset, jotka alkavat välillä, tunnisteineen
+     * (Gievra ei näytä jo lisättyjä) ja harjoituksen ajan syke, kalorit, askeleet ja matka.
+     */
+    suspend fun sessions(context: Context, startMs: Long, endMs: Long): List<Map<String, Any?>> {
+        val start = Instant.ofEpochMilli(startMs)
+        val end = Instant.ofEpochMilli(endMs)
+        val records = client(context).readRecords(
+            ReadRecordsRequest(ExerciseSessionRecord::class, TimeRangeFilter.between(start.minusSeconds(86400), end)),
+        ).records.filter { !it.startTime.isBefore(start) && it.startTime.isBefore(end) }
+        return records.sortedBy { it.startTime }.map { s ->
+            mapOf(
+                "kind" to "session",
+                "id" to s.metadata.id,
+                "start" to s.startTime.toEpochMilli(),
+                "end" to s.endTime.toEpochMilli(),
+                "title" to s.title,
+                "type" to s.exerciseType,
+                "app" to appLabel(context, s.metadata.dataOrigin.packageName),
+            ) + stats(context, s.startTime, s.endTime, s.metadata.dataOrigin.packageName)
+        }
     }
 
     /** Kehitysversio: keksitty harjoitus sykkeineen emulaattorin testaukseen. */
@@ -136,6 +225,7 @@ object HealthBridge {
                 HeartRateRecord(start, zone, end, zone, samples, meta),
                 TotalCaloriesBurnedRecord(start, zone, end, zone, Energy.kilocalories(420.0), meta),
                 StepsRecord(start, zone, end, zone, 5600, meta),
+                DistanceRecord(start, zone, end, zone, Length.meters(4200.0), meta),
             ),
         )
     }

@@ -65,6 +65,39 @@ void main() {
     await dir.delete(recursive: true);
   });
 
+  test('Liikunnan poisto: vain se liikunta ja sen oma reitti, saman päivän muut jäävät', () async {
+    final dir = await Directory.systemTemp.createTemp('poisto');
+    settings.folder = dir.path;
+    store.workouts = [];
+    final day = DateTime(2026, 11, 9);
+    const gpx =
+        '<?xml version="1.0"?><gpx><trk><trkseg><trkpt lat="61.5" lon="23.8"><time>2026-11-09T06:00:00Z</time></trkpt></trkseg></trk></gpx>';
+    await store.save(
+      Workout(
+        date: day,
+        title: 'Koko keho A',
+        exercises: [
+          ExerciseEntry('Takakyykky', [SetEntry(100, 5)]),
+        ],
+      ),
+    );
+    await store.save(Workout(date: day, session: 2, title: 'Kävely', activity: 'Kävely', minutes: 190)..routeGpx = gpx);
+    await store.save(Workout(date: day, session: 3, title: 'Juoksu', activity: 'Juoksu', minutes: 30)..routeGpx = gpx);
+    for (final f in ['2026-11-09.md', '2026-11-09-2.md', '2026-11-09-2.gpx', '2026-11-09-3.md', '2026-11-09-3.gpx']) {
+      expect(File('${dir.path}/2026/$f').existsSync(), isTrue, reason: f);
+    }
+    await store.delete(day, 2);
+    expect(File('${dir.path}/2026/2026-11-09-2.md').existsSync(), isFalse);
+    expect(File('${dir.path}/2026/2026-11-09-2.gpx').existsSync(), isFalse);
+    for (final f in ['2026-11-09.md', '2026-11-09-3.md', '2026-11-09-3.gpx']) {
+      expect(File('${dir.path}/2026/$f').existsSync(), isTrue, reason: f);
+    }
+    await store.reload();
+    expect(store.onDay(day).map((w) => (w.session, w.title)), [(1, 'Koko keho A'), (3, 'Juoksu')]);
+    settings.folder = null;
+    await dir.delete(recursive: true);
+  });
+
   test('Salitreenin jakoteksti', () {
     final w = Workout(
       date: DateTime(2026, 11, 7),

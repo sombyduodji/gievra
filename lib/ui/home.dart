@@ -15,6 +15,7 @@ import '../session_compare.dart';
 import '../program.dart';
 import '../theme.dart';
 import 'drawer.dart';
+import 'health_import.dart';
 import 'intro.dart';
 import 'program_screen.dart';
 import 'body_screen.dart';
@@ -330,6 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
+                          if (HealthImportButton.visible) HealthImportButton(),
 
                           // Tämän päivän valmiit treenit (sali ja liikunta) riveinä.
                           for (final w in todays.where((w) => !open.contains(w))) _TodayRow(w),
@@ -1014,6 +1016,7 @@ class _CardioHome extends StatelessWidget {
           colors: const [Color(0xFF00843D), Sami.green],
           onTap: () => _add(context, null),
         ),
+        if (HealthImportButton.visible) HealthImportButton(),
         // Tämän päivän liikunnat tiiviinä riveinä (avautuvat lukutilaan).
         for (final w in acts.where((w) => w.date == today)) _TodayRow(w),
         const SizedBox(height: 10),
