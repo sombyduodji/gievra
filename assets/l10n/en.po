@@ -163,7 +163,7 @@ msgstr "meters"
 msgid "Voimanosto"
 msgstr "Powerlifting"
 
-#: lib/exercises.dart:683 lib/program.dart:332 lib/ui/home.dart:741
+#: lib/exercises.dart:683 lib/program.dart:332 lib/ui/home.dart:741 lib/program.dart:478 …
 msgid "Jalat"
 msgstr "Legs"
 
@@ -183,7 +183,7 @@ msgstr "Shoulders"
 msgid "Kädet"
 msgstr "Arms"
 
-#: lib/exercises.dart:688
+#: lib/exercises.dart:688 lib/program.dart:58
 msgid "Keskivartalo"
 msgstr "Core"
 
@@ -191,7 +191,7 @@ msgstr "Core"
 msgid "Kehonpaino"
 msgstr "Bodyweight"
 
-#: lib/exercises.dart:690 lib/program.dart:326
+#: lib/exercises.dart:690 lib/program.dart:326 lib/program.dart:206 lib/program.dart:215 …
 msgid "Kahvakuula"
 msgstr "Kettlebell"
 
@@ -199,7 +199,7 @@ msgstr "Kettlebell"
 msgid "Kardio"
 msgstr "Cardio"
 
-#: lib/exercises.dart:692 lib/program.dart:327
+#: lib/exercises.dart:692 lib/program.dart:327 lib/program.dart:340 lib/program.dart:351 …
 msgid "Koko keho"
 msgstr "Full body"
 
@@ -668,7 +668,7 @@ msgstr "For fun"
 msgid "voima"
 msgstr "strength"
 
-#: lib/program.dart:196 lib/program.dart:333
+#: lib/program.dart:196 lib/program.dart:333 lib/program.dart:553 lib/program.dart:563 …
 msgid "Voima"
 msgstr "Strength"
 
@@ -704,19 +704,19 @@ msgstr "Foundation with one kettlebell"
 msgid "Heilautus, ylösnousu ja perusliikkeet, sopii aloittajalle"
 msgstr "Swing, get-up and basic exercises, suitable for beginners"
 
-#: lib/program.dart:328 lib/ui/home.dart:742 lib/ui/program_view.dart:548
+#: lib/program.dart:328 lib/ui/home.dart:742 lib/ui/program_view.dart:548 lib/program.dart:400 …
 msgid "Ylävartalo"
 msgstr "Upper body"
 
-#: lib/program.dart:329 lib/ui/program_view.dart:549
+#: lib/program.dart:329 lib/ui/program_view.dart:549 lib/program.dart:411 lib/program.dart:433 …
 msgid "Alavartalo"
 msgstr "Lower body"
 
-#: lib/program.dart:330 lib/ui/program_view.dart:550
+#: lib/program.dart:330 lib/ui/program_view.dart:550 lib/program.dart:458 lib/program.dart:491 …
 msgid "Työntö"
 msgstr "Push"
 
-#: lib/program.dart:331 lib/ui/program_view.dart:551
+#: lib/program.dart:331 lib/ui/program_view.dart:551 lib/program.dart:468 lib/program.dart:501 …
 msgid "Veto"
 msgstr "Pull"
 
@@ -1941,7 +1941,7 @@ msgstr "Choose files"
 msgid "Virhe: {0}"
 msgstr "Error: {0}"
 
-#: lib/ui/bug_report.dart:244 lib/ui/drawer.dart:196
+#: lib/ui/bug_report.dart:244 lib/ui/drawer.dart:196 lib/ui/drawer.dart:800
 msgid "Ilmoita ongelmasta"
 msgstr "Report a problem"
 
@@ -2090,7 +2090,7 @@ msgstr ".gmd file from a coach, friend or the web"
 msgid "Tietoa"
 msgstr "About"
 
-#: lib/ui/drawer.dart:190 lib/ui/drawer.dart:780 lib/ui/drawer.dart:865
+#: lib/ui/drawer.dart:190 lib/ui/drawer.dart:780 lib/ui/drawer.dart:874
 msgid "Lähetä palautetta"
 msgstr "Send feedback"
 
@@ -2098,7 +2098,7 @@ msgstr "Send feedback"
 msgid "Tallennus, tuonti, vienti… liitteineen"
 msgstr "Saving, import, export… with attachments"
 
-#: lib/ui/drawer.dart:205 lib/ui/drawer.dart:827
+#: lib/ui/drawer.dart:205 lib/ui/drawer.dart:836
 msgid "Osallistu ja tue"
 msgstr "Get involved and support"
 
@@ -2381,7 +2381,7 @@ msgstr "A free and open training log for the gym and fitness."
 msgid "Tekijä"
 msgstr "Author"
 
-#: lib/ui/drawer.dart:691 lib/ui/drawer.dart:868
+#: lib/ui/drawer.dart:691 lib/ui/drawer.dart:877
 msgid "GitHub"
 msgstr "GitHub"
 
@@ -2478,7 +2478,7 @@ msgstr "Open source and licenses"
 msgid "Lisenssit"
 msgstr "Licenses"
 
-#: lib/ui/drawer.dart:771 lib/ui/drawer.dart:818 lib/ui/drawer.dart:908
+#: lib/ui/drawer.dart:771 lib/ui/drawer.dart:827 lib/ui/drawer.dart:917
 msgid "Sulje"
 msgstr "Close"
 
@@ -2494,24 +2494,24 @@ msgstr ""
 "If something doesn't work, use Report a problem instead: it attaches "
 "the information needed."
 
-#: lib/ui/drawer.dart:803
+#: lib/ui/drawer.dart:812
 msgid "Osoite kopioitu"
 msgstr "Address copied"
 
-#: lib/ui/drawer.dart:805 lib/ui/drawer.dart:997
+#: lib/ui/drawer.dart:814 lib/ui/drawer.dart:1006
 msgid "Kopioi"
 msgstr "Copy"
 
-#: lib/ui/drawer.dart:814
+#: lib/ui/drawer.dart:823
 msgid "Avaa sähköposti"
 msgstr "Open email"
 
-#: lib/ui/drawer.dart:817
+#: lib/ui/drawer.dart:826
 msgid "Tee ilmoitus GitHubissa"
 msgstr "Report on GitHub"
 
 #. {0} = AppInfo.fullName
-#: lib/ui/drawer.dart:833
+#: lib/ui/drawer.dart:842
 msgid ""
 "{0} on maksuton ja avoin sovellus kaikille salista ja kuntoilusta "
 "kiinnostuneille. Siinä ei ole mainoksia, tilauksia eikä maksullisia "
@@ -2520,7 +2520,7 @@ msgstr ""
 "{0} is a free and open app for everyone interested in the gym and "
 "fitness. It has no ads, subscriptions or paid add-ons, and never will."
 
-#: lib/ui/drawer.dart:841
+#: lib/ui/drawer.dart:850
 msgid ""
 "Gievra on vapaa ohjelma GNU GPL v3.0 -lisenssillä: sen lähdekoodia "
 "saa käyttää, tutkia, muokata ja jakaa, kunhan muokatut versiot "
@@ -2533,41 +2533,41 @@ msgstr ""
 "are shared under the same license. The app uses open source "
 "libraries, listed under About → Open source and licenses."
 
-#: lib/ui/drawer.dart:848
+#: lib/ui/drawer.dart:857
 msgid "Näin voit auttaa"
 msgstr "How you can help"
 
-#: lib/ui/drawer.dart:850
+#: lib/ui/drawer.dart:859
 msgid "Ehdota liikkeitä:"
 msgstr "Suggest exercises:"
 
-#: lib/ui/drawer.dart:850
+#: lib/ui/drawer.dart:859
 msgid "kerro, jos luettelosta puuttuu salilla yleinen liike."
 msgstr "let us know if a common gym exercise is missing from the list."
 
-#: lib/ui/drawer.dart:851
+#: lib/ui/drawer.dart:860
 msgid "Ilmoita virheistä:"
 msgstr "Report bugs:"
 
-#: lib/ui/drawer.dart:851
+#: lib/ui/drawer.dart:860
 msgid "kerro, jos jokin ei toimi tai treeni ei tallennu oikein."
 msgstr ""
 "let us know if something doesn't work or a workout isn't saved "
 "correctly."
 
-#: lib/ui/drawer.dart:852
+#: lib/ui/drawer.dart:861
 msgid "Ehdota ideoita:"
 msgstr "Suggest ideas:"
 
-#: lib/ui/drawer.dart:852
+#: lib/ui/drawer.dart:861
 msgid "uusia ominaisuuksia, tilastoja tai käyttöliittymän muutoksia."
 msgstr "new features, statistics or UI changes."
 
-#: lib/ui/drawer.dart:853
+#: lib/ui/drawer.dart:862
 msgid "Saavutettavuus:"
 msgstr "Accessibility:"
 
-#: lib/ui/drawer.dart:853
+#: lib/ui/drawer.dart:862
 msgid ""
 "kerro, mikä helpottaisi käyttöä esimerkiksi näkö- tai liikuntavamman "
 "kanssa."
@@ -2575,27 +2575,27 @@ msgstr ""
 "tell us what would make the app easier to use, for example with a "
 "visual or mobility impairment."
 
-#: lib/ui/drawer.dart:854
+#: lib/ui/drawer.dart:863
 msgid "Käännökset:"
 msgstr "Translations:"
 
-#: lib/ui/drawer.dart:854
+#: lib/ui/drawer.dart:863
 msgid "auta tuomaan sovellus saameksi."
 msgstr "help bring the app to Sámi."
 
-#: lib/ui/drawer.dart:855
+#: lib/ui/drawer.dart:864
 msgid "Osallistu kehitykseen:"
 msgstr "Contribute to development:"
 
-#: lib/ui/drawer.dart:855
+#: lib/ui/drawer.dart:864
 msgid "lähdekoodi on avointa, ja korjaukset ovat tervetulleita."
 msgstr "the source code is open, and fixes are welcome."
 
-#: lib/ui/drawer.dart:871
+#: lib/ui/drawer.dart:880
 msgid "Miksi tukea?"
 msgstr "Why support?"
 
-#: lib/ui/drawer.dart:874
+#: lib/ui/drawer.dart:883
 msgid ""
 "Sovelluksen kehittäminen ja ylläpito tehdään vapaa-ajalla. "
 "Tarjoamalla kahvit tuet suoraan tätä työtä:"
@@ -2603,11 +2603,11 @@ msgstr ""
 "The app is developed and maintained in my free time. By buying me a "
 "coffee, you directly support this work:"
 
-#: lib/ui/drawer.dart:880
+#: lib/ui/drawer.dart:889
 msgid "sovellus pysyy maksuttomana ja mainoksettomana kaikille"
 msgstr "the app stays free and ad-free for everyone"
 
-#: lib/ui/drawer.dart:884
+#: lib/ui/drawer.dart:893
 msgid ""
 "sovellus pysyy ajan tasalla, ja Windows- ja Linux-versiot "
 "valmistuvat, kun sovellus on hiottu valmiiksi"
@@ -2615,15 +2615,15 @@ msgstr ""
 "the app stays up to date, and the Windows and Linux versions get done "
 "once the app is polished"
 
-#: lib/ui/drawer.dart:888
+#: lib/ui/drawer.dart:897
 msgid "saamenkielinen versio ja uudet ominaisuudet etenevät nopeammin"
 msgstr "the Sámi version and new features progress faster"
 
-#: lib/ui/drawer.dart:896
+#: lib/ui/drawer.dart:905
 msgid "Buy me a coffee"
 msgstr "Buy me a coffee"
 
-#: lib/ui/drawer.dart:901
+#: lib/ui/drawer.dart:910
 msgid ""
 "Tuki on vapaaehtoista eikä avaa mitään lisäominaisuuksia: sovellus "
 "pysyy kaikille maksuttomana."
@@ -2631,30 +2631,30 @@ msgstr ""
 "Support is voluntary and doesn't unlock any extra features: the app "
 "stays free for everyone."
 
-#: lib/ui/drawer.dart:905
+#: lib/ui/drawer.dart:914
 msgid "Giitu! Kiitos, että tuet sovellusta!"
 msgstr "Giitu! Thank you for supporting the app!"
 
-#: lib/ui/drawer.dart:919
+#: lib/ui/drawer.dart:928
 msgid "Tauko treenaamisesta"
 msgstr "Break from training"
 
-#: lib/ui/drawer.dart:927
+#: lib/ui/drawer.dart:936
 msgid "🤒 Sairas"
 msgstr "🤒 Sick"
 
-#: lib/ui/drawer.dart:928
+#: lib/ui/drawer.dart:937
 msgid "🏖 Loma"
 msgstr "🏖 Vacation"
 
 #. {0} = start.day
 #. {1} = start.month
 #. {2} = start.year
-#: lib/ui/drawer.dart:936
+#: lib/ui/drawer.dart:945
 msgid "Alkoi {0}.{1}.{2}"
 msgstr "Started {1}/{0}/{2}"
 
-#: lib/ui/drawer.dart:951
+#: lib/ui/drawer.dart:960
 msgid ""
 "Lepää ja parane. Tauko päättyy, kun kirjaat seuraavan treenin. Sen "
 "jälkeen sovellus ehdottaa noin kahden viikon ajan kevyempiä kuormia "
@@ -2664,7 +2664,7 @@ msgstr ""
 "After that, the app suggests lighter loads and fewer sets for about "
 "two weeks, depending on the length of the break."
 
-#: lib/ui/drawer.dart:956
+#: lib/ui/drawer.dart:965
 msgid ""
 "Tauko päättyy, kun kirjaat seuraavan treenin. Lyhyt loma ei juuri "
 "vaikuta voimaan; pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä "
@@ -2674,29 +2674,29 @@ msgstr ""
 "barely affects strength; after a longer one, the app suggests lighter "
 "loads at first."
 
-#: lib/ui/drawer.dart:965
+#: lib/ui/drawer.dart:974
 msgid "Aloita tauko"
 msgstr "Start break"
 
-#: lib/ui/drawer.dart:987
+#: lib/ui/drawer.dart:996
 msgid "Kopioidaanko treenit?"
 msgstr "Copy workouts?"
 
 #. {0} = oldFiles.length
-#: lib/ui/drawer.dart:989
+#: lib/ui/drawer.dart:998
 msgid "Nykyisessä kansiossa on {0} tiedostoa (treenit, asetukset ja ohjelma)."
 msgstr "The current folder has {0} files (workouts, settings and program)."
 
-#: lib/ui/drawer.dart:990
+#: lib/ui/drawer.dart:999
 msgid "Uusi kansio on tyhjä."
 msgstr "The new folder is empty."
 
 #. {0} = newFiles.length
-#: lib/ui/drawer.dart:990
+#: lib/ui/drawer.dart:999
 msgid "Uudessa kansiossa on jo {0} .md-tiedostoa."
 msgstr "The new folder already has {0} .md files."
 
-#: lib/ui/drawer.dart:991
+#: lib/ui/drawer.dart:1000
 msgid ""
 "Kopioidaanko treenit uuteen kansioon? Uuden kansion tiedostoja ei "
 "ylikirjoiteta, ja alkuperäiset jäävät myös vanhaan kansioon."
@@ -2704,68 +2704,68 @@ msgstr ""
 "Copy the workouts to the new folder? Files in the new folder won't be "
 "overwritten, and the originals also stay in the old folder."
 
-#: lib/ui/drawer.dart:996
+#: lib/ui/drawer.dart:1005
 msgid "Älä kopioi"
 msgstr "Don't copy"
 
 #. {0} = c
 #. {1} = sk
-#: lib/ui/drawer.dart:1009
+#: lib/ui/drawer.dart:1018
 msgid "Kopioitu {0} tiedostoa, {1} oli jo uudessa kansiossa. "
 msgstr "Copied {0} files, {1} were already in the new folder. "
 
 #. {0} = c
-#: lib/ui/drawer.dart:1010
+#: lib/ui/drawer.dart:1019
 msgid "Kopioitu {0} tiedostoa. "
 msgstr "Copied {0} files. "
 
 #. {0} = e
-#: lib/ui/drawer.dart:1012
+#: lib/ui/drawer.dart:1021
 msgid "Kopiointi epäonnistui: {0}"
 msgstr "Copying failed: {0}"
 
 #. {0} = msg
 #. {1} = store.workouts.length
-#: lib/ui/drawer.dart:1018
+#: lib/ui/drawer.dart:1027
 msgid "{0}Löytyi {1} treeniä."
 msgstr "{0}Found {1} workouts."
 
-#: lib/ui/drawer.dart:1037
+#: lib/ui/drawer.dart:1046
 msgid "Kevyt kuorma (yli 12 toistoa)"
 msgstr "Light load (over 12 reps)"
 
-#: lib/ui/drawer.dart:1038
+#: lib/ui/drawer.dart:1047
 msgid "Keskiraskas (6–12 toistoa)"
 msgstr "Moderate (6–12 reps)"
 
-#: lib/ui/drawer.dart:1039
+#: lib/ui/drawer.dart:1048
 msgid "Raskas (1–5 toistoa tai lähellä maksimia)"
 msgstr "Heavy (1–5 reps or near max)"
 
-#: lib/ui/drawer.dart:1046
+#: lib/ui/drawer.dart:1055
 msgid "Palautusajat"
 msgstr "Rest times"
 
-#: lib/ui/drawer.dart:1057
+#: lib/ui/drawer.dart:1066
 msgid "ohjelmasi oletus"
 msgstr "your program's default"
 
-#: lib/ui/drawer.dart:1057
+#: lib/ui/drawer.dart:1066
 msgid "oletus"
 msgstr "default"
 
 #. {0} = _mmss(defs[c])
 #. {1} = settings.restAdjust[c] > 0 ? '+' : ''
 #. {2} = settings.restAdjust[c]
-#: lib/ui/drawer.dart:1058
+#: lib/ui/drawer.dart:1067
 msgid "oletus {0}, oma säätö {1}{2} s"
 msgstr "default {0}, your adjustment {1}{2} s"
 
-#: lib/ui/drawer.dart:1099
+#: lib/ui/drawer.dart:1108
 msgid "Palauta oletukset"
 msgstr "Restore defaults"
 
-#: lib/ui/drawer.dart:1103
+#: lib/ui/drawer.dart:1112
 msgid ""
 "Eristävät liikkeet ja lämmittelysarjat lyhyemmin. Ei varaa: +30 s. "
 "Kevennysviikolla × 0,75."
@@ -6992,3 +6992,111 @@ msgstr ""
 "deep stretches. If you felt a pop and the armpit or upper arm bruised "
 "or the shape of the chest changed, see a doctor immediately (a "
 "rupture is often operated on within weeks)."
+
+#: lib/program.dart:41 lib/program.dart:607
+msgid "Kyykky"
+msgstr "Squat"
+
+#: lib/program.dart:42
+msgid "Lonkkasarana"
+msgstr "Hip hinge"
+
+#: lib/program.dart:43
+msgid "Yksijalkainen"
+msgstr "Single-leg"
+
+#: lib/program.dart:44
+msgid "Polven ojennus"
+msgstr "Knee extension"
+
+#: lib/program.dart:45
+msgid "Polven koukistus"
+msgstr "Knee flexion"
+
+#: lib/program.dart:46
+msgid "Pakara"
+msgstr "Glutes"
+
+#: lib/program.dart:47
+msgid "Pohje"
+msgstr "Calves"
+
+#: lib/program.dart:48
+msgid "Vaakatyöntö"
+msgstr "Horizontal push"
+
+#: lib/program.dart:49
+msgid "Vino työntö"
+msgstr "Incline push"
+
+#: lib/program.dart:50
+msgid "Pystytyöntö"
+msgstr "Vertical push"
+
+#: lib/program.dart:51
+msgid "Vaakaveto"
+msgstr "Horizontal pull"
+
+#: lib/program.dart:52
+msgid "Pystyveto"
+msgstr "Vertical pull"
+
+#: lib/program.dart:53
+msgid "Rinta-eristys"
+msgstr "Chest isolation"
+
+#: lib/program.dart:54
+msgid "Olkapää sivu"
+msgstr "Side delts"
+
+#: lib/program.dart:55
+msgid "Takaolka"
+msgstr "Rear delts"
+
+#: lib/program.dart:56
+msgid "Hauis"
+msgstr "Biceps"
+
+#: lib/program.dart:57
+msgid "Ojentaja"
+msgstr "Triceps"
+
+#: lib/program.dart:59
+msgid "Kanto"
+msgstr "Carry"
+
+#: lib/program.dart:60
+msgid "Kilpakyykky"
+msgstr "Competition squat"
+
+#: lib/program.dart:61
+msgid "Kilpapenkki"
+msgstr "Competition bench"
+
+#: lib/program.dart:62
+msgid "Kilpamaastaveto"
+msgstr "Competition deadlift"
+
+#: lib/program.dart:63
+msgid "Kyykkyvariaatio"
+msgstr "Squat variation"
+
+#: lib/program.dart:64
+msgid "Penkkivariaatio"
+msgstr "Bench variation"
+
+#: lib/program.dart:65
+msgid "Maastavetovariaatio"
+msgstr "Deadlift variation"
+
+#: lib/program.dart:611
+msgid "Penkki raskas"
+msgstr "Bench heavy"
+
+#: lib/program.dart:620
+msgid "Maastaveto"
+msgstr "Deadlift"
+
+#: lib/program.dart:624
+msgid "Penkki volyymi"
+msgstr "Bench volume"

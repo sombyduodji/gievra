@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/custom_merge.dart';
+import 'package:treenipaivakirja/exercise_names_en.dart';
 import 'package:treenipaivakirja/injuries.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/program.dart';
@@ -51,7 +52,9 @@ List<String> _finnish(WidgetTester tester, String lang) {
     if (_keep.any((k) => k.length > 3 && s.contains(k))) continue;
     if (lang == 'se' && _exercises.any((x) => s.contains(x))) continue;
     final parts = [s, ...s.split(RegExp(r',\s*|:\s*|\s·\s|\n'))].map((x) => x.trim()).where((x) => x.length > 2);
-    if (parts.any(_fiKeys.contains) || RegExp('[äöÄÖ]').hasMatch(s)) bad.add(s);
+    // Englanniksi liikkeiden nimet aina englanniksi: suomenkielinen liikenimi (jolla on eri englanninkielinen nimi).
+    final fiExercise = lang == 'en' && parts.any((x) => (exerciseEnglish[x] ?? x) != x);
+    if (fiExercise || parts.any(_fiKeys.contains) || RegExp('[äöÄÖ]').hasMatch(s)) bad.add(s);
   }
   return bad.toList();
 }
@@ -164,6 +167,39 @@ void main() {
           await _app(tester, const ProgramScreen());
           check(tester, 'ohjelmasivu ($goal, vammoja)');
         }
+      });
+
+      // Suomeksi luotu ohjelma (päivien nimet tallentuvat suomeksi), käyttöliittymä vaihdettu: kaikki tavoitteet,
+      // kokemustasot, päivämäärät ja kahvakuulaohjelmat uuden treenin valinnassa ja ohjelmasivulla.
+      testWidgets('Suomeksi luotu ohjelma: uusi treeni ja ohjelmasivu', (tester) async {
+        tester.view.physicalSize = const Size(1080, 6000);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.reset);
+        settings.injuries = [];
+        final cases = <(String, String, int, String?)>[
+          for (final g in ['voimanosto', 'lihaskasvu', 'rasvanpoltto', 'kunto'])
+            for (final e in ['aloittelija', 'keski'])
+              for (final d in [2, 3, 4, 5, 6]) (g, e, d, null),
+          for (final k in kbFocuses.keys) ('kunto', 'keski', 3, k),
+        ];
+        for (final (g, e, d, kb) in cases) {
+          settings.program = generateProgram(
+            goal: g,
+            experience: e,
+            days: d,
+            minutes: 60,
+            injuries: const [],
+            equipment: kb == null ? const {} : const {'kahvakuula'},
+            kbFocus: kb,
+          );
+          final where = '$g $e $d pv${kb == null ? '' : ' kahvakuula $kb'}';
+          await tester.pumpWidget(MaterialApp(home: NewWorkoutScreen(date: DateTime(2026, 11, 9))));
+          await tester.pump(const Duration(milliseconds: 300));
+          check(tester, 'uusi treeni: $where');
+          await _app(tester, const ProgramScreen());
+          check(tester, 'ohjelmasivu: $where');
+        }
+        settings.program = null;
       });
 
       testWidgets('Vammatila: kaikki alueet valittuina', (tester) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../rest.dart';
 import '../theme.dart';
+import '../exercises.dart' show exerciseLabel;
 import '../l10n.dart';
 
 String _mmss(int s) => '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
@@ -42,7 +43,7 @@ class RestBanner extends StatelessWidget {
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                         Text(
-                          t('suositus {0} · {1}', [_mmss(rest.total), rest.exercise]),
+                          t('suositus {0} · {1}', [_mmss(rest.total), exerciseLabel(rest.exercise)]),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),

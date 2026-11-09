@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../exercises.dart' show exerciseLabel;
 import '../l10n.dart';
 import '../program.dart';
 
@@ -90,7 +91,7 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
             Text(d.uiName, style: const TextStyle(fontWeight: FontWeight.w700)),
             for (final i in d.items)
               Text(
-                '  ${i.exercise}  ${switch (i.kind) {
+                '  ${exerciseLabel(i.exercise)}  ${switch (i.kind) {
                   'H' => t('raskas, viikon mukaan'),
                   'V' => t('volyymi, viikon mukaan'),
                   _ => '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}',

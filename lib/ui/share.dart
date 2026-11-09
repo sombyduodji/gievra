@@ -38,7 +38,10 @@ Future<void> shareWorkout(BuildContext context, Workout w) async {
   if (choice == null) return;
   if (choice == 'text') {
     await SharePlus.instance.share(
-      ShareParams(text: shareText(w), subject: '${w.activity ?? w.title} ${isoDate(w.date)}'),
+      ShareParams(
+        text: shareText(w),
+        subject: '${w.activity != null ? sportName(w.activity!) : trName(w.title)} ${isoDate(w.date)}',
+      ),
     );
     return;
   }
