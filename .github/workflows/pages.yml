@@ -34,7 +34,7 @@ jobs:
       - name: Kotisivu
         run: |
           mkdir -p public/kuvat/en public/en
-          cp site/index.html site/kartat.json site/kartat.js site/gievra-video*.mp4 site/gievra-video*.jpg public/
+          cp site/index.html site/kartat.json site/kartat-tarkisteet.json site/kartat.js site/gievra-video*.mp4 site/gievra-video*.jpg public/
           cp site/en/index.html public/en/
           cp assets/logo_icon.png public/logo.png
           cp docs/screenshots/*.png public/kuvat/

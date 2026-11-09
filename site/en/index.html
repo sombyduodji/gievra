@@ -99,7 +99,31 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>New: heart rate, calories and steps from your watch <span class="badge">0.3</span></h2>
+  <h2>New: routes snap to paths, safer map import <span class="badge">0.4</span></h2>
+  <div class="grid">
+    <div class="card">
+      <h3>🥾 Routes snap to paths</h3>
+      <ul>
+        <li>GPS easily drifts a few metres sideways. When the area's map is downloaded, the route is matched to roads and paths when recording ends: drift of up to about 8 m is corrected onto the path, and the route follows its bends.</li>
+        <li>On foot, footpaths, cycle paths and pavements win over car roads; it never snaps to a major road on foot.</li>
+        <li>In the forest and wherever no path is near, the GPS route is kept as it is. A brief brush with a path isn't enough.</li>
+        <li>Running, jogging, walking, Nordic walking, hiking and cycling. The distance stays as the GPS measured it.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🗺️ Maps from a file</h3>
+      <ul>
+        <li>Download maps from this page (<a href="#maphaku">map search</a>) or anywhere, and import them into the app. A map is recognised by its content (SHA-256), so the file name doesn't matter.</li>
+        <li>Verification shows its progress; the whole of Finland is checked in a few seconds.</li>
+        <li>Older map versions are recognised too. Without a connection: import the maps together with the <a href="../kartat-tarkisteet.json" download>checksum table</a>.</li>
+        <li>If verification fails: <i>Check online</i>, <i>Import without verifying</i> (marked as unverified) or <i>Skip</i>. An incomplete or broken file is never imported.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Heart rate, calories and steps from your watch <span class="badge">0.3</span></h2>
   <div class="feature">
     <img src="../kuvat/en/health.png" alt="A run's Watch data card: calories, average and max heart rate and steps fetched from Health Connect">
     <div>
@@ -155,6 +179,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <ol class="sub">
       <li>Download the area map (<code>.pmtiles</code>) and, once, the country's overview map.</li>
       <li>Move the files to your phone, e.g. via a synced folder (Seafile, Nextcloud…) or USB.</li>
+      <li>No connection on the phone: also take the <a href="../kartat-tarkisteet.json" download>checksum table</a> (<code>kartat-tarkisteet.json</code>, SHA-256 of every map version) and pick it together with the maps when importing, and the app verifies them.</li>
       <li>In Gievra: ☰ → Settings → <b>Maps</b> → <b>From file</b> and pick the files.</li>
     </ol>
     <p class="sub"><small class="maara"></small><br><small>Files download directly from GitHub. Maps © OpenStreetMap contributors (ODbL).</small></p>
@@ -307,7 +332,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <tr><th>Setup, program and gym workout</th><td>no connections</td></tr>
     <tr><th>GPS run and finding your location</th><td>no connections: location and route stay on the phone</td></tr>
     <tr><th>Health Connect (heart rate, calories, steps)</th><td>no connections: read on the phone, read only</td></tr>
-    <tr><th>Maps screen and map downloads</th><td>GitHub only (github.com and release-assets.githubusercontent.com)</td></tr>
+    <tr><th>Maps screen and map downloads</th><td>GitHub only (github.com and release-assets.githubusercontent.com; <i>Check online</i> also api.github.com)</td></tr>
     <tr><th>Bug report and backup</th><td>no connections: Android's share menu, the app you choose does the sending</td></tr>
     <tr><th>In the background and at startup</th><td>no connections</td></tr>
   </table>

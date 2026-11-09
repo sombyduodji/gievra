@@ -72,6 +72,9 @@ class PmTilesFile {
   late final int _rootOff, _rootLen, _leafOff, _dataOff, _icomp, _tcomp;
   late final int minZoom, maxZoom;
 
+  /// Tiedoston vähimmäispituus otsakkeen mukaan (hakemistot, metatiedot ja laattadata): lyhyempi = keskeneräinen.
+  late final int requiredLength;
+
   /// Rajaava laatikko asteina (w, s, e, n).
   late final (double, double, double, double) bounds;
   late final List<_Entry> _root;
@@ -115,6 +118,9 @@ class PmTilesFile {
     _rootLen = u64(16);
     _leafOff = u64(40);
     _dataOff = u64(56);
+    requiredLength = [
+      for (final o in [8, 24, 40, 56]) u64(o) + u64(o + 8),
+    ].reduce((a, b) => a > b ? a : b);
     _icomp = h.getUint8(97);
     _tcomp = h.getUint8(98);
     minZoom = h.getUint8(100);

@@ -6,7 +6,10 @@
 
 Selain ei voi lukea GitHubin julkaisutiedostoja suoraan (ei CORS-otsakkeita), joten kotisivu käyttää tätä
 kevyttä luetteloa: nimi, muut nimet, alue, koko ja latausosoite, ei aluerajoja. Aja uudelleen, kun
-karttajulkaisu päivittyy, ja commitoi site/kartat.json.
+karttajulkaisu päivittyy, ja commitoi site/kartat.json ja site/kartat-tarkisteet.json.
+
+kartat-tarkisteet.json: kaikkien karttajulkaisujen (myös vanhojen) .pmtiles-tiedostojen SHA-256 GitHubin omista
+tarkisteista (API:n digest-kenttä). Sovellus tuo sen kuten kartan ja tarkistaa kartat sillä ilman verkkoa.
 """
 import argparse
 import json
@@ -16,6 +19,7 @@ import time
 import urllib.request
 
 INDEX = 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/maat.json'
+RELEASES = 'https://api.github.com/repos/sombyduodji/gievra/releases?per_page=100&page={}'
 FINLAND = {'fi': 'Suomi', 'en': 'Finland', 'se': 'Suopma', 'local': 'Suomi'}
 
 
@@ -34,10 +38,32 @@ def get(url, local_dir):
             time.sleep(5 * (i + 1))
 
 
+def checksums():
+    """[[tiedosto, sha256, koko, tagi], ...] kaikista karttajulkaisuista (GitHubin digest-kenttä)."""
+    out = []
+    for page in range(1, 20):
+        req = urllib.request.Request(RELEASES.format(page), headers={
+            'User-Agent': 'gievra-site-maps', 'Accept': 'application/vnd.github+json'})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            releases = json.load(r)
+        for rel in releases:
+            if not rel['tag_name'].startswith('kartat'):
+                continue
+            for a in rel['assets']:
+                d = a.get('digest') or ''
+                if a['name'].endswith('.pmtiles') and d.startswith('sha256:'):
+                    out.append([a['name'], d[7:], a['size'], rel['tag_name']])
+        if len(releases) < 100:
+            break
+    out.sort(key=lambda e: (e[0], e[3]))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--dir', help='paikallinen kansio, jossa maat.json ja maiden luettelot')
     ap.add_argument('--out', default=os.path.join(os.path.dirname(__file__), '..', 'site', 'kartat.json'))
+    ap.add_argument('--sums', default=os.path.join(os.path.dirname(__file__), '..', 'site', 'kartat-tarkisteet.json'))
     a = ap.parse_args()
     index = get(INDEX, a.dir)
     out = {'format': 1, 'countries': []}
@@ -59,6 +85,12 @@ def main():
     with open(a.out, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
         f.write('\n')
+    sums = checksums()
+    with open(a.sums, 'w', encoding='utf-8') as f:
+        json.dump({'format': 'gievra-kartat-tarkisteet', 'version': 1, 'osmDate': out['osmDate'], 'files': sums},
+                  f, ensure_ascii=False, separators=(',', ':'))
+        f.write('\n')
+    print(f'{a.sums}: {len(sums)} tarkistetta')
     n = sum(len(c['packs']) for c in out['countries'])
     print(f'{a.out}: {len(out["countries"])} maata, {n} karttaa, {os.path.getsize(a.out) // 1024} kt')
 

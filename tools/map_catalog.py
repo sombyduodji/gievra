@@ -28,6 +28,26 @@ def sha256(path):
     return h.hexdigest()
 
 
+def carry_old(out, previous, keep=5):
+    """Lisää uuden luettelon tiedostoille edellisen julkaisun tarkisteet (sha256Old), jotta sovellus tunnistaa
+    vanhemmankin kartan tiedostosta tuotaessa ja tarjoaa päivitystä. previous = edellinen luettelo (polku)."""
+    if not previous:
+        return out
+    with open(previous, encoding='utf-8') as f:
+        prev = json.load(f)
+    old = {}
+    for e in [prev.get('overview'), prev.get('all'), *prev.get('packs', [])]:
+        if e:
+            old[e['file']] = [e['sha256'], *e.get('sha256Old', [])]
+    for e in [out.get('overview'), out.get('all'), *out.get('packs', [])]:
+        if not e or e['file'] not in old:
+            continue
+        hist = [h for h in dict.fromkeys(old[e['file']]) if h != e['sha256']][:keep]
+        if hist:
+            e['sha256Old'] = hist
+    return out
+
+
 def simplify(pts, tol):
     """Douglas–Peucker (asteina); renkaan alku ja loppu säilyvät."""
     if len(pts) < 4:
@@ -75,6 +95,7 @@ def main():
     ap.add_argument('--osm-date', required=True)
     ap.add_argument('--repo', default='sombyduodji/gievra')
     ap.add_argument('--tolerance', type=float, default=0.004, help='rajan yksinkertaistus asteina (oletus 0,004)')
+    ap.add_argument('--previous', help='edellisen julkaisun kartat.json: sen tarkisteet sha256Old-listaan')
     a = ap.parse_args()
 
     regions = [(f['properties']['nimi'], geojson_rings(f['geometry'])) for f in json.load(open(a.maakunnat))['features']]
@@ -137,6 +158,7 @@ def main():
         'regions': sorted({p['region'] for p in packs}),
         'packs': packs,
     }
+    carry_old(out, a.previous)
     json.dump(out, sys.stdout, ensure_ascii=False, separators=(',', ':'))
     print(f'{len(packs)} kuntaa, {sum(p["size"] for p in packs) / 1e9:.2f} GB', file=sys.stderr)
 
