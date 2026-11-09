@@ -150,6 +150,45 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        // Karttatiedoston SHA-256 (tuonti tiedostosta): laitteiston kiihdyttämä MessageDigest taustasäikeessä,
+        // edistyminen takaisin Dartille noin 4 Mt:n välein.
+        val hashChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/hash")
+        hashChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "sha256" -> {
+                    val path = call.argument<String>("path") ?: return@setMethodCallHandler result.error("hash", "path", null)
+                    val id = call.argument<Int>("id") ?: 0
+                    scope.launch {
+                        try {
+                            val hex = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                                val md = java.security.MessageDigest.getInstance("SHA-256")
+                                val buf = ByteArray(1 shl 20)
+                                var done = 0L
+                                var reported = 0L
+                                File(path).inputStream().use { input ->
+                                    while (true) {
+                                        val n = input.read(buf)
+                                        if (n < 0) break
+                                        md.update(buf, 0, n)
+                                        done += n
+                                        if (done - reported >= (4L shl 20)) {
+                                            reported = done
+                                            val d = done
+                                            runOnUiThread { hashChannel.invokeMethod("progress", mapOf("id" to id, "bytes" to d)) }
+                                        }
+                                    }
+                                }
+                                md.digest().joinToString("") { "%02x".format(it) }
+                            }
+                            result.success(hex)
+                        } catch (e: Exception) {
+                            result.error("hash", e.message, null)
+                        }
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         // Health Connect (ks. HealthBridge.kt): saatavuus, luvat ja treenin aikavälin ehdokkaat.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/health").setMethodCallHandler { call, result ->
             when (call.method) {

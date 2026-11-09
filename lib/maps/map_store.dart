@@ -9,7 +9,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:vector_tile/vector_tile.dart';
 
+import '../gps_filter.dart';
+import 'file_hash.dart';
+import 'path_snap.dart';
 import 'pmtiles.dart';
 
 // Offline-kartat: kuntakohtaiset (muissa maissa kommuner, council areas, provinciat …) OpenStreetMap-paketit (tools/map_extract.py, tools/map_catalog.py) ladataan
@@ -28,6 +32,16 @@ const mapCatalogUrl = String.fromEnvironment(
 const mapIndexUrl = String.fromEnvironment(
   'MAP_INDEX',
   defaultValue: 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/maat.json',
+);
+
+/// Kotisivulta ladattavan tarkistetaulukon tunniste (tools/site_maps.py → site/kartat-tarkisteet.json).
+const checksumTableFormat = 'gievra-kartat-tarkisteet';
+
+/// GitHubin julkaisujen API: jokaisen julkaisutiedoston SHA-256 (GitHub laskee sen itse, kenttä `digest`).
+/// "Tarkista verkosta" tunnistaa näin minkä tahansa koskaan julkaistun karttaversion.
+const mapReleasesApi = String.fromEnvironment(
+  'MAP_RELEASES_API',
+  defaultValue: 'https://api.github.com/repos/sombyduodji/gievra/releases?per_page=100',
 );
 
 /// Verkko-osoite vain https:llä (kehitysversiossa myös http, esim. paikallinen testipalvelin).
@@ -55,6 +69,9 @@ class MapPack {
   final int size;
   final List<double> bbox; // w, s, e, n
   final List<List<(double, double)>> shape; // (lon, lat) -renkaat
+
+  /// Saman kartan aiempien julkaisujen tarkisteet: vanhempi tiedosto tunnistetaan tuonnissa (päivitys tarjolla).
+  final List<String> oldSha256;
   const MapPack({
     required this.id,
     required this.name,
@@ -67,6 +84,7 @@ class MapPack {
     this.se,
     this.sv,
     this.country = 'fi',
+    this.oldSha256 = const [],
   });
 
   factory MapPack.fromJson(Map<String, dynamic> j, {String country = 'fi'}) => MapPack(
@@ -76,6 +94,7 @@ class MapPack {
     file: safeMapFile(j['file'] as String),
     region: j['region'] as String? ?? '',
     sha256: j['sha256'] as String,
+    oldSha256: [for (final h in (j['sha256Old'] as List? ?? const [])) h as String],
     size: j['size'] as int,
     bbox: [
       for (final v in (j['bbox'] as List? ?? const [-180, -90, 180, 90])) (v as num).toDouble(),
@@ -222,6 +241,56 @@ class MapDownload {
   MapDownload(this.pack);
 }
 
+/// Miksi tiedosto jätettiin tuomatta.
+enum MapSkip {
+  /// Ei PMTiles-karttaa eikä karttaluetteloa (tai zip ei aukea).
+  notMap,
+
+  /// Karttaluettelo ei kelpaa.
+  badCatalog,
+
+  /// Tiedosto on lyhyempi kuin otsake lupaa: lataus jäi kesken.
+  truncated,
+
+  /// Nimi vastaa luettelon karttaa, mutta sisältö ei: toinen karttajulkaisu tai vioittunut tiedosto.
+  otherVersion,
+
+  /// Tarkiste ei vastaa yhtään tunnettua karttaa.
+  unknown,
+
+  /// Karttaluetteloa ei ole (sovellus ei ole vielä hakenut sitä), joten karttaa ei voi tarkistaa.
+  noCatalog,
+
+  /// Samanniminen tarkistettu kartta on jo asennettu: tarkistamaton ei korvaa sitä.
+  verifiedExists,
+}
+
+/// Mitä tehdään kartoille, joiden tarkiste ei vastaa mitään tunnettua.
+enum UnverifiedChoice { checkOnline, importAnyway, skip }
+
+enum MapImportPhase { unpacking, verifying, checkingOnline, installing }
+
+/// Tuonnin edistyminen: käsiteltävä tiedosto ja tarkistetut tavut kaikista tuotavista kartoista.
+class MapImportProgress {
+  final String name;
+  final int done, total;
+  final MapImportPhase phase;
+  const MapImportProgress(this.name, this.done, this.total, this.phase);
+  double? get fraction => total <= 0 ? null : (done / total).clamp(0.0, 1.0);
+}
+
+/// Tuonnin tulos: asennetut tiedostot (luettelon nimillä) ja ohitetut syineen.
+class MapImportResult {
+  final imported = <String>[];
+
+  /// Tuotu ilman tarkistusta (myös [imported]-listassa).
+  final unverified = <String>[];
+
+  /// Tuodusta tarkistetaulukosta luetut tarkisteet.
+  int checksums = 0;
+  final skipped = <(String, MapSkip)>[];
+}
+
 class MapStore extends ChangeNotifier {
   MapStore._();
   static final instance = MapStore._();
@@ -249,6 +318,7 @@ class MapStore extends ChangeNotifier {
 
   void _add(MapCatalog c) {
     catalogs[c.country] = c;
+    _remember(c);
     // Suomi ensin, muut aakkosjärjestyksessä maakoodin mukaan.
     final sorted = catalogs.values.toList()
       ..sort((a, b) => a.country == 'fi' ? -1 : (b.country == 'fi' ? 1 : a.country.compareTo(b.country)));
@@ -283,6 +353,10 @@ class MapStore extends ChangeNotifier {
   bool _cancel = false;
   final _open = <String, PmTilesFile>{};
 
+  /// Odotus ennen uutta yritystä, kun palvelin vastaa 5xx (testeissä lyhyempi).
+  @visibleForTesting
+  Duration retryDelay = const Duration(seconds: 2);
+
   /// Lataus katkaistaan, jos dataa ei tule tähän aikaan.
   static const _stall = Duration(seconds: 30);
 
@@ -306,15 +380,25 @@ class MapStore extends ChangeNotifier {
         } catch (_) {}
       }
     }
+    if (_known.isEmpty) await _loadKnown();
     await _scan();
+    await _loadUnverified();
     notifyListeners(); // tallennetut luettelot näkyvät heti, verkosta haku jatkuu taustalla
     String? err;
     if (network && (refresh || catalogs.isEmpty)) {
       final client = clientOverride ?? http.Client();
+      // GitHubin tiedostopalvelin vastaa välillä 502/503/504 (tai aikakatkaisu): yritetään uudelleen.
       Future<String> get(String url) async {
-        final r = await client.get(Uri.parse(safeMapUrl(url))).timeout(const Duration(seconds: 15));
-        if (r.statusCode != 200) throw HttpException('HTTP ${r.statusCode}');
-        return utf8.decode(r.bodyBytes);
+        for (var attempt = 0; ; attempt++) {
+          try {
+            final r = await client.get(Uri.parse(safeMapUrl(url))).timeout(const Duration(seconds: 15));
+            if (r.statusCode == 200) return utf8.decode(r.bodyBytes);
+            if (r.statusCode < 500 || attempt >= 2) throw HttpException('HTTP ${r.statusCode}');
+          } on TimeoutException {
+            if (attempt >= 2) rethrow;
+          }
+          await Future<void>.delayed(retryDelay * (attempt + 1));
+        }
       }
 
       Future<void> fetch(String url, {String? expect}) async {
@@ -423,6 +507,7 @@ class MapStore extends ChangeNotifier {
           dl.done = true;
           installed.add(x.file);
           await _setVersion(x.file, x.sha256);
+          unverified.remove(x.file);
         } catch (e) {
           dl.error = _cancel ? 'peruttu' : '$e';
           failed.add(dl);
@@ -449,8 +534,15 @@ class MapStore extends ChangeNotifier {
   Future<void> _fetch(http.Client client, String base, MapPack x, MapDownload dl) async {
     final d = await dir();
     final part = File(p.join(d.path, '${x.file}.part'));
-    final res = await client.send(http.Request('GET', Uri.parse('$base${x.file}'))).timeout(_stall);
-    if (res.statusCode != 200) throw HttpException('HTTP ${res.statusCode}');
+    http.StreamedResponse res;
+    for (var attempt = 0; ; attempt++) {
+      res = await client.send(http.Request('GET', Uri.parse('$base${x.file}'))).timeout(_stall);
+      if (res.statusCode == 200) break;
+      await res.stream.drain<void>().catchError((_) {});
+      // GitHubin tiedostopalvelimen satunnainen 5xx: uusi yritys.
+      if (res.statusCode < 500 || attempt >= 2 || _cancel) throw HttpException('HTTP ${res.statusCode}');
+      await Future<void>.delayed(retryDelay * (attempt + 1));
+    }
     final sink = part.openWrite();
     final digest = _DigestSink();
     final hasher = sha256.startChunkedConversion(digest);
@@ -474,68 +566,357 @@ class MapStore extends ChangeNotifier {
     }
   }
 
-  /// Tuo karttapaketin tiedostosta (ilman verkkoa, esim. Seafilesta tai toiselta laitteelta): .zip, jossa
-  /// karttoja (.pmtiles) ja luettelo (kartat.json), tai yksittäinen .pmtiles / kartat.json. Kartat tarkistetaan
-  /// (PMTiles-otsake ja luettelon SHA-256, jos luettelossa on tiedosto). Palauttaa tuotujen karttojen määrän.
-  Future<int> importFiles(List<String> paths) async {
+  /// Tuo kartat tiedostoista (ilman verkkoa, esim. Seafilesta, kotisivulta tai toiselta laitteelta): .zip, jossa
+  /// karttoja (.pmtiles) ja luetteloita (kartat.json, `<maa>.json`), tai yksittäisiä .pmtiles- ja luettelotiedostoja.
+  ///
+  /// Kartta tunnistetaan sisällöstä, ei tiedostonimestä: SHA-256-tarkisteen pitää vastata jonkin luettelon kartan
+  /// nykyistä tai aiempaa versiota (myös laitteen muistamia tarkisteita), ja kartta tallennetaan luettelon nimellä
+  /// (esim. selaimen nimeämä `es-yleiskartta(1).pmtiles` → `es-yleiskartta.pmtiles`). Yksittäistä tiedostoa ei
+  /// kopioida ennen tarkistusta: tarkiste lasketaan paikallaan ([onProgress] kertoo edistymisen).
+  ///
+  /// Tunnistamaton mutta ehjä kartta: [onUnverified] kysyy käyttäjältä (hae tarkisteet verkosta / tuo ilman
+  /// tarkistusta / ohita). Ilman tarkistusta tuotu kartta merkitään tarkistamattomaksi ([unverified]), eikä se
+  /// koskaan korvaa tarkistettua karttaa. Ei-kartta tai vajaa tiedosto ohitetaan aina.
+  Future<MapImportResult> importFiles(
+    List<String> paths, {
+    void Function(MapImportProgress)? onProgress,
+    Future<UnverifiedChoice> Function(List<String> names, {required bool checkedOnline})? onUnverified,
+  }) async {
     final d = await dir();
     final tmp = Directory(p.join(d.path, 'tuonti'));
     if (await tmp.exists()) await tmp.delete(recursive: true);
     await tmp.create();
-    final staged = <String, File>{}; // nimi -> purettu tiedosto
+    final result = MapImportResult();
+    final maps = <(String, File, bool)>[]; // (alkuperäinen nimi, tiedosto, saa siirtää)
+    final catalogFiles = <(String, File)>[];
+    final movable = await _movableRoots();
+    var k = 0;
+    bool isJson(String name) => name.toLowerCase().endsWith('.json');
+    bool wanted(String name) => name.toLowerCase().endsWith('.pmtiles') || isJson(name);
     try {
       for (final path in paths) {
-        final name = p.basename(path).toLowerCase();
-        if (name.endsWith('.zip')) {
+        final name = p.basename(path);
+        final lower = name.toLowerCase();
+        if (lower.endsWith('.zip')) {
+          onProgress?.call(MapImportProgress(name, 0, 0, MapImportPhase.unpacking));
           final input = InputFileStream(path);
           try {
             final zip = ZipDecoder().decodeStream(input);
             for (final f in zip.files) {
               final n = p.basename(f.name);
-              if (!f.isFile || !_importable(n)) continue;
-              final out = File(p.join(tmp.path, n));
-              final os = OutputFileStream(out.path);
+              if (!f.isFile || !wanted(n)) continue;
+              final out = p.join(tmp.path, '${k++}${n.toLowerCase().endsWith('.pmtiles') ? '.pmtiles' : '.json'}');
+              final os = OutputFileStream(out);
               f.writeContent(os);
               await os.close();
-              staged[n] = out;
+              if (n.toLowerCase().endsWith('.pmtiles')) {
+                maps.add((n, File(out), true));
+              } else {
+                catalogFiles.add((n, File(out)));
+              }
             }
+          } catch (_) {
+            result.skipped.add((name, MapSkip.notMap));
           } finally {
             await input.close();
           }
-        } else if (_importable(p.basename(path))) {
-          final n = p.basename(path);
-          staged[n] = await File(path).copy(p.join(tmp.path, n));
+        } else if (lower.endsWith('.pmtiles')) {
+          maps.add((name, File(path), movable.any((r) => p.isWithin(r, path))));
+        } else if (isJson(name)) {
+          catalogFiles.add((name, File(path)));
+        } else {
+          result.skipped.add((name, MapSkip.notMap));
         }
       }
-      // Luettelot ensin: niillä tarkistetaan kartat.
-      for (final n in staged.keys.where(_isCatalogName).toList()) {
-        final text = await staged.remove(n)!.readAsString();
-        final c = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
-        catalog = c;
-        await File(p.join(d.path, c.cacheName)).writeAsString(text);
+      // Luettelot ensin: niillä kartat tunnistetaan.
+      for (final (name, f) in catalogFiles) {
+        try {
+          final text = await f.readAsString();
+          final j = jsonDecode(text) as Map<String, dynamic>;
+          if (j['format'] == checksumTableFormat) {
+            result.checksums += await _addChecksumTable(j);
+            continue;
+          }
+          final c = MapCatalog.fromJson(j);
+          _add(c);
+          country = c.country;
+          await File(p.join(d.path, c.cacheName)).writeAsString(text);
+        } catch (_) {
+          result.skipped.add((name, MapSkip.badCatalog));
+        }
       }
-      final known = {for (final x in allPacks) x.file: x};
-      var n = 0;
-      for (final e in staged.entries) {
-        final f = await PmTilesFile.open(e.value.path); // heittää, jos ei PMTiles v3
-        await f.close();
-        final pack = known[e.key];
-        final digest = (await sha256.bind(e.value.openRead()).first).toString();
-        if (pack != null && digest != pack.sha256) throw FormatException('tarkiste ei täsmää: ${e.key}');
-        await _open.remove(e.key)?.close();
-        await e.value.rename(p.join(d.path, e.key));
-        installed.add(e.key);
-        await _setVersion(e.key, digest);
-        n++;
+      // Kartat: rakenne (nopea) ja tarkiste (koko tiedosto, edistyminen).
+      final ok = <(String, File, bool, int)>[];
+      for (final (name, f, mv) in maps) {
+        try {
+          final pm = await PmTilesFile.open(f.path); // heittää, jos ei PMTiles v3
+          final len = await f.length();
+          final complete = len >= pm.requiredLength;
+          await pm.close();
+          if (!complete) {
+            result.skipped.add((name, MapSkip.truncated));
+            continue;
+          }
+          ok.add((name, f, mv, len));
+        } catch (_) {
+          result.skipped.add((name, MapSkip.notMap));
+        }
       }
+      final total = ok.fold<int>(0, (a, e) => a + e.$4);
+      var before = 0;
+      final hashed = <(String, File, bool, String)>[];
+      for (final (name, f, mv, len) in ok) {
+        final base = before;
+        onProgress?.call(MapImportProgress(name, base, total, MapImportPhase.verifying));
+        final digest = await sha256OfFile(
+          f.path,
+          onProgress: (b) => onProgress?.call(MapImportProgress(name, base + b, total, MapImportPhase.verifying)),
+        );
+        before += len;
+        hashed.add((name, f, mv, digest));
+      }
+
+      Future<void> install(String name, File f, bool mv, String file, String digest, {required bool verified}) async {
+        onProgress?.call(MapImportProgress(name, total, total, MapImportPhase.installing));
+        await _open.remove(file)?.close();
+        final dest = p.join(d.path, file);
+        if (mv) {
+          try {
+            await f.rename(dest);
+          } on FileSystemException {
+            await _copyInto(f, dest);
+          }
+        } else {
+          await _copyInto(f, dest);
+        }
+        installed.add(file);
+        await _setVersion(file, verified ? digest : '?$digest');
+        if (!result.imported.contains(file)) result.imported.add(file);
+      }
+
+      var pending = hashed;
+      var checkedOnline = false;
+      while (pending.isNotEmpty) {
+        final bySha = knownShas();
+        final unknown = <(String, File, bool, String)>[];
+        for (final e in pending) {
+          final file = bySha[e.$4];
+          if (file == null) {
+            unknown.add(e);
+          } else {
+            await install(e.$1, e.$2, e.$3, file, e.$4, verified: true);
+          }
+        }
+        pending = unknown;
+        if (pending.isEmpty) break;
+        final choice = onUnverified == null
+            ? UnverifiedChoice.skip
+            : await onUnverified([for (final e in pending) e.$1], checkedOnline: checkedOnline);
+        if (choice == UnverifiedChoice.checkOnline && !checkedOnline) {
+          onProgress?.call(MapImportProgress('', total, total, MapImportPhase.checkingOnline));
+          checkedOnline = true;
+          await load(refresh: true); // virhe (ei verkkoa) ei haittaa: kysytään uudelleen
+          await fetchGithubDigests(); // GitHubin omat tarkisteet kaikista karttajulkaisuista (myös vanhoista)
+          continue;
+        }
+        final verifiedFiles = {
+          for (final e in (await _versions()).entries)
+            if (!e.value.startsWith('?')) e.key,
+        };
+        for (final (name, f, mv, digest) in pending) {
+          final file = safeImportName(name);
+          if (choice != UnverifiedChoice.importAnyway || file == null) {
+            result.skipped.add((name, _whyUnknown(name)));
+          } else if (verifiedFiles.contains(file) && installed.contains(file)) {
+            result.skipped.add((name, MapSkip.verifiedExists));
+          } else {
+            await install(name, f, mv, file, digest, verified: false);
+            result.unverified.add(file);
+          }
+        }
+        break;
+      }
+      // Tiedostonvalitsimen välimuistiin jääneet kopiot (ohitetut tai jo asennetut) pois: ne vievät tilaa.
+      for (final (_, f, mv) in maps) {
+        if (mv && await f.exists()) await f.delete().catchError((_) => f);
+      }
+      await _loadUnverified();
       notifyListeners();
-      return n;
+      return result;
     } finally {
       if (await tmp.exists()) await tmp.delete(recursive: true);
     }
   }
 
-  static bool _importable(String name) => _isCatalogName(name) || RegExp(r'^[a-z0-9-]+\.pmtiles$').hasMatch(name);
+  MapSkip _whyUnknown(String name) {
+    if (catalogs.isEmpty && _known.isEmpty) return MapSkip.noCatalog;
+    final file = normalizedMapName(name);
+    return allPacks.any((x) => x.file == file) || _known.containsValue(file) ? MapSkip.otherVersion : MapSkip.unknown;
+  }
+
+  /// Kopio ensin .part-tiedostoon ja sitten paikalleen: keskeytynyt kopio ei jää kartaksi.
+  static Future<void> _copyInto(File src, String dest) async {
+    final part = '$dest.part';
+    await src.copy(part);
+    await File(part).rename(dest);
+  }
+
+  /// Kansiot, joista tuotavan tiedoston saa siirtää (ei kopioida): tiedostonvalitsimen välimuisti ja tuontikansio.
+  Future<List<String>> _movableRoots() async {
+    final roots = [p.join((await dir()).path, 'tuonti')];
+    try {
+      roots.add((await getTemporaryDirectory()).path);
+    } catch (_) {}
+    return roots;
+  }
+
+  /// Tunnetut tarkisteet → tiedostonimi: luetteloiden nykyiset ja aiemmat versiot sekä laitteen muistamat
+  /// (tunnetut.json: kaikki tarkisteet, jotka sovellus on joskus nähnyt luettelossa).
+  Map<String, String> knownShas() => {
+    ..._known,
+    for (final x in allPacks) ...{for (final h in x.oldSha256) h: x.file},
+    for (final x in allPacks) x.sha256: x.file,
+  };
+
+  final _known = <String, String>{};
+
+  /// Testejä varten: unohda muistetut tarkisteet.
+  @visibleForTesting
+  void forgetKnown() => _known.clear();
+
+  Future<File> _knownFile() async => File(p.join((await dir()).path, 'tunnetut.json'));
+
+  Future<void> _loadKnown() async {
+    try {
+      final f = await _knownFile();
+      if (await f.exists()) {
+        _known.addAll(Map<String, String>.from(jsonDecode(await f.readAsString()) as Map));
+      }
+    } catch (_) {}
+  }
+
+  /// Muistaa luettelon kaikki tarkisteet: vanhempikin tiedosto tunnistetaan, vaikka luettelo päivittyy.
+  Future<void> _remember(MapCatalog c) async {
+    var changed = false;
+    for (final x in [c.overview, ?c.all, ...c.packs]) {
+      for (final h in [x.sha256, ...x.oldSha256]) {
+        if (_known[h] != x.file) {
+          _known[h] = x.file;
+          changed = true;
+        }
+      }
+    }
+    if (!changed) return;
+    try {
+      await (await _knownFile()).writeAsString(jsonEncode(_known));
+    } catch (_) {}
+  }
+
+  /// Hakee GitHubin API:sta kaikkien karttajulkaisujen (tagi alkaa `kartat`) .pmtiles-tiedostojen tarkisteet ja
+  /// lisää ne muistettuihin ([knownShas]). Yksi pyyntö (100 julkaisua); ilman kirjautumista GitHub sallii 60 pyyntöä
+  /// tunnissa, joten tätä kutsutaan vain käyttäjän pyynnöstä. Palauttaa löydettyjen tarkisteiden määrän (0 virheellä).
+  Future<int> fetchGithubDigests({int maxPages = 5}) async {
+    final client = clientOverride ?? http.Client();
+    final name = RegExp(r'^[a-z0-9-]+\.pmtiles$'), hex = RegExp(r'^sha256:([0-9a-f]{64})$');
+    var n = 0, changed = false;
+    try {
+      // Sivu kerrallaan (100 julkaisua sivulla): vanhimmat karttajulkaisut ovat viimeisillä sivuilla.
+      for (var page = 1; page <= maxPages; page++) {
+        http.Response? r;
+        for (var attempt = 0; attempt < 3; attempt++) {
+          try {
+            r = await client
+                .get(
+                  Uri.parse(safeMapUrl('$mapReleasesApi&page=$page')),
+                  headers: {'Accept': 'application/vnd.github+json', 'User-Agent': 'Gievra'},
+                )
+                .timeout(const Duration(seconds: 20));
+            if (r.statusCode < 500) break;
+          } on TimeoutException {
+            r = null;
+          }
+          await Future<void>.delayed(retryDelay * (attempt + 1));
+        }
+        if (r == null || r.statusCode != 200) break;
+        final releases = jsonDecode(utf8.decode(r.bodyBytes)) as List;
+        for (final rel in releases) {
+          if (rel is! Map || !'${rel['tag_name']}'.startsWith('kartat')) continue;
+          for (final a in (rel['assets'] as List? ?? const [])) {
+            if (a is! Map) continue;
+            final file = '${a['name']}';
+            final m = hex.firstMatch('${a['digest']}');
+            if (m == null || !name.hasMatch(file)) continue;
+            n++;
+            if (_known[m[1]!] != file) {
+              _known[m[1]!] = file;
+              changed = true;
+            }
+          }
+        }
+        if (releases.length < 100) break;
+      }
+    } catch (_) {
+      // verkko- tai muotovirhe: käytetään sitä, mitä saatiin
+    } finally {
+      if (clientOverride == null) client.close();
+    }
+    if (changed) {
+      try {
+        await (await _knownFile()).writeAsString(jsonEncode(_known));
+      } catch (_) {}
+    }
+    return n;
+  }
+
+  /// Kotisivun tarkistetaulukko (kartat-tarkisteet.json): kaikkien karttajulkaisujen tarkisteet. Tuotuna kartat
+  /// tarkistetaan ilman verkkoa; tarkisteet muistetaan. Palauttaa hyväksyttyjen rivien määrän.
+  Future<int> _addChecksumTable(Map<String, dynamic> j) async {
+    final name = RegExp(r'^[a-z0-9-]+\.pmtiles$'), hex = RegExp(r'^[0-9a-f]{64}$');
+    var n = 0, changed = false;
+    for (final e in (j['files'] as List? ?? const [])) {
+      if (e is! List || e.length < 2) continue;
+      final file = '${e[0]}', sha = '${e[1]}';
+      if (!name.hasMatch(file) || !hex.hasMatch(sha)) continue;
+      n++;
+      if (_known[sha] != file) {
+        _known[sha] = file;
+        changed = true;
+      }
+    }
+    if (changed) await (await _knownFile()).writeAsString(jsonEncode(_known));
+    return n;
+  }
+
+  /// Ilman tarkistusta tuodut kartat (tiedostonimet).
+  final unverified = <String>{};
+
+  Future<void> _loadUnverified() async {
+    unverified
+      ..clear()
+      ..addAll([
+        for (final e in (await _versions()).entries)
+          if (e.value.startsWith('?')) e.key,
+      ]);
+  }
+
+  /// Tiedostonimi ilman tarkistusta tuodulle kartalle: luettelon muoto, vain a–z, 0–9 ja viiva. null = ei kelpaa.
+  static String? safeImportName(String name) {
+    var n = normalizedMapName(name);
+    if (!n.endsWith('.pmtiles')) return null;
+    var stem = n.substring(0, n.length - '.pmtiles'.length);
+    stem = stem
+        .replaceAll(RegExp('[åäá]'), 'a')
+        .replaceAll(RegExp('[öøó]'), 'o')
+        .replaceAll(RegExp('[^a-z0-9-]+'), '-')
+        .replaceAll(RegExp('-+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    if (stem.isEmpty || stem.length > 80) return null;
+    return '$stem.pmtiles';
+  }
+
+  /// Selaimen tai käyttäjän muuttama nimi luettelon muotoon: `Es-Yleiskartta (1).pmtiles` → `es-yleiskartta.pmtiles`.
+  static String normalizedMapName(String name) =>
+      name.toLowerCase().replaceFirst(RegExp(r'\s*[(\[]\d+[)\]](?=\.pmtiles$)'), '');
 
   // Asennettujen karttojen tarkisteet (asennetut.json): päivitys tunnistetaan, kun luettelon tarkiste muuttuu.
   Future<File> _versionsFile() async => File(p.join((await dir()).path, 'asennetut.json'));
@@ -595,6 +976,7 @@ class MapStore extends ChangeNotifier {
     final f = File(p.join((await dir()).path, file));
     if (await f.exists()) await f.delete();
     installed.remove(file);
+    unverified.remove(file);
     await _setVersion(file, null);
     notifyListeners();
   }
@@ -615,6 +997,73 @@ class MapStore extends ChangeNotifier {
       await f.close();
     }
     _open.clear();
+  }
+
+  /// Tiet ja polut reitin ympäriltä ladatuista kartoista (tarkin zoomitaso, roads-kerros) reitin korjaukseen
+  /// poluille ([snapRoute]). Tyhjä, jos alueen karttoja ei ole ladattu.
+  Future<List<SnapWay>> waysAround(List<List<TrackPoint>> segments, {double marginM = 30}) async {
+    final files = [
+      for (final f in await openFiles())
+        if (f.maxZoom >= 14) f,
+    ];
+    if (files.isEmpty) return const [];
+    final z = files.map((f) => f.maxZoom).reduce(math.max), n = 1 << z;
+    final tiles = <(int, int)>{};
+    for (final s in segments) {
+      for (final pt in s) {
+        final dLat = marginM / 110574, dLon = marginM / (111320 * math.cos(pt.lat * math.pi / 180));
+        final (x0, y0) = _tileOf(pt.lat + dLat, pt.lon - dLon, n);
+        final (x1, y1) = _tileOf(pt.lat - dLat, pt.lon + dLon, n);
+        for (var x = x0; x <= x1; x++) {
+          for (var y = y0; y <= y1; y++) {
+            tiles.add((x, y));
+          }
+        }
+      }
+    }
+    if (tiles.length > 400) return const []; // hyvin pitkä reitti: ei korjata (muisti ja aika)
+    final ways = <SnapWay>[];
+    for (final (x, y) in tiles) {
+      for (final f in files) {
+        if (f.maxZoom != z) continue;
+        final bytes = await f.tile(z, x, y);
+        if (bytes == null) continue;
+        try {
+          for (final layer in VectorTile.fromBytes(bytes: bytes).layers) {
+            if (layer.name != 'roads') continue;
+            final ext = layer.extent.toDouble();
+            for (final ft in layer.features) {
+              if (ft.type != VectorTileGeomType.LINESTRING) continue;
+              final props = ft.decodeProperties();
+              String str(String k) => props[k]?.dartStringValue ?? '';
+              for (final line in ft.decodeLineString()) {
+                ways.add(
+                  SnapWay(str('kind'), str('kind_detail'), [
+                    for (final c in line) _tileToLatLon(x + c[0] / ext, y + c[1] / ext, n),
+                  ], name: str('name')),
+                );
+              }
+            }
+          }
+        } catch (_) {}
+        break; // sama laatta löytyy vain yhdestä tiedostosta (tai on sama naapurikunnan tiedostossa)
+      }
+    }
+    return ways;
+  }
+
+  static (int, int) _tileOf(double lat, double lon, int n) {
+    final r = lat * math.pi / 180;
+    final x = ((lon + 180) / 360 * n).floor().clamp(0, n - 1);
+    final y = ((1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * n).floor().clamp(0, n - 1);
+    return (x, y);
+  }
+
+  static (double, double) _tileToLatLon(double tx, double ty, int n) {
+    final lon = tx / n * 360 - 180;
+    final lat =
+        math.atan((math.exp(math.pi * (1 - 2 * ty / n)) - math.exp(-math.pi * (1 - 2 * ty / n))) / 2) * 180 / math.pi;
+    return (lat, lon);
   }
 
   /// Avatut karttatiedostot karttanäkymälle: koko Suomi tai kunnat + yleiskartta.

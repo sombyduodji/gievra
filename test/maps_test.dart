@@ -52,6 +52,8 @@ Map<String, Object> catalogJson({List<Map<String, Object>>? packs, Map<String, O
 };
 
 void main() {
+  MapStore.instance.retryDelay = Duration.zero;
+
   test('Laattojen numerointi sama kuin PMTiles-määrittelyssä', () {
     expect([zxyToTileId(0, 0, 0), zxyToTileId(1, 0, 0), zxyToTileId(1, 0, 1), zxyToTileId(1, 1, 1)], [0, 1, 2, 3]);
     expect(zxyToTileId(1, 1, 0), 4);
@@ -350,16 +352,31 @@ void main() {
     tearDown(() {
       MapStore.instance
         ..dirOverride = null
+        ..clientOverride = null
         ..catalog = null
-        ..installed.clear();
+        ..installed.clear()
+        ..unverified.clear()
+        ..forgetKnown();
       tmp.deleteSync(recursive: true);
     });
 
-    Map<String, Object> catalogFor(List<int> pmtiles, {String? sha}) => catalogJson(
-      packs: [
-        square('testi', 27.0, 68.9, 27.03, 68.91, size: pmtiles.length, sha: sha ?? sha256.convert(pmtiles).toString()),
-      ],
-    );
+    Map<String, Object> catalogFor(List<int> pmtiles, {String? sha, List<String>? old}) {
+      final c = catalogJson(
+        packs: [
+          square(
+            'testi',
+            27.0,
+            68.9,
+            27.03,
+            68.91,
+            size: pmtiles.length,
+            sha: sha ?? sha256.convert(pmtiles).toString(),
+          ),
+        ],
+      );
+      if (old != null) ((c['packs'] as List).single as Map)['sha256Old'] = old;
+      return c;
+    }
 
     String zipOf(Map<String, List<int>> files) {
       final a = Archive();
@@ -376,24 +393,285 @@ void main() {
       final store = MapStore.instance..dirOverride = maps;
       final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
       final zip = zipOf({'kartat.json': utf8.encode(jsonEncode(catalogFor(pm))), 'testi.pmtiles': pm});
-      expect(await store.importFiles([zip]), 1);
+      final r = await store.importFiles([zip]);
+      expect(r.imported, ['testi.pmtiles']);
+      expect(r.skipped, isEmpty);
       expect(store.installed, {'testi.pmtiles'});
       expect(store.catalog!.packs.single.id, 'testi');
       expect(store.covers(68.905, 27.015), isTrue);
       expect(Directory('${maps.path}/tuonti').existsSync(), isFalse);
     });
 
-    test('Väärä tarkiste tai muu kuin kartta: ei asenneta', () async {
+    test('Kartta tunnistetaan sisällöstä: selaimen muuttama nimi tallentuu luettelon nimellä', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final store = MapStore.instance..dirOverride = maps;
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      store.catalog = MapCatalog.fromJson(catalogFor(pm));
+      final renamed = '${tmp.path}/Testi (1).PMTILES';
+      File(renamed).writeAsBytesSync(pm);
+      final other = '${tmp.path}/jotain-muuta.pmtiles';
+      File(other).writeAsBytesSync(pm);
+      final r = await store.importFiles([renamed, other]);
+      expect(r.imported, ['testi.pmtiles']);
+      expect(r.skipped, isEmpty);
+      expect(
+        maps.listSync().whereType<File>().map((f) => f.uri.pathSegments.last).where((n) => n.endsWith('.pmtiles')),
+        ['testi.pmtiles'],
+      );
+    });
+
+    test('Väärä tarkiste, vajaa tiedosto tai muu kuin kartta: ohitetaan syyn kanssa', () async {
       final maps = Directory('${tmp.path}/kartat')..createSync();
       final store = MapStore.instance..dirOverride = maps;
       final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
       final bad = zipOf({'kartat.json': utf8.encode(jsonEncode(catalogFor(pm, sha: 'f' * 64))), 'testi.pmtiles': pm});
-      await expectLater(store.importFiles([bad]), throwsFormatException);
-      expect(store.installed, isEmpty);
+      var r = await store.importFiles([bad]);
+      expect(r.imported, isEmpty);
+      expect(r.skipped, [('testi.pmtiles', MapSkip.otherVersion)]);
+      final changed = '${tmp.path}/testi(2).pmtiles';
+      File(changed).writeAsBytesSync([...pm.sublist(0, pm.length - 1), pm.last ^ 1]);
+      final cut = '${tmp.path}/vajaa.pmtiles';
+      File(cut).writeAsBytesSync(pm.sublist(0, pm.length - 10));
       final notMap = '${tmp.path}/roska.pmtiles';
       File(notMap).writeAsStringSync('ei kartta');
-      await expectLater(store.importFiles([notMap]), throwsA(anything));
+      final text = '${tmp.path}/muistiinpano.txt';
+      File(text).writeAsStringSync('hei');
+      r = await store.importFiles([changed, cut, notMap, text]);
+      expect(r.imported, isEmpty);
+      expect(r.skipped, [
+        ('muistiinpano.txt', MapSkip.notMap),
+        ('vajaa.pmtiles', MapSkip.truncated),
+        ('roska.pmtiles', MapSkip.notMap),
+        ('testi(2).pmtiles', MapSkip.otherVersion),
+      ]);
+      expect(store.installed, isEmpty);
       expect(maps.listSync().whereType<File>().where((f) => f.path.endsWith('.pmtiles')), isEmpty);
+    });
+
+    test('Ilman luetteloa ja ilman kysyjää karttaa ei tuoda', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final store = MapStore.instance..dirOverride = maps;
+      final file = '${tmp.path}/testi.pmtiles';
+      File(file).writeAsBytesSync(pm);
+      final r = await store.importFiles([file]);
+      expect(r.skipped, [('testi.pmtiles', MapSkip.noCatalog)]);
+      expect(File(file).existsSync(), isTrue, reason: 'käyttäjän tiedostoa ei siirretä');
+    });
+
+    test('Tarkista verkosta: uudempi luettelo tunnistaa kartan', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final store = MapStore.instance
+        ..dirOverride = maps
+        ..catalog = MapCatalog.fromJson(catalogFor(pm, sha: 'e' * 64))
+        ..clientOverride = MockClient((req) async {
+          if (req.url.pathSegments.last == 'maat.json') return http.Response('', 404);
+          return http.Response(jsonEncode(catalogFor(pm)), 200);
+        });
+      final file = '${tmp.path}/testi (1).pmtiles';
+      File(file).writeAsBytesSync(pm);
+      final asked = <bool>[];
+      final r = await store.importFiles(
+        [file],
+        onUnverified: (names, {required checkedOnline}) async {
+          asked.add(checkedOnline);
+          return UnverifiedChoice.checkOnline;
+        },
+      );
+      expect(asked, [false]);
+      expect(r.imported, ['testi.pmtiles']);
+      expect(r.unverified, isEmpty);
+      expect(File(file).existsSync(), isTrue);
+    });
+
+    test('Vanhempi versio tunnistetaan: luettelon aiemmat tarkisteet ja laitteen muistamat', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final real = sha256.convert(pm).toString();
+      final file = '${tmp.path}/testi.pmtiles';
+      File(file).writeAsBytesSync(pm);
+      // 1) Luettelossa uusi versio, vanha tarkiste sha256Old-listassa: tunnistetaan, päivitys tarjolla.
+      var store = MapStore.instance
+        ..dirOverride = maps
+        ..catalog = MapCatalog.fromJson(catalogFor(pm, sha: 'a' * 64, old: [real]));
+      var r = await store.importFiles([file]);
+      expect(r.imported, ['testi.pmtiles']);
+      expect((await store.outdated()).map((x) => x.file), ['testi.pmtiles']);
+      await store.deleteFile('testi.pmtiles');
+      // 2) Laite on nähnyt tarkisteen aiemmin; nykyisessä luettelossa sitä ei enää ole.
+      store
+        ..catalog = null
+        ..forgetKnown()
+        ..catalog = MapCatalog.fromJson(catalogFor(pm));
+      store = MapStore.instance..catalog = MapCatalog.fromJson(catalogFor(pm, sha: 'b' * 64));
+      r = await store.importFiles([file]);
+      expect(r.imported, ['testi.pmtiles']);
+      // Muisti säilyy tiedostossa: uusi käynnistys (tyhjä muisti) lukee sen.
+      store
+        ..forgetKnown()
+        ..catalog = null;
+      await store.load(network: false);
+      await store.deleteFile('testi.pmtiles');
+      store.catalog = MapCatalog.fromJson(catalogFor(pm, sha: 'c' * 64));
+      r = await store.importFiles([file]);
+      expect(r.imported, ['testi.pmtiles']);
+    });
+
+    test('Tuo tarkistamatta: merkitään eikä korvaa tarkistettua; vajaa ei kelpaa', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final store = MapStore.instance..dirOverride = maps;
+      final file = '${tmp.path}/Oma Kartta (2).pmtiles';
+      File(file).writeAsBytesSync(pm);
+      Future<UnverifiedChoice> anyway(List<String> n, {required bool checkedOnline}) async =>
+          UnverifiedChoice.importAnyway;
+      var r = await store.importFiles([file], onUnverified: anyway);
+      expect(r.imported, ['oma-kartta.pmtiles']);
+      expect(r.unverified, ['oma-kartta.pmtiles']);
+      expect(store.unverified, {'oma-kartta.pmtiles'});
+
+      // Tarkistettu testi.pmtiles asennettu; samanniminen tarkistamaton ei korvaa sitä.
+      store.catalog = MapCatalog.fromJson(catalogFor(pm));
+      final good = '${tmp.path}/testi.pmtiles';
+      File(good).writeAsBytesSync(pm);
+      expect((await store.importFiles([good])).imported, ['testi.pmtiles']);
+      final changed = '${tmp.path}/testi(1).pmtiles';
+      File(changed).writeAsBytesSync([...pm.sublist(0, pm.length - 1), pm.last ^ 1]);
+      r = await store.importFiles([changed], onUnverified: anyway);
+      expect(r.skipped, [('testi(1).pmtiles', MapSkip.verifiedExists)]);
+      expect(File('${maps.path}/testi.pmtiles').readAsBytesSync(), pm);
+
+      // Vajaa tiedosto ei kelpaa edes tarkistamatta.
+      final cut = '${tmp.path}/vajaa.pmtiles';
+      File(cut).writeAsBytesSync(pm.sublist(0, pm.length - 10));
+      r = await store.importFiles([cut], onUnverified: anyway);
+      expect(r.skipped, [('vajaa.pmtiles', MapSkip.truncated)]);
+    });
+
+    test('Edistyminen: tarkistetut tavut kasvavat loppuun asti', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final store = MapStore.instance
+        ..dirOverride = maps
+        ..catalog = MapCatalog.fromJson(catalogFor(pm));
+      final file = '${tmp.path}/testi.pmtiles';
+      File(file).writeAsBytesSync(pm);
+      final seen = <MapImportProgress>[];
+      await store.importFiles([file], onProgress: seen.add);
+      final v = seen.where((x) => x.phase == MapImportPhase.verifying).toList();
+      expect(v.first.done, 0);
+      expect(v.last.done, pm.length);
+      expect(v.last.total, pm.length);
+      expect(seen.last.phase, MapImportPhase.installing);
+    });
+
+    test('Turvallinen nimi tarkistamattomalle', () {
+      expect(MapStore.safeImportName('Oma Kartta (2).pmtiles'), 'oma-kartta.pmtiles');
+      expect(MapStore.safeImportName('Ähtäri_ö.PMTILES'), 'ahtari-o.pmtiles');
+      expect(MapStore.safeImportName('../../x.pmtiles'), 'x.pmtiles');
+      expect(MapStore.safeImportName('kartta.txt'), isNull);
+    });
+
+    test('Tarkista verkosta: GitHubin omat tarkisteet tunnistavat vanhan julkaisun kartan', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final real = sha256.convert(pm).toString();
+      final store = MapStore.instance
+        ..dirOverride = maps
+        ..clientOverride = MockClient((req) async {
+          if (req.url.host == 'api.github.com') {
+            expect(req.headers['User-Agent'], 'Gievra');
+            return http.Response(
+              jsonEncode([
+                {
+                  'tag_name': 'v0.3.2',
+                  'assets': [
+                    {'name': 'muu.pmtiles', 'digest': 'sha256:$real'},
+                  ],
+                },
+                {
+                  'tag_name': 'kartat-2025-01',
+                  'assets': [
+                    {'name': '../pois.pmtiles', 'digest': 'sha256:${'d' * 64}'},
+                    {'name': 'testi.pmtiles', 'digest': 'sha256:$real'},
+                    {'name': 'kartat.json', 'digest': 'sha256:${'c' * 64}'},
+                  ],
+                },
+              ]),
+              200,
+            );
+          }
+          if (req.url.pathSegments.last == 'maat.json') return http.Response('', 404);
+          return http.Response(jsonEncode(catalogFor(pm, sha: 'e' * 64)), 200); // nykyinen luettelo: uudempi
+        });
+      final file = '${tmp.path}/testi(3).pmtiles';
+      File(file).writeAsBytesSync(pm);
+      final r = await store.importFiles([
+        file,
+      ], onUnverified: (n, {required checkedOnline}) async => UnverifiedChoice.checkOnline);
+      expect(r.imported, ['testi.pmtiles']);
+      expect(r.unverified, isEmpty);
+      expect(store.knownShas()[real], 'testi.pmtiles');
+      expect(store.knownShas().containsValue('../pois.pmtiles'), isFalse);
+      expect((await store.outdated()).map((x) => x.file), ['testi.pmtiles'], reason: 'vanha versio: päivitys tarjolla');
+    });
+
+    test('Ilman verkkoa: kotisivun tarkistetaulukko samalla kertaa tarkistaa kartan', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      final real = sha256.convert(pm).toString();
+      final store = MapStore.instance..dirOverride = maps; // ei luetteloita, ei verkkoa
+      final table = '${tmp.path}/kartat-tarkisteet(1).json';
+      File(table).writeAsStringSync(
+        jsonEncode({
+          'format': checksumTableFormat,
+          'version': 1,
+          'files': [
+            ['testi.pmtiles', real, pm.length, 'kartat-2025-01'],
+            ['../pois.pmtiles', 'a' * 64, 1, 'kartat-2025-01'],
+            ['rikki.pmtiles', 'ei-heksaa', 1, 'kartat-2025-01'],
+          ],
+        }),
+      );
+      final file = '${tmp.path}/Testi (2).pmtiles';
+      File(file).writeAsBytesSync(pm);
+      var r = await store.importFiles([table, file]);
+      expect(r.checksums, 1);
+      expect(r.imported, ['testi.pmtiles']);
+      expect(r.unverified, isEmpty);
+      // Taulukko muistetaan: myöhempi tuonti ilman taulukkoa tarkistuu myös.
+      await store.deleteFile('testi.pmtiles');
+      store.forgetKnown();
+      await store.load(network: false);
+      r = await store.importFiles([file]);
+      expect(r.imported, ['testi.pmtiles']);
+      // Pelkkä taulukko: ei karttoja, ei ohitettuja.
+      r = await store.importFiles([table]);
+      expect(r.imported, isEmpty);
+      expect(r.skipped, isEmpty);
+      expect(r.checksums, 1);
+    });
+
+    test('GitHubin satunnainen 504: luettelo haetaan uudelleen', () async {
+      final maps = Directory('${tmp.path}/kartat')..createSync();
+      final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
+      var calls = 0;
+      final store = MapStore.instance
+        ..dirOverride = maps
+        ..clientOverride = MockClient((req) async {
+          if (req.url.pathSegments.last == 'maat.json') return http.Response('', 404);
+          return ++calls < 3 ? http.Response('', 504) : http.Response(jsonEncode(catalogFor(pm)), 200);
+        });
+      expect(await store.load(refresh: true), isNull);
+      expect(calls, 3);
+      expect(store.catalogs.keys, ['fi']);
+    });
+
+    test('Nimen siistiminen', () {
+      expect(MapStore.normalizedMapName('es-yleiskartta(1).pmtiles'), 'es-yleiskartta.pmtiles');
+      expect(MapStore.normalizedMapName('Es-Yleiskartta (12).pmtiles'), 'es-yleiskartta.pmtiles');
+      expect(MapStore.normalizedMapName('no-tromso.pmtiles'), 'no-tromso.pmtiles');
     });
   });
 }

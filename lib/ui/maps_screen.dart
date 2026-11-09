@@ -198,26 +198,154 @@ class _MapsScreenState extends State<MapsScreen> {
     if (_tab == 2) await _refreshInstalled();
   }
 
-  /// Tuo karttapaketti tiedostosta (zip tai .pmtiles), esim. Seafilesta, kun verkkolataus ei onnistu.
+  /// Tuo karttapaketti tiedostosta (zip tai .pmtiles), esim. Seafilesta, kun verkkolataus ei onnistu. Tarkistuksen
+  /// ajan näkyy edistyminen; tunnistamattomista kartoista kysytään (tarkista verkosta / tuo tarkistamatta / ohita).
   Future<void> _import() async {
     final files = await FilePicker.pickFiles(dialogTitle: t('Valitse karttapaketti (.zip tai .pmtiles)'));
     if (files.isEmpty || !mounted) return;
     setState(() => _importing = true);
-    String msg;
+    final progress = ValueNotifier<MapImportProgress?>(null);
+    final nav = Navigator.of(context);
+    var progressOpen = true;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => PopScope(canPop: false, child: _ImportProgressDialog(progress)),
+      ).whenComplete(() => progressOpen = false),
+    );
+    MapImportResult? r;
+    String? err;
     try {
-      final n = await store.importFiles([for (final f in files) f.xFile.path]);
+      r = await store.importFiles(
+        [for (final f in files) f.xFile.path],
+        onProgress: (x) => progress.value = x,
+        onUnverified: (names, {required checkedOnline}) => _askUnverified(names, checkedOnline),
+      );
       _used = await store.usedBytes();
-      msg = n == 0 ? t('Tiedostosta ei löytynyt karttoja.') : t('Tuotu {0} karttaa.', [n]);
     } catch (e) {
-      msg = t('Karttapakettia ei voitu tuoda: {0}', [e]);
+      err = t('Karttapakettia ei voitu tuoda: {0}', [e]);
     }
+    if (progressOpen) nav.pop();
+    progress.dispose();
     if (!mounted) return;
     setState(() {
       _importing = false;
       if (store.catalog != null) _error = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (r == null || (r.skipped.isEmpty && r.unverified.isEmpty)) {
+      final msg =
+          err ??
+          (r!.imported.isNotEmpty
+              ? t('Tuotu {0} karttaa.', [r.imported.length])
+              : r.checksums > 0
+              ? t('Tarkistetaulukko tuotu: {0} karttatiedoston tarkisteet. Kartat voi nyt tarkistaa ilman verkkoa.', [
+                  r.checksums,
+                ])
+              : t('Tiedostosta ei löytynyt karttoja.'));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      return;
+    }
+    final res = r;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(res.imported.isEmpty ? t('Karttoja ei tuotu') : t('Tuotu {0} karttaa.', [res.imported.length])),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (res.imported.isNotEmpty) ...[
+                Text(res.imported.map(_fileLabel).join(', ')),
+                const SizedBox(height: 12),
+              ],
+              if (res.unverified.isNotEmpty) ...[
+                Text(
+                  t(
+                    'Tarkistamatta tuotu: {0}. Ne merkitään tarkistamattomiksi, ja sovellus tarjoaa tarkistettua '
+                    'versiota, kun olet verkossa.',
+                    [res.unverified.join(', ')],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (res.skipped.isNotEmpty) ...[
+                Text(t('Ohitettu:'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                for (final (name, why) in res.skipped)
+                  Padding(padding: const EdgeInsets.only(top: 6), child: Text('$name: ${_skipReason(why)}')),
+              ],
+            ],
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      ),
+    );
   }
+
+  /// Kysyy, mitä tehdään kartoille, joiden tarkiste ei vastaa mitään tunnettua karttaa.
+  Future<UnverifiedChoice> _askUnverified(List<String> names, bool checkedOnline) async {
+    if (!mounted) return UnverifiedChoice.skip;
+    final v = await showDialog<UnverifiedChoice>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.gpp_maybe_outlined),
+        title: Text(t('Tarkistus epäonnistui')),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                store.catalogs.isEmpty
+                    ? t('Karttaluetteloa ei ole vielä haettu, joten karttaa ei voi tarkistaa:')
+                    : checkedOnline
+                    ? t('Tarkistetta ei löytynyt verkostakaan (tai yhteyttä ei ole):')
+                    : t('Tarkiste ei vastaa yhtään tunnettua Gievran karttaa:'),
+              ),
+              const SizedBox(height: 6),
+              Text(names.join('\n'), style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 10),
+              Text(
+                t(
+                  'Tiedosto voi olla vioittunut tai muokattu, tai se on karttajulkaisusta, jota sovellus ei vielä '
+                  'tunne. Tarkistamaton kartta voi näyttää virheellisiä tietoja.',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, UnverifiedChoice.skip), child: Text(t('Ohita'))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, UnverifiedChoice.importAnyway),
+            child: Text(t('Tuo tarkistamatta')),
+          ),
+          if (!checkedOnline)
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, UnverifiedChoice.checkOnline),
+              child: Text(t('Tarkista verkosta')),
+            ),
+        ],
+      ),
+    );
+    return v ?? UnverifiedChoice.skip;
+  }
+
+  String _skipReason(MapSkip why) => switch (why) {
+    MapSkip.notMap => t('ei karttatiedosto (.pmtiles) eikä karttapaketti (.zip)'),
+    MapSkip.badCatalog => t('karttaluettelo ei kelpaa'),
+    MapSkip.truncated => t('tiedosto on vajaa (lataus jäi kesken). Lataa se uudelleen.'),
+    MapSkip.otherVersion => t(
+      'tiedosto ei vastaa karttaluettelon versiota: se on vioittunut tai eri karttajulkaisusta. Lataa se uudelleen.',
+    ),
+    MapSkip.unknown => t('tuntematon kartta: tarkiste ei vastaa yhtään Gievran karttaa'),
+    MapSkip.noCatalog => t(
+      'karttaa ei voi tarkistaa ilman karttaluetteloa. Avaa Kartat kerran verkkoyhteydellä ja yritä uudelleen.',
+    ),
+    MapSkip.verifiedExists => t('samanniminen tarkistettu kartta on jo ladattu, eikä tarkistamaton korvaa sitä'),
+  };
 
   Widget _importButton() => OutlinedButton.icon(
     onPressed: _importing || store.downloads.isNotEmpty ? null : _import,
@@ -487,6 +615,11 @@ class _MapsScreenState extends State<MapsScreen> {
 
   /// Ladatun tiedoston nimi: alue (ja maa, jos muu kuin Suomi), yleiskartta tai koko maa.
   String _fileLabel(String f) {
+    final label = _baseLabel(f);
+    return store.unverified.contains(f) ? '$label (${t('tarkistamaton')})' : label;
+  }
+
+  String _baseLabel(String f) {
     for (final c in store.catalogs.values) {
       if (c.overview.file == f) return c.country == 'fi' ? t('Yleiskartta') : '${t('Yleiskartta')}: ${c.label(uiLang)}';
       if (c.all?.file == f) return c.country == 'fi' ? t('Koko Suomi') : t('Koko maa: {0}', [c.label(uiLang)]);
@@ -585,7 +718,8 @@ class _MapsScreenState extends State<MapsScreen> {
         t(
           'Tuo kartat tiedostosta, kun verkkolataus ei onnistu tai kartat ovat jo toisella laitteella: '
           'karttapaketti (.zip) tai yksittäinen kartta (.pmtiles). Tiedoston voi valita myös esimerkiksi '
-          'Seafilesta tai Nextcloudista.',
+          'Seafilesta tai Nextcloudista. Ilman verkkoa: valitse samalla kertaa myös kotisivun tarkistetaulukko '
+          '(kartat-tarkisteet.json), niin kartat tarkistetaan.',
         ),
         style: sub,
       ),
@@ -688,6 +822,64 @@ class _MapsScreenState extends State<MapsScreen> {
                       : (v) => setState(() => v == true ? _selected.add(x.file) : _selected.remove(x.file)),
                 ),
       ],
+    );
+  }
+}
+
+/// Tuonnin edistyminen: pyörivä ympyrä (kilpi keskellä) ja edistymispalkki tarkistetuista tavuista.
+class _ImportProgressDialog extends StatelessWidget {
+  final ValueNotifier<MapImportProgress?> progress;
+  const _ImportProgressDialog(this.progress);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      content: ValueListenableBuilder<MapImportProgress?>(
+        valueListenable: progress,
+        builder: (context, x, _) {
+          final phase = switch (x?.phase) {
+            MapImportPhase.unpacking => t('Puretaan pakettia…'),
+            MapImportPhase.checkingOnline => t('Haetaan tarkisteita verkosta…'),
+            MapImportPhase.installing => t('Tallennetaan…'),
+            _ => t('Tarkistetaan karttaa…'),
+          };
+          final f = x?.fraction;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: CircularProgressIndicator(strokeWidth: 5, backgroundColor: cs.surfaceContainerHighest),
+                    ),
+                    Icon(Icons.shield_outlined, color: cs.primary, size: 28),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(phase, style: Theme.of(context).textTheme.titleMedium),
+              if (x != null && x.name.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(x.name, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+              ],
+              const SizedBox(height: 14),
+              LinearProgressIndicator(value: f, minHeight: 6, borderRadius: BorderRadius.circular(3)),
+              const SizedBox(height: 6),
+              Text(
+                x == null || x.total <= 0 ? '' : '${fmtBytes(x.done)} / ${fmtBytes(x.total)} · ${(100 * f!).round()} %',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

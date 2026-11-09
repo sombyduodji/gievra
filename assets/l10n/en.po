@@ -1693,7 +1693,7 @@ msgstr "BMI"
 msgid "Muokkaa"
 msgstr "Edit"
 
-#: lib/ui/body_screen.dart:147 lib/ui/maps_screen.dart:407 lib/ui/maps_screen.dart:565 lib/ui/maps_screen.dart:679 …
+#: lib/ui/body_screen.dart:147 lib/ui/maps_screen.dart:535 lib/ui/maps_screen.dart:698 lib/ui/maps_screen.dart:813 …
 msgid "Poista"
 msgstr "Delete"
 
@@ -2082,7 +2082,7 @@ msgstr ""
 "Log duration, calories, and average and max heart rate from your "
 "watch for workouts and activities."
 
-#: lib/ui/drawer.dart:511 lib/ui/drawer.dart:669 lib/ui/maps_screen.dart:250
+#: lib/ui/drawer.dart:511 lib/ui/drawer.dart:669 lib/ui/maps_screen.dart:378
 msgid "Kartat"
 msgstr "Maps"
 
@@ -2605,7 +2605,7 @@ msgstr "👣 {0} steps"
 msgid "Ei, seuraava"
 msgstr "No, next"
 
-#: lib/ui/health_sheet.dart:199 lib/ui/home.dart:876 lib/ui/home.dart:1094 lib/ui/move_feedback.dart:135 …
+#: lib/ui/health_sheet.dart:199 lib/ui/home.dart:876 lib/ui/home.dart:1094 lib/ui/maps_screen.dart:320 …
 msgid "Ohita"
 msgstr "Skip"
 
@@ -3122,7 +3122,7 @@ msgstr ""
 "The program's exercises will be chosen again based on your injuries. "
 "The start date and week are kept."
 
-#: lib/ui/injury_screen.dart:41 lib/ui/maps_screen.dart:320
+#: lib/ui/injury_screen.dart:41 lib/ui/maps_screen.dart:448
 msgid "Päivitä"
 msgstr "Update"
 
@@ -3709,49 +3709,153 @@ msgstr "Maps downloaded."
 msgid "{0} karttaa ei voitu ladata: {1}"
 msgstr "{0} maps could not be downloaded: {1}"
 
-#: lib/ui/maps_screen.dart:203
+#: lib/ui/maps_screen.dart:204
 msgid "Valitse karttapaketti (.zip tai .pmtiles)"
 msgstr "Choose a map package (.zip or .pmtiles)"
 
-#: lib/ui/maps_screen.dart:210
-msgid "Tiedostosta ei löytynyt karttoja."
-msgstr "No maps found in the file."
-
-#. {0} = n
-#: lib/ui/maps_screen.dart:210
-msgid "Tuotu {0} karttaa."
-msgstr "Imported {0} maps."
-
 #. {0} = e
-#: lib/ui/maps_screen.dart:212
+#: lib/ui/maps_screen.dart:227
 msgid "Karttapakettia ei voitu tuoda: {0}"
 msgstr "Could not import the map package: {0}"
 
-#: lib/ui/maps_screen.dart:227
+#. {0} = r.imported.length
+#: lib/ui/maps_screen.dart:240 lib/ui/maps_screen.dart:253
+msgid "Tuotu {0} karttaa."
+msgstr "Imported {0} maps."
+
+#. {0} = r.checksums
+#: lib/ui/maps_screen.dart:242
+msgid ""
+"Tarkistetaulukko tuotu: {0} karttatiedoston tarkisteet. Kartat voi "
+"nyt tarkistaa ilman verkkoa."
+msgstr ""
+"Checksum table imported: checksums for {0} map files. Maps can now be "
+"verified without a connection."
+
+#: lib/ui/maps_screen.dart:245
+msgid "Tiedostosta ei löytynyt karttoja."
+msgstr "No maps found in the file."
+
+#: lib/ui/maps_screen.dart:253
+msgid "Karttoja ei tuotu"
+msgstr "No maps imported"
+
+#. {0} = res.unverified.join(', ')
+#: lib/ui/maps_screen.dart:266
+msgid ""
+"Tarkistamatta tuotu: {0}. Ne merkitään tarkistamattomiksi, ja "
+"sovellus tarjoaa tarkistettua versiota, kun olet verkossa."
+msgstr ""
+"Imported without verification: {0}. They are marked as unverified, "
+"and the app offers a verified version when you are online."
+
+#: lib/ui/maps_screen.dart:274
+msgid "Ohitettu:"
+msgstr "Skipped:"
+
+#: lib/ui/maps_screen.dart:294
+msgid "Tarkistus epäonnistui"
+msgstr "Verification failed"
+
+#: lib/ui/maps_screen.dart:302
+msgid "Karttaluetteloa ei ole vielä haettu, joten karttaa ei voi tarkistaa:"
+msgstr "The map list hasn't been fetched yet, so the map can't be checked:"
+
+#: lib/ui/maps_screen.dart:304
+msgid "Tarkistetta ei löytynyt verkostakaan (tai yhteyttä ei ole):"
+msgstr ""
+"No matching checksum was found online either (or there is no "
+"connection):"
+
+#: lib/ui/maps_screen.dart:305
+msgid "Tarkiste ei vastaa yhtään tunnettua Gievran karttaa:"
+msgstr "The checksum doesn't match any known Gievra map:"
+
+#: lib/ui/maps_screen.dart:312
+msgid ""
+"Tiedosto voi olla vioittunut tai muokattu, tai se on "
+"karttajulkaisusta, jota sovellus ei vielä tunne. Tarkistamaton kartta "
+"voi näyttää virheellisiä tietoja."
+msgstr ""
+"The file may be damaged or modified, or it comes from a map release "
+"the app doesn't know yet. An unverified map may show incorrect "
+"information."
+
+#: lib/ui/maps_screen.dart:323
+msgid "Tuo tarkistamatta"
+msgstr "Import without verifying"
+
+#: lib/ui/maps_screen.dart:328
+msgid "Tarkista verkosta"
+msgstr "Check online"
+
+#: lib/ui/maps_screen.dart:337
+msgid "ei karttatiedosto (.pmtiles) eikä karttapaketti (.zip)"
+msgstr "not a map file (.pmtiles) or map package (.zip)"
+
+#: lib/ui/maps_screen.dart:338
+msgid "karttaluettelo ei kelpaa"
+msgstr "the map list is not valid"
+
+#: lib/ui/maps_screen.dart:339
+msgid "tiedosto on vajaa (lataus jäi kesken). Lataa se uudelleen."
+msgstr ""
+"the file is incomplete (the download was cut short). Download it "
+"again."
+
+#: lib/ui/maps_screen.dart:341
+msgid ""
+"tiedosto ei vastaa karttaluettelon versiota: se on vioittunut tai eri "
+"karttajulkaisusta. Lataa se uudelleen."
+msgstr ""
+"the file doesn't match the version in the map list: it is damaged or "
+"from another map release. Download it again."
+
+#: lib/ui/maps_screen.dart:343
+msgid "tuntematon kartta: tarkiste ei vastaa yhtään Gievran karttaa"
+msgstr "unknown map: the checksum doesn't match any Gievra map"
+
+#: lib/ui/maps_screen.dart:345
+msgid ""
+"karttaa ei voi tarkistaa ilman karttaluetteloa. Avaa Kartat kerran "
+"verkkoyhteydellä ja yritä uudelleen."
+msgstr ""
+"the map can't be checked without the map list. Open Maps once with an "
+"internet connection and try again."
+
+#: lib/ui/maps_screen.dart:347
+msgid ""
+"samanniminen tarkistettu kartta on jo ladattu, eikä tarkistamaton "
+"korvaa sitä"
+msgstr ""
+"a verified map with the same name is already downloaded, and an "
+"unverified one won't replace it"
+
+#: lib/ui/maps_screen.dart:355
 msgid "Tuodaan…"
 msgstr "Importing…"
 
-#: lib/ui/maps_screen.dart:227
+#: lib/ui/maps_screen.dart:355
 msgid "Tuo karttapaketti tiedostosta"
 msgstr "Import a map package from a file"
 
-#: lib/ui/maps_screen.dart:264
+#: lib/ui/maps_screen.dart:392
 msgid "Verkosta"
 msgstr "Online"
 
-#: lib/ui/maps_screen.dart:266
+#: lib/ui/maps_screen.dart:394
 msgid "Tiedostosta"
 msgstr "From file"
 
-#: lib/ui/maps_screen.dart:267
+#: lib/ui/maps_screen.dart:395
 msgid "Ladatut"
 msgstr "Downloaded"
 
-#: lib/ui/maps_screen.dart:288
+#: lib/ui/maps_screen.dart:416
 msgid "Haetaan karttaluetteloa…"
 msgstr "Fetching the map list…"
 
-#: lib/ui/maps_screen.dart:299
+#: lib/ui/maps_screen.dart:427
 msgid ""
 "Offline-kartat näyttävät reitin kartalla ja auttavat korjaamaan sen "
 "poluille. Kartat tallentuvat vain puhelimeen; sijaintiasi ei lähetetä "
@@ -3760,83 +3864,83 @@ msgstr ""
 "Offline maps show the route on a map and help correct it to paths. "
 "Maps are stored on the phone only; your location is not sent anywhere."
 
-#: lib/ui/maps_screen.dart:305
+#: lib/ui/maps_screen.dart:433
 msgid "Lataa alue"
 msgstr "Download an area"
 
-#: lib/ui/maps_screen.dart:312
+#: lib/ui/maps_screen.dart:440
 msgid "Haetaan sijaintia…"
 msgstr "Finding location…"
 
-#: lib/ui/maps_screen.dart:312
+#: lib/ui/maps_screen.dart:440
 msgid "Käytä nykyistä sijaintia"
 msgstr "Use current location"
 
-#: lib/ui/maps_screen.dart:319
+#: lib/ui/maps_screen.dart:447
 msgid "Nykyinen sijainti"
 msgstr "Current location"
 
 #. {0} = _radius.round()
-#: lib/ui/maps_screen.dart:323
+#: lib/ui/maps_screen.dart:451
 msgid "Etäisyys joka suuntaan: {0} km"
 msgstr "Distance in every direction: {0} km"
 
-#: lib/ui/maps_screen.dart:332
+#: lib/ui/maps_screen.dart:460
 msgid "Juoksu ja kävely 20 km, pyöräily 100 km. Merialueet jäävät pois."
 msgstr "Running and walking 20 km, cycling 100 km. Sea areas are left out."
 
-#: lib/ui/maps_screen.dart:345
+#: lib/ui/maps_screen.dart:473
 msgid "Alueen kartat on ladattu ✓"
 msgstr "Maps for this area are downloaded ✓"
 
 #. {0} = missing
 #. {1} = fmtBytes(size)
-#: lib/ui/maps_screen.dart:347
+#: lib/ui/maps_screen.dart:475
 msgid "Lataa {0} kuntaa · {1}"
 msgstr "Download {0} municipalities · {1}"
 
 #. {0} = missing
 #. {1} = fmtBytes(size)
-#: lib/ui/maps_screen.dart:348
+#: lib/ui/maps_screen.dart:476
 msgid "Lataa {0} karttaa · {1}"
 msgstr "Download {0} maps · {1}"
 
-#: lib/ui/maps_screen.dart:361
+#: lib/ui/maps_screen.dart:489
 msgid "Maa"
 msgstr "Country"
 
-#: lib/ui/maps_screen.dart:404 lib/ui/maps_screen.dart:492 lib/ui/maps_screen.dart:496
+#: lib/ui/maps_screen.dart:532 lib/ui/maps_screen.dart:625 lib/ui/maps_screen.dart:629
 msgid "Koko Suomi"
 msgstr "All of Finland"
 
 #. {0} = c.label(uiLang)
-#: lib/ui/maps_screen.dart:404 lib/ui/maps_screen.dart:492
+#: lib/ui/maps_screen.dart:532 lib/ui/maps_screen.dart:625
 msgid "Koko maa: {0}"
 msgstr "All of {0}"
 
 #. {0} = fmtBytes(all.size)
-#: lib/ui/maps_screen.dart:405
+#: lib/ui/maps_screen.dart:533
 msgid "Yksi tiedosto, {0}"
 msgstr "One file, {0}"
 
-#: lib/ui/maps_screen.dart:410
+#: lib/ui/maps_screen.dart:538
 msgid "Lataa"
 msgstr "Download"
 
 #. {0} = _selected.length
 #. {1} = fmtBytes(_sizeOf(store.allPacks.where((x) => _selected.contains(x.file))))
-#: lib/ui/maps_screen.dart:422
+#: lib/ui/maps_screen.dart:550
 msgid "Lataa valitut ({0}) · {1}"
 msgstr "Download selected ({0}) · {1}"
 
 #. {0} = fmtBytes(_used)
-#: lib/ui/maps_screen.dart:429 lib/ui/maps_screen.dart:523 lib/ui/maps_screen.dart:595
+#: lib/ui/maps_screen.dart:557 lib/ui/maps_screen.dart:656 lib/ui/maps_screen.dart:729
 msgid "Ladattu: {0}"
 msgstr "Downloaded: {0}"
 
 #. {0} = MapCredits.osm
 #. {1} = c.osmDate
-#: lib/ui/maps_screen.dart:433
+#: lib/ui/maps_screen.dart:561
 msgid ""
 "Karttatiedot {0} ({1}), lisenssi ODbL. Kuntarajat: Tilastokeskus, CC "
 "BY 4.0."
@@ -3847,40 +3951,44 @@ msgstr ""
 #. {0} = MapCredits.osm
 #. {1} = c.osmDate
 #. {2} = c.boundaries
-#: lib/ui/maps_screen.dart:437
+#: lib/ui/maps_screen.dart:565
 msgid "Karttatiedot {0} ({1}), lisenssi ODbL. Aluerajat: {2}."
 msgstr "Map data {0} ({1}), licence ODbL. Area boundaries: {2}."
 
-#: lib/ui/maps_screen.dart:458
+#: lib/ui/maps_screen.dart:586
 msgid "Karttaluetteloa ei saatu. Tarkista verkkoyhteys."
 msgstr "Could not get the map list. Check your network connection."
 
-#: lib/ui/maps_screen.dart:466
+#: lib/ui/maps_screen.dart:594
 msgid "Yritä uudelleen"
 msgstr "Try again"
 
-#: lib/ui/maps_screen.dart:469
+#: lib/ui/maps_screen.dart:597
 msgid "Tuo tiedostosta"
 msgstr "Import from file"
 
-#: lib/ui/maps_screen.dart:491 lib/ui/maps_screen.dart:491 lib/ui/maps_screen.dart:496
+#: lib/ui/maps_screen.dart:619
+msgid "tarkistamaton"
+msgstr "unverified"
+
+#: lib/ui/maps_screen.dart:624 lib/ui/maps_screen.dart:624 lib/ui/maps_screen.dart:629
 msgid "Yleiskartta"
 msgstr "Overview map"
 
-#: lib/ui/maps_screen.dart:503
+#: lib/ui/maps_screen.dart:636
 msgid "Poistetaanko kaikki kartat?"
 msgstr "Delete all maps?"
 
 #. {0} = fmtBytes(_used)
-#: lib/ui/maps_screen.dart:504
+#: lib/ui/maps_screen.dart:637
 msgid "{0} vapautuu. Kartat voi ladata tai tuoda myöhemmin uudelleen."
 msgstr "{0} will be freed. You can download or import the maps again later."
 
-#: lib/ui/maps_screen.dart:507
+#: lib/ui/maps_screen.dart:640
 msgid "Poista kaikki"
 msgstr "Delete all"
 
-#: lib/ui/maps_screen.dart:524
+#: lib/ui/maps_screen.dart:657
 msgid ""
 "Poista kartat, joita et tarvitse (esim. matkan jälkeen), niin tilaa "
 "vapautuu."
@@ -3888,55 +3996,74 @@ msgstr "Delete maps you no longer need (e.g. after a trip) to free up space."
 
 #. {0} = _outdated.length
 #. {1} = fmtBytes(_outdated.fold<int>(0, (a, x) => a + x.size))
-#: lib/ui/maps_screen.dart:531
+#: lib/ui/maps_screen.dart:664
 msgid "Päivitä kartat ({0}) · {1}"
 msgstr "Update maps ({0}) · {1}"
 
-#: lib/ui/maps_screen.dart:542
+#: lib/ui/maps_screen.dart:675
 msgid "Ei ladattuja karttoja."
 msgstr "No downloaded maps."
 
 #. {0} = fmtBytes(size)
-#: lib/ui/maps_screen.dart:554
+#: lib/ui/maps_screen.dart:687
 msgid "{0} · uudempi versio saatavilla"
 msgstr "{0} · newer version available"
 
-#: lib/ui/maps_screen.dart:573
+#: lib/ui/maps_screen.dart:706
 msgid "Poista kaikki kartat"
 msgstr "Delete all maps"
 
-#: lib/ui/maps_screen.dart:586
+#: lib/ui/maps_screen.dart:719
 msgid ""
 "Tuo kartat tiedostosta, kun verkkolataus ei onnistu tai kartat ovat "
 "jo toisella laitteella: karttapaketti (.zip) tai yksittäinen kartta "
 "(.pmtiles). Tiedoston voi valita myös esimerkiksi Seafilesta tai "
-"Nextcloudista."
+"Nextcloudista. Ilman verkkoa: valitse samalla kertaa myös kotisivun "
+"tarkistetaulukko (kartat-tarkisteet.json), niin kartat tarkistetaan."
 msgstr ""
 "Import maps from a file when downloading does not work or the maps "
 "are already on another device: a map package (.zip) or a single map "
 "(.pmtiles). You can also pick the file from, for example, Seafile or "
-"Nextcloud."
+"Nextcloud. Without a connection: also pick the checksum table from "
+"the home page (kartat-tarkisteet.json) at the same time, and the maps "
+"are verified."
 
 #. {0} = fmtBytes(got)
 #. {1} = fmtBytes(total)
-#: lib/ui/maps_screen.dart:620
+#: lib/ui/maps_screen.dart:754
 msgid "Ladataan karttoja: {0} / {1}"
 msgstr "Downloading maps: {0} / {1}"
 
 #. {0} = have
 #. {1} = packs.length
 #. {2} = fmtBytes(size)
-#: lib/ui/maps_screen.dart:652
+#: lib/ui/maps_screen.dart:786
 msgid "{0}/{1} ladattu · {2}"
 msgstr "{0}/{1} downloaded · {2}"
 
-#: lib/ui/maps_screen.dart:669
+#: lib/ui/maps_screen.dart:803
 msgid "Valitse koko maakunta"
 msgstr "Select the whole region"
 
-#: lib/ui/maps_screen.dart:669
+#: lib/ui/maps_screen.dart:803
 msgid "Valitse koko alue"
 msgstr "Select the whole area"
+
+#: lib/ui/maps_screen.dart:842
+msgid "Puretaan pakettia…"
+msgstr "Unpacking…"
+
+#: lib/ui/maps_screen.dart:843
+msgid "Haetaan tarkisteita verkosta…"
+msgstr "Fetching checksums online…"
+
+#: lib/ui/maps_screen.dart:844
+msgid "Tallennetaan…"
+msgstr "Saving…"
+
+#: lib/ui/maps_screen.dart:845
+msgid "Tarkistetaan karttaa…"
+msgstr "Verifying the map…"
 
 #. {0} = ex
 #: lib/ui/maxes_editor.dart:27

@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'gps_filter.dart';
 import 'gpx.dart';
+import 'maps/map_store.dart';
+import 'maps/path_snap.dart';
 
 // Reitin tallennus: puhelimen GPS -> suodatin (gps_filter.dart) -> aika, matka, vauhti ja reitti.
 // Androidissa paikannukset tulevat omasta etualapalvelusta (android/.../GpsService.kt), joka kirjoittaa ne myös
@@ -110,9 +112,22 @@ class RouteResult {
 class GpsRecorder extends ChangeNotifier {
   final GpsSource source;
   final DateTime Function() now;
-  GpsRecorder({GpsSource? source, DateTime Function()? now})
-    : source = source ?? AndroidGpsSource(),
-      now = now ?? DateTime.now;
+
+  /// Väylät reitin ympäriltä polulle korjausta varten (oletus: ladatut offline-kartat).
+  final Future<List<SnapWay>> Function(List<List<TrackPoint>>) ways;
+  GpsRecorder({
+    GpsSource? source,
+    DateTime Function()? now,
+    Future<List<SnapWay>> Function(List<List<TrackPoint>>)? ways,
+  }) : source = source ?? AndroidGpsSource(),
+       now = now ?? DateTime.now,
+       ways = ways ?? _mapWays;
+
+  static Future<List<SnapWay>> _mapWays(List<List<TrackPoint>> segs) async {
+    final store = MapStore.instance;
+    if (store.installed.isEmpty) await store.load(network: false);
+    return store.waysAround(segs);
+  }
 
   RecState state = RecState.idle;
   String sport = '';
@@ -341,12 +356,22 @@ class GpsRecorder extends ChangeNotifier {
     final secs = elapsed.inSeconds;
     await _close();
     if (s == null) return null;
-    final segs = _filter.segments.where((x) => x.length >= 2).toList();
+    var segs = _filter.segments.where((x) => x.length >= 2).toList();
+    var desc = _filter.diagnostics;
+    // Korjaus poluille offline-kartoilla, kun reitti selvästi kulkee väylää pitkin (path_snap.dart). Matka pysyy
+    // suodattimen mittaamana; vain reittiviiva korjataan.
+    if (snapModeFor(sport) != null && segs.isNotEmpty) {
+      try {
+        final r = snapRoute(segs, await ways(segs), sport);
+        segs = r.segments;
+        if (r.total > 0) desc = '$desc; polulle korjattu ${(100 * r.snapped / r.total).round()} % pisteistä';
+      } catch (_) {}
+    }
     return RouteResult(
       started: s,
       seconds: secs,
       distanceKm: (_filter.distance / 10).round() / 100,
-      gpx: routeToGpx(segs, name: name, type: sport, desc: _filter.diagnostics),
+      gpx: routeToGpx(segs, name: name, type: sport, desc: desc),
       segments: segs,
     );
   }

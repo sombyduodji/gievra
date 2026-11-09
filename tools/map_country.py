@@ -17,7 +17,7 @@ import tempfile
 import unicodedata
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from map_catalog import sha256, simplify  # noqa: E402
+from map_catalog import carry_old, sha256, simplify  # noqa: E402
 from map_extract import geojson_rings  # noqa: E402
 
 # Maiden nimet sovelluksen kielillä (fi, en, se) ja paikallisesti.
@@ -65,6 +65,7 @@ def main():
                     help='lisäalueet toisesta kartasta (esim. Kanariansaaret: canarias.pmtiles:es-canarias.geojson)')
     ap.add_argument('--overview-source', help='yleiskartan lähde (oletus: maan kartta), esim. Protomaps-planeetta')
     ap.add_argument('--catalog-only', action='store_true', help='älä pilko uudelleen, tee vain luettelo')
+    ap.add_argument('--previous', help='edellisen julkaisun <maa>.json: sen tarkisteet sha256Old-listaan')
     a = ap.parse_args()
     cc = a.country
     tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'map_extract.py')
@@ -161,6 +162,7 @@ def main():
     }
     if os.path.exists(whole):
         out['all'] = entry(f'{cc}-koko.pmtiles')
+    carry_old(out, a.previous)
     with open(os.path.join(a.out, f'{cc}.json'), 'w') as fh:
         json.dump(out, fh, ensure_ascii=False, separators=(',', ':'))
     total = sum(p['size'] for p in packs)

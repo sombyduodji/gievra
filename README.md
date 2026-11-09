@@ -114,10 +114,14 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana; paikallaanolo ei kasvata matkaa
 - tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita; keskeytynyt tallennus palautuu
 - reitti näkyy kartalla ja tallentuu `.gpx`-tiedostona treenin viereen
+- reitti korjautuu poluille ladatuilla kartoilla (noin 8 m:n heitto; jalan kävely- ja pyörätiet ja jalkakäytävät
+  ennen autoteitä), metsässä ja kaukana poluista GPS-reittiin luotetaan sellaisenaan
 - OpenStreetMap-kartat ilman verkkoyhteyttä: Suomi (kaikki 308 kuntaa ja kaupunkia), Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia
   paikallishallinnon alueittain (council areas) ja Espanja maakunnittain (provincias); lataus säteen mukaan (juoksu
-  ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli), omat alueet tai koko maa; tuonti tiedostosta;
-  ladattujen karttojen poisto ja päivitys
+  ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli), omat alueet tai koko maa; ladattujen karttojen
+  poisto ja päivitys
+- kartat myös kotisivun karttahausta tiedostoina; tuonnissa kartta tunnistetaan sisällöstä (SHA-256), myös vanhemmat
+  versiot ja ilman verkkoa kotisivun tarkistetaulukolla; tunnistamattoman voi tuoda tarkistamattomana
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
@@ -131,7 +135,8 @@ verkkoyhteys kirjattiin käytön aikana.
 
 - käyttöönotto, ohjelma, salitreeni, GPS-lenkki, sijainnin haku, Health Connect, käynnistys ja taustalla:
   **ei yhteyksiä** (Health Connect luetaan puhelimesta)
-- Kartat-näkymä ja karttojen lataus: **vain GitHub** (github.com, release-assets.githubusercontent.com); GitHub
+- Kartat-näkymä ja karttojen lataus: **vain GitHub** (github.com, release-assets.githubusercontent.com; tuonnin
+  *Tarkista verkosta* myös api.github.com); GitHub
   näkee IP-osoitteen ja ladatut kuntapaketit, ei sijaintia, laitteen tunnisteita eikä tiliä
 - vikailmoitus ja varmuuskopio: Androidin jakovalikko, itse valitsemasi sovellus lähettää
 - ei analytiikkaa, mainoksia, kaatumisraportointia eikä Googlen Play-palveluita
