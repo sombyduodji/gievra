@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_info.dart';
 import '../gps_recorder.dart';
+import '../app_state.dart';
 import '../l10n.dart';
 import '../maps/map_store.dart';
 import '../models.dart';
@@ -126,7 +127,7 @@ class _MapsScreenState extends State<MapsScreen> {
   String _searchHint(MapCatalog c) => switch (_unit(c)) {
     'alue' => t('Hae aluetta'),
     'maakunta' => t('Hae maakuntaa'),
-    _ => t('Hae kuntaa'),
+    _ => t('Hae kuntaa, kaupunkia tai maakuntaa'),
   };
   String _count(MapCatalog c, int n, String size) => switch (_unit(c)) {
     'alue' => t('{0} aluetta · {1}', [n, size]),
@@ -180,7 +181,31 @@ class _MapsScreenState extends State<MapsScreen> {
     }
   }
 
+  /// Sijainnin ympäristön karttojen latauspainike (koko sisältää korkeustiedot, jos ne ladataan mukana).
+  Widget _mapButton(List<MapPack> within, bool busy, MapCatalog c) {
+    final size = _sizeOf(within);
+    final missing = within.where((x) => !store.isInstalled(x)).length;
+    final kunnat = within.every((x) => _unit(store.catalogs[x.country] ?? c) == 'kunta');
+    return FilledButton(
+      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+      onPressed: busy || missing == 0 ? null : () => _download(within),
+      child: Text(
+        missing == 0
+            ? t('Alueen kartat on ladattu ✓')
+            : kunnat
+            ? t('Lataa {0} kuntaa · {1}', [missing, fmtBytes(size)])
+            : t('Lataa {0} karttaa · {1}', [missing, fmtBytes(size)]),
+      ),
+    );
+  }
+
+  /// Karttojen mukana niiden korkeustiedot, jos asetus on päällä.
+  List<MapPack> _withElev(Iterable<MapPack> packs) => [
+    for (final x in packs) ...[x, if (settings.elevWithMaps && !x.isElevation) ?x.elev],
+  ];
+
   Future<void> _download(List<MapPack> packs, {bool update = false}) async {
+    if (!update) packs = _withElev(packs);
     final failed = update ? await store.update(packs) : await store.download(packs);
     _used = await store.usedBytes();
     _selected.clear();
@@ -357,9 +382,12 @@ class _MapsScreenState extends State<MapsScreen> {
 
   /// Ladattava koko: puuttuvat paketit ja niiden maiden yleiskartat, joita ei vielä ole.
   int _sizeOf(Iterable<MapPack> packs) {
-    final todo = packs.where((x) => !store.isInstalled(x)).toList();
+    final todo = _withElev(packs).where((x) => !store.isInstalled(x)).toList();
     var over = 0;
-    for (final cc in {for (final x in todo) x.country}) {
+    for (final cc in {
+      for (final x in todo)
+        if (!x.isElevation) x.country,
+    }) {
       final c = store.catalogs[cc];
       if (c != null && !store.isInstalled(c.overview) && !(c.all != null && store.isInstalled(c.all!))) {
         over += c.overview.size;
@@ -462,21 +490,38 @@ class _MapsScreenState extends State<MapsScreen> {
                         Builder(
                           builder: (context) {
                             final within = store.packsWithin(_center!.$1, _center!.$2, _radius);
-                            final size = _sizeOf(within);
-                            final missing = within.where((x) => !store.isInstalled(x)).length;
-                            final kunnat = within.every((x) => _unit(store.catalogs[x.country] ?? c) == 'kunta');
-                            return FilledButton(
-                              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                              onPressed: busy || size == 0 ? null : () => _download(within),
-                              child: Text(
-                                size == 0
-                                    ? t('Alueen kartat on ladattu ✓')
-                                    : kunnat
-                                    ? t('Lataa {0} kuntaa · {1}', [missing, fmtBytes(size)])
-                                    : t('Lataa {0} karttaa · {1}', [missing, fmtBytes(size)]),
-                              ),
+                            final elev = [for (final x in within) ?x.elev];
+                            final elevMissing = elev.where((x) => !store.isInstalled(x)).toList();
+                            final elevSize = elevMissing.fold<int>(0, (a, x) => a + x.size);
+                            if (elev.isEmpty) return _mapButton(within, busy, c);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _mapButton(within, busy, c),
+                                const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                                  onPressed: busy || elevMissing.isEmpty ? null : () => _download(elevMissing),
+                                  icon: const Text('⛰️'),
+                                  label: Text(
+                                    elevMissing.isEmpty
+                                        ? t('Alueen korkeustiedot on ladattu ✓')
+                                        : t('Lataa korkeustiedot · {0}', [fmtBytes(elevSize)]),
+                                  ),
+                                ),
+                              ],
                             );
                           },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: settings.elevWithMaps,
+                          onChanged: (v) => setState(() => settings.setElevWithMaps(v)),
+                          title: Text(t('Korkeustiedot karttojen mukana')),
+                          subtitle: Text(
+                            t('Nousut ja korkeusprofiili reitille. Suomi: Maanmittauslaitos.'),
+                            style: sub,
+                          ),
                         ),
                       ],
                       SectionLabel(_pickLabel(c)),
@@ -736,6 +781,7 @@ class _MapsScreenState extends State<MapsScreen> {
 
   Future<void> _delete(MapPack x) async {
     await store.delete(x);
+    if (x.elev case final e? when store.isInstalled(e)) await store.delete(e); // alueen korkeustiedot samalla
     _used = await store.usedBytes();
     if (mounted) setState(() {});
   }

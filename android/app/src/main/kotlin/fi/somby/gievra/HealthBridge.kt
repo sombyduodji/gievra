@@ -211,6 +211,36 @@ object HealthBridge {
         }
     }
 
+    /**
+     * Päivän askeltietueet sellaisinaan (Gievra etsii niistä yhtenäiset kävelyt ilman harjoitusta, lib/health.dart):
+     * alku, loppu, askeleet ja tallentanut sovellus.
+     */
+    suspend fun stepRecords(context: Context, startMs: Long, endMs: Long): List<Map<String, Any?>> {
+        val span = TimeRangeFilter.between(Instant.ofEpochMilli(startMs), Instant.ofEpochMilli(endMs))
+        val out = mutableListOf<Map<String, Any?>>()
+        var token: String? = null
+        val labels = mutableMapOf<String, String>()
+        do {
+            val r = client(context).readRecords(ReadRecordsRequest(StepsRecord::class, span, pageSize = 5000, pageToken = token))
+            for (x in r.records) {
+                val pkg = x.metadata.dataOrigin.packageName
+                out += mapOf(
+                    "start" to x.startTime.toEpochMilli(),
+                    "end" to x.endTime.toEpochMilli(),
+                    "count" to x.count,
+                    "pkg" to pkg,
+                    "app" to labels.getOrPut(pkg) { appLabel(context, pkg) },
+                )
+            }
+            token = r.pageToken
+        } while (token != null && out.size < 50000)
+        return out
+    }
+
+    /** Aikavälin syke, kalorit, askeleet ja matka sovellukselta [pkg] (askelista tehty liikunta). */
+    suspend fun rangeStats(context: Context, startMs: Long, endMs: Long, pkg: String?): Map<String, Any?> =
+        stats(context, Instant.ofEpochMilli(startMs), Instant.ofEpochMilli(endMs), pkg)
+
     /** Kehitysversio: keksitty harjoitus sykkeineen emulaattorin testaukseen. */
     suspend fun debugInsert(context: Context, startMs: Long, endMs: Long, type: Int, bpm: Int) {
         val start = Instant.ofEpochMilli(startMs)
@@ -219,6 +249,13 @@ object HealthBridge {
         val samples = generateSequence(start) { it.plusSeconds(30) }.takeWhile { it.isBefore(end) }
             .mapIndexed { i, t -> HeartRateRecord.Sample(t, (bpm + (i % 9) * 3 - 12).toLong()) }.toList()
         val meta = Metadata.manualEntry()
+        if (type < 0) {
+            // Pelkät askeleet minuutin tietueina (kävelymatto ilman harjoitusta), tahti [bpm] askelta minuutissa.
+            val steps = generateSequence(start) { it.plusSeconds(60) }.takeWhile { it.isBefore(end) }
+                .map { StepsRecord(it, zone, it.plusSeconds(60), zone, bpm.toLong(), meta) }.toList()
+            client(context).insertRecords(steps)
+            return
+        }
         client(context).insertRecords(
             listOf(
                 ExerciseSessionRecord(start, zone, end, zone, meta, type, "Testi"),

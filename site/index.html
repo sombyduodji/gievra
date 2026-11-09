@@ -99,7 +99,31 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>Uutta: tehty liikunta Health Connectista <span class="badge">0.4.2</span></h2>
+  <h2>Uutta: korkeustiedot, nousut ja kilometrit <span class="badge">0.5</span></h2>
+  <div class="grid">
+    <div class="card">
+      <h3>⛰️ Nousut ja korkeusprofiili</h3>
+      <ul>
+        <li>GPS-reitin alla <b>nousu, lasku ja korkeusprofiili</b>: juoksu, kävely, retkeily, pyöräily, hiihto ja muut ulkolajit.</li>
+        <li>Profiilissa jokainen kilometri katkoviivalla ja sen alla kilometrin vauhti (min/km, ilman taukoja); pyöräilyssä nopeus km/h. Viimeinen vajaa kilometri himmeämpänä.</li>
+        <li>Korkeus Maanmittauslaitoksen korkeusmallista (maanpinta, ei puita eikä rakennuksia), ei puhelimen GPS:stä. Nyt Suomi.</li>
+        <li>Korkeustiedot ladataan kunnittain karttojen tapaan: kartta-sivulla <i>Lataa korkeustiedot</i> tai asetus <i>Korkeustiedot karttojen mukana</i>. Pieniä: esim. Kerava 39 kt, Helsinki 0,3 Mt. Myös <a href="#maphaku">karttahaussa</a> ja tiedostosta tuotuna (SHA-256).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>❤️ Health Connect ja ilmoitus</h3>
+      <ul>
+        <li><b>Lisää tehty liikunta Health Connectista</b> löytää nyt myös <b>salitreenit</b>: kellon tiedot (aika, syke, kalorit) lisätään päivän salitreeniin, tai syntyy uusi salitreeni.</li>
+        <li>Myös <b>askeleet ilman harjoitusta</b>, esim. kävelymatolta: yhtenäinen kävely (vähintään 10 min) näkyy listassa, esim. "4032 askelta 10.23–11.05". Valitse laji, niin liikunta täyttyy.</li>
+        <li><b>Yksi ilmoitus</b> käynnissä olevasta treenistä pudotusvalikossa: laji ja kulunut aika (salitreeni, ajanotto tai GPS-lenkki). Palautusajastin pysyy omanaan. Asetus ☰-valikossa.</li>
+        <li>Karttahaku: hae kuntaa, kaupunkia tai maakuntaa.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Tehty liikunta Health Connectista <span class="badge">0.4.2</span></h2>
   <div class="card">
     <ul>
       <li><b>Lisää tehty liikunta Health Connectista</b> (☰ → Asetukset, oletus pois): etusivun painikkeesta näet päivän harjoitukset, joita ei vielä ole Gievrassa – esim. kävelymaton, kellon tai muun sovelluksen tallentamat. Napautus avaa valmiiksi täytetyn liikunnan: laji, aika, matka, syke, kalorit ja askeleet. Tarkista ja tallenna.</li>
@@ -170,13 +194,13 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div>
       <h3 style="margin:0 0 6px">🗺️ Saatavilla olevat kartat</h3>
       <ul>
-        <li><b>Suomi</b>: kaikki 308 kuntaa, kaupungit mukaan lukien (Tilastokeskus 2026), tai koko maa yhtenä tiedostona</li>
+        <li><b>Suomi</b>: kaikki 308 kuntaa, kaupungit mukaan lukien (Tilastokeskus 2026), tai koko maa yhtenä tiedostona; kunnittain myös ⛰️ korkeustiedot (nousut ja korkeusprofiili)</li>
         <li>kunnittain (kaupungit mukaan lukien): <b>Ruotsi</b> 290 kommunia · <b>Norja</b> 357 kommunea ja Huippuvuoret · <b>Tanska</b> 98 kommunea · <b>Islanti</b> 61 kuntaa</li>
         <li><b>Iso-Britannia</b>: 361 paikallishallinnon aluetta (council areas)</li>
         <li><b>Espanja</b>: 50 maakuntaa (provincias), myös Kanariansaaret ja Baleaarit</li>
       </ul>
       <p class="sub">Valitse maa ja alueet, tai lataa kartat sijaintisi ympäriltä (myös rajan yli naapurimaahan). Kunnan kartta on tyypillisesti 5–30 Mt.</p>
-      <p class="sub"><small>Kartat © OpenStreetMap-tekijät (ODbL). Iso-Britannian aluerajat: ONS, Open Government Licence v3.0.</small></p>
+      <p class="sub"><small>Kartat © OpenStreetMap-tekijät (ODbL). Iso-Britannian aluerajat: ONS, Open Government Licence v3.0. Korkeustiedot: Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0, 25 m:n ruudukkona.</small></p>
     </div>
   </div>
   <div class="maphaku" id="maphaku" data-src="kartat.json">

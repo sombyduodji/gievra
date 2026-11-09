@@ -13,6 +13,7 @@ import 'open_files.dart';
 import 'rest.dart';
 import 'l10n.dart';
 import 'sync/sync_service.dart';
+import 'ongoing.dart';
 import 'theme.dart';
 import 'ui/home.dart';
 import 'ui/intro.dart';
@@ -30,6 +31,10 @@ Future<void> main() async {
   await store.reload();
   final tStore = sw.elapsedMilliseconds;
   await sync.load();
+  // Käynnissä oleva treeni pudotusvalikossa: päivittyy treenien ja asetusten muuttuessa.
+  store.addListener(Ongoing.refresh);
+  settings.addListener(Ongoing.refresh);
+  unawaited(Ongoing.refresh());
   // ignore: avoid_print
   if (timing) print('STARTUP asetukset $tSettings ms, treenit ${tStore - tSettings} ms (${store.workouts.length})');
   // Palautus ohi: värinä, ääni ja lyhyt ilmoitus (vain kun sovellus on auki).

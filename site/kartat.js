@@ -11,7 +11,7 @@
     hint: 'Type at least 2 letters, e.g. Inari, Tromsø, Edinburgh or Málaga.',
     count: '{0} maps in {1} countries · OpenStreetMap data {2}',
     ov: 'Overview map of {0}', ovNote: 'Download the overview map once per country: it is the zoomed-out background for the area maps.',
-    dl: 'Download', mb: 'MB', gb: 'GB'
+    dl: 'Download', elev: 'Elevation data', kb: 'kB', mb: 'MB', gb: 'GB'
   } : {
     all: 'Kaikki maat', loading: 'Ladataan karttaluetteloa…', fail: 'Karttaluetteloa ei saatu ladattua.',
     none: 'Karttoja ei löytynyt. Kokeile toista kirjoitusasua tai lähikunnan tai alueen nimeä.',
@@ -19,7 +19,7 @@
     hint: 'Kirjoita vähintään 2 kirjainta, esim. Inari, Tromsø, Edinburgh tai Málaga.',
     count: '{0} karttaa {1} maassa · OpenStreetMap-aineisto {2}',
     ov: 'Yleiskartta: {0}', ovNote: 'Lataa yleiskartta kerran maata kohden: se on loitonnetun näkymän tausta aluekartoille.',
-    dl: 'Lataa', mb: 'Mt', gb: 'Gt'
+    dl: 'Lataa', elev: 'Korkeustiedot', kb: 'kt', mb: 'Mt', gb: 'Gt'
   };
   var MAX = 40;
   var q = box.querySelector('input'), sel = box.querySelector('select'), out = box.querySelector('.tulokset'),
@@ -32,6 +32,7 @@
     .replace(/ŋ/g, 'n').replace(/đ/g, 'd').replace(/ŧ/g, 't').replace(/š/g, 's').replace(/ž/g, 'z').replace(/č/g, 'c'); }
   function size(b) {
     var m = b / 1048576;
+    if (m < 1) return Math.max(1, Math.round(b / 1024)) + ' ' + L.kb;
     if (m >= 1000) return (m / 1024).toFixed(1).replace('.', en ? '.' : ',') + ' ' + L.gb;
     return (m < 10 ? m.toFixed(1).replace('.', en ? '.' : ',') : Math.round(m)) + ' ' + L.mb;
   }
@@ -60,6 +61,11 @@
       t.appendChild(el('div', 'sub', [r.p[2], cname(r.c)].filter(Boolean).join(' · ')));
       li.appendChild(t);
       li.appendChild(link(r.c.base + r.p[4], L.dl + ' · ' + size(r.p[3])));
+      if (r.p[5]) {  // korkeustiedot (Suomi: Maanmittauslaitos), oma tiedostonsa
+        var e = link(r.c.base + r.p[5], L.elev + ' · ' + size(r.p[6]));
+        e.className = 'btn secondary';
+        li.appendChild(e);
+      }
       out.appendChild(li);
     });
     if (countries.length) {

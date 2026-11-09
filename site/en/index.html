@@ -99,7 +99,31 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>New: completed exercise from Health Connect <span class="badge">0.4.2</span></h2>
+  <h2>New: elevation, climbs and kilometre splits <span class="badge">0.5</span></h2>
+  <div class="grid">
+    <div class="card">
+      <h3>⛰️ Climbs and elevation profile</h3>
+      <ul>
+        <li>Under a GPS route: <b>climb, descent and elevation profile</b> for running, walking, hiking, cycling, skiing and other outdoor sports.</li>
+        <li>Every kilometre is marked with a dotted line, with its pace below (min/km, pauses excluded); cycling shows km/h. The last partial kilometre is shown lighter.</li>
+        <li>Heights come from the National Land Survey of Finland's elevation model (ground level, not trees or buildings), not from the phone's GPS. Finland for now.</li>
+        <li>Elevation data downloads per municipality like maps: <i>Download elevation data</i> on the maps page, or the setting <i>Elevation data with maps</i>. Small files, e.g. Kerava 39 kB, Helsinki 0.3 MB. Also in the <a href="#maphaku">map search</a> and importable from a file (SHA-256).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>❤️ Health Connect and notification</h3>
+      <ul>
+        <li><b>Add completed exercise from Health Connect</b> now also finds <b>gym sessions</b>: the watch data (time, heart rate, calories) is added to the day's gym workout, or a new gym workout is created.</li>
+        <li>Also <b>steps without a workout</b>, e.g. from a walking pad: a continuous walk of at least 10 minutes shows in the list, e.g. "4032 steps 10.23–11.05". Pick the sport and the exercise is filled in.</li>
+        <li><b>One notification</b> for a workout in progress: the activity and elapsed time (gym, stopwatch or GPS run). The rest timer stays separate. Setting in the ☰ menu.</li>
+        <li>Map search: search by municipality, city or region.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Completed exercise from Health Connect <span class="badge">0.4.2</span></h2>
   <div class="card">
     <ul>
       <li><b>Add completed exercise from Health Connect</b> (☰ → Settings, off by default): a home screen button lists the day's workouts not yet in Gievra, e.g. saved by a walking pad, a watch or another app. A tap opens the exercise pre-filled: sport, time, distance, heart rate, calories and steps. Check it and save.</li>
@@ -170,13 +194,13 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div>
       <h3 style="margin:0 0 6px">🗺️ Available maps</h3>
       <ul>
-        <li><b>Finland</b>: all 308 municipalities, towns and cities included (Statistics Finland 2026), or the whole country as one file</li>
+        <li><b>Finland</b>: all 308 municipalities, towns and cities included (Statistics Finland 2026), or the whole country as one file; also ⛰️ elevation data per municipality (climbs and elevation profile)</li>
         <li>by municipality (cities included): <b>Sweden</b> 290 · <b>Norway</b> 357 and Svalbard · <b>Denmark</b> 98 · <b>Iceland</b> 61</li>
         <li><b>United Kingdom</b>: 361 local authority districts</li>
         <li><b>Spain</b>: 50 provinces, including the Canary and Balearic Islands</li>
       </ul>
       <p class="sub">Choose a country and areas, or download the maps around your location (also across a border). A municipality map is typically 5–30 MB.</p>
-      <p class="sub"><small>Maps © OpenStreetMap contributors (ODbL). UK boundaries: ONS, Open Government Licence v3.0.</small></p>
+      <p class="sub"><small>Maps © OpenStreetMap contributors (ODbL). UK boundaries: ONS, Open Government Licence v3.0. Elevation: National Land Survey of Finland, Elevation model 10 m (2019), CC BY 4.0, as a 25 m grid.</small></p>
     </div>
   </div>
   <div class="maphaku" id="maphaku" data-src="../kartat.json">

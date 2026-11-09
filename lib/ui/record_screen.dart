@@ -33,8 +33,6 @@ class _RecordScreenState extends State<RecordScreen> {
   String? _error;
   bool _busy = true;
 
-  String get _title => t('{0} – reitin tallennus', [sportName(widget.sport)]);
-
   @override
   void initState() {
     super.initState();
@@ -47,9 +45,10 @@ class _RecordScreenState extends State<RecordScreen> {
   }
 
   Future<void> _init() async {
-    final title = _title;
-    final text = t('Gievra tallentaa reittiäsi. Napauta palataksesi.');
-    final channel = t('Reitin tallennus');
+    // Sama ilmoitus kuin muillakin käynnissä olevilla treeneillä (lib/ongoing.dart päivittää sen heti).
+    final title = t('{0} käynnissä', [sportName(widget.sport)]);
+    final text = t('Etsitään GPS-signaalia…');
+    final channel = t('Käynnissä oleva treeni');
     try {
       if (widget.recorder == null) {
         final st = await Permission.locationWhenInUse.request();

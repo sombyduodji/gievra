@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
@@ -9,12 +9,15 @@ import '../drafts.dart';
 import '../gps_filter.dart';
 import '../gps_recorder.dart';
 import '../gpx.dart';
+import '../maps/elevation.dart';
 import '../maps/map_store.dart';
 import '../maps/map_view.dart';
 import '../maps/path_snap.dart';
 import '../models.dart';
+import '../ongoing.dart';
 import '../sports.dart';
 import '../theme.dart';
+import 'elevation_chart.dart';
 import 'maps_screen.dart';
 import 'record_screen.dart';
 import 'share.dart';
@@ -68,8 +71,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
       w.hcId == null &&
       !store.onDay(w.date).any((x) => x.session == w.session);
 
+  /// Ajanoton tila pudotusvalikon ilmoitukseen (käynnissä tai tauolla; lopetettu tai tallennettu = ei ilmoitusta).
+  void _syncOngoing({bool clear = false}) {
+    final sport = w.activity;
+    final active = _swStart != null || _swAcc > Duration.zero;
+    Ongoing.activity = clear || sport == null || !active
+        ? null
+        : OngoingActivity(
+            sport,
+            since: _swStart == null ? null : DateTime.now().subtract(_swElapsed),
+            elapsed: _swElapsed,
+          );
+    Ongoing.refresh();
+  }
+
   void _swStartPause() {
     Future.microtask(_saveDraft);
+    Future.microtask(_syncOngoing);
     setState(() {
       if (_swStart == null) {
         _swStart = DateTime.now();
@@ -98,6 +116,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       }
       _swAcc = Duration.zero;
     });
+    _syncOngoing();
   }
 
   /// Treenin reitti piirtoa varten (tallennettu .gpx tai juuri tallennettu).
@@ -109,6 +128,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     w.minutes ??= 45;
     if (widget.recoverGps) WidgetsBinding.instance.addPostFrameCallback((_) => _record(recover: true));
     _restoreDraft(widget.draft);
+    if (_swStart != null || _swAcc > Duration.zero) WidgetsBinding.instance.addPostFrameCallback((_) => _syncOngoing());
     _checkMaps();
     _loadRoute();
     // Keskeneräinen kirjaus talteen muutaman sekunnin välein (vain muuttuessa).
@@ -210,6 +230,30 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final loc = await lastLocation();
     final missing = ms.installed.isEmpty || (loc != null && ms.catalog != null && !ms.covers(loc.$1, loc.$2));
     if (mounted) setState(() => _mapMissing = missing);
+  }
+
+  /// Lajit, joissa kilometrien alle nopeus (km/h) vauhdin (min/km) sijaan.
+  static const _speedSports = {'Pyöräily', 'Luistelu', 'Laskettelu', 'Melonta', 'Soutu'};
+
+  // Korkeusprofiili ladatuista korkeustiedoista (lasketaan kerran reittiä kohti, taustalla).
+  List<List<TrackPoint>>? _profRoute;
+  ElevationProfile? _profile;
+
+  ElevationProfile? _profileFor(List<List<TrackPoint>>? route) {
+    if (route == null) return null;
+    if (!identical(route, _profRoute)) {
+      _profRoute = route;
+      _profile = null;
+      MapStore.instance
+          .profileFor(route)
+          .then((pr) {
+            if (mounted && identical(route, _profRoute)) setState(() => _profile = pr);
+          })
+          .catchError((Object e) {
+            debugPrint('korkeusprofiili: $e');
+          });
+    }
+    return _profile;
   }
 
   Future<void> _loadRoute() async {
@@ -455,6 +499,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     // Kirjauksesta poistuttiin itse (takaisin) tai se tallennettiin: luonnosta ei tarvita.
     _draftTick?.cancel();
     ActivityDraft.clear();
+    _syncOngoing(clear: true); // luonnos ja ajanotto päättyvät sivulta poistuttaessa
     _notes.dispose();
     super.dispose();
   }
@@ -657,6 +702,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                               ),
                             ),
                           ),
+                        if (_profileFor(_route) case final prof?)
+                          ElevationCard(prof, speed: _speedSports.contains(w.activity)),
                         if (_canSnap) _snapCard(Theme.of(context).colorScheme),
                       ],
                     ),
