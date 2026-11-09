@@ -99,12 +99,13 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>New: elevation for all countries <span class="badge">0.5.1</span></h2>
+  <h2>New: elevation for all countries <span class="badge">0.5.2</span></h2>
   <div class="card">
     <ul>
       <li><b>Elevation data also for Sweden, Norway (including Svalbard), Denmark, Iceland, the United Kingdom and Spain</b>: climbs, descents and the elevation profile per area, as in Finland (Copernicus DEM, about 30 m).</li>
       <li>Elevation files now use little memory even for large areas (e.g. Inari): the app reads only the part the route crosses. If you downloaded elevation data with 0.5, the app offers to update it; new files are SHA-256-verified.</li>
       <li>Without elevation data the route still shows <b>kilometre splits</b>: each kilometre's pace (km/h for cycling).</li>
+      <li><b>0.5.2:</b> less memory with many maps and large areas: the map and elevation caches are now bounded (a whole country or hundreds of municipalities downloaded no longer raises memory use).</li>
       <li>Health Connect: correct steps also for workouts like Oura's whose steps are counted by the phone; the sport is shown by name (e.g. Walking).</li>
     </ul>
   </div>

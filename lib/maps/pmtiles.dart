@@ -78,7 +78,13 @@ class PmTilesFile {
   /// Rajaava laatikko asteina (w, s, e, n).
   late final (double, double, double, double) bounds;
   late final List<_Entry> _root;
-  final _leaves = <int, List<_Entry>>{};
+
+  /// Alihakemistot kaikille avoimille tiedostoille yhteisessä välimuistissa (avain: tiedosto ja kohta), jossa on
+  /// enintään [_maxLeafEntries] merkintää yhteensä: muistin käyttö ei riipu ladattujen karttojen määrästä (koko maa
+  /// yhtenä tiedostona tai satoja kuntia). Vanhimmat käytetyt poistetaan ensin.
+  static final _leaves = <String, List<_Entry>>{};
+  static var _leafEntries = 0;
+  static const _maxLeafEntries = 150000; // noin 7 Mt
   Future<void> _lock = Future.value();
 
   PmTilesFile._(this.path, this._raf);
@@ -159,16 +165,29 @@ class PmTilesFile {
         final out = _decompress(b, _tcomp);
         return out is Uint8List ? out : Uint8List.fromList(out);
       }
-      var leaf = _leaves[e.offset];
+      final key = '$path:${e.offset}';
+      var leaf = _leaves.remove(key);
       if (leaf == null) {
         leaf = _parseDir(_decompress(await _read(_leafOff + e.offset, e.length), _icomp));
-        if (_leaves.length > 64) _leaves.remove(_leaves.keys.first);
-        _leaves[e.offset] = leaf;
+        _leafEntries += leaf.length;
+        while (_leafEntries > _maxLeafEntries && _leaves.isNotEmpty) {
+          final oldest = _leaves.keys.first;
+          _leafEntries -= _leaves.remove(oldest)!.length;
+        }
       }
+      _leaves[key] = leaf; // viimeksi käytetty loppuun
       dir = leaf;
     }
     return null;
   }
 
-  Future<void> close() => _raf.close();
+  Future<void> close() {
+    // Tiedoston alihakemistot pois välimuistista (esim. kartta poistettu tai päivitetty).
+    _leaves.removeWhere((k, v) {
+      final mine = k.startsWith('$path:');
+      if (mine) _leafEntries -= v.length;
+      return mine;
+    });
+    return _raf.close();
+  }
 }

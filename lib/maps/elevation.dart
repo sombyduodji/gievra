@@ -149,8 +149,16 @@ class ElevationGrid {
     return ElevationGrid._lazy(h, index, read);
   }
 
+  /// Enintään näin monta lohkoa muistissa yhtä tiedostoa kohden (lohko 128 kt → noin 4 Mt). Vanhimmat käyttämättömät
+  /// poistetaan; nykyisen reitin lohkot jäävät aina, joten pitkäkin lenkki saa kaikki korkeutensa.
+  static const maxBlocks = 32;
+
   Future<void> _load(int id) async {
-    if (_blocks.containsKey(id)) return;
+    final have = _blocks.remove(id);
+    if (have != null) {
+      _blocks[id] = have; // viimeksi käytetty loppuun (LinkedHashMap: järjestys = käyttöjärjestys)
+      return;
+    }
     final h = header, index = _index!;
     final dataStart = h.headLength + index.length * 4;
     final bytes = await _read!(dataStart + index[id], index[id + 1] - index[id]);
@@ -181,6 +189,13 @@ class ElevationGrid {
     }
     for (final id in need) {
       await _load(id);
+    }
+    // Muistin raja: vanhimmat lohkot pois, ei kuitenkaan tämän reitin tarvitsemia.
+    if (_blocks.length > maxBlocks) {
+      for (final id in [..._blocks.keys]) {
+        if (_blocks.length <= maxBlocks) break;
+        if (!need.contains(id)) _blocks.remove(id);
+      }
     }
   }
 
