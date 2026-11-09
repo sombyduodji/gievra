@@ -14,7 +14,7 @@ import 'l10n.dart' as l10n;
 //    10–20 tuottaa yleensä eniten (Schoenfeld ym. 2017 annos-vaste; Pelland ym. 2026: hyöty tasaantuu)
 //  - palautuminen: samaa lihasryhmää raskaasti noin 48 h välein (ACSM 2009)
 
-String slotName(String slot) => slots[slot]?.name ?? l10n.t('ei tunnettua liikemallia');
+String slotName(String slot) => slots[slot] == null ? l10n.t('ei tunnettua liikemallia') : l10n.t(slots[slot]!.name);
 
 /// Vaihtoehdot: ensin sama liikemalli (korvaa hyvin), sitten muut liikkeet.
 List<String> _flatExercises() => allExercises().values.expand((x) => x).toSet().toList();

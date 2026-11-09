@@ -406,8 +406,11 @@ class _ItemSheetState extends State<_ItemSheet> {
         controller: scroll,
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
         children: [
-          Text(it.exercise, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-          Text('${widget.day.name} · ${slotName(it.slot)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          Text(exerciseLabel(it.exercise), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          Text(
+            '${trName(widget.day.name)} · ${slotName(it.slot)}',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
           if (_preview != null) ...[const SizedBox(height: 12), _swapPreview(cs)],
           SectionLabel(t('Vaihda liike – sama liikemalli')),
           Wrap(
@@ -511,7 +514,10 @@ class _ItemSheetState extends State<_ItemSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${it.exercise} → $to', style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            '${exerciseLabel(it.exercise)} → ${exerciseLabel(to)}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 4),
           for (final msg in msgs) Text(msg, style: const TextStyle(fontSize: 13)),
           Row(
@@ -607,7 +613,7 @@ class DayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final names = day.items.map((i) => i.exercise).toList();
+    final names = day.items.map((i) => exerciseLabel(i.exercise)).toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -639,7 +645,7 @@ class DayCard extends StatelessWidget {
                         children: [
                           Text(day.uiName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                           if (day.label != null)
-                            Text(day.name, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                            Text(trName(day.name), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                           if (suggested) _badge(t('suositus'), const Color(0xFF3FBF7F)),
                           if (doneToday)
                             _badge(t('tehty tänään ✓'), Sami.green)

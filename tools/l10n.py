@@ -100,6 +100,18 @@ def extract():
         for v, ln in injury_texts(open(inj, encoding='utf-8').read()):
             e = found.setdefault(v, {'refs': [], 'args': []})
             e['refs'].append(f'lib/injury_data.dart:{ln}')
+    # Ohjelmapohjien päivien ja liikepaikkojen nimet (lib/program.dart): ('Penkki raskas', [...]) ja
+    # Slot('Kyykky', [...]). Tallentuvat suomeksi, näytetään trName()-funktiolla käyttäjän kielellä.
+    prog = os.path.join(ROOT, 'lib', 'program.dart')
+    if os.path.exists(prog):
+        src = open(prog, encoding='utf-8').read()
+        for m in re.finditer(r"\(\s*'([^'{]+)',\s*\[", src):
+            v = m.group(1)
+            if v.endswith('.'):
+                continue
+            v = re.sub(r' (?:[A-Z]|\d+)$', '', v) if re.search(r' (?:[A-Z]|\d+)$', v) else v
+            e = found.setdefault(v, {'refs': [], 'args': []})
+            e['refs'].append(f'lib/program.dart:{line_of(src, m.start(1))}')
     return found
 
 
