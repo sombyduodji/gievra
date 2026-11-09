@@ -11,6 +11,7 @@ import '../body.dart';
 import '../garmin_import.dart';
 import '../import_export.dart';
 import '../models.dart';
+import '../sports.dart';
 import '../theme.dart';
 import 'widgets.dart';
 import '../l10n.dart';
@@ -67,7 +68,14 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final files = await FilePicker.pickFiles(dialogTitle: t('Valitse Garmin Connectin CSV-tiedosto'));
     final f = files.firstOrNull;
     if (f == null) return;
-    final (r, skipped) = readGarminCsv(utf8.decode(await f.xFile.readAsBytes(), allowMalformed: true), store.workouts);
+    final text = utf8.decode(await f.xFile.readAsBytes(), allowMalformed: true);
+    // Tunnistamattomat lajit: käyttäjä valitsee parin (tai ohittaa), ei arvata.
+    final choices = <String, String?>{};
+    for (final (type, n) in garminUnknownTypes(text)) {
+      if (!mounted) return;
+      choices[type.toLowerCase()] = await _askSport(type, n);
+    }
+    final (r, skipped) = readGarminCsv(text, store.workouts, choices: choices);
     if (r.workouts.isEmpty) {
       _snack(t('Tiedostosta ei löytynyt Garmin-suorituksia. Vie CSV Garmin Connectin Suoritukset-sivulta.'));
       return;
@@ -78,6 +86,47 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     if (!settings.watch && r.workouts.any((w) => w.hrAvg != null || w.kcal != null)) settings.setWatch(true);
     await _preview(r);
   });
+
+  /// Mikä Gievran laji vastaa toisen sovelluksen lajia [type] ([n] suoritusta)? null = ohita (ei tuoda).
+  Future<String?> _askSport(String type, int n) async {
+    final cs = Theme.of(context).colorScheme;
+    final v = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Mikä laji tämä on?')),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(t('Gievra ei tunnista lajia "{0}" ({1} suoritusta). Valitse lähin laji:', [type, n])),
+              for (final g in sportGroups) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Text(t(g), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                ),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final s in sports.where((s) => s.group == g && !s.retired))
+                      ActionChip(
+                        avatar: Text(s.icon),
+                        label: Text(sportName(s.name)),
+                        onPressed: () => Navigator.pop(ctx, s.name),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx, ''), child: Text(t('Ohita, älä tuo')))],
+      ),
+    );
+    return v == null || v.isEmpty ? null : v;
+  }
 
   Future<void> _importZip() => _run(() async {
     final f = await _pick(['zip']);

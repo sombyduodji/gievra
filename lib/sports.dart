@@ -5,7 +5,10 @@ class Sport {
   final String name, icon, group;
   final bool distance;
   final bool steps; // askeleet kirjataan (kävely- ja juoksulajit)
-  const Sport(this.name, this.icon, this.group, {this.distance = false, this.steps = false});
+
+  /// Poistettu valikoista (0.4.1): vanhat treenit näkyvät ja lasketaan, uusia ei voi valita.
+  final bool retired;
+  const Sport(this.name, this.icon, this.group, {this.distance = false, this.steps = false, this.retired = false});
 }
 
 // l10n: data
@@ -15,7 +18,7 @@ const sportGroups = ['Kestävyys', 'Pallo- ja mailapelit', 'Muut lajit'];
 // l10n: data
 const sports = <Sport>[
   Sport('Juoksu', '🏃', 'Kestävyys', distance: true, steps: true),
-  Sport('Hölkkä', '🏃', 'Kestävyys', distance: true, steps: true),
+  Sport('Hölkkä', '🏃', 'Kestävyys', distance: true, steps: true, retired: true), // = Juoksu, rasitus Kevyt
   Sport('Kävely', '🚶', 'Kestävyys', distance: true, steps: true),
   Sport('Sauvakävely', '🥢', 'Kestävyys', distance: true, steps: true),
   Sport('Pyöräily', '🚴', 'Kestävyys', distance: true),
@@ -28,7 +31,7 @@ const sports = <Sport>[
   Sport('Lumikenkäily', '🌨️', 'Kestävyys', distance: true),
   Sport('Salibandy', '🏑', 'Pallo- ja mailapelit'),
   Sport('Jalkapallo', '⚽', 'Pallo- ja mailapelit'),
-  Sport('Futsal', '⚽', 'Pallo- ja mailapelit'),
+  Sport('Futsal', '⚽', 'Pallo- ja mailapelit', retired: true), // = Jalkapallo
   Sport('Koripallo', '🏀', 'Pallo- ja mailapelit'),
   Sport('Lentopallo', '🏐', 'Pallo- ja mailapelit'),
   Sport('Jääkiekko', '🏒', 'Pallo- ja mailapelit'),
@@ -46,17 +49,19 @@ const sports = <Sport>[
   Sport('Tanssi', '💃', 'Muut lajit'),
   Sport('Kiipeily', '🧗', 'Muut lajit'),
   Sport('Kamppailulajit', '🥋', 'Muut lajit'),
-  Sport('Nyrkkeily', '🥊', 'Muut lajit'),
-  Sport('CrossFit', '🏋️', 'Muut lajit'),
+  Sport('Nyrkkeily', '🥊', 'Muut lajit', retired: true), // = Kamppailulajit
+  Sport('CrossFit', '🏋️', 'Muut lajit', retired: true), // tavaramerkki; = Ryhmäliikunta tai Muu liikunta
   Sport('Laskettelu', '🎿', 'Muut lajit'),
   Sport('Liikkuvuus ja venyttely', '🙆', 'Muut lajit'),
-  Sport('Muu liikunta', '✨', 'Muut lajit'),
+  Sport('Muu liikunta', '✨', 'Muut lajit', distance: true), // kaikki muu: GPS tai käsin, matka valinnainen
 ];
 
 Sport? sportOf(String? name) => sports.where((s) => s.name == name).firstOrNull;
 
 // l10n: data
 const intensities = [('kevyt', 'Kevyt', '😌'), ('reipas', 'Reipas', '😤'), ('kova', 'Kova', '🥵')];
+
+(String, String, String)? intensityOf(String? key) => intensities.where((x) => x.$1 == key).firstOrNull;
 
 /// Juoksulajit: näissä on lenkin tyyppi ja oma kehitysnäkymä (☰ → Edistyminen ja tilastot → Juoksu).
 const runningSports = {'Juoksu', 'Hölkkä'};

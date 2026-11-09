@@ -33,7 +33,7 @@ void main() {
     expect(old.durationSec, 62 * 60);
   });
 
-  test('Viikot, ennätykset, tyypit ja kevyiden lenkkien kehitys', () {
+  test('Viikot, ennätykset ja kevyiden lenkkien kehitys', () {
     final today = DateTime(2026, 11, 7); // la
     final runs = runsOf([
       run(DateTime(2026, 11, 3), 6, 6 * 360, type: 'kevyt', hr: 140), // 6:00
@@ -50,14 +50,25 @@ void main() {
     expect(bests.first.km, 5);
     expect(fmtDurationSec(bests.first.sec), '24:10'); // 5 km kilpailu 4:50/km
     expect(bests.map((b) => b.km), contains(10.0)); // puolimaratonilta laskettu
-    final types = runTypeStats(runs);
-    expect(types.first.type, 'kevyt');
-    expect(types.first.hrAvg, 143);
     final trend = easyRunTrend(runs, today);
     expect(fmtPace(trend.paceNow!), '6:00');
     expect(fmtPace(trend.pacePrev!), '6:20');
     expect(trend.hrNow, 140);
-    expect(previousRun(runs, runs[1])!.date, DateTime(2026, 10, 1)); // kevyt 3.11. -> edellinen kevyt
-    expect(previousRun(runs, runs.first), isNull); // ei aiempaa kilpailua
+    expect(previousRun(runs, runs[1])!.date, DateTime(2026, 10, 1)); // 6 km 3.11. -> edellinen 6 km
+    expect(previousRun(runs, runs.first)!.date, DateTime(2026, 11, 3)); // 5 km: 6 km mahtuu ±20 %:iin
+    expect(previousRun(runs, runs[3]), isNull); // puolimaraton: ei aiempaa yhtä pitkää
+  });
+
+  test('Kevyet lenkit rasituksesta: Kevyt tai merkitsemättä; vanha lenkin tyyppi huomioidaan', () {
+    final today = DateTime(2026, 11, 7);
+    Workout r(int d, String? inten, {String? type}) =>
+        run(DateTime(2026, 11, d), 5, 5 * 300, type: type)..intensity = inten;
+    final runs = runsOf([
+      r(6, 'kevyt'), // 6:00 kevyt
+      r(5, null), // merkitsemättä: kevyt
+      r(4, 'kova'), // ei
+      r(3, null, type: 'intervallit'), // vanha tiedosto: tyyppi intervallit, ei kevyt
+    ]);
+    expect(easyRunTrend(runs, today).nNow, 2);
   });
 }

@@ -45,7 +45,6 @@ class RunningScreen extends StatelessWidget {
     final monthKm = month.fold<double>(0, (a, r) => a + r.distanceKm!);
     final trend = easyRunTrend(runs, today);
     final bests = runBests(runs);
-    final types = runTypeStats(runs);
     String km(double v) => fmtNum((v * 10).round() / 10);
 
     Widget tile(String v, String l) => Expanded(
@@ -126,34 +125,17 @@ class RunningScreen extends StatelessWidget {
             ),
           Text(t('Nopein keskivauhti vähintään yhtä pitkältä juoksulta, aika laskettuna matkalle.'), style: sub),
         ],
-        SectionLabel(t('Lenkkityypit')),
-        for (final s in types)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            leading: Text(runTypeOf(s.type)?.$3 ?? '🏃', style: const TextStyle(fontSize: 20)),
-            title: Text(runTypeOf(s.type) == null ? t('Ei tyyppiä') : t(runTypeOf(s.type)!.$2)),
-            subtitle: Text(
-              [
-                t('{0} kertaa', [s.runs]),
-                '${km(s.km)} km',
-                if (s.pace != null) '${fmtPace(s.pace!)} min/km',
-                if (s.hrAvg != null) '❤️ ${s.hrAvg}',
-              ].join(' · '),
-              style: sub,
-            ),
-          ),
         SectionLabel(t('Viimeisimmät')),
         for (final r in runs.take(8))
           ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            leading: Text(runTypeOf(r.runType)?.$3 ?? '🏃', style: const TextStyle(fontSize: 20)),
+            leading: Text(intensityOf(r.intensity)?.$3 ?? '🏃', style: const TextStyle(fontSize: 20)),
             title: Text('${km(r.distanceKm!)} km · ${fmtDurationSec(r.durationSec!)} · ${r.pace}'),
             subtitle: Text(
               [
                 shortDate(r.date),
-                if (runTypeOf(r.runType) != null) t(runTypeOf(r.runType)!.$2),
+                if (intensityOf(r.intensity) != null) t(intensityOf(r.intensity)!.$2),
                 if (r.hrAvg != null) '❤️ ${r.hrAvg}',
               ].join(' · '),
               style: sub,

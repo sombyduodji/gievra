@@ -55,34 +55,7 @@ List<RunBest> runBests(List<Workout> runs) {
   return out;
 }
 
-class RunTypeStats {
-  final String type; // runTypes-avain tai '' (ei tyyppiä)
-  int runs = 0, sec = 0, hrN = 0, hrSum = 0;
-  double km = 0;
-  RunTypeStats(this.type);
-  double? get pace => km > 0 ? sec / km : null;
-  int? get hrAvg => hrN > 0 ? (hrSum / hrN).round() : null;
-}
-
-/// Tyypeittäin: määrä, km, keskivauhti ja keskisyke (jos kellon tiedot).
-List<RunTypeStats> runTypeStats(List<Workout> runs) {
-  final m = <String, RunTypeStats>{};
-  for (final r in runs) {
-    final s = m.putIfAbsent(r.runType ?? '', () => RunTypeStats(r.runType ?? ''))
-      ..runs += 1
-      ..km += r.distanceKm!
-      ..sec += r.durationSec!;
-    if (r.hrAvg != null) {
-      s
-        ..hrN += 1
-        ..hrSum += r.hrAvg!;
-    }
-  }
-  final order = [for (final t in runTypes) t.$1, ''];
-  return m.values.toList()..sort((a, b) => order.indexOf(a.type).compareTo(order.indexOf(b.type)));
-}
-
-/// Kehitys: kevyiden lenkkien (kevyt, palauttava, pitkä tai ei tyyppiä) keskivauhti ja -syke viimeisten
+/// Kehitys: kevyiden lenkkien (rasitus Kevyt tai merkitsemättä; vanhoissa myös lenkin tyyppi) keskivauhti ja -syke viimeisten
 /// 4 viikon ajalta verrattuna sitä edeltäviin 4 viikkoon. Sama vauhti matalammalla sykkeellä tai nopeampi
 /// vauhti samalla sykkeellä = peruskunto paranee.
 class RunTrend {
@@ -93,7 +66,9 @@ class RunTrend {
 }
 
 RunTrend easyRunTrend(List<Workout> runs, DateTime today) {
-  bool easy(Workout r) => r.runType == null || const {'kevyt', 'palauttava', 'pitka'}.contains(r.runType);
+  bool easy(Workout r) =>
+      r.intensity == 'kevyt' ||
+      (r.intensity == null && (r.runType == null || const {'kevyt', 'palauttava', 'pitka'}.contains(r.runType)));
   final t = dateOnly(today);
   (double?, int?, int) agg(DateTime from, DateTime to) {
     var km = 0.0, sec = 0, hrN = 0, hr = 0, n = 0;
@@ -115,12 +90,13 @@ RunTrend easyRunTrend(List<Workout> runs, DateTime today) {
   return RunTrend(now.$1, prev.$1, now.$2, prev.$2, now.$3, prev.$3);
 }
 
-/// Edellinen samantyyppinen juoksu (vertailuun tallennuksen jälkeen).
+/// Edellinen suunnilleen yhtä pitkä juoksu (±20 %) vertailuun tallennuksen jälkeen.
 Workout? previousRun(List<Workout> ws, Workout run) {
   for (final r in runsOf(ws)) {
     if (identical(r, run) || (r.date == run.date && r.session == run.session)) continue;
     if (r.date.isAfter(run.date)) continue;
-    if (r.runType == run.runType) return r;
+    final a = r.distanceKm ?? 0, b = run.distanceKm ?? 0;
+    if (b > 0 && (a - b).abs() <= b * 0.2) return r;
   }
   return null;
 }

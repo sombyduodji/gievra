@@ -701,7 +701,7 @@ class _SavedScreenState extends State<SavedScreen> {
   }
 }
 
-/// Juoksun jälkeen: vauhti ja nopeus, vertailu edelliseen samantyyppiseen lenkkiin, linkki kehitysnäkymään.
+/// Juoksun jälkeen: vauhti ja nopeus, vertailu edelliseen suunnilleen yhtä pitkään lenkkiin, linkki kehitysnäkymään.
 class _RunCompare extends StatelessWidget {
   final Workout run;
   const _RunCompare({required this.run});
@@ -710,15 +710,10 @@ class _RunCompare extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final prev = previousRun(store.workouts, run);
-    final type = runTypeOf(run.runType);
     String? cmp;
     if (prev != null) {
       final d = (run.paceSecPerKm! - prev.paceSecPerKm!).round();
-      cmp = t('Edellinen {0} ({1}): {2} min/km', [
-        type == null ? t('juoksu') : t(type.$2).toLowerCase(),
-        shortDate(prev.date),
-        fmtPace(prev.paceSecPerKm!),
-      ]);
+      cmp = t('Edellinen {0} ({1}): {2} min/km', [t('juoksu'), shortDate(prev.date), fmtPace(prev.paceSecPerKm!)]);
       cmp += d == 0 ? ' · =' : (d < 0 ? ' · ${t('{0} s/km nopeampi', [-d])}' : ' · ${t('{0} s/km hitaampi', [d])}');
     }
     return Container(
@@ -729,7 +724,7 @@ class _RunCompare extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${type?.$3 ?? '🏃'} ${fmtPace(run.paceSecPerKm!)} min/km · ${fmtNum((run.speedKmh! * 10).round() / 10)} km/h',
+            '🏃 ${fmtPace(run.paceSecPerKm!)} min/km · ${fmtNum((run.speedKmh! * 10).round() / 10)} km/h',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           if (cmp != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(cmp)),

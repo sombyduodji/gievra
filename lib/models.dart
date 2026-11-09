@@ -101,6 +101,12 @@ class Workout {
   /// Kellon tietojen lähde, kun ne haettiin Health Connectista (esim. "Health Sync"; tyhjä = sovellusta ei tiedetä).
   String? healthSource;
 
+  /// GPS-reitin korjaus poluille metreinä (3–10); 0 = pois; null = ei valittu (vanha reitti tai ei GPS:ää).
+  int? snapM;
+
+  /// Matka kirjoitettu käsin (Korjaa): reitin korjaus ei muuta sitä.
+  bool distanceManual = false;
+
   /// GPS-reitin tiedostonimi (.gpx samassa kansiossa kuin .md), esim. 2026-11-08-2.gpx.
   String? route;
 
@@ -242,6 +248,8 @@ String workoutToMarkdown(Workout w) {
   if (w.session > 1) b.writeln('session: ${w.session}');
   if (w.activity != null) b.writeln('activity: ${w.activity}');
   if (w.distanceKm != null) b.writeln('distance: ${fileNum(w.distanceKm!)} km');
+  if (w.distanceManual && w.distanceKm != null) b.writeln('distance_source: manual');
+  if (w.snapM case final s?) b.writeln('snap: ${s == 0 ? 'off' : '$s m'}');
   if (w.intensity != null) b.writeln('intensity: ${w.intensity}');
   if (w.warmup != null) b.writeln('warmup: ${w.warmup!.equipment}, ${w.warmup!.minutes} min');
   if (w.bodyweight != null) b.writeln('bodyweight: ${fileNum(w.bodyweight!)}');
@@ -409,6 +417,13 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   w.seconds = parseDurationSec(meta['time'] ?? '');
   final rt = meta['run_type']?.trim();
   if (rt != null && rt.isNotEmpty) w.runType = rt;
+  w.distanceManual = meta['distance_source']?.trim() == 'manual';
+  final snap = meta['snap']?.trim();
+  if (snap == 'off') {
+    w.snapM = 0;
+  } else if (int.tryParse(RegExp(r'^(\d+)').firstMatch(snap ?? '')?[1] ?? '') case final m?) {
+    w.snapM = m.clamp(3, 10);
+  }
 
   String? section;
   final notes = <String>[];

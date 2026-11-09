@@ -63,6 +63,13 @@ class SnapParams {
   final double minRun;
   final int minPoints;
 
+  /// Käyttäjän valitsema raja [m] metriä (3–10): polku korjataan enintään sen päähän (pikkutiet ja muut
+  /// väylätyypit vähän lähempää, ks. [wayCost]).
+  factory SnapParams.forLimit(int m) {
+    const sigma = 4.0;
+    return SnapParams(sigma: sigma, radius: m.toDouble(), offCost: m * m / (2 * sigma * sigma));
+  }
+
   const SnapParams({
     this.sigma = 4,
     this.radius = 10,
@@ -279,3 +286,28 @@ SnapResult snapRoute(
   }
   return SnapResult(out, snapped, total);
 }
+
+/// Matka metreinä kuten GPS-suodatin sen mittaa: kertymä vähintään [step] metrin välein (pieni värinä ei kasva
+/// matkaksi), osuuksien sisällä.
+double measureRoute(List<List<TrackPoint>> segments, {double step = GpsFilter.distStep}) {
+  var total = 0.0;
+  for (final seg in segments) {
+    if (seg.isEmpty) continue;
+    var a = seg.first;
+    for (final p in seg.skip(1)) {
+      final d = geoDistance(a.lat, a.lon, p.lat, p.lon);
+      if (d >= step) {
+        total += d;
+        a = p;
+      }
+    }
+    total += geoDistance(a.lat, a.lon, seg.last.lat, seg.last.lon);
+  }
+  return total;
+}
+
+/// Korjatun reitin matka: GPS:n mittaama matka [rawDistance], josta GPS-pisteiden polun pituus vaihdetaan
+/// korjatun reitin pituuteen. Näin katkojen uskottava matka (jonka suodatin laski) säilyy, ja ilman korjausta
+/// tulos on täsmälleen [rawDistance].
+double snappedDistance(List<List<TrackPoint>> raw, List<List<TrackPoint>> snapped, double rawDistance) =>
+    math.max(0, rawDistance - measureRoute(raw) + measureRoute(snapped));
