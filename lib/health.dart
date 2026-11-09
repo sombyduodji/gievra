@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'l10n.dart';
 import 'models.dart';
 import 'sports.dart';
 
@@ -25,6 +26,9 @@ class HealthCandidate {
   /// tallentanut sovellus (paketti).
   final bool stepsOnly;
   final String? pkg;
+
+  /// Askeleet sovelluksittain (vianetsintä, näkyy Onko tämä se? -ikkunassa pienellä).
+  final String? stepsInfo;
   const HealthCandidate({
     required this.session,
     required this.start,
@@ -40,6 +44,7 @@ class HealthCandidate {
     this.meters,
     this.stepsOnly = false,
     this.pkg,
+    this.stepsInfo,
   });
 
   /// Askelista tehty liikunta saman ajan sykkeellä, kaloreilla ja matkalla (rangeStats).
@@ -60,19 +65,23 @@ class HealthCandidate {
     pkg: pkg,
   );
 
+  /// Puhelimen oma askelmittari: Android merkitsee sen tunnisteella eikä sovelluksen nimellä.
+  static String appName(String? raw) => (raw ?? '').replaceAll('@phone', t('Puhelimen askelmittari'));
+
   factory HealthCandidate.fromMap(Map m) => HealthCandidate(
     session: m['kind'] == 'session',
     start: DateTime.fromMillisecondsSinceEpoch((m['start'] as num).toInt()),
     end: DateTime.fromMillisecondsSinceEpoch((m['end'] as num).toInt()),
     title: (m['title'] as String?)?.trim().isEmpty ?? true ? null : (m['title'] as String).trim(),
     type: (m['type'] as num?)?.toInt(),
-    app: m['app'] as String? ?? '',
+    app: appName(m['app'] as String?),
     hrAvg: (m['hrAvg'] as num?)?.toInt(),
     hrMax: (m['hrMax'] as num?)?.toInt(),
     kcal: (m['kcal'] as num?)?.toInt(),
     steps: (m['steps'] as num?)?.toInt(),
     id: m['id'] as String?,
     meters: (m['meters'] as num?)?.toDouble(),
+    stepsInfo: (m['stepsBySource'] as String?)?.trim().isEmpty ?? true ? null : appName(m['stepsBySource'] as String),
   );
 
   Duration get duration => end.difference(start);
@@ -333,7 +342,7 @@ class StepRecord {
     DateTime.fromMillisecondsSinceEpoch((m['end'] as num).toInt()),
     (m['count'] as num).toInt(),
     pkg: m['pkg'] as String? ?? '',
-    app: m['app'] as String? ?? '',
+    app: HealthCandidate.appName(m['app'] as String?),
   );
 }
 

@@ -9,6 +9,7 @@ import '../app_info.dart';
 import '../gps_recorder.dart';
 import '../app_state.dart';
 import '../l10n.dart';
+import '../maps/elevation.dart' show copernicusAttribution;
 import '../maps/map_store.dart';
 import '../models.dart';
 import '../theme.dart';
@@ -41,7 +42,10 @@ String fmtBytes(int b) =>
 class MapsScreen extends StatefulWidget {
   /// Laji, jolle karttaa ladataan (oletussäde); null = juoksu/kävely.
   final String? sport;
-  const MapsScreen({super.key, this.sport});
+
+  /// Avautuva välilehti (2 = ladatut, esim. vanhojen korkeustiedostojen päivitys).
+  final int initialTab;
+  const MapsScreen({super.key, this.sport, this.initialTab = 0});
 
   @override
   State<MapsScreen> createState() => _MapsScreenState();
@@ -64,7 +68,7 @@ class _MapsScreenState extends State<MapsScreen> {
   static Widget _oneLine(String s) => FittedBox(fit: BoxFit.scaleDown, child: Text(s, maxLines: 1, softWrap: false));
 
   /// Välilehti: 0 = lataa verkosta, 1 = tuo tiedostosta, 2 = ladatut kartat.
-  int _tab = 0;
+  late int _tab = widget.initialTab;
   List<MapPack> _outdated = const [];
 
   @override
@@ -614,6 +618,17 @@ class _MapsScreenState extends State<MapsScreen> {
                               ]),
                         style: sub,
                       ),
+                      // Korkeustiedot: maan lähde ja lisenssin vaatima ilmoitus (Copernicus: myös vastuuvapaus).
+                      if (c.packs.any((x) => x.elev != null)) ...[
+                        const SizedBox(height: 4),
+                        Text(t('Korkeustiedot: {0}.', [c.elevSource]), style: sub),
+                        if (c.elevSource == copernicusAttribution)
+                          Text(
+                            'The organisations in charge of the Copernicus programme by law or by delegation do not '
+                            'incur any liability for any use of the Copernicus WorldDEM-30.',
+                            style: sub.copyWith(fontSize: 11),
+                          ),
+                      ],
                     ],
                   ),
           ),

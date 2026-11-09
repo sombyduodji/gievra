@@ -99,7 +99,19 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>New: elevation, climbs and kilometre splits <span class="badge">0.5</span></h2>
+  <h2>New: elevation for all countries <span class="badge">0.5.1</span></h2>
+  <div class="card">
+    <ul>
+      <li><b>Elevation data also for Sweden, Norway (including Svalbard), Denmark, Iceland, the United Kingdom and Spain</b>: climbs, descents and the elevation profile per area, as in Finland (Copernicus DEM, about 30 m).</li>
+      <li>Elevation files now use little memory even for large areas (e.g. Inari): the app reads only the part the route crosses. If you downloaded elevation data with 0.5, the app offers to update it; new files are SHA-256-verified.</li>
+      <li>Without elevation data the route still shows <b>kilometre splits</b>: each kilometre's pace (km/h for cycling).</li>
+      <li>Health Connect: correct steps also for workouts like Oura's whose steps are counted by the phone; the sport is shown by name (e.g. Walking).</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>Elevation, climbs and kilometre splits <span class="badge">0.5</span></h2>
   <div class="grid">
     <div class="card">
       <h3>⛰️ Climbs and elevation profile</h3>
@@ -195,12 +207,13 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <h3 style="margin:0 0 6px">🗺️ Available maps</h3>
       <ul>
         <li><b>Finland</b>: all 308 municipalities, towns and cities included (Statistics Finland 2026), or the whole country as one file; also ⛰️ elevation data per municipality (climbs and elevation profile)</li>
+        <li>⛰️ elevation data for the other countries too, per area (Copernicus, about 30 m)</li>
         <li>by municipality (cities included): <b>Sweden</b> 290 · <b>Norway</b> 357 and Svalbard · <b>Denmark</b> 98 · <b>Iceland</b> 61</li>
         <li><b>United Kingdom</b>: 361 local authority districts</li>
         <li><b>Spain</b>: 50 provinces, including the Canary and Balearic Islands</li>
       </ul>
       <p class="sub">Choose a country and areas, or download the maps around your location (also across a border). A municipality map is typically 5–30 MB.</p>
-      <p class="sub"><small>Maps © OpenStreetMap contributors (ODbL). UK boundaries: ONS, Open Government Licence v3.0. Elevation: National Land Survey of Finland, Elevation model 10 m (2019), CC BY 4.0, as a 25 m grid.</small></p>
+      <p class="sub"><small>Maps © OpenStreetMap contributors (ODbL). UK boundaries: ONS, Open Government Licence v3.0. Elevation: Finland National Land Survey of Finland, Elevation model 10 m (2019), CC BY 4.0, as a 25 m grid; other countries produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.</small></p>
     </div>
   </div>
   <div class="maphaku" id="maphaku" data-src="../kartat.json">
@@ -314,7 +327,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>choose <b>Gym</b>, <b>Cardio</b> or <b>Both</b>; switch views on the home screen with one tap</li>
         <li>add a run with one tap, most-used sports first</li>
-        <li>over 35 sports; walking and hiking also record steps</li>
+        <li>over 30 sports (plus <i>Other sport</i>, with or without GPS); walking and hiking also record steps</li>
         <li>running has its own progress view: pace and average speed, kilometers, easy-run pace and heart rate, records</li>
         <li>optional GPS: route on a map and as a <code>.gpx</code> file, offline maps for Finland, the Nordic countries, the UK and Spain</li>
         <li>smartwatch data (heart rate, calories, steps) from Health Connect or by hand; Garmin Connect activities can be imported as a CSV file</li>

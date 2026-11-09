@@ -47,7 +47,7 @@ def checksums():
         with urllib.request.urlopen(req, timeout=60) as r:
             releases = json.load(r)
         for rel in releases:
-            if not rel['tag_name'].startswith('kartat'):
+            if not rel['tag_name'].startswith(('kartat', 'korkeus')):
                 continue
             for a in rel['assets']:
                 d = a.get('digest') or ''
@@ -77,7 +77,8 @@ def main():
             alt = [p[k] for k in ('sv', 'se', 'en') if p.get(k) and p[k] != p['name']]
             row = [p['name'], ' · '.join(alt), p.get('region', ''), p['size'], p['file']]
             if e := p.get('elev'):
-                row += [e['file'], e['size']]  # korkeustiedot omana tiedostonaan
+                # korkeustiedot omana tiedostonaan; oma julkaisu, jos luettelossa elevBase
+                row += [cat.get('elevBase', '') + e['file'], e['size']]
             packs.append(row)
         ov = cat['overview']
         out['countries'].append({

@@ -6,6 +6,14 @@ import '../l10n.dart';
 import '../maps/elevation.dart';
 import '../models.dart';
 
+/// Kilometrin vauhti (min/km) tai nopeus (km/h, [speed]); (alku, pituus m, aika s).
+String splitText((double, double, double) s, {bool speed = false}) {
+  final (_, len, secs) = s;
+  if (secs <= 0 || len <= 0) return '–';
+  if (speed) return fmtNum((len / secs * 36).round() / 10);
+  return fmtPace(secs / len * 1000);
+}
+
 /// Reitin korkeusprofiili: nousu, lasku ja käyrä (matka vaaka-akselilla). Korkeus Maanmittauslaitoksen
 /// korkeusmallista (ladattu karttojen tapaan alueittain), ei puhelimen GPS:stä.
 class ElevationCard extends StatelessWidget {
@@ -14,13 +22,6 @@ class ElevationCard extends StatelessWidget {
   /// Kilometrien alla nopeus (km/h, esim. pyöräily) vauhdin (min/km) sijaan.
   final bool speed;
   const ElevationCard(this.profile, {super.key, this.speed = false});
-
-  String _split((double, double, double) s) {
-    final (_, len, secs) = s;
-    if (secs <= 0 || len <= 0) return '–';
-    if (speed) return fmtNum((len / secs * 36).round() / 10);
-    return fmtPace(secs / len * 1000);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +58,7 @@ class ElevationCard extends StatelessWidget {
               Text('${fmtNum((km * 10).round() / 10)} km', style: sub),
             ],
           ),
-          Text(elevAttribution, style: sub.copyWith(fontSize: 10)),
+          Text(profile.attribution, style: sub.copyWith(fontSize: 10)),
         ],
       ),
     );
@@ -83,7 +84,7 @@ class ElevationCard extends StatelessWidget {
                     left: total <= 0 ? 0 : box.maxWidth * splits[i].$1 / total,
                     width: math.max(perKm * every, 34),
                     child: Text(
-                      _split(splits[i]),
+                      splitText(splits[i], speed: speed),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       // Viimeinen vajaa kilometri himmeämpänä (vauhti samassa yksikössä, vertailukelpoinen).
@@ -153,4 +154,95 @@ class _ProfilePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ProfilePainter old) => old.p != p;
+}
+
+/// Kilometrien vauhti ilman korkeustietoja (alueelle ei ole ladattu korkeustiedostoa tai sitä ei ole saatavilla):
+/// palkki ja vauhti (min/km, pyöräilyssä km/h) jokaiselle kilometrille; mitä korkeampi palkki, sitä nopeampi.
+class KmSplitsCard extends StatelessWidget {
+  final List<(double, double, double)> splits;
+  final bool speed;
+  const KmSplitsCard(this.splits, {super.key, this.speed = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final speeds = [for (final (_, len, secs) in splits) secs > 0 ? len / secs : 0.0];
+    final top = speeds.fold<double>(0, math.max);
+    final low = speeds.where((v) => v > 0).fold<double>(top, math.min);
+    final total = splits.fold<double>(0, (a, s) => a + s.$2);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t('Kilometrit'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, box) {
+              final perKm = total <= 0 ? 0.0 : box.maxWidth * 1000 / total;
+              final every = perKm >= 34 ? 1 : (34 / math.max(perKm, 1)).ceil();
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 60,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        for (var i = 0; i < splits.length; i++)
+                          Expanded(
+                            flex: math.max(1, splits[i].$2.round()),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 1),
+                              child: FractionallySizedBox(
+                                // Hitain 35 %, nopein täysi korkeus: erot näkyvät, mutta mikään palkki ei katoa.
+                                heightFactor: top <= low
+                                    ? 1
+                                    : 0.35 + 0.65 * ((speeds[i] - low) / (top - low)).clamp(0, 1),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: cs.primary.withValues(alpha: splits[i].$2 < 990 ? 0.35 : 0.7),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      for (var i = 0; i < splits.length; i++)
+                        Expanded(
+                          flex: math.max(1, splits[i].$2.round()),
+                          child: i % every == 0
+                              ? Text(
+                                  splitText(splits[i], speed: speed),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.visible,
+                                  softWrap: false,
+                                  style: sub.copyWith(
+                                    fontSize: 11,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                    color: splits[i].$2 < 990 ? sub.color?.withValues(alpha: 0.6) : null,
+                                    fontStyle: splits[i].$2 < 990 ? FontStyle.italic : null,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(speed ? t('km/h kilometreittäin') : t('min/km kilometreittäin, ilman taukoja'), style: sub),
+        ],
+      ),
+    );
+  }
 }

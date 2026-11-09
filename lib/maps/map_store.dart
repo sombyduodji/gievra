@@ -189,6 +189,13 @@ class MapCatalog {
 
   /// Aluerajojen lähde (esim. Tilastokeskus tai OpenStreetMap).
   final String boundaries;
+
+  /// Korkeustiedostojen lähde ja lisenssin vaatima ilmoitus (luettelon elevAttribution).
+  final String elevSource;
+
+  /// Korkeustiedostojen latausosoite, jos eri julkaisussa kuin kartat (GitHubissa enintään 1 000 tiedostoa
+  /// julkaisua kohden); muuten [base].
+  final String? elevBase;
   final MapPack overview;
 
   /// Koko maa yhtenä tiedostona (vain, jos se on alle GitHubin 2 GiB:n rajan).
@@ -207,6 +214,8 @@ class MapCatalog {
     this.unit = 'kunta',
     this.names = const {'fi': 'Suomi', 'en': 'Finland', 'se': 'Suopma', 'local': 'Suomi'},
     this.boundaries = 'Tilastokeskus, CC BY 4.0',
+    this.elevSource = elevAttribution,
+    this.elevBase,
   });
 
   static String _safeBase(String base) {
@@ -227,6 +236,8 @@ class MapCatalog {
           ? const {'fi': 'Suomi', 'en': 'Finland', 'se': 'Suopma', 'local': 'Suomi'}
           : {for (final e in (j['names'] as Map).entries) '${e.key}': '${e.value}'},
       boundaries: j['boundaries'] as String? ?? 'Tilastokeskus, CC BY 4.0',
+      elevSource: j['elevAttribution'] as String? ?? (fi ? elevAttribution : copernicusAttribution),
+      elevBase: j['elevBase'] == null ? null : _safeBase(j['elevBase'] as String),
       tag: j['tag'] as String,
       osmDate: j['osmDate'] as String? ?? '',
       base: _safeBase(j['base'] as String),
@@ -550,7 +561,8 @@ class MapStore extends ChangeNotifier {
           continue;
         }
         try {
-          await _fetch(client, catalogs[x.country]!.base, x, dl);
+          final c = catalogs[x.country]!;
+          await _fetch(client, x.isElevation ? (c.elevBase ?? c.base) : c.base, x, dl);
           dl.done = true;
           installed.add(x.file);
           await _setVersion(x.file, x.sha256);
@@ -703,7 +715,7 @@ class MapStore extends ChangeNotifier {
           final bool complete;
           if (isElevFile(f.path.toLowerCase())) {
             final raf = await f.open();
-            final head = await raf.read(ElevHeader.length);
+            final head = await raf.read(ElevHeader.readLength);
             await raf.close();
             complete = len >= ElevHeader.parse(head).requiredLength; // heittää, jos ei korkeustiedosto
           } else {
@@ -899,7 +911,9 @@ class MapStore extends ChangeNotifier {
         if (r == null || r.statusCode != 200) break;
         final releases = jsonDecode(utf8.decode(r.bodyBytes)) as List;
         for (final rel in releases) {
-          if (rel is! Map || !'${rel['tag_name']}'.startsWith('kartat')) continue;
+          if (rel is! Map) continue;
+          final tag = '${rel['tag_name']}';
+          if (!tag.startsWith('kartat') && !tag.startsWith('korkeus')) continue;
           for (final a in (rel['assets'] as List? ?? const [])) {
             if (a is! Map) continue;
             final file = '${a['name']}';
@@ -1131,6 +1145,48 @@ class MapStore extends ChangeNotifier {
   // Puretut korkeustiedostot (muutama kerrallaan muistissa; kunta noin 0,1–5 Mt).
   final _grids = <String, ElevationGrid>{};
 
+  /// Reitin pisteet ja niiden välit noin 100 m:n välein (lohkot, joiden yli reitti kulkee).
+  static List<(double, double)> _densify(List<List<TrackPoint>> segments) {
+    final out = <(double, double)>[];
+    for (final s in segments) {
+      for (var i = 0; i < s.length; i++) {
+        out.add((s[i].lat, s[i].lon));
+        if (i == 0) continue;
+        final a = s[i - 1], b = s[i];
+        final dy = (b.lat - a.lat) * 111320, dx = (b.lon - a.lon) * 111320 * math.cos(a.lat * math.pi / 180);
+        final steps = (math.sqrt(dx * dx + dy * dy) / 100).floor();
+        for (var k = 1; k <= steps; k++) {
+          final f = k / (steps + 1);
+          out.add((a.lat + (b.lat - a.lat) * f, a.lon + (b.lon - a.lon) * f));
+        }
+      }
+    }
+    return out;
+  }
+
+  /// Korkeustiedoston lähde sen luettelosta; tuntematon tiedosto: Suomen nimet Maanmittauslaitos, muut Copernicus.
+  String elevSourceOf(String file) {
+    for (final c in catalogs.values) {
+      if (c.packs.any((x) => x.elev?.file == file)) return c.elevSource;
+    }
+    return RegExp(r'^[a-z]{2}-').hasMatch(file) ? copernicusAttribution : elevAttribution;
+  }
+
+  /// Ladatut korkeustiedostot vanhassa muodossa (versio 1, koko tiedosto muistiin): päivitys suositeltava.
+  Future<List<String>> oldFormatElevation() async {
+    final d = await dir();
+    final out = <String>[];
+    for (final f in [...installed.where(isElevFile)]) {
+      try {
+        final raf = await File(p.join(d.path, f)).open();
+        final head = await raf.read(8);
+        await raf.close();
+        if (String.fromCharCodes(head) == elevMagic) out.add(f);
+      } catch (_) {}
+    }
+    return out;
+  }
+
   /// Onko ladattuja korkeustiedostoja.
   bool get hasElevation => installed.any(isElevFile);
 
@@ -1155,32 +1211,57 @@ class MapStore extends ChangeNotifier {
         if (g == null) {
           final file = File(p.join(d.path, f));
           final raf = await file.open();
-          final head = ElevHeader.parse(await raf.read(ElevHeader.length));
+          final head = ElevHeader.parse(await raf.read(ElevHeader.readLength));
           await raf.close();
           if (head.west > e || head.east < w || head.south > n || head.north < so) continue;
-          g = ElevationGrid.decode(await file.readAsBytes());
+          if (head.version == 1) {
+            g = await ElevationGrid.fromBytes(await file.readAsBytes()); // vanha muoto: koko tiedosto
+          } else {
+            // Uusi muoto: vain otsake ja hakemisto nyt, lohkot reitin kohdalta alla.
+            g = await ElevationGrid.open(head, (start, length) async {
+              final r = await file.open();
+              try {
+                await r.setPosition(start);
+                return await r.read(length);
+              } finally {
+                await r.close();
+              }
+            });
+          }
           if (_grids.length >= 8) _grids.remove(_grids.keys.first);
           _grids[f] = g;
         } else {
           final h = g.header;
           if (h.west > e || h.east < w || h.south > n || h.north < so) continue;
         }
+        await g.loadAround(_densify(segments));
         grids.add(g);
       } catch (e) {
         debugPrint('korkeus $f: $e');
       }
     }
     if (grids.isEmpty) return null;
+    final used = <ElevationGrid>{};
     double? at(double lat, double lon) {
       for (final g in grids) {
         if (!g.header.containsPoint(lat, lon)) continue;
         final v = g.at(lat, lon);
-        if (v != null) return v;
+        if (v != null) {
+          used.add(g);
+          return v;
+        }
       }
       return null;
     }
 
-    return elevationProfile(segments, at);
+    final prof = elevationProfile(segments, at);
+    if (prof == null) return null;
+    // Lähteet niistä tiedostoista, joista korkeudet tulivat (rajan yli: esim. Maanmittauslaitos ja Copernicus).
+    final sources = <String>{
+      for (final e in _grids.entries)
+        if (used.contains(e.value)) elevSourceOf(e.key),
+    };
+    return prof.withAttribution(sources.join(' · '));
   }
 
   Future<List<PmTilesFile>> openFiles() async {

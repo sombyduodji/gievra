@@ -44,8 +44,8 @@ TRAINER = [
      "huonon päivän perusteella."),
     ("s5", "Juoksun kehitys",
      "Kestävyydelle oma näkymä, erillään salista: kilometrit ja keskivauhti viikoittain, kevyiden "
-     "lenkkien vauhti ja syke neljän viikon jaksoissa, ennätykset sekä lenkkityypit "
-     "(kevyt, pitkä, vauhtikestävyys, intervallit …) kellon sykkeineen."),
+     "lenkkien vauhti ja syke neljän viikon jaksoissa, ennätykset sekä "
+     "vertailu edelliseen samanpituiseen lenkkiin kellon sykkeineen."),
     ("s6", "Vammatila",
      "20 kehon aluetta: vältettävät ja muokattavat liikkeet, sopivat korvaavat liikkeet, "
      "kipuasteikko (kipua enintään 3–5/10, rauhoittuu seuraavaan aamuun) ja punaiset liput. "
@@ -65,11 +65,11 @@ USER = [
      "Lämmittelysarjat ja paino ovat valmiina. Tee sarja ja vastaa »jäikö varaa?«, niin seuraavan kerran "
      "ehdotus osuu kohdalleen. Palautusajastin kertoo, milloin jatketaan."),
     ("u_watch", "Älykellon tiedot käsin",
-     "Kalorit, keski- ja maksimisyke ja kesto kirjoitetaan kellosta itse. Gievra ei vielä yhdisty "
-     "älykelloon tai Health Connectiin. Garmin Connectin suoritukset voi tuoda CSV-tiedostona."),
+     "Kalorit, syke, kesto ja askeleet Health Connectista tai käsin; myös kokonaiset harjoitukset "
+     "ja salitreenit. Garmin Connectin suoritukset voi tuoda CSV-tiedostona."),
     ("u_run", "Juoksu ja muu liikunta",
-     "Valitse lenkin tyyppi (kevyt, pitkä, intervallit …), kirjoita aika ja matka: vauhti ja "
-     "keskinopeus lasketaan heti, ja tallennus vertaa edelliseen samanlaiseen lenkkiin."),
+     "GPS-lenkki tai aika ja matka käsin: vauhti, kilometrit ja nousut lasketaan heti, ja "
+     "tallennus vertaa edelliseen samanpituiseen lenkkiin."),
     ("s5", "Näe kehityksesi",
      "Juoksulla on oma kehitysnäkymä: kilometrit ja vauhti viikoittain, kevyiden lenkkien vauhti ja "
      "syke sekä ennätykset. Salitreeneillä omat tilastonsa ja ennätykset."),
@@ -84,7 +84,7 @@ HOME = {
          "Ohjelman päivä ehdotetaan palautumisen mukaan. Lämmittelysarjat ja paino ovat valmiina, palautusajastin "
          "kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
         ("v3", "Lenkki yhdellä napautuksella",
-         "Valitse lenkin tyyppi ja kirjoita matka: vauhti ja keskinopeus lasketaan heti. Yli 35 lajia, "
+         "GPS-lenkki tai matka käsin: vauhti, kilometrit, nousut ja reitti kartalla. Yli 30 lajia, "
          "kävelyssä myös askeleet. Garmin Connectin suoritukset voi tuoda CSV-tiedostona."),
         ("v4", "Aamupaino",
          "Valinnainen kehonpainon seuranta: merkitse aamupaino, kun haluat. Pilkku tai piste käy, ja rivi "
@@ -101,7 +101,7 @@ HOME = {
          "The program day is suggested based on your recovery. Warm-up sets and weights are filled in, the rest "
          "timer tells you when to go again, and a set is saved by answering »Reps in reserve?«."),
         ("v3", "Add a run with one tap",
-         "Pick the run type and enter the distance: pace and average speed are calculated right away. Over 35 "
+         "A GPS run or the distance by hand: pace, kilometre splits, climbs and the route on a map. Over 30 "
          "sports, with steps for walking. Garmin Connect activities can be imported as a CSV file."),
         ("v4", "Morning weight",
          "Optional body weight tracking: log your morning weight whenever you like. A comma or a dot both work, "

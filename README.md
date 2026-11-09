@@ -129,8 +129,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   poisto ja päivitys
 - kartat myös kotisivun karttahausta tiedostoina; tuonnissa kartta tunnistetaan sisällöstä (SHA-256), myös vanhemmat
   versiot ja ilman verkkoa kotisivun tarkistetaulukolla; tunnistamattoman voi tuoda tarkistamattomana
-- korkeustiedot (Suomi, Maanmittauslaitoksen korkeusmalli 25 m:n ruudukkona) kunnittain karttojen tapaan: reitin
-  alla nousu, lasku ja korkeusprofiili, jossa jokaisen kilometrin vauhti (pyöräilyssä km/h)
+- korkeustiedot alueittain karttojen tapaan (Suomi: Maanmittauslaitoksen korkeusmalli 25 m:n ruudukkona; Ruotsi,
+  Norja, Tanska, Islanti, Iso-Britannia ja Espanja: Copernicus DEM GLO-30, noin 30 m): reitin alla nousu, lasku ja
+  korkeusprofiili, jossa jokaisen kilometrin vauhti (pyöräilyssä km/h); ilman korkeustietoja kilometrien vauhti
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
@@ -187,7 +188,11 @@ erillisinä tiedostoina). Rannikot ja rajat pienillä mittakaavoilla: Natural Ea
 domain). Suomen kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Ruotsin, Norjan, Tanskan, Islannin ja
 Espanjan aluerajat: OpenStreetMap (ODbL). Iso-Britannian alueet: Office for National Statistics, Open Government
 Licence v3.0; sisältää OS:n aineistoa © Crown copyright and database right 2024. Korkeustiedot (Suomi):
-Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0, keskiarvoistettu 25 metrin ruudukoksi. Paketit tehdään työkaluilla
+Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0, keskiarvoistettu 25 metrin ruudukoksi. Muiden maiden
+korkeustiedot: produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH
+2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge
+of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus
+WorldDEM-30. Paketit tehdään työkaluilla
 `tools/map_extract.py`, `tools/osm_bounds.py`, `tools/ons_bounds.py` ja `tools/map_country.py`.
 
 Rakentaminen (Flutter):

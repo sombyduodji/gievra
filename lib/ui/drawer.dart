@@ -29,6 +29,7 @@ import 'programs_screen.dart';
 import 'body_screen.dart';
 import 'widgets.dart';
 import '../l10n.dart';
+import '../maps/elevation.dart' show copernicusAttribution;
 
 Future<void> _open(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
@@ -713,6 +714,20 @@ Future<void> showAbout(BuildContext context) async {
               'Korkeustiedot (Suomi): Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0; muunnettu Gievraa varten '
               '25 metrin ruudukoksi.',
             ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            t(
+              'Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia ja Espanja): Copernicus DEM GLO-30, '
+              'muunnettu Gievraa varten noin 30 metrin ruudukoksi.',
+            ),
+          ),
+          // Copernicus DEM -lisenssin vaatimat ilmoitus ja vastuuvapauslauseke sellaisenaan (ei käännetä).
+          const Text('$copernicusAttribution.', style: TextStyle(fontSize: 12)),
+          const Text(
+            'The organisations in charge of the Copernicus programme by law or by delegation do not incur any '
+            'liability for any use of the Copernicus WorldDEM-30.',
+            style: TextStyle(fontSize: 12),
           ),
           TextButton(onPressed: () => _open(MapCredits.osmUrl), child: const Text(MapCredits.osm)),
           const SizedBox(height: 8),

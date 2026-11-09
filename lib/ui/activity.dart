@@ -238,22 +238,41 @@ class _ActivityScreenState extends State<ActivityScreen> {
   // Korkeusprofiili ladatuista korkeustiedoista (lasketaan kerran reittiä kohti, taustalla).
   List<List<TrackPoint>>? _profRoute;
   ElevationProfile? _profile;
+  bool _profileDone = false; // haku valmis (tulos voi olla null: ei korkeustietoja)
 
   ElevationProfile? _profileFor(List<List<TrackPoint>>? route) {
     if (route == null) return null;
     if (!identical(route, _profRoute)) {
       _profRoute = route;
       _profile = null;
+      _profileDone = false;
       MapStore.instance
           .profileFor(route)
           .then((pr) {
-            if (mounted && identical(route, _profRoute)) setState(() => _profile = pr);
+            if (mounted && identical(route, _profRoute)) {
+              setState(() {
+                _profile = pr;
+                _profileDone = true;
+              });
+            }
           })
           .catchError((Object e) {
             debugPrint('korkeusprofiili: $e');
+            if (mounted && identical(route, _profRoute)) setState(() => _profileDone = true);
           });
     }
     return _profile;
+  }
+
+  List<List<TrackPoint>>? _splitRoute;
+  List<(double, double, double)>? _splits;
+  List<(double, double, double)>? _splitsFor(List<List<TrackPoint>>? route) {
+    if (route == null) return null;
+    if (!identical(route, _splitRoute)) {
+      _splitRoute = route;
+      _splits = routeKmSplits(route);
+    }
+    return _splits;
   }
 
   Future<void> _loadRoute() async {
@@ -703,7 +722,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
                             ),
                           ),
                         if (_profileFor(_route) case final prof?)
-                          ElevationCard(prof, speed: _speedSports.contains(w.activity)),
+                          ElevationCard(prof, speed: _speedSports.contains(w.activity))
+                        // Ilman korkeustietoja: kilometrien vauhti silti (reitin omista ajoista).
+                        else if (_splitsFor(_route) case final sp? when _profileDone && sp.length > 1)
+                          KmSplitsCard(sp, speed: _speedSports.contains(w.activity)),
                         if (_canSnap) _snapCard(Theme.of(context).colorScheme),
                       ],
                     ),

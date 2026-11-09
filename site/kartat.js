@@ -62,7 +62,7 @@
       li.appendChild(t);
       li.appendChild(link(r.c.base + r.p[4], L.dl + ' · ' + size(r.p[3])));
       if (r.p[5]) {  // korkeustiedot (Suomi: Maanmittauslaitos), oma tiedostonsa
-        var e = link(r.c.base + r.p[5], L.elev + ' · ' + size(r.p[6]));
+        var e = link((/^https:/.test(r.p[5]) ? '' : r.c.base) + r.p[5], L.elev + ' · ' + size(r.p[6]));
         e.className = 'btn secondary';
         li.appendChild(e);
       }
