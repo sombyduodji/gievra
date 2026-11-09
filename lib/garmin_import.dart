@@ -11,6 +11,14 @@ import 'sports.dart';
 
 /// Garmin-laji -> Gievran laji (sports.dart). Avaimet pienillä kirjaimilla; ensimmäinen osuma voittaa.
 const _types = <(String, String)>[
+  ('pöytätennis', 'Pöytätennis'), // ennen tennistä
+  ('table tennis', 'Pöytätennis'),
+  ('laskettelu', 'Laskettelu'), // ennen hiihtoa
+  ('resort ski', 'Laskettelu'),
+  ('downhill', 'Laskettelu'),
+  ('snowboard', 'Laskettelu'),
+  ('hölkkä', 'Juoksu'),
+  ('jog', 'Juoksu'),
   ('juoksumatto', 'Juoksu'),
   ('treadmill', 'Juoksu'),
   ('polkujuoksu', 'Juoksu'),
@@ -52,18 +60,66 @@ const _types = <(String, String)>[
   ('squash', 'Squash'),
   ('sulkapallo', 'Sulkapallo'),
   ('badminton', 'Sulkapallo'),
+  ('salibandy', 'Salibandy'),
+  ('floorball', 'Salibandy'),
+  ('futsal', 'Jalkapallo'),
+  ('jalkapallo', 'Jalkapallo'),
+  ('soccer', 'Jalkapallo'),
+  ('football', 'Jalkapallo'),
+  ('koripallo', 'Koripallo'),
+  ('basketball', 'Koripallo'),
+  ('lentopallo', 'Lentopallo'),
+  ('volleyball', 'Lentopallo'),
+  ('jääpallo', 'Jääpallo'),
+  ('bandy', 'Jääpallo'),
+  ('jääkiekko', 'Jääkiekko'),
+  ('hockey', 'Jääkiekko'),
+  ('pesäpallo', 'Pesäpallo'),
+  ('nyrkkeily', 'Kamppailulajit'),
+  ('boxing', 'Kamppailulajit'),
+  ('kamppailu', 'Kamppailulajit'),
+  ('martial', 'Kamppailulajit'),
+  ('venyttely', 'Liikkuvuus ja venyttely'),
+  ('stretch', 'Liikkuvuus ja venyttely'),
+  ('mobility', 'Liikkuvuus ja venyttely'),
 ];
 
 const _strength = ['voimaharjoittelu', 'strength'];
 
-/// Garminin laji Gievran lajiksi; null = ohitetaan (voimaharjoittelu).
-String? garminSport(String type) {
-  final t = type.toLowerCase();
+/// Garminin laji Gievran lajiksi; null = ohitetaan (voimaharjoittelu tai käyttäjän valinta "Ohita").
+/// [choices]: käyttäjän valinnat tunnistamattomille lajeille (avain pienillä kirjaimilla). Ilman valintaa
+/// tunnistamaton laji on Muu liikunta.
+String? garminSport(String type, {Map<String, String?> choices = const {}}) {
+  final t = type.toLowerCase().trim();
+  if (choices.containsKey(t)) return choices[t];
   if (_strength.any(t.contains)) return null;
   for (final (k, v) in _types) {
     if (t.contains(k)) return v;
   }
   return 'Muu liikunta';
+}
+
+/// Tunnistetaanko Garminin laji (tai ohitetaanko se voimaharjoitteluna).
+bool garminKnown(String type) {
+  final t = type.toLowerCase().trim();
+  return _strength.any(t.contains) || _types.any((e) => t.contains(e.$1));
+}
+
+/// Tiedoston lajit, joita ei tunnisteta (alkuperäisessä muodossa, kukin kerran) ja suoritusten määrä:
+/// käyttäjä valitsee niille parin Gievran lajeista.
+List<(String, int)> garminUnknownTypes(String text) {
+  final rows = parseCsv(text.replaceFirst('\uFEFF', ''));
+  if (rows.isEmpty) return const [];
+  final c = _Cols(rows.first);
+  if (!c.has(_cType)) return const [];
+  final seen = <String, (String, int)>{};
+  for (final r in rows.skip(1)) {
+    final type = c.get(r, _cType).trim();
+    if (type.isEmpty || garminKnown(type)) continue;
+    final k = type.toLowerCase();
+    seen[k] = (seen[k]?.$1 ?? type, (seen[k]?.$2 ?? 0) + 1);
+  }
+  return seen.values.toList();
 }
 
 /// CSV-rivit (lainausmerkit ja niiden sisäiset pilkut huomioiden).
@@ -165,7 +221,11 @@ const _cPower = ['Keskiteho', 'Avg Power'];
 
 /// Lukee Garmin Connectin CSV-viennin. [existing]: jo päiväkirjassa olevat treenit (kaksoiskappaleiden tunnistus
 /// ja saman päivän treenien numerointi). Palauttaa myös ohitettujen voimaharjoitusten määrän.
-(ImportResult, int skipped) readGarminCsv(String text, List<Workout> existing) {
+(ImportResult, int skipped) readGarminCsv(
+  String text,
+  List<Workout> existing, {
+  Map<String, String?> choices = const {},
+}) {
   final rows = parseCsv(text.replaceFirst('﻿', ''));
   if (rows.isEmpty) return (ImportResult(source: 'Garmin Connect', workouts: const []), 0);
   final c = _Cols(rows.first);
@@ -181,9 +241,9 @@ const _cPower = ['Keskiteho', 'Avg Power'];
   }
   for (final r in rows.skip(1)) {
     final type = c.get(r, _cType);
-    final sport = garminSport(type);
+    final sport = garminSport(type, choices: choices);
     if (sport == null) {
-      skipped++;
+      if (_strength.any(type.toLowerCase().contains)) skipped++; // käyttäjän ohittamat eivät ole voimaharjoittelua
       continue;
     }
     final start = DateTime.tryParse(c.get(r, _cDate).replaceFirst(' ', 'T'));

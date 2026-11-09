@@ -11,6 +11,7 @@ import '../gps_recorder.dart';
 import '../gpx.dart';
 import '../maps/map_store.dart';
 import '../maps/map_view.dart';
+import '../maps/path_snap.dart';
 import '../models.dart';
 import '../sports.dart';
 import '../theme.dart';
@@ -129,6 +130,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (gpx != null) {
       w.routeGpx = gpx;
       _route = parseGpx(gpx);
+      _initSnap(gpx);
     }
   }
 
@@ -204,7 +206,157 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   Future<void> _loadRoute() async {
     final gpx = await store.readRoute(w);
-    if (gpx != null && mounted) setState(() => _route = parseGpx(gpx));
+    if (gpx != null && mounted) {
+      setState(() {
+        _route = parseGpx(gpx);
+        _initSnap(gpx);
+      });
+    }
+  }
+
+  // ---- Reitin korjaus poluille (path_snap.dart): alkuperäiset GPS-pisteet säilyvät .gpx:n laajennuksessa,
+  // joten korjauksen voi muuttaa tai poistaa milloin tahansa. Matka seuraa korjattua reittiä, aika ei muutu.
+  List<List<TrackPoint>>? _raw;
+  double? _rawDist;
+  String _desc = '';
+  List<SnapWay>? _ways;
+  Future<void>? _waysLoad;
+  int _snapped = 0, _snapTotal = 0;
+
+  bool get _canSnap => _raw != null && snapModeFor(w.activity) != null;
+
+  /// Reitin alkuperäiset pisteet .gpx:stä. Vanhemmissa (ennen 0.4) pääraita on itse GPS-reitti; 0.4:ssä
+  /// tallennettaessa korjattua reittiä (desc: "polulle korjattu") ei voi enää säätää.
+  void _initSnap(String gpx) {
+    _desc = _unescape(RegExp(r'<desc>(.*?)</desc>', dotAll: true).firstMatch(gpx)?[1] ?? '');
+    final raw = parseRawGpx(gpx);
+    if (raw != null && raw.$1.isNotEmpty) {
+      _raw = raw.$1;
+      _rawDist = raw.$2 ?? (w.distanceKm ?? 0) * 1000;
+    } else if (!_desc.contains('polulle korjattu')) {
+      final segs = parseGpx(gpx);
+      if (segs.any((s) => s.length >= 2)) {
+        _raw = segs;
+        _rawDist = (w.distanceKm ?? routeLength(segs) / 1000) * 1000;
+      }
+    }
+    if (_canSnap) _loadWays();
+  }
+
+  static String _unescape(String s) =>
+      s.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&amp;', '&');
+
+  Future<void> _loadWays() => _waysLoad ??= () async {
+    try {
+      final ms = MapStore.instance;
+      if (ms.installed.isEmpty) await ms.load(network: false);
+      _ways = await ms.waysAround(_raw!);
+    } catch (_) {
+      _ways = const [];
+    }
+    if (mounted) setState(() {});
+  }();
+
+  /// Korjaa reitin [m] metriin asti (0 = pois): reitti, .gpx ja matka (ellei matkaa ole kirjoitettu käsin).
+  Future<void> _applySnap(int m, {bool remember = true}) async {
+    final raw = _raw;
+    if (raw == null) return;
+    if (m > 0) await _loadWays();
+    final ways = _ways ?? const <SnapWay>[];
+    final r = m == 0 || ways.isEmpty
+        ? SnapResult(raw, 0, raw.fold(0, (a, s) => a + s.length))
+        : snapRoute(raw, ways, w.activity, params: SnapParams.forLimit(m));
+    if (!mounted) return;
+    setState(() {
+      w.snapM = m;
+      _snapped = r.snapped;
+      _snapTotal = r.total;
+      _route = r.segments;
+      w.routeGpx = routeToGpx(
+        r.segments,
+        name: w.activity ?? 'Liikunta',
+        type: w.activity,
+        desc: _desc.isEmpty ? null : _desc,
+        raw: raw,
+        rawDistance: _rawDist,
+      );
+      if (!w.distanceManual && _rawDist != null) {
+        w.distanceKm = (snappedDistance(raw, r.segments, _rawDist!) / 10).round() / 100;
+      }
+    });
+    if (remember && w.activity != null) settings.setSnapDefault(w.activity!, m);
+  }
+
+  Widget _snapCard(ColorScheme cs) {
+    final m = w.snapM ?? 0;
+    final on = m > 0;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final noMaps = _ways != null && _ways!.isEmpty;
+    String info;
+    if (_ways == null && on) {
+      info = t('Haetaan polkuja kartasta…');
+    } else if (noMaps) {
+      info = t('Alueen karttaa ei ole ladattu, joten reittiä ei voi korjata.');
+    } else if (!on) {
+      info = t('Pois: reitti ja matka GPS:n mukaan.');
+    } else {
+      final pct = _snapTotal == 0 ? 0 : (100 * _snapped / _snapTotal).round();
+      info = t('Enintään {0} m · korjattu {1} % pisteistä', [m, pct]);
+      if (_rawDist != null && w.distanceKm != null && !w.distanceManual) {
+        final diff = (w.distanceKm! * 1000 - _rawDist!).round();
+        if (diff.abs() >= 10) {
+          info += ' · ${t('matka {0} m GPS:ään verrattuna', ['${diff > 0 ? '+' : '−'}${diff.abs()}'])}';
+        }
+      }
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.route_outlined),
+            title: Text(t('Korjaa reitti poluille')),
+            value: on,
+            onChanged: noMaps
+                ? null
+                : (v) => _locked
+                      ? _unlock()
+                      : _applySnap(v ? (settings.snapFor(w.activity!) > 0 ? settings.snapFor(w.activity!) : 5) : 0),
+          ),
+          if (on)
+            Row(
+              children: [
+                Text('3 m', style: sub),
+                Expanded(
+                  child: Slider(
+                    min: 3,
+                    max: 10,
+                    divisions: 7,
+                    value: m.clamp(3, 10).toDouble(),
+                    label: '$m m',
+                    onChanged: _locked ? null : (v) => _applySnap(v.round(), remember: false),
+                    onChangeEnd: _locked ? null : (v) => _applySnap(v.round()),
+                  ),
+                ),
+                Text('10 m', style: sub),
+              ],
+            ),
+          Text(info, style: sub),
+          if (on && w.distanceManual)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(t('Matka on kirjoitettu käsin, joten korjaus muuttaa vain reittiä.'), style: sub),
+            ),
+          if (noMaps)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(onPressed: _openMaps, child: Text(t('Lataa kartat'))),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openMaps() async {
@@ -229,7 +381,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
       w.routeGpx = r.segments.isEmpty ? null : r.gpx;
       _route = r.segments.isEmpty ? null : r.segments;
       _manual = true;
+      w.distanceManual = false;
+      w.snapM = null;
+      _raw = r.segments.isEmpty ? null : r.segments;
+      _rawDist = r.distanceM > 0 ? r.distanceM : r.distanceKm * 1000;
+      _desc = r.desc;
+      _ways = null;
+      _waysLoad = null;
     });
+    // Polulle korjaus lajin oletuksella (5 m tai käyttäjän viimeksi valitsema); säädettävissä kartan alla.
+    if (_canSnap) await _applySnap(settings.snapFor(sport), remember: false);
     // Reitti luonnokseen heti: tallentimen tiedostot on jo poistettu, joten 3 s:n odotus voisi hukata sen.
     await _saveDraft();
   }
@@ -370,7 +531,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   // Eniten käytetyt ensin.
                   for (final s in sportsByUse(
                     store.workouts.map((w) => w.activity),
-                    among: sports.where((s) => s.group == g),
+                    among: sports.where((s) => s.group == g && !s.retired),
                   ))
                     ActionChip(
                       avatar: Text(s.icon),
@@ -422,9 +583,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       children: [
                         ListTile(
                           leading: const Text('📍', style: TextStyle(fontSize: 22)),
-                          title: Text(w.routeGpx != null ? t('Reitti tallennettu') : t('Reitti')),
+                          // Poisto vain tallentamattomalle reitille (polulle korjaus asettaa routeGpx:n myös
+                          // tallennetulle treenille, jonka reittitiedosto jää ennalleen).
+                          title: Text(w.routeGpx != null && w.route == null ? t('Reitti tallennettu') : t('Reitti')),
                           subtitle: Text(t('GPS-reitti tallentuu .gpx-tiedostona treenin viereen.')),
-                          trailing: w.routeGpx != null
+                          trailing: w.routeGpx != null && w.route == null
                               ? TextButton(
                                   onPressed: () => setState(() {
                                     w.routeGpx = null;
@@ -441,6 +604,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                               height: 240,
                               child: RouteMap(
                                 segments: _route!,
+                                original: (w.snapM ?? 0) > 0 ? _raw : null,
                                 fallback: Container(
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.surfaceContainer,
@@ -454,38 +618,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
                               ),
                             ),
                           ),
+                        if (_canSnap) _snapCard(Theme.of(context).colorScheme),
                       ],
                     ),
                   ),
                 ),
-              if (isRun(w.activity)) ...[
-                SectionLabel(t('Lenkin tyyppi')),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final (k, l, e, inten, _) in runTypes)
-                      ChoiceChip(
-                        showCheckmark: false,
-                        avatar: Text(e),
-                        label: Text(t(l)),
-                        selected: w.runType == k,
-                        onSelected: (on) => setState(() {
-                          w.runType = on ? k : null;
-                          if (on) w.intensity = inten;
-                        }),
-                      ),
-                  ],
-                ),
-                if (runTypeOf(w.runType) != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      t(runTypeOf(w.runType)!.$5),
-                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                    ),
-                  ),
-              ],
               if (_canStopwatch) _stopwatch(),
               // GPS-lenkki: aika ja matka mitattuina arvoina; Korjaa avaa tavalliset säätimet.
               if (_gpsView)
@@ -518,11 +655,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ValueStepper(
                     value: fmtNum(w.distanceKm ?? 0),
                     unit: 'km',
-                    onMinus: () => setState(() => w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500)),
-                    onPlus: () => setState(() => w.distanceKm = (w.distanceKm ?? 0) + .5),
+                    onMinus: () => setState(() {
+                      w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500);
+                      w.distanceManual = _hasRoute;
+                    }),
+                    onPlus: () => setState(() {
+                      w.distanceKm = (w.distanceKm ?? 0) + .5;
+                      w.distanceManual = _hasRoute;
+                    }),
                     onTap: () async {
                       final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5);
-                      if (v != null && v >= 0) setState(() => w.distanceKm = v == 0 ? null : v);
+                      if (v != null && v >= 0) {
+                        setState(() {
+                          w.distanceKm = v == 0 ? null : v;
+                          w.distanceManual = _hasRoute;
+                        });
+                      }
                     },
                   ),
                   if (w.pace != null)

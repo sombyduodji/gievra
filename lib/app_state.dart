@@ -115,6 +115,15 @@ class Settings extends ChangeNotifier {
   List<int> restAdjust = [0, 0, 0];
   int deloadEvery = 6;
 
+  /// GPS-reitin korjaus poluille lajeittain (metrit 3–10, 0 = pois); puuttuva laji = 5 m.
+  Map<String, int> snapDefaults = {};
+  int snapFor(String sport) => snapDefaults[sport] ?? 5;
+  void setSnapDefault(String sport, int m) {
+    if (snapDefaults[sport] == m) return;
+    snapDefaults = {...snapDefaults, sport: m};
+    _persist();
+  }
+
   /// Viikko (maanantai), jolta kevennysvinkki on piilotettu. Vain tällä laitteella.
   String? deloadDismissed;
   List<Equipment> equipment = [...defaultEquipment];
@@ -294,6 +303,7 @@ class Settings extends ChangeNotifier {
       ..writeln('rest_sound: $restSound')
       ..writeln('rest_adjust: ${restAdjust.join(', ')}')
       ..writeln('deloadEvery: $deloadEvery')
+      ..writeln('snap: ${[for (final e in snapDefaults.entries) '${e.key}=${e.value}'].join('; ')}')
       ..writeln('introDone: $introDone')
       ..writeln('---')
       ..writeln()
@@ -403,6 +413,12 @@ class Settings extends ChangeNotifier {
             introDone = v == 'true';
           case 'deloadEvery':
             deloadEvery = int.tryParse(v) ?? deloadEvery;
+          case 'snap':
+            snapDefaults = {
+              for (final part in v.split(';'))
+                if (RegExp(r'^\s*(.+?)\s*=\s*(\d+)\s*$').firstMatch(part) case final m?)
+                  m[1]!: int.parse(m[2]!) == 0 ? 0 : int.parse(m[2]!).clamp(3, 10),
+            };
         }
       }
     }

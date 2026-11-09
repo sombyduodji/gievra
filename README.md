@@ -104,9 +104,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   (kesto, kalorit, keski- ja maksimisyke ja askeleet heti *Treeni valmis!* -näkymässä): käsin tai Androidilla
   **Health Connectista** – treenin jälkeen *Kellon tiedot → Health Connect*, Gievra etsii treenin aikaa lähellä
   olevan kellon harjoituksen ja kysyy *Onko tämä se?* (vain luku, vain tämän treenin aikaväli, ei koko historiaa)
-- juoksulle oma kehitysnäkymä, erillään salista: lenkin tyyppi (kevyt, palauttava, pitkä, vauhtikestävyys,
-  intervallit, kisavauhti, kilpailu), tarkka aika, vauhti min/km ja keskinopeus, kilometrit viikoittain, kevyiden
-  lenkkien vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km, puolimaraton, maraton)
+- juoksulle oma kehitysnäkymä, erillään salista: tarkka aika, vauhti min/km ja keskinopeus, kilometrit
+  viikoittain, kevyiden lenkkien (rasitus Kevyt) vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km,
+  puolimaraton, maraton)
 
 **GPS ja offline-kartat (valinnainen)**
 - juoksussa, kävelyssä ja pyöräilyssä valitaan *📍 GPS-tila* tai *Manuaalinen* (esim. juoksumatolla); manuaalisessa
@@ -114,8 +114,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana; paikallaanolo ei kasvata matkaa
 - tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita; keskeytynyt tallennus palautuu
 - reitti näkyy kartalla ja tallentuu `.gpx`-tiedostona treenin viereen
-- reitti korjautuu poluille ladatuilla kartoilla (noin 8 m:n heitto; jalan kävely- ja pyörätiet ja jalkakäytävät
-  ennen autoteitä), metsässä ja kaukana poluista GPS-reittiin luotetaan sellaisenaan
+- reitin korjaus poluille treenin jälkeen ladatuilla kartoilla: kytkin ja 3–10 m -liukusäädin, matka ja vauhti
+  päivittyvät (aika ei); jalan kävely- ja pyörätiet ja jalkakäytävät ennen autoteitä, metsässä ja kaukana poluista
+  GPS-reittiin luotetaan; alkuperäinen reitti säilyy .gpx-tiedostossa, joten korjausta voi muuttaa myöhemmin
 - OpenStreetMap-kartat ilman verkkoyhteyttä: Suomi (kaikki 308 kuntaa ja kaupunkia), Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia
   paikallishallinnon alueittain (council areas) ja Espanja maakunnittain (provincias); lataus säteen mukaan (juoksu
   ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli), omat alueet tai koko maa; ladattujen karttojen

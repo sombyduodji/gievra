@@ -53,9 +53,12 @@ Future<Theme> mapTheme(Brightness b) async {
 /// Jos karttoja ei ole ladattu, näytetään [fallback] (pelkkä viiva).
 class RouteMap extends StatefulWidget {
   final List<List<TrackPoint>> segments;
+
+  /// Alkuperäinen GPS-reitti ohuena katkoviivana korjatun reitin alla (polulle korjaus).
+  final List<List<TrackPoint>>? original;
   final bool live;
   final Widget fallback;
-  const RouteMap({super.key, required this.segments, required this.fallback, this.live = false});
+  const RouteMap({super.key, required this.segments, required this.fallback, this.live = false, this.original});
 
   @override
   State<RouteMap> createState() => _RouteMapState();
@@ -142,6 +145,14 @@ class _RouteMapState extends State<RouteMap> {
                   ),
                   PolylineLayer(
                     polylines: [
+                      for (final s in widget.original ?? const <List<TrackPoint>>[])
+                        if (s.length >= 2)
+                          Polyline(
+                            points: [for (final p in s) LatLng(p.lat, p.lon)],
+                            color: cs.onSurfaceVariant,
+                            strokeWidth: 2,
+                            pattern: StrokePattern.dashed(segments: const [6, 5]),
+                          ),
                       for (final s in widget.segments)
                         if (s.length >= 2)
                           Polyline(
