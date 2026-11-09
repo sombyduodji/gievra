@@ -1187,6 +1187,10 @@ class MapStore extends ChangeNotifier {
     return out;
   }
 
+  /// Muistissa olevat korkeustiedostot ja niiden lohkot (muistitestit).
+  @visibleForTesting
+  (int, int) get elevCache => (_grids.length, _grids.values.fold(0, (a, g) => a + g.loadedBlocks));
+
   /// Onko ladattuja korkeustiedostoja.
   bool get hasElevation => installed.any(isElevFile);
 
@@ -1228,7 +1232,7 @@ class MapStore extends ChangeNotifier {
               }
             });
           }
-          if (_grids.length >= 8) _grids.remove(_grids.keys.first);
+          if (_grids.length >= 6) _grids.remove(_grids.keys.first);
           _grids[f] = g;
         } else {
           final h = g.header;
