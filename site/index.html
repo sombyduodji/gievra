@@ -62,6 +62,22 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 .zigzag{height:10px;margin:8px 0;background:
   linear-gradient(135deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px,
   linear-gradient(225deg,transparent 33%,var(--red) 33% 50%,transparent 50%) 0 0/14px 10px}
+.maphaku{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:14px}
+.maphaku h3{margin:0 0 6px}
+.maphaku .haku{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 4px}
+.maphaku input,.maphaku select{font:inherit;color:var(--text);background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+.maphaku input{flex:1 1 220px;min-width:0}
+.maphaku input:focus,.maphaku select:focus{outline:none;border-color:var(--red)}
+.maphaku .tila{color:var(--muted);margin:6px 0 0;min-height:1.5em}
+.maphaku ul.tulokset{list-style:none;margin:8px 0 0;padding:0}
+.maphaku ul.tulokset li{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.maphaku ul.tulokset li > div:first-child{flex:1 1 200px;min-width:0}
+.maphaku .alt{color:var(--muted)}
+.maphaku .btn{padding:8px 14px;border-radius:12px;font-size:15px;white-space:nowrap}
+.maphaku .linkit{display:flex;flex-wrap:wrap;gap:8px}
+.maphaku li.yleis{display:block!important}
+.maphaku li.yleis .linkit{margin-top:8px}
+.maphaku ol{margin:6px 0 0;padding-left:20px}
 </style>
 </head>
 <body>
@@ -125,6 +141,22 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <p class="sub">Valitse maa ja alueet, tai lataa kartat sijaintisi ympäriltä (myös rajan yli naapurimaahan). Kunnan kartta on tyypillisesti 5–30 Mt.</p>
       <p class="sub"><small>Kartat © OpenStreetMap-tekijät (ODbL). Iso-Britannian aluerajat: ONS, Open Government Licence v3.0.</small></p>
     </div>
+  </div>
+  <div class="maphaku" id="maphaku" data-src="kartat.json">
+    <h3>⬇️ Lataa kartat tietokoneelle tai suoraan puhelimeen</h3>
+    <p class="sub" style="margin:0">Sovellus lataa kartat itse, mutta voit hakea ne myös täältä esim. wifissä tai tietokoneella ja siirtää puhelimeen.</p>
+    <div class="haku">
+      <input type="search" placeholder="Kunta, kaupunki tai alue" aria-label="Hae karttaa kunnan, kaupungin tai alueen nimellä" autocomplete="off">
+      <select aria-label="Maa"><option value="">Kaikki maat</option></select>
+    </div>
+    <p class="tila" aria-live="polite"></p>
+    <ul class="tulokset"></ul>
+    <ol class="sub">
+      <li>Lataa alueen kartta (<code>.pmtiles</code>) ja kerran maan yleiskartta.</li>
+      <li>Siirrä tiedostot puhelimeen, esim. synkronoituun kansioon (Seafile, Nextcloud…) tai USB:llä.</li>
+      <li>Gievrassa: ☰ → Asetukset → <b>Kartat</b> → <b>Tiedostosta</b> ja valitse tiedostot.</li>
+    </ol>
+    <p class="sub"><small class="maara"></small><br><small>Tiedostot ladataan suoraan GitHubista. Kartat © OpenStreetMap-tekijät (ODbL).</small></p>
   </div>
   <div class="grid" style="margin-top:14px">
     <div class="card">
@@ -326,5 +358,6 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <a href="mailto:treeni@somby.fi">treeni@somby.fi</a><br>
   <span lang="en">Free, open-source training log in Finnish, English and North Sámi: <a href="en/">English page</a>.</span>
 </footer>
+<script src="kartat.js" defer></script>
 </body>
 </html>
