@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from map_catalog import sha256  # noqa: E402
 
 ELEV_ATTRIBUTION = 'Korkeusmalli 10 m © Maanmittauslaitos 2019, CC BY 4.0'
+COPERNICUS = ('produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH '
+              '2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved')
 
 
 def main():
@@ -20,6 +22,9 @@ def main():
     ap.add_argument('catalog')
     ap.add_argument('elevdir')
     ap.add_argument('--previous', help='edellinen luettelo: korkeustiedostojen vanhat tarkisteet sha256Old-listaan')
+    ap.add_argument('--copernicus', action='store_true', help='lähde Copernicus DEM GLO-30 (muut maat kuin Suomi)')
+    ap.add_argument('--elev-tag', help='korkeustiedostojen oma julkaisu (GitHubissa enintään 1 000 tiedostoa / julkaisu)')
+    ap.add_argument('--repo', default='sombyduodji/gievra')
     a = ap.parse_args()
     out = json.load(open(a.catalog, encoding='utf-8'))
     old = {}
@@ -42,7 +47,11 @@ def main():
         p['elev'] = e
         n += 1
         total += e['size']
-    out['elevAttribution'] = ELEV_ATTRIBUTION
+    out['elevAttribution'] = COPERNICUS if a.copernicus else ELEV_ATTRIBUTION
+    if a.elev_tag:
+        out['elevBase'] = f'https://github.com/{a.repo}/releases/download/{a.elev_tag}/'
+    else:
+        out.pop('elevBase', None)
     json.dump(out, sys.stdout, ensure_ascii=False, separators=(',', ':'))
     print(f'{n} korkeustiedostoa, {total / 1e6:.0f} Mt', file=sys.stderr)
 

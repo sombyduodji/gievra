@@ -17,6 +17,7 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -61,7 +62,11 @@ object HealthBridge {
 
     suspend fun granted(context: Context): Set<String> = client(context).permissionController.getGrantedPermissions()
 
-    private fun appLabel(context: Context, pkg: String): String = try {
+    /** Puhelimen oma askelmittari (Android 14+): ei sovellusta, Dart kääntää merkinnän (@phone). */
+    private fun appLabel(context: Context, pkg: String): String =
+        if (pkg.startsWith("com.android.healthconnect.phone")) "@phone" else appLabelOf(context, pkg)
+
+    private fun appLabelOf(context: Context, pkg: String): String = try {
         val pm = context.packageManager
         pm.getApplicationLabel(pm.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(0))).toString()
     } catch (e: Throwable) {
@@ -90,24 +95,43 @@ object HealthBridge {
         val origins = if (origin == null) emptySet() else setOf(DataOrigin(origin))
 
         /**
-         * Saman sovelluksen tietueiden summa aikavälillä ilman päällekkäisyyksiä: pisin tietue ensin, sitten muista vain
-         * se osa, jota aiemmat eivät jo kata (sovellus voi tallentaa sekä koko harjoituksen summan että minuuttikohtaiset
-         * tietueet). Arvo jaetaan tietueen ajalle tasaisesti.
+         * Saman sovelluksen tietueiden summa aikavälillä ilman päällekkäisyyksiä: kukin tietue vain siltä osin, jota
+         * aiemmin lasketut eivät jo kata (sovellus voi tallentaa sekä koko harjoituksen summan että minuuttikohtaiset
+         * tietueet). Arvo jaetaan tietueen ajalle tasaisesti. Lasketaan kahdessa järjestyksessä (pisin ensin ja lyhin
+         * ensin) ja valitaan suurempi: pitkä, harva tietue (esim. Oura) ei saa peittää minuuttitietoja, eikä toisaalta
+         * koko harjoituksen summa jää pois, jos minuuttitietoja on vain osalta ajasta.
          */
-        fun sumOnce(items: List<Triple<Instant, Instant, Double>>): Double {
-            val covered = mutableListOf<Pair<Long, Long>>()
-            var total = 0.0
-            for ((rs, re, v) in items.sortedByDescending { it.second.toEpochMilli() - it.first.toEpochMilli() }) {
-                val a = maxOf(rs, start).toEpochMilli()
-                val b = minOf(re, end).toEpochMilli()
-                if (b <= a) continue
-                var free = b - a
-                for ((ca, cb) in covered) free -= maxOf(0L, minOf(b, cb) - maxOf(a, ca))
-                val len = re.toEpochMilli() - rs.toEpochMilli()
-                total += if (len <= 0) (if (free > 0) v else 0.0) else v * maxOf(0L, free).toDouble() / len
-                covered += a to b
+        fun sumOnce(
+            items: List<Triple<Instant, Instant, Double>>,
+            from: Instant = start,
+            to: Instant = end,
+        ): Double {
+            fun pass(ordered: List<Triple<Instant, Instant, Double>>): Double {
+                val covered = mutableListOf<Pair<Long, Long>>()
+                var total = 0.0
+                for ((rs, re, v) in ordered) {
+                    val a = maxOf(rs, from).toEpochMilli()
+                    val b = minOf(re, to).toEpochMilli()
+                    if (b <= a) continue
+                    // Peittämätön osa: yhdistetään jo katetut välit, jotta päällekkäiset eivät vähennä kahdesti.
+                    var free = b - a
+                    var cur = a
+                    for ((ca, cb) in covered.sortedBy { it.first }) {
+                        val s0 = maxOf(cur, ca)
+                        val e0 = minOf(b, cb)
+                        if (e0 > s0) {
+                            free -= e0 - s0
+                            cur = e0
+                        }
+                    }
+                    val len = re.toEpochMilli() - rs.toEpochMilli()
+                    total += if (len <= 0) (if (free > 0) v else 0.0) else v * maxOf(0L, free).toDouble() / len
+                    covered += a to b
+                }
+                return total
             }
-            return total
+            val dur = { t: Triple<Instant, Instant, Double> -> t.second.toEpochMilli() - t.first.toEpochMilli() }
+            return maxOf(pass(items.sortedByDescending(dur)), pass(items.sortedBy(dur)))
         }
 
         suspend fun ownSteps(): Long? = if (origins.isEmpty()) null else try {
@@ -140,11 +164,50 @@ object HealthBridge {
         } catch (e: Throwable) {
             null
         }
-        val steps = ownSteps() ?: try {
+        // Askeleet: jokaisen sovelluksen tietueet erikseen (päällekkäisyydet poistettuina) ja suurin summa. Health
+        // Connectin kokonaissumma ei riitä: se laskee vain prioriteettilistan sovellukset (Oura: 69 askelta, vaikka
+        // minuuttitietueita oli 1 075). Kävelymatto: oma 12 058 > puhelimen 111.
+        var stepRecords: List<StepsRecord> = emptyList()
+        suspend fun stepsBySource(): Map<String, Double> = try {
+            val all = mutableListOf<StepsRecord>()
+            var token: String? = null
+            do {
+                val r = c.readRecords(ReadRecordsRequest(StepsRecord::class, span, pageSize = 5000, pageToken = token))
+                all += r.records
+                token = r.pageToken
+            } while (token != null && all.size < 50000)
+            stepRecords = all
+            all.groupBy { it.metadata.dataOrigin.packageName }
+                .mapValues { (_, rs) -> sumOnce(rs.map { Triple(it.startTime, it.endTime, it.count.toDouble()) }) }
+        } catch (e: Throwable) {
+            emptyMap()
+        }
+        val bySource = stepsBySource()
+
+        // Koko aikaväli minuuteittain: kunkin minuutin askeleet siltä sovellukselta, joka laski eniten, ja minuutit
+        // yhteen. Oikea summa myös, kun osan ajasta laski Oura ja osan puhelin; samaa minuuttia ei lasketa kahdesti.
+        fun perMinuteBest(): Double {
+            val bySrc = stepRecords.groupBy { it.metadata.dataOrigin.packageName }.values
+                .map { rs -> rs.map { Triple(it.startTime, it.endTime, it.count.toDouble()) } }
+            if (bySrc.isEmpty()) return 0.0
+            var t = start
+            var sum = 0.0
+            while (t.isBefore(end)) {
+                val next = minOf(t.plusSeconds(60), end)
+                sum += bySrc.maxOf { sumOnce(it, t, next) }
+                t = next
+            }
+            return sum
+        }
+        val minuteBest = if (Duration.between(start, end).toHours() <= 12) perMinuteBest() else 0.0
+        val own = ownSteps()
+        val total = try {
             c.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), span))[StepsRecord.COUNT_TOTAL]
         } catch (e: Throwable) {
             null
         }
+        val steps = (listOfNotNull(own?.toDouble(), total?.toDouble(), minuteBest) + bySource.values)
+            .maxOrNull()?.takeIf { it > 0 }?.toLong()
         val meters = ownMeters() ?: try {
             c.aggregate(AggregateRequest(setOf(DistanceRecord.DISTANCE_TOTAL), span))[DistanceRecord.DISTANCE_TOTAL]
                 ?.inMeters
@@ -154,6 +217,10 @@ object HealthBridge {
         return mapOf(
             "meters" to meters,
             "steps" to steps?.toInt(),
+            // Vianetsintään: askeleet sovelluksittain ja Health Connectin kokonaissumma.
+            "stepsBySource" to bySource.map { (k, v) -> "${appLabel(context, k)}: ${v.toLong()}" }.joinToString(", ") +
+                (if (minuteBest > 0) ", minuuteittain paras: ${minuteBest.toLong()}" else "") +
+                (if (total != null) ", Health Connect yhteensä: $total" else ""),
             "hrAvg" to if (hr.isEmpty()) null else hr.map { it.beatsPerMinute }.average().toInt(),
             "hrMax" to hr.maxOfOrNull { it.beatsPerMinute }?.toInt(),
             "hrCount" to hr.size,

@@ -166,7 +166,7 @@ class _HealthSheetState extends State<_HealthSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      c.session ? (c.title ?? t('Harjoitus')) : t('Sykedata treenin ajalta'),
+                      c.session ? (c.title ?? _typeName(c.type)) : t('Sykedata treenin ajalta'),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     Text(
@@ -186,6 +186,11 @@ class _HealthSheetState extends State<_HealthSheet> {
                       ].join('   '),
                       style: const TextStyle(fontSize: 16),
                     ),
+                    // Askeleet sovelluksittain: näkee, mistä luku tuli (esim. Oura ja puhelin erikseen).
+                    if (stepsSport && c.stepsInfo != null) ...[
+                      const SizedBox(height: 4),
+                      Text(t('Askeleet lähteittäin: {0}', [c.stepsInfo]), style: sub.copyWith(fontSize: 11)),
+                    ],
                   ],
                 ),
               ),
@@ -235,4 +240,10 @@ class _HealthSheetState extends State<_HealthSheet> {
       ),
     );
   }
+}
+
+/// Harjoituksen nimi ilman otsikkoa (esim. Oura): laji tyypistä, muuten yleinen nimi.
+String _typeName(int? type) {
+  final sp = sportForHealthType(type);
+  return sp == null ? t('Harjoitus') : sportName(sp);
 }

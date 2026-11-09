@@ -1,4 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+
+import 'maps_screen.dart';
+import '../maps/map_store.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'activity.dart';
 import 'running_screen.dart';
@@ -139,7 +145,46 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _resume();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkMoves());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkMoves().then((_) => _checkElevFormat()));
+  }
+
+  /// Päivityksen jälkeen: ladatut korkeustiedostot vanhassa muodossa (0.5) → kerro ja tarjoa päivitystä. Vanhat
+  /// toimivat yhä, mutta uusi lohkomuoto käyttää isoilla alueilla (esim. Inari) paljon vähemmän muistia. Kysytään
+  /// uudelleen aikaisintaan viikon päästä, jos käyttäjä valitsee Myöhemmin.
+  Future<void> _checkElevFormat() async {
+    if (isDemo || kIsWeb) return;
+    try {
+      final ms = MapStore.instance;
+      await ms.load(network: false);
+      final old = await ms.oldFormatElevation();
+      if (old.isEmpty || !mounted) return;
+      final sp = await SharedPreferences.getInstance();
+      final last = sp.getInt('elevFormatAsked') ?? 0;
+      if (DateTime.now().millisecondsSinceEpoch - last < const Duration(days: 7).inMilliseconds) return;
+      if (!mounted) return;
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(t('Korkeustiedot on päivitetty')),
+          content: Text(
+            t(
+              'Ladatut korkeustiedot ({0} aluetta) ovat vanhassa muodossa. Uusi muoto vie isoilla alueilla paljon '
+              'vähemmän muistia. Vanhat toimivat yhä, mutta päivitä ne, kun olet verkossa: uudet tiedostot '
+              'tarkistetaan latauksessa (SHA-256).',
+              [old.length],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Myöhemmin'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Päivitä nyt'))),
+          ],
+        ),
+      );
+      await sp.setInt('elevFormatAsked', DateTime.now().millisecondsSinceEpoch);
+      if (go == true && mounted) {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MapsScreen(initialTab: 2)));
+      }
+    } catch (_) {}
   }
 
   /// Omat liikkeet, jotka vastaavat valmista liikettä: sama nimi yhdistetään, samankaltaisesta kysytään.
