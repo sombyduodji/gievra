@@ -496,6 +496,16 @@ class _SettingsSection extends StatelessWidget {
             const SizedBox(height: 8),
             const _RestTimes(),
           ],
+          if (!isDemo && Platform.isAndroid)
+            SwitchListTile(
+              title: Text(t('Ilmoitus käynnissä olevasta treenistä')),
+              subtitle: Text(
+                t('Pudotusvalikossa näkyy esim. "Salitreeni käynnissä" ja kulunut aika, kunnes treeni on valmis.'),
+                style: sub,
+              ),
+              value: settings.ongoingNote,
+              onChanged: settings.setOngoingNote,
+            ),
           SwitchListTile(
             title: Text(t('Sykemittari ja älykello')),
             subtitle: Text(
@@ -695,6 +705,13 @@ Future<void> showAbout(BuildContext context) async {
               'Office for National Statistics, Open Government Licence v3.0; sisältää OS:n aineistoa '
               '© Crown copyright and database right 2024.',
               [MapCredits.osm],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            t(
+              'Korkeustiedot (Suomi): Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0; muunnettu Gievraa varten '
+              '25 metrin ruudukoksi.',
             ),
           ),
           TextButton(onPressed: () => _open(MapCredits.osmUrl), child: const Text(MapCredits.osm)),

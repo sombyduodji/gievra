@@ -8,7 +8,7 @@ Selain ei voi lukea GitHubin julkaisutiedostoja suoraan (ei CORS-otsakkeita), jo
 kevyttä luetteloa: nimi, muut nimet, alue, koko ja latausosoite, ei aluerajoja. Aja uudelleen, kun
 karttajulkaisu päivittyy, ja commitoi site/kartat.json ja site/kartat-tarkisteet.json.
 
-kartat-tarkisteet.json: kaikkien karttajulkaisujen (myös vanhojen) .pmtiles-tiedostojen SHA-256 GitHubin omista
+kartat-tarkisteet.json: kaikkien karttajulkaisujen (myös vanhojen) .pmtiles- ja .elev-tiedostojen SHA-256 GitHubin omista
 tarkisteista (API:n digest-kenttä). Sovellus tuo sen kuten kartan ja tarkistaa kartat sillä ilman verkkoa.
 """
 import argparse
@@ -51,7 +51,7 @@ def checksums():
                 continue
             for a in rel['assets']:
                 d = a.get('digest') or ''
-                if a['name'].endswith('.pmtiles') and d.startswith('sha256:'):
+                if a['name'].endswith(('.pmtiles', '.elev')) and d.startswith('sha256:'):
                     out.append([a['name'], d[7:], a['size'], rel['tag_name']])
         if len(releases) < 100:
             break
@@ -75,7 +75,10 @@ def main():
         packs = []
         for p in sorted(cat['packs'], key=lambda p: p['name']):
             alt = [p[k] for k in ('sv', 'se', 'en') if p.get(k) and p[k] != p['name']]
-            packs.append([p['name'], ' · '.join(alt), p.get('region', ''), p['size'], p['file']])
+            row = [p['name'], ' · '.join(alt), p.get('region', ''), p['size'], p['file']]
+            if e := p.get('elev'):
+                row += [e['file'], e['size']]  # korkeustiedot omana tiedostonaan
+            packs.append(row)
         ov = cat['overview']
         out['countries'].append({
             'id': c['id'], 'names': names, 'unit': cat.get('unit', 'kunta'), 'base': cat['base'],

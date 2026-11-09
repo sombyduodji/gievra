@@ -141,7 +141,11 @@ class Workout {
        exercises = exercises ?? [];
 
   bool get isEmpty =>
-      warmup == null && activity == null && exercises.every((e) => e.sets.isEmpty) && notes.trim().isEmpty;
+      warmup == null &&
+      activity == null &&
+      hcId == null && // Health Connectista lisätty salitreeni: kellon tiedot riittävät
+      exercises.every((e) => e.sets.isEmpty) &&
+      notes.trim().isEmpty;
 
   /// Kesto sekunteina: tarkka aika, jos kirjattu, muuten minuutit.
   int? get durationSec => seconds ?? (minutes == null ? null : minutes! * 60);

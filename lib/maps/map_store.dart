@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:vector_tile/vector_tile.dart';
 
 import '../gps_filter.dart';
+import 'elevation.dart';
 import 'file_hash.dart';
 import 'path_snap.dart';
 import 'pmtiles.dart';
@@ -56,9 +57,14 @@ String safeMapUrl(String url) {
 /// Karttatiedoston nimi luettelosta: vain pelkkä nimi (a–z, 0–9, -) ja .pmtiles, ettei luettelo voi ohjata
 /// tiedostoa muualle (esim. ../ tai absoluuttinen polku).
 String safeMapFile(String name) {
-  if (!RegExp(r'^[a-z0-9-]+\.pmtiles$').hasMatch(name)) throw FormatException('karttatiedoston nimi ei kelpaa: $name');
+  if (!RegExp(r'^[a-z0-9-]+\.(pmtiles|elev)$').hasMatch(name)) {
+    throw FormatException('karttatiedoston nimi ei kelpaa: $name');
+  }
   return name;
 }
+
+/// Korkeustiedosto (.elev, lib/maps/elevation.dart), ei kartta.
+bool isElevFile(String name) => name.endsWith('.elev');
 
 class MapPack {
   final String id, name, file, region, sha256;
@@ -72,6 +78,9 @@ class MapPack {
 
   /// Saman kartan aiempien julkaisujen tarkisteet: vanhempi tiedosto tunnistetaan tuonnissa (päivitys tarjolla).
   final List<String> oldSha256;
+
+  /// Saman alueen korkeustiedot omana tiedostonaan (null = ei saatavilla, esim. muut maat kuin Suomi).
+  final MapPack? elev;
   const MapPack({
     required this.id,
     required this.name,
@@ -85,9 +94,35 @@ class MapPack {
     this.sv,
     this.country = 'fi',
     this.oldSha256 = const [],
+    this.elev,
   });
 
-  factory MapPack.fromJson(Map<String, dynamic> j, {String country = 'fi'}) => MapPack(
+  bool get isElevation => isElevFile(file);
+
+  factory MapPack.fromJson(Map<String, dynamic> j, {String country = 'fi'}) {
+    final pack = MapPack._fromJson(j, country: country);
+    final e = j['elev'] as Map<String, dynamic>?;
+    if (e == null) return pack;
+    final elev = MapPack._fromJson({...j, ...e, 'id': '${pack.id}-korkeus'}, country: country);
+    if (!elev.isElevation) throw FormatException('korkeustiedoston nimi ei kelpaa: ${elev.file}');
+    return MapPack(
+      id: pack.id,
+      name: pack.name,
+      file: pack.file,
+      region: pack.region,
+      sha256: pack.sha256,
+      size: pack.size,
+      bbox: pack.bbox,
+      shape: pack.shape,
+      se: pack.se,
+      sv: pack.sv,
+      country: pack.country,
+      oldSha256: pack.oldSha256,
+      elev: elev,
+    );
+  }
+
+  factory MapPack._fromJson(Map<String, dynamic> j, {String country = 'fi'}) => MapPack(
     country: country,
     id: j['id'] as String? ?? p.basenameWithoutExtension(j['file'] as String),
     name: j['name'] as String? ?? j['file'] as String,
@@ -328,7 +363,8 @@ class MapStore extends ChangeNotifier {
   }
 
   /// Kaikkien maiden kaikki tiedostot (yleiskartat, koko maa, paketit).
-  Iterable<MapPack> get allPacks => catalogs.values.expand((c) => [c.overview, ?c.all, ...c.packs]);
+  Iterable<MapPack> get allPacks =>
+      catalogs.values.expand((c) => [c.overview, ?c.all, ...c.packs, for (final x in c.packs) ?x.elev]);
 
   /// Paketti, jonka alueella piste on (mikä tahansa maa).
   MapPack? packAt(double lat, double lon) {
@@ -436,12 +472,18 @@ class MapStore extends ChangeNotifier {
 
   static bool _isCatalogName(String n) => n == 'kartat.json' || RegExp(r'^[a-z]{2}\.json$').hasMatch(n);
 
-  Future<void> _scan() async {
+  Future<void>? _scanning;
+
+  /// Lukee ladatut tiedostot kansiosta. Samanaikaiset kutsut odottavat samaa lukua, ja lista vaihdetaan kerralla:
+  /// muuten esim. kartta ja korkeusprofiili voisivat nähdä sen hetken tyhjänä.
+  Future<void> _scan() => _scanning ??= _scanNow().whenComplete(() => _scanning = null);
+
+  Future<void> _scanNow() async {
     final d = await dir();
-    installed.clear();
+    final found = <String>{};
     await for (final e in d.list()) {
       if (e is! File) continue;
-      if (e.path.endsWith('.pmtiles')) installed.add(p.basename(e.path));
+      if (e.path.endsWith('.pmtiles') || isElevFile(e.path)) found.add(p.basename(e.path));
       // Keskeneräinen lataus (sovellus suljettiin kesken): poistetaan, ettei vie tilaa.
       if (e.path.endsWith('.part') && downloads.isEmpty) {
         try {
@@ -449,6 +491,9 @@ class MapStore extends ChangeNotifier {
         } catch (_) {}
       }
     }
+    installed
+      ..clear()
+      ..addAll(found);
   }
 
   bool isInstalled(MapPack x) => installed.contains(x.file);
@@ -469,7 +514,7 @@ class MapStore extends ChangeNotifier {
     final d = await dir();
     var n = 0;
     await for (final e in d.list()) {
-      if (e is File && e.path.endsWith('.pmtiles')) n += await e.length();
+      if (e is File && (e.path.endsWith('.pmtiles') || isElevFile(e.path))) n += await e.length();
     }
     return n;
   }
@@ -480,7 +525,9 @@ class MapStore extends ChangeNotifier {
   Future<List<MapDownload>> download(List<MapPack> packs, {bool replace = false}) async {
     if (catalogs.isEmpty || downloads.isNotEmpty) return const [];
     // Jokaisen maan yleiskartta mukaan, jos sitä (tai koko maata) ei vielä ole.
-    final countries = packs.isEmpty ? {country} : {for (final x in packs) x.country};
+    // (Pelkät korkeustiedot eivät tuo yleiskarttaa.)
+    final maps = packs.where((x) => !x.isElevation);
+    final countries = packs.isEmpty ? {country} : {for (final x in maps) x.country};
     final todo = [
       for (final cc in countries)
         if (catalogs[cc] case final c? when !isInstalled(c.overview) && !(c.all != null && isInstalled(c.all!)))
@@ -557,6 +604,7 @@ class MapStore extends ChangeNotifier {
       await sink.close();
       hasher.close();
       if (digest.value.toString() != x.sha256) throw const FormatException('tarkiste ei täsmää');
+      _grids.remove(x.file);
       await _open.remove(x.file)?.close(); // päivitys: vanha tiedosto suljetaan ennen korvaamista
       await part.rename(p.join(d.path, x.file));
     } catch (_) {
@@ -592,7 +640,8 @@ class MapStore extends ChangeNotifier {
     final movable = await _movableRoots();
     var k = 0;
     bool isJson(String name) => name.toLowerCase().endsWith('.json');
-    bool wanted(String name) => name.toLowerCase().endsWith('.pmtiles') || isJson(name);
+    bool isMap(String name) => name.toLowerCase().endsWith('.pmtiles') || isElevFile(name.toLowerCase());
+    bool wanted(String name) => isMap(name) || isJson(name);
     try {
       for (final path in paths) {
         final name = p.basename(path);
@@ -605,11 +654,12 @@ class MapStore extends ChangeNotifier {
             for (final f in zip.files) {
               final n = p.basename(f.name);
               if (!f.isFile || !wanted(n)) continue;
-              final out = p.join(tmp.path, '${k++}${n.toLowerCase().endsWith('.pmtiles') ? '.pmtiles' : '.json'}');
+              final ext = isMap(n) ? p.extension(n).toLowerCase() : '.json';
+              final out = p.join(tmp.path, '${k++}$ext');
               final os = OutputFileStream(out);
               f.writeContent(os);
               await os.close();
-              if (n.toLowerCase().endsWith('.pmtiles')) {
+              if (isMap(n)) {
                 maps.add((n, File(out), true));
               } else {
                 catalogFiles.add((n, File(out)));
@@ -620,7 +670,7 @@ class MapStore extends ChangeNotifier {
           } finally {
             await input.close();
           }
-        } else if (lower.endsWith('.pmtiles')) {
+        } else if (isMap(lower)) {
           maps.add((name, File(path), movable.any((r) => p.isWithin(r, path))));
         } else if (isJson(name)) {
           catalogFiles.add((name, File(path)));
@@ -649,10 +699,18 @@ class MapStore extends ChangeNotifier {
       final ok = <(String, File, bool, int)>[];
       for (final (name, f, mv) in maps) {
         try {
-          final pm = await PmTilesFile.open(f.path); // heittää, jos ei PMTiles v3
           final len = await f.length();
-          final complete = len >= pm.requiredLength;
-          await pm.close();
+          final bool complete;
+          if (isElevFile(f.path.toLowerCase())) {
+            final raf = await f.open();
+            final head = await raf.read(ElevHeader.length);
+            await raf.close();
+            complete = len >= ElevHeader.parse(head).requiredLength; // heittää, jos ei korkeustiedosto
+          } else {
+            final pm = await PmTilesFile.open(f.path); // heittää, jos ei PMTiles v3
+            complete = len >= pm.requiredLength;
+            await pm.close();
+          }
           if (!complete) {
             result.skipped.add((name, MapSkip.truncated));
             continue;
@@ -679,6 +737,7 @@ class MapStore extends ChangeNotifier {
       Future<void> install(String name, File f, bool mv, String file, String digest, {required bool verified}) async {
         onProgress?.call(MapImportProgress(name, total, total, MapImportPhase.installing));
         await _open.remove(file)?.close();
+        _grids.remove(file);
         final dest = p.join(d.path, file);
         if (mv) {
           try {
@@ -817,7 +876,7 @@ class MapStore extends ChangeNotifier {
   /// tunnissa, joten tätä kutsutaan vain käyttäjän pyynnöstä. Palauttaa löydettyjen tarkisteiden määrän (0 virheellä).
   Future<int> fetchGithubDigests({int maxPages = 5}) async {
     final client = clientOverride ?? http.Client();
-    final name = RegExp(r'^[a-z0-9-]+\.pmtiles$'), hex = RegExp(r'^sha256:([0-9a-f]{64})$');
+    final name = RegExp(r'^[a-z0-9-]+\.(pmtiles|elev)$'), hex = RegExp(r'^sha256:([0-9a-f]{64})$');
     var n = 0, changed = false;
     try {
       // Sivu kerrallaan (100 julkaisua sivulla): vanhimmat karttajulkaisut ovat viimeisillä sivuilla.
@@ -871,7 +930,7 @@ class MapStore extends ChangeNotifier {
   /// Kotisivun tarkistetaulukko (kartat-tarkisteet.json): kaikkien karttajulkaisujen tarkisteet. Tuotuna kartat
   /// tarkistetaan ilman verkkoa; tarkisteet muistetaan. Palauttaa hyväksyttyjen rivien määrän.
   Future<int> _addChecksumTable(Map<String, dynamic> j) async {
-    final name = RegExp(r'^[a-z0-9-]+\.pmtiles$'), hex = RegExp(r'^[0-9a-f]{64}$');
+    final name = RegExp(r'^[a-z0-9-]+\.(pmtiles|elev)$'), hex = RegExp(r'^[0-9a-f]{64}$');
     var n = 0, changed = false;
     for (final e in (j['files'] as List? ?? const [])) {
       if (e is! List || e.length < 2) continue;
@@ -902,8 +961,9 @@ class MapStore extends ChangeNotifier {
   /// Tiedostonimi ilman tarkistusta tuodulle kartalle: luettelon muoto, vain a–z, 0–9 ja viiva. null = ei kelpaa.
   static String? safeImportName(String name) {
     var n = normalizedMapName(name);
-    if (!n.endsWith('.pmtiles')) return null;
-    var stem = n.substring(0, n.length - '.pmtiles'.length);
+    final ext = n.endsWith('.pmtiles') ? '.pmtiles' : (n.endsWith('.elev') ? '.elev' : null);
+    if (ext == null) return null;
+    var stem = n.substring(0, n.length - ext.length);
     stem = stem
         .replaceAll(RegExp('[åäá]'), 'a')
         .replaceAll(RegExp('[öøó]'), 'o')
@@ -911,12 +971,12 @@ class MapStore extends ChangeNotifier {
         .replaceAll(RegExp('-+'), '-')
         .replaceAll(RegExp(r'^-|-$'), '');
     if (stem.isEmpty || stem.length > 80) return null;
-    return '$stem.pmtiles';
+    return '$stem$ext';
   }
 
   /// Selaimen tai käyttäjän muuttama nimi luettelon muotoon: `Es-Yleiskartta (1).pmtiles` → `es-yleiskartta.pmtiles`.
   static String normalizedMapName(String name) =>
-      name.toLowerCase().replaceFirst(RegExp(r'\s*[(\[]\d+[)\]](?=\.pmtiles$)'), '');
+      name.toLowerCase().replaceFirst(RegExp(r'\s*[(\[]\d+[)\]](?=\.(pmtiles|elev)$)'), '');
 
   // Asennettujen karttojen tarkisteet (asennetut.json): päivitys tunnistetaan, kun luettelon tarkiste muuttuu.
   Future<File> _versionsFile() async => File(p.join((await dir()).path, 'asennetut.json'));
@@ -945,7 +1005,7 @@ class MapStore extends ChangeNotifier {
   Future<List<(String, int)>> installedFiles() async {
     final d = await dir();
     final out = <(String, int)>[];
-    for (final f in installed) {
+    for (final f in [...installed]) {
       final file = File(p.join(d.path, f));
       if (await file.exists()) out.add((f, await file.length()));
     }
@@ -973,6 +1033,7 @@ class MapStore extends ChangeNotifier {
   /// Poistaa yhden ladatun kartan tiedostonimellä (myös tuodut ja yleiskartta).
   Future<void> deleteFile(String file) async {
     await _open.remove(file)?.close();
+    _grids.remove(file);
     final f = File(p.join((await dir()).path, file));
     if (await f.exists()) await f.delete();
     installed.remove(file);
@@ -1067,10 +1128,66 @@ class MapStore extends ChangeNotifier {
   }
 
   /// Avatut karttatiedostot karttanäkymälle: koko Suomi tai kunnat + yleiskartta.
+  // Puretut korkeustiedostot (muutama kerrallaan muistissa; kunta noin 0,1–5 Mt).
+  final _grids = <String, ElevationGrid>{};
+
+  /// Onko ladattuja korkeustiedostoja.
+  bool get hasElevation => installed.any(isElevFile);
+
+  /// Reitin korkeusprofiili ladatuista korkeustiedoista (null = ei korkeustietoja reitin alueelta).
+  Future<ElevationProfile?> profileFor(List<List<TrackPoint>> segments) async {
+    final pts = [for (final s in segments) ...s];
+    if (pts.isEmpty) return null;
+    if (installed.isEmpty && downloads.isEmpty) await _scan(); // sovellus juuri avattu: kansiota ei vielä luettu
+    if (!hasElevation) return null;
+    var w = 180.0, e = -180.0, so = 90.0, n = -90.0;
+    for (final t in pts) {
+      w = math.min(w, t.lon);
+      e = math.max(e, t.lon);
+      so = math.min(so, t.lat);
+      n = math.max(n, t.lat);
+    }
+    final d = await dir();
+    final grids = <ElevationGrid>[];
+    for (final f in [...installed.where(isElevFile)]) {
+      try {
+        var g = _grids[f];
+        if (g == null) {
+          final file = File(p.join(d.path, f));
+          final raf = await file.open();
+          final head = ElevHeader.parse(await raf.read(ElevHeader.length));
+          await raf.close();
+          if (head.west > e || head.east < w || head.south > n || head.north < so) continue;
+          g = ElevationGrid.decode(await file.readAsBytes());
+          if (_grids.length >= 8) _grids.remove(_grids.keys.first);
+          _grids[f] = g;
+        } else {
+          final h = g.header;
+          if (h.west > e || h.east < w || h.south > n || h.north < so) continue;
+        }
+        grids.add(g);
+      } catch (e) {
+        debugPrint('korkeus $f: $e');
+      }
+    }
+    if (grids.isEmpty) return null;
+    double? at(double lat, double lon) {
+      for (final g in grids) {
+        if (!g.header.containsPoint(lat, lon)) continue;
+        final v = g.at(lat, lon);
+        if (v != null) return v;
+      }
+      return null;
+    }
+
+    return elevationProfile(segments, at);
+  }
+
   Future<List<PmTilesFile>> openFiles() async {
     final d = await dir();
     final out = <PmTilesFile>[];
-    for (final f in installed) {
+    for (final f in [...installed]) {
+      if (isElevFile(f)) continue;
       try {
         out.add(_open[f] ??= await PmTilesFile.open(p.join(d.path, f)));
       } catch (_) {}

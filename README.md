@@ -107,7 +107,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - *Lisää tehty liikunta Health Connectista* (asetus, oletus pois): etusivun painikkeesta päivän (oletus tänään)
   harjoitukset, joita ei vielä ole Gievrassa – esim. kävelymaton tai kellon sovelluksen tallentamat – avautuvat
   valmiiksi täytettynä liikuntana (laji, aika, matka, syke, kalorit, askeleet); askeleet ja matka harjoituksen
-  omasta sovelluksesta
+  omasta sovelluksesta, myös salitreenit (kellon tiedot päivän salitreeniin tai uusi salitreeni) ja askeleet
+  ilman harjoitusta (yhtenäinen kävely vähintään 10 min, esim. kävelymatolta)
+- yksi ilmoitus käynnissä olevasta treenistä (laji ja kulunut aika; salitreeni, ajanotto tai GPS-lenkki)
 - juoksulle oma kehitysnäkymä, erillään salista: tarkka aika, vauhti min/km ja keskinopeus, kilometrit
   viikoittain, kevyiden lenkkien (rasitus Kevyt) vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km,
   puolimaraton, maraton)
@@ -127,6 +129,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   poisto ja päivitys
 - kartat myös kotisivun karttahausta tiedostoina; tuonnissa kartta tunnistetaan sisällöstä (SHA-256), myös vanhemmat
   versiot ja ilman verkkoa kotisivun tarkistetaulukolla; tunnistamattoman voi tuoda tarkistamattomana
+- korkeustiedot (Suomi, Maanmittauslaitoksen korkeusmalli 25 m:n ruudukkona) kunnittain karttojen tapaan: reitin
+  alla nousu, lasku ja korkeusprofiili, jossa jokaisen kilometrin vauhti (pyöräilyssä km/h)
 
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
@@ -182,7 +186,8 @@ ovat [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) -lisenssin alais
 erillisinä tiedostoina). Rannikot ja rajat pienillä mittakaavoilla: Natural Earth (public
 domain). Suomen kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Ruotsin, Norjan, Tanskan, Islannin ja
 Espanjan aluerajat: OpenStreetMap (ODbL). Iso-Britannian alueet: Office for National Statistics, Open Government
-Licence v3.0; sisältää OS:n aineistoa © Crown copyright and database right 2024. Paketit tehdään työkaluilla
+Licence v3.0; sisältää OS:n aineistoa © Crown copyright and database right 2024. Korkeustiedot (Suomi):
+Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0, keskiarvoistettu 25 metrin ruudukoksi. Paketit tehdään työkaluilla
 `tools/map_extract.py`, `tools/osm_bounds.py`, `tools/ons_bounds.py` ja `tools/map_country.py`.
 
 Rakentaminen (Flutter):

@@ -150,6 +150,27 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        // Käynnissä oleva treeni pudotusvalikossa (OngoingNote.kt).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/ongoing").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "show" -> {
+                    OngoingNote.show(
+                        this,
+                        call.argument<String>("title") ?: "Gievra",
+                        (call.argument<Number>("start") ?: System.currentTimeMillis()).toLong(),
+                        call.argument<Boolean>("paused") == true,
+                        call.argument<String>("pausedText") ?: "",
+                        call.argument<String>("channel") ?: "Gievra",
+                    )
+                    result.success(null)
+                }
+                "hide" -> {
+                    OngoingNote.hide(this)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
         // Karttatiedoston SHA-256 (tuonti tiedostosta): laitteiston kiihdyttämä MessageDigest taustasäikeessä,
         // edistyminen takaisin Dartille noin 4 Mt:n välein.
         val hashChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/hash")
@@ -224,6 +245,24 @@ class MainActivity : FlutterActivity() {
                         val start = (call.argument<Number>("start") ?: 0).toLong()
                         val end = (call.argument<Number>("end") ?: 0).toLong()
                         result.success(HealthBridge.sessions(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "stepRecords" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.stepRecords(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "rangeStats" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.rangeStats(this@MainActivity, start, end, call.argument<String>("pkg")))
                     } catch (e: Exception) {
                         result.error("health", e.message, null)
                     }

@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'gps_filter.dart';
 import 'gpx.dart';
+import 'l10n.dart';
+import 'ongoing.dart';
 
 // Reitin tallennus: puhelimen GPS -> suodatin (gps_filter.dart) -> aika, matka, vauhti ja reitti.
 // Androidissa paikannukset tulevat omasta etualapalvelusta (android/.../GpsService.kt), joka kirjoittaa ne myös
@@ -232,6 +234,17 @@ class GpsRecorder extends ChangeNotifier {
 
   // ---- ohjaus ----
 
+  /// Pudotusvalikon ilmoitus (sama kuin muilla treeneillä): laji ja kulunut aika.
+  void _syncOngoing() {
+    Ongoing.gps = switch (state) {
+      RecState.idle => null,
+      RecState.searching => OngoingActivity(sport, note: goodSignal ? t('GPS valmis') : t('Etsitään GPS-signaalia…')),
+      RecState.paused => OngoingActivity(sport, elapsed: elapsed),
+      RecState.recording => OngoingActivity(sport, since: now().subtract(elapsed)),
+    };
+    unawaited(Ongoing.refresh());
+  }
+
   /// Avaa GPS:n ja odottaa signaalia (ajanotto ei vielä käy). [title] ja [text] ilmoitukseen.
   Future<void> open(String sport, {required String title, required String text, required String channel}) async {
     this.sport = sport;
@@ -242,6 +255,7 @@ class GpsRecorder extends ChangeNotifier {
     await source.clearSaved();
     await source.start(title: title, text: text, channel: channel);
     state = RecState.searching;
+    _syncOngoing();
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => notifyListeners());
     notifyListeners();
   }
@@ -268,6 +282,7 @@ class GpsRecorder extends ChangeNotifier {
       state = startedAt == null ? RecState.searching : (m['paused'] == true ? RecState.paused : RecState.recording);
       _listen();
       if (!await source.running()) await source.start(title: title, text: text, channel: channel);
+      _syncOngoing();
       _tick = Timer.periodic(const Duration(seconds: 1), (_) => notifyListeners());
       notifyListeners();
       return true;
@@ -286,6 +301,7 @@ class GpsRecorder extends ChangeNotifier {
         gpsDisabled = false;
         _feed(fix, live: true);
       }
+      if (state == RecState.searching) _syncOngoing(); // "GPS valmis", kun signaali löytyy (sama tila ei päivitä)
       notifyListeners();
     });
   }
@@ -319,6 +335,7 @@ class GpsRecorder extends ChangeNotifier {
   Future<void> start() async {
     startedAt = now();
     state = RecState.recording;
+    _syncOngoing();
     notifyListeners(); // näkymä päivittyy heti; tila tallennetaan perään
     await _saveState();
   }
@@ -327,6 +344,7 @@ class GpsRecorder extends ChangeNotifier {
     if (state != RecState.recording) return;
     pauses.add((now(), null));
     state = RecState.paused;
+    _syncOngoing();
     notifyListeners(); // näkymä päivittyy heti; tila tallennetaan perään
     await _saveState();
   }
@@ -336,6 +354,7 @@ class GpsRecorder extends ChangeNotifier {
     final (a, _) = pauses.removeLast();
     pauses.add((a, now()));
     state = RecState.recording;
+    _syncOngoing();
     notifyListeners(); // näkymä päivittyy heti; tila tallennetaan perään
     await _saveState();
   }
@@ -375,6 +394,7 @@ class GpsRecorder extends ChangeNotifier {
     } catch (_) {}
     await _clearState();
     state = RecState.idle;
+    _syncOngoing();
   }
 
   @override

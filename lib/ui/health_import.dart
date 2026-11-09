@@ -9,6 +9,7 @@ import '../l10n.dart';
 import '../models.dart';
 import '../sports.dart';
 import 'activity.dart';
+import 'workout.dart';
 import 'widgets.dart';
 
 // Tehdyn liikunnan lisäys Health Connectista (asetus, oletus pois): päivän harjoitukset, joita ei vielä ole
@@ -92,7 +93,14 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
         return;
       }
       final all = await HealthConnect.sessions(_day);
-      final (fresh, done) = newHealthSessions(all, store.workouts);
+      // Askeleet ilman harjoitusta (esim. kävelymatto, joka ei tallenna harjoitusta): yhtenäiset kävelyt listaan.
+      var walks = <HealthCandidate>[];
+      try {
+        walks = stepStretches(await HealthConnect.stepRecords(_day), sessions: all);
+        walks = [for (final c in walks) await HealthConnect.withRangeStats(c).catchError((_) => c)];
+      } catch (_) {}
+      final (fresh, done) = newHealthSessions([...all, ...walks], store.workouts);
+      fresh.sort((a, b) => a.start.compareTo(b.start));
       if (!mounted) return;
       setState(() {
         _fresh = fresh;
@@ -109,11 +117,23 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
     }
   }
 
-  /// Kehitysversio: keksitty kävely (79) valitulle päivälle emulaattorin testaukseen.
-  Future<void> _debugInsert() async {
+  /// Kehitysversio: keksitty kävely (79) tai salitreeni (70) valitulle päivälle emulaattorin testaukseen.
+  Future<void> _debugInsert({bool gym = false, bool steps = false}) async {
     if (!await HealthConnect.request(write: true, import: true).catchError((_) => false)) return;
-    final s = DateTime(_day.year, _day.month, _day.day, 8, 2);
-    await HealthConnect.debugInsert(s, s.add(const Duration(hours: 2, minutes: 41)), type: 79, bpm: 104);
+    if (steps) {
+      var s = DateTime(_day.year, _day.month, _day.day, 13, 10);
+      final ago = DateTime.now().subtract(const Duration(minutes: 50));
+      if (s.isAfter(ago)) s = ago;
+      await HealthConnect.debugInsert(s, s.add(const Duration(minutes: 42)), type: -1, bpm: 96);
+      await _load();
+      return;
+    }
+    var s = DateTime(_day.year, _day.month, _day.day, gym ? 17 : 8, gym ? 5 : 2);
+    final ago = DateTime.now().subtract(const Duration(hours: 2)); // ei tulevaisuuteen
+    if (gym && s.isAfter(ago)) s = ago;
+    gym
+        ? await HealthConnect.debugInsert(s, s.add(const Duration(minutes: 64)), type: 70, bpm: 118)
+        : await HealthConnect.debugInsert(s, s.add(const Duration(hours: 2, minutes: 41)), type: 79, bpm: 104);
     await _load();
   }
 
@@ -147,9 +167,15 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
   }
 
   Future<void> _add(HealthCandidate c) async {
+    if (isStrengthType(c.type)) return _addGym(c);
     final sport =
         sportForHealthType(c.type) ??
-        await pickSport(context, t('Health Connect: {0}. Valitse lähin laji:', [c.title ?? t('tuntematon laji')]));
+        await pickSport(
+          context,
+          c.stepsOnly
+              ? t('{0} askelta ilman harjoitusta. Valitse laji:', [c.steps])
+              : t('Health Connect: {0}. Valitse lähin laji:', [c.title ?? t('tuntematon laji')]),
+        );
     if (sport == null || !mounted) return;
     final day = DateTime(c.start.year, c.start.month, c.start.day);
     final w = workoutFromHealth(c, sport, session: store.onDay(day).isEmpty ? 1 : store.nextSession(day));
@@ -157,25 +183,61 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
     if (mounted) await _load(); // tallennettu liikunta katoaa listalta
   }
 
+  /// Salitreeni: kellon tiedot päivän salitreeniin tai uusi salitreeni, johon voi lisätä liikkeet.
+  Future<void> _addGym(HealthCandidate c) async {
+    final day = DateTime(c.start.year, c.start.month, c.start.day);
+    final sameDay = store.onDay(day);
+    final (w, isNew) = gymFromHealth(c, sameDay, nextSession: sameDay.isEmpty ? 1 : store.nextSession(day));
+    await store.save(w);
+    if (!mounted) return;
+    if (!isNew) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Kellon tiedot lisätty salitreeniin.'))));
+    }
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => WorkoutScreen(workout: w)));
+    if (mounted) await _load();
+  }
+
+  /// Onko päivällä salitreeni, johon kellon tiedot lisätään.
+  bool _hasGym(DateTime start) =>
+      store.onDay(DateTime(start.year, start.month, start.day)).any((w) => w.activity == null && w.hcId == null);
+
   static String _hm(DateTime d) => '${d.hour}.${d.minute.toString().padLeft(2, '0')}';
 
   Widget _item(HealthCandidate c, TextStyle sub) {
     final sport = sportForHealthType(c.type);
+    final gym = isStrengthType(c.type);
     final details = [
-      if ((c.meters ?? 0) > 0) '${fmtNum((c.meters! / 100).round() / 10)} km',
+      if (!gym && (c.meters ?? 0) > 0) '${fmtNum((c.meters! / 100).round() / 10)} km',
       if (c.hrAvg != null) '❤️ ${c.hrAvg}',
       if (c.kcal != null) '${c.kcal} kcal',
-      if ((c.steps ?? 0) > 0) t('{0} askelta', [c.steps]),
+      if (!gym && !c.stepsOnly && (c.steps ?? 0) > 0) t('{0} askelta', [c.steps]),
     ].join(' · ');
     return Card(
       child: ListTile(
-        leading: Text(sportOf(sport)?.icon ?? '✨', style: const TextStyle(fontSize: 28)),
-        title: Text(sport == null ? (c.title ?? t('tuntematon laji')) : sportName(sport)),
+        leading: Text(
+          gym
+              ? '🏋️'
+              : c.stepsOnly
+              ? '👣'
+              : sportOf(sport)?.icon ?? '✨',
+          style: const TextStyle(fontSize: 28),
+        ),
+        title: Text(
+          gym
+              ? t('Salitreeni')
+              : c.stepsOnly
+              ? t('{0} askelta', [c.steps])
+              : sport == null
+              ? (c.title ?? t('tuntematon laji'))
+              : sportName(sport),
+        ),
         subtitle: Text(
           [
             '${_hm(c.start)}–${_hm(c.end)} · ${fmtDurationSec(c.duration.inSeconds)}',
             if (details.isNotEmpty) details,
             if (c.app.isNotEmpty) c.app,
+            if (gym) _hasGym(c.start) ? t('Lisätään päivän salitreeniin') : t('Uusi salitreeni'),
+            if (c.stepsOnly) t('Askeleita ilman harjoitusta'),
           ].join('\n'),
           style: sub,
         ),
@@ -263,6 +325,16 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
                 for (final c in _fresh) _item(c, sub),
                 if (kDebugMode)
                   TextButton(onPressed: _debugInsert, child: const Text('Kehitysversio: lisää testikävely')),
+                if (kDebugMode)
+                  TextButton(
+                    onPressed: () => _debugInsert(gym: true),
+                    child: const Text('Kehitysversio: lisää testisali'),
+                  ),
+                if (kDebugMode)
+                  TextButton(
+                    onPressed: () => _debugInsert(steps: true),
+                    child: const Text('Kehitysversio: lisää testiaskeleet'),
+                  ),
                 if (_done > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),

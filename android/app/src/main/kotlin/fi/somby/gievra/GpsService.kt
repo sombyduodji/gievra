@@ -1,9 +1,6 @@
 package fi.somby.gievra
 
 import android.annotation.SuppressLint
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -16,7 +13,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import androidx.core.app.NotificationCompat
 import java.io.File
 import java.io.FileWriter
 
@@ -26,8 +22,8 @@ import java.io.FileWriter
 /// Dart lukee tiedoston ja suodattaa reitin (lib/gps_filter.dart). Mitään ei lähetetä minnekään.
 class GpsService : Service(), LocationListener {
     companion object {
-        const val NOTIFICATION = 4720
-        const val CHANNEL = "gps_recording"
+        /** Sama ilmoitus kuin muilla käynnissä olevilla treeneillä (OngoingNote): sovelluksella on vain yksi. */
+        const val NOTIFICATION = OngoingNote.ID
 
         /// Dartin kuuntelija (EventChannel); null, kun sovellus ei ole auki.
         @Volatile var sink: ((Map<String, Any>) -> Unit)? = null
@@ -64,24 +60,8 @@ class GpsService : Service(), LocationListener {
         intent?.getStringExtra("title")?.let { title = it }
         intent?.getStringExtra("text")?.let { text = it }
         val channelName = intent?.getStringExtra("channel") ?: "GPS"
-        val nm = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(CHANNEL, channelName, NotificationManager.IMPORTANCE_LOW)
-            ch.setShowBadge(false)
-            nm.createNotificationChannel(ch)
-        }
-        val open = packageManager.getLaunchIntentForPackage(packageName)?.let {
-            PendingIntent.getActivity(this, NOTIFICATION, it, PendingIntent.FLAG_IMMUTABLE)
-        }
-        val n = NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.drawable.ic_rest)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setCategory(NotificationCompat.CATEGORY_WORKOUT)
-            .apply { if (open != null) setContentIntent(open) }
-            .build()
+        // Ensimmäinen sisältö (odotetaan signaalia); Dart päivittää sen heti lajiksi ja ajaksi (OngoingNote.show).
+        val n = OngoingNote.build(this, title, System.currentTimeMillis(), true, text, channelName)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
@@ -145,6 +125,9 @@ class GpsService : Service(), LocationListener {
         }
         writer = null
         running = false
+        // Palvelun etualan ilmoitus poistuu; jos esim. salitreeni on yhä käynnissä, sen ilmoitus palaa.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress("DEPRECATION") stopForeground(true)
+        OngoingNote.restore(this)
         super.onDestroy()
     }
 }

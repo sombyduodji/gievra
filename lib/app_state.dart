@@ -115,6 +115,20 @@ class Settings extends ChangeNotifier {
   List<int> restAdjust = [0, 0, 0];
   int deloadEvery = 6;
 
+  /// Käynnissä oleva treeni Androidin ilmoituksena (oletus päällä).
+  bool ongoingNote = true;
+  void setOngoingNote(bool v) {
+    ongoingNote = v;
+    _persist();
+  }
+
+  /// Korkeustiedot ladataan karttojen mukana (alueen nousut ja korkeusprofiili; oletus päällä).
+  bool elevWithMaps = true;
+  void setElevWithMaps(bool v) {
+    elevWithMaps = v;
+    _persist();
+  }
+
   /// Etusivun "Lisää tehty liikunta Health Connectista" (Android; oletus pois).
   bool hcImport = false;
   void setHcImport(bool v) {
@@ -307,6 +321,8 @@ class Settings extends ChangeNotifier {
       ..writeln('move_names: $moveNames')
       ..writeln('watch: $watch')
       ..writeln('hc_import: $hcImport')
+      ..writeln('ongoing_note: $ongoingNote')
+      ..writeln('elev_with_maps: $elevWithMaps')
       ..writeln('rest_timer: $restTimer')
       ..writeln('rest_sound: $restSound')
       ..writeln('rest_adjust: ${restAdjust.join(', ')}')
@@ -412,6 +428,10 @@ class Settings extends ChangeNotifier {
             watch = v == 'true';
           case 'hc_import':
             hcImport = v == 'true';
+          case 'ongoing_note':
+            ongoingNote = v != 'false';
+          case 'elev_with_maps':
+            elevWithMaps = v != 'false';
           case 'rest_timer':
             restTimer = v == 'true';
           case 'rest_adjust':
