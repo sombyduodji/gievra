@@ -155,7 +155,7 @@ class ProgramView extends StatelessWidget {
                                   ],
                                 ],
                               ),
-                              if (i.note != null) Text('🩹 ${i.note}', style: sub),
+                              if (i.note != null) Text('🩹 ${trNote(i.note!)}', style: sub),
                             ],
                           ),
                         ),

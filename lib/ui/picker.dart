@@ -96,13 +96,13 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     final st = injuryStatus(n, settings.injuries);
     if (st.avoid.isNotEmpty) {
       return Text(
-        '⚠️ ${t('Vältä ({0})', [st.avoid.join(', ')])}${st.substitute != null ? ' → ${st.substitute}' : ''}',
+        '⚠️ ${t('Vältä ({0})', [st.avoid.map(t).join(', ')])}${st.substitute != null ? ' → ${exerciseLabel(st.substitute!)}' : ''}',
         style: const TextStyle(fontSize: 11, color: Sami.red),
       );
     }
     if (st.modify.isNotEmpty) {
       return Text(
-        '🩹 ${st.modify.first}',
+        '🩹 ${t(st.modify.first)}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),

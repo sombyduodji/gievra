@@ -260,7 +260,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 children: [
                   const Icon(Icons.directions_run, size: 20),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(t('Lämmittely · {0} {1} min', [w.warmup!.equipment, w.warmup!.minutes]))),
+                  Expanded(child: Text(t('Lämmittely · {0} {1} min', [t(w.warmup!.equipment), w.warmup!.minutes]))),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.close, size: 18),

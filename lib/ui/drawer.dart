@@ -363,6 +363,29 @@ class _SettingsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          // Saamenkielisessä käyttöliittymässä vammatilan ohjeet suomeksi tai englanniksi (ei käännetty saameksi).
+          if (isSami) ...[
+            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Vammatilan ohjeet'))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'fi', label: Text(t('Suomi'))),
+                  const ButtonSegment(value: 'en', label: Text('English')),
+                ],
+                selected: {settings.healthLang},
+                onSelectionChanged: (s) => settings.setHealthLang(s.first),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                t('Vammatilan ohjeita ei ole käännetty saameksi: valitse, näytetäänkö ne suomeksi vai englanniksi.'),
+                style: sub,
+              ),
+            ),
+          ],
           // Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi: valintaa ei tarvita.
           if (!isEnglish) ...[
             Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Liikkeiden nimet'))),
@@ -583,7 +606,7 @@ class _SettingsSection extends StatelessWidget {
             ),
           ListTile(
             title: Text(t('Lämmittelylaitteet')),
-            subtitle: Text(settings.equipment.map((e) => e.name).join(', '), style: sub),
+            subtitle: Text(settings.equipment.map((e) => t(e.name)).join(', '), style: sub),
             trailing: TextButton(
               onPressed: () => settings.setEquipment([...Settings.defaultEquipment]),
               child: Text(t('Palauta')),
@@ -760,7 +783,23 @@ Future<void> showFeedback(BuildContext context) => showDialog(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(t('Virheet, puuttuvat liikkeet, toiveet ja ideat ovat tervetulleita.')),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
+        Text(t('Voit kirjoittaa suomeksi, saameksi tai englanniksi.')),
+        const SizedBox(height: 8),
+        Text(
+          t('Jos jokin ei toimi, käytä mieluummin Ilmoita ongelmasta: se liittää mukaan tarvittavat tiedot.'),
+          style: Theme.of(ctx).textTheme.bodySmall,
+        ),
+        TextButton.icon(
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          onPressed: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen()));
+          },
+          icon: const Icon(Icons.bug_report_outlined, size: 18),
+          label: Text(t('Ilmoita ongelmasta')),
+        ),
+        const SizedBox(height: 6),
         // Osoite näkyy ja kopioituu, koska sähköpostilinkki ei toimi ilman sähköpostiohjelmaa.
         Row(
           children: [

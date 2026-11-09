@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'injury_data.dart' show injuryRegions;
 import 'models.dart' show decimalComma;
 
 /// Käyttöliittymän kieli. Suomi on lähdekieli: koodissa teksti kirjoitetaan suomeksi `t('…')`-kutsuun,
@@ -31,6 +32,20 @@ Map<String, String> _en = const {}; // englanninkieliset nimet suomen- ja saamen
 /// Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi.
 String nameMode = 'fi';
 String get effectiveNameMode => _lang == 'en' ? 'en' : nameMode;
+
+/// Saamenkielisessä käyttöliittymässä vammatilan tekstit (ei käännetty saameksi): 'fi' suomeksi tai 'en'
+/// englanniksi. Asetus (app_state) päivittää.
+String healthTextLang = 'fi';
+
+/// Vammatilan tekstit, jotka näytetään saamenkielisessä käyttöliittymässä suomeksi tai englanniksi.
+final Set<String> _health = {
+  for (final r in injuryRegions) ...[r.name, r.explanation, r.tendon, ...r.modify.values],
+};
+String? _healthText(String key) {
+  if (_lang != 'se' || healthTextLang != 'en' || !_health.contains(key)) return null;
+  final e = _en[key];
+  return e == null || e.isEmpty ? null : e;
+}
 
 String get uiLang => _lang;
 bool get isSami => _lang == 'se';
@@ -72,7 +87,7 @@ void debugSetCatalog(String code, Map<String, String> catalog, {Map<String, Stri
 
 /// Käännä. [args] korvaavat paikkamerkit {0}, {1}…
 String t(String fi, [List<Object?> args = const []]) {
-  final s = _catalog[fi];
+  final s = _healthText(fi) ?? _catalog[fi];
   return fill(s == null || s.isEmpty ? fi : s, args);
 }
 
@@ -80,11 +95,14 @@ String t(String fi, [List<Object?> args = const []]) {
 /// Näytetään käyttöliittymässä tr()-funktiolla.
 String fi(String template, [List<Object?> args = const []]) => fill(template, args);
 
+/// Tallennettu huomio, jossa osat on erotettu " · ":llä (esim. vammatilan muutosohjeet): kukin osa käännetään.
+String trNote(String stored) => stored.split(' · ').map(tr).join(' · ');
+
 /// Kääntää tallennetun suomenkielisen tekstin: suora osuma tai fi()-mallin mukainen teksti, jonka
 /// muuttujat poimitaan ja sijoitetaan käännökseen (muuttujat käännetään, jos niille on käännös).
 String tr(String stored) {
   if (_lang == 'fi') return stored;
-  final direct = _catalog[stored];
+  final direct = _healthText(stored) ?? _catalog[stored];
   if (direct != null && direct.isNotEmpty) return direct;
   for (final (re, tmpl) in _patterns) {
     final m = re.firstMatch(stored);
@@ -93,7 +111,9 @@ String tr(String stored) {
     final args = List<Object?>.filled(order.isEmpty ? 0 : order.reduce((a, b) => a > b ? a : b) + 1, '');
     for (var i = 0; i < order.length; i++) {
       final v = m.group(i + 1)!;
-      args[order[i]] = t(v);
+      // Luettelo (esim. "rinta, takareisi, selkä"): jos koko tekstille ei ole käännöstä, osat käännetään erikseen.
+      final whole = t(v);
+      args[order[i]] = whole != v || !v.contains(', ') ? whole : v.split(', ').map(t).join(', ');
     }
     return fill(_catalog[tmpl]!, args);
   }

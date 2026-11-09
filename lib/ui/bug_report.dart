@@ -12,6 +12,7 @@ import '../app_info.dart';
 import '../app_state.dart';
 import '../body.dart';
 import '../l10n.dart';
+import '../maps/map_store.dart';
 import '../theme.dart';
 import 'widgets.dart';
 
@@ -35,18 +36,7 @@ class _Attachment {
 /// (oletuksena pois, varoituksen kera), asetukset ja ohjelma sekä punnitukset (oletuksena pois).
 Future<List<(String, String, bool, String?)>> defaultReportAttachments() async {
   final root = (await store.rootDir()).path;
-  final out = <(String, String, bool, String?)>[];
-  final recent = [...store.workouts]..sort((a, b) => b.date.compareTo(a.date));
-  for (final w in recent.take(3)) {
-    final rel = workoutPath(w.date, w.session);
-    final f = File(p.join(root, rel));
-    if (await f.exists()) out.add((p.basename(rel), f.path, true, null));
-    // GPS-reitti näyttää, missä liikuit: mukana valittavana, oletuksena pois ja varoituksen kera.
-    if (w.route != null) {
-      final g = File(p.join(root, routeRel(w)));
-      if (await g.exists()) out.add((w.route!, g.path, false, _gpxWarning));
-    }
-  }
+  final out = await workoutAttachments(0, 3, on: true);
   for (final n in ['asetukset.md', 'ohjelma.md']) {
     final f = File(p.join(root, n));
     if (await f.exists()) out.add((n, f.path, true, null));
@@ -64,6 +54,24 @@ Future<List<(String, String, bool, String?)>> defaultReportAttachments() async {
   return out;
 }
 
+/// Treenitiedostot uusimmasta alkaen: [skip] ohitetaan, [take] seuraavaa. GPS-reitti aina oletuksena pois.
+Future<List<(String, String, bool, String?)>> workoutAttachments(int skip, int take, {required bool on}) async {
+  final root = (await store.rootDir()).path;
+  final out = <(String, String, bool, String?)>[];
+  final recent = [...store.workouts]..sort((a, b) => b.date.compareTo(a.date));
+  for (final w in recent.skip(skip).take(take)) {
+    final rel = workoutPath(w.date, w.session);
+    final f = File(p.join(root, rel));
+    if (await f.exists()) out.add((p.basename(rel), f.path, on, null));
+    // GPS-reitti näyttää, missä liikuit: mukana valittavana, oletuksena pois ja varoituksen kera.
+    if (w.route != null) {
+      final g = File(p.join(root, routeRel(w)));
+      if (await g.exists()) out.add((w.route!, g.path, false, _gpxWarning));
+    }
+  }
+  return out;
+}
+
 String get _gpxWarning => t(
   '⚠ Sisältää GPS-reitin: se näyttää, missä liikuit (esim. kodin lähellä). Lähetä vain, jos ongelma liittyy '
   'reittiin, matkaan tai GPS:ään.',
@@ -75,6 +83,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
   final _desc = TextEditingController();
   final _files = <_Attachment>[];
   bool _busy = false;
+  int _shown = 3; // näytettyjä treenejä (uusimmasta alkaen)
 
   List<(String, String, String)> get _types => [
     ('save', '💾', t('Treeni ei tallennu tai katoaa')),
@@ -82,8 +91,32 @@ class _BugReportScreenState extends State<BugReportScreen> {
     ('export', '📤', t('Vienti tai varmuuskopio ei onnistu')),
     ('program', '📋', t('Ohjelma tai ehdotus näyttää väärältä')),
     ('crash', '💥', t('Sovellus kaatuu tai jumittuu')),
+    ('gps', '📍', t('GPS, kartat tai korkeustiedot')),
+    ('health', '❤️', t('Health Connect -tuonti')),
+    ('lang', '🌐', t('Käännösvirhe tai väärä kieli')),
     ('other', '💬', t('Muu ongelma tai ehdotus')),
   ];
+
+  /// Mitä kuhunkin ongelmaan kannattaa liittää ja kertoa.
+  String? get _hint => switch (_type) {
+    'save' => t('Tuoreimmat treenitiedostot ovat mukana. Kerro, minkä päivän treeni katosi tai jäi tallentumatta.'),
+    'import' => t(
+      'Liitä tiedosto, jonka tuonti epäonnistui (Lisää tiedosto), jos siinä ei ole mitään, mitä et halua jakaa. '
+      'Kerro, mistä sovelluksesta se on.',
+    ),
+    'export' => t('Kerro, minne yritit viedä (kansio, jakaminen) ja mikä virheilmoitus tuli. Kuvakaappaus auttaa.'),
+    'program' => t('Ohjelma ja asetukset ovat mukana. Kerro, mikä ehdotus näytti väärältä ja mitä odotit.'),
+    'crash' => t('Kerro, mitä teit juuri ennen ja toistuuko ongelma. Kuvakaappaus auttaa, jos sovellus jumittuu.'),
+    'gps' => t(
+      'Jos ongelma koskee reittiä tai matkaa, valitse lenkin GPS-reitti (.gpx) alta. Ladattujen karttojen ja '
+      'korkeustietojen määrä on mukana automaattisesti, alueiden nimet eivät.',
+    ),
+    'health' => t('Kerro, mikä sovellus tai kello tallentaa tiedot Health Connectiin ja mitä jäi tuomatta.'),
+    'lang' => t('Kirjoita väärä teksti ja oikea muoto. Lisää kuvakaappaus näkymästä.'),
+    _ => null,
+  };
+
+  static const _fileTypes = ['.md', '.gpx', '.gmd', '.fitnotes', '.zip', '.csv', '.txt'];
 
   @override
   void initState() {
@@ -98,31 +131,64 @@ class _BugReportScreenState extends State<BugReportScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Näytä lisää: seuraavat 10 vanhempaa treeniä listaan valitsemattomina.
+  Future<void> _more() async {
+    final more = await workoutAttachments(_shown, 10, on: false);
+    _shown += 10;
+    // Uudet treenit treenilistan jatkoksi (ennen asetuksia ja ohjelmaa).
+    var at = _files.lastIndexWhere((a) => a.name.endsWith('.gpx') || RegExp(r'^\d{4}-').hasMatch(a.name)) + 1;
+    for (final (name, path, on, warning) in more) {
+      if (_files.any((a) => a.path == path)) continue;
+      _files.insert(at++, _Attachment(name, path, on: on, warning: warning));
+    }
+    if (mounted) setState(() {});
+  }
+
   Future<void> _pick({required bool images}) async {
     final picked = await FilePicker.pickFiles(
-      dialogTitle: images ? t('Valitse kuvakaappaukset') : t('Valitse .md- tai .gpx-tiedostot'),
+      dialogTitle: images ? t('Valitse kuvakaappaukset') : t('Valitse tiedostot'),
       type: images ? FileType.image : FileType.any,
     );
     for (final f in picked) {
       final path = f.path;
       if (path == null) continue;
       final lower = f.name.toLowerCase();
-      if (!images && !lower.endsWith('.md') && !lower.endsWith('.gpx')) continue;
+      if (!images && !_fileTypes.any(lower.endsWith)) continue;
       _files.add(_Attachment(f.name, path, on: true, warning: lower.endsWith('.gpx') ? _gpxWarning : null));
     }
     setState(() {});
   }
 
-  Future<String> _diagnostics() async {
+  /// Kehittäjälle suomeksi: versio, laite, kieliasetukset, näyttö ja kartat. Ei sijaintia eikä alueiden nimiä.
+  Future<String> _diagnostics(MediaQueryData mq) async {
     final info = await PackageInfo.fromPlatform();
+    String device = '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+    if (Platform.isAndroid) {
+      try {
+        device = await _channel.invokeMethod<String>('device') ?? device;
+      } catch (_) {}
+    }
+    var maps = '';
+    try {
+      final files = await MapStore.instance.installedFiles();
+      final mb = files.fold<int>(0, (a, f) => a + f.$2) / 1e6;
+      final elev = files.where((f) => f.$1.endsWith('.elev')).length;
+      maps = 'karttatiedostoja ${files.length - elev}, korkeustiedostoja $elev, yht. ${mb.round()} Mt';
+    } catch (_) {}
     return [
       '${AppInfo.name} ${info.version} (${info.buildNumber})',
-      '${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
-      'UI: $uiLang · treenejä ${store.workouts.length} · kansio ${settings.folder == null ? 'oletus' : 'oma'}',
+      device,
+      'Kieli: $uiLang · liikenimet ${settings.moveNames} · vammaohjeet ${settings.healthLang}',
+      'Näyttö: ${mq.size.width.round()}×${mq.size.height.round()} dp, tekstikoko '
+          '${mq.textScaler.scale(100).round()} % · teema ${settings.themeMode.name}',
+      'Treenejä ${store.workouts.length} · tila ${settings.trainMode} · kansio '
+          '${settings.folder == null ? 'oletus' : 'oma'} · Health Connect ${settings.hcImport ? 'päällä' : 'pois'}',
+      if (maps.isNotEmpty) '$maps · korkeus karttojen kanssa ${settings.elevWithMaps ? 'kyllä' : 'ei'}',
     ].join('\n');
   }
 
   Future<void> _send() async {
+    final mq = MediaQuery.of(context);
     setState(() => _busy = true);
     try {
       final type = _types.firstWhere((x) => x.$1 == _type);
@@ -144,7 +210,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
         _desc.text.trim().isEmpty ? '(ei kuvausta)' : _desc.text.trim(),
         '',
         '---',
-        await _diagnostics(),
+        await _diagnostics(mq),
         if (paths.isNotEmpty) 'Liitteet: ${paths.map(p.basename).join(', ')}',
       ].join('\n');
       if (Platform.isAndroid) {
@@ -196,6 +262,19 @@ class _BugReportScreenState extends State<BugReportScreen> {
               ],
             ),
           ),
+          if (_hint != null)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lightbulb_outline, size: 18, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_hint!, style: const TextStyle(fontSize: 13))),
+                ],
+              ),
+            ),
           SectionLabel(t('Mitä tapahtui?')),
           TextField(
             controller: _desc,
@@ -203,6 +282,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
             maxLines: 8,
             decoration: InputDecoration(
               hintText: t('Esim. mitä teit, mitä odotit ja mitä tapahtui. Toistuuko ongelma?'),
+              helperText: t('Voit kirjoittaa suomeksi, saameksi tai englanniksi.'),
               filled: true,
               fillColor: cs.surfaceContainer,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -233,13 +313,22 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 size: 20,
               ),
             ),
+          if (store.workouts.length > _shown)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _more,
+                icon: const Icon(Icons.expand_more, size: 18),
+                label: Text(t('Näytä vanhempia treenejä ({0} lisää)', [store.workouts.length - _shown])),
+              ),
+            ),
           Wrap(
             spacing: 8,
             children: [
               OutlinedButton.icon(
                 onPressed: () => _pick(images: false),
                 icon: const Icon(Icons.note_add_outlined, size: 18),
-                label: Text(t('Lisää tiedosto (.md, .gpx)')),
+                label: Text(t('Lisää tiedosto')),
               ),
               OutlinedButton.icon(
                 onPressed: () => _pick(images: true),
@@ -265,8 +354,9 @@ class _BugReportScreenState extends State<BugReportScreen> {
           const SizedBox(height: 8),
           Text(
             t(
-              'Viesti lähtee omasta sähköpostistasi osoitteeseen {0}. Mukana on myös sovelluksen versio ja '
-              'puhelimen käyttöjärjestelmä. Mitään ei lähetetä ennen kuin painat sähköpostissa Lähetä.',
+              'Viesti lähtee omasta sähköpostistasi osoitteeseen {0}. Mukana on myös sovelluksen versio, puhelimen '
+              'malli ja Android-versio, kieli- ja näyttöasetukset sekä ladattujen karttojen määrä (ei sijaintia). '
+              'Näet kaiken sähköpostissa, eikä mitään lähetetä ennen kuin painat siellä Lähetä.',
               [AppInfo.feedbackEmail],
             ),
             style: sub,

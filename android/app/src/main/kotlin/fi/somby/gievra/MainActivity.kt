@@ -305,6 +305,11 @@ class MainActivity : FlutterActivity() {
             }
         }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/email").setMethodCallHandler { call, result ->
+            if (call.method == "device") {
+                // Vikailmoituksen diagnostiikka: valmistaja, malli ja Android-versio (ei tunnisteita).
+                result.success("${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, Android ${android.os.Build.VERSION.RELEASE} (SDK ${android.os.Build.VERSION.SDK_INT})")
+                return@setMethodCallHandler
+            }
             if (call.method != "send") {
                 result.notImplemented()
                 return@setMethodCallHandler
