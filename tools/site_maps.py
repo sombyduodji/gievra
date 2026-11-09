@@ -9,7 +9,8 @@ kevyttä luetteloa: nimi, muut nimet, alue, koko ja latausosoite, ei aluerajoja.
 karttajulkaisu päivittyy, ja commitoi site/kartat.json ja site/kartat-tarkisteet.json.
 
 kartat-tarkisteet.json: kaikkien karttajulkaisujen (myös vanhojen) .pmtiles- ja .elev-tiedostojen SHA-256 GitHubin omista
-tarkisteista (API:n digest-kenttä). Sovellus tuo sen kuten kartan ja tarkistaa kartat sillä ilman verkkoa.
+tarkisteista (API:n digest-kenttä) sekä luetteloiden aiempien versioiden tarkisteet (sha256Old), joita GitHubissa ei enää
+ole (koko 0). Sovellus tuo sen kuten kartan ja tarkistaa kartat sillä ilman verkkoa.
 """
 import argparse
 import json
@@ -68,8 +69,13 @@ def main():
     index = get(INDEX, a.dir)
     out = {'format': 1, 'countries': []}
     dates = set()
+    older = []  # luetteloiden sha256Old: aiemmat versiot, joita GitHubissa ei enää ole (esim. vanhat korkeustiedostot)
     for c in index['countries']:
         cat = get(c['catalog'], a.dir)
+        tag = c['catalog'].rsplit('/', 2)[-2]
+        for e in [cat.get('overview'), cat.get('all'), *cat.get('packs', []), *(p.get('elev') for p in cat.get('packs', []))]:
+            for h in (e or {}).get('sha256Old', []):
+                older.append([e['file'], h, 0, f'{tag} (aiempi versio)'])
         dates.add(cat.get('osmDate', ''))
         names = cat.get('names') or FINLAND
         packs = []
@@ -90,6 +96,8 @@ def main():
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
         f.write('\n')
     sums = checksums()
+    have = {(f[0], f[1]) for f in sums}
+    sums += sorted(e for e in older if (e[0], e[1]) not in have)
     with open(a.sums, 'w', encoding='utf-8') as f:
         json.dump({'format': 'gievra-kartat-tarkisteet', 'version': 1, 'osmDate': out['osmDate'], 'files': sums},
                   f, ensure_ascii=False, separators=(',', ':'))
