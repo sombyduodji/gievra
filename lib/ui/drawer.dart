@@ -505,6 +505,20 @@ class _SettingsSection extends StatelessWidget {
             value: settings.watch,
             onChanged: settings.setWatch,
           ),
+          // Tehdyn liikunnan lisäys Health Connectista etusivun painikkeesta (Android, kestävyyslajit; oletus pois).
+          if (!isDemo && Platform.isAndroid && settings.sports)
+            SwitchListTile(
+              title: Text(t('Lisää tehty liikunta Health Connectista')),
+              subtitle: Text(
+                t(
+                  'Etusivulle painike, josta kellon tai muun sovelluksen Health Connectiin tallentama liikunta '
+                  'lisätään Gievraan: laji, aika, matka, syke, kalorit ja askeleet.',
+                ),
+                style: sub,
+              ),
+              value: settings.hcImport,
+              onChanged: settings.setHcImport,
+            ),
           // Offline-kartat GPS-reiteille (vain Androidissa).
           if (!isDemo && Platform.isAndroid)
             ListTile(

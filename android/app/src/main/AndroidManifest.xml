@@ -23,6 +23,7 @@
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
         <!-- Health Connectia käyttävät sovellukset (kellon sovellus, Health Sync …): nimi näkyy "Onko tämä se?"

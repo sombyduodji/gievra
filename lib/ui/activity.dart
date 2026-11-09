@@ -17,6 +17,7 @@ import '../sports.dart';
 import '../theme.dart';
 import 'maps_screen.dart';
 import 'record_screen.dart';
+import 'share.dart';
 import 'watch.dart';
 import 'widgets.dart';
 import 'workout.dart';
@@ -31,7 +32,10 @@ class ActivityScreen extends StatefulWidget {
 
   /// Palautettu luonnos (Android sulki sovelluksen kesken kirjauksen): näkymän oma tila.
   final Map<String, Object?>? draft;
-  const ActivityScreen({super.key, required this.workout, this.recoverGps = false, this.draft});
+
+  /// Valmiiksi täytetty liikunta (esim. Health Connectista): ei GPS-valintaa, arvot suoraan säätimiin.
+  final bool manual;
+  const ActivityScreen({super.key, required this.workout, this.recoverGps = false, this.draft, this.manual = false});
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
@@ -43,7 +47,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   bool _saved = false;
 
   /// Valittu "Kirjaa ilman GPS:ää" (lomake näkyy kuten ennen).
-  bool _manual = false;
+  late bool _manual = widget.manual;
 
   /// Offline-kartta puuttuu viimeisimmästä sijainnista (tai karttoja ei ole lainkaan).
   bool _mapMissing = false;
@@ -57,8 +61,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Duration get _swElapsed => _swAcc + (_swStart == null ? Duration.zero : DateTime.now().difference(_swStart!));
 
   /// Ajanotto tarjotaan uudelle, tänään tehtävälle liikunnalle.
+  // Ei Health Connectista lisätylle: liikunta on jo tehty, aika tuli kellosta.
   bool get _canStopwatch =>
-      w.date == dateOnly(DateTime.now()) && !_hasRoute && !store.onDay(w.date).any((x) => x.session == w.session);
+      w.date == dateOnly(DateTime.now()) &&
+      !_hasRoute &&
+      w.hcId == null &&
+      !store.onDay(w.date).any((x) => x.session == w.session);
 
   void _swStartPause() {
     Future.microtask(_saveDraft);
@@ -498,6 +506,28 @@ class _ActivityScreenState extends State<ActivityScreen> {
       !widget.recoverGps &&
       store.onDay(w.date).any((x) => x.session == w.session && x.activity != null);
 
+  bool get _isSaved => store.onDay(w.date).any((x) => x.session == w.session && x.activity != null);
+
+  /// Poistaa tallennetun liikunnan (.md ja oma .gpx). Health Connectista lisätty tulee taas lisättäväksi.
+  Future<void> _delete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Poistetaanko liikunta?')),
+        content: Text(t('Tiedosto {0}.md poistetaan.', ['${isoDate(w.date)}${w.session > 1 ? '-${w.session}' : ''}'])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Poista'))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    _saved = true; // ei luonnosta poistetusta
+    _draftTick?.cancel();
+    await store.delete(w.date, w.session);
+    if (mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _unlock() async {
     if (await askEditSaved(context) && mounted) setState(() => _locked = false);
   }
@@ -513,6 +543,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
       appBar: AppBar(
         title: Text(w.activity == null ? t('Liikunta') : sportName(w.activity!)),
         actions: [
+          // Tallennettu liikunta: jakaminen ja poisto (kuten salitreenissä).
+          if (_isSaved)
+            PopupMenuButton<String>(
+              onSelected: (v) => v == 'share' ? shareWorkout(context, w) : _delete(),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'share', child: Text(t('Jaa'))),
+                PopupMenuItem(value: 'delete', child: Text(t('Poista liikunta'))),
+              ],
+            ),
           if (_locked) LockButton(onTap: _unlock),
           // Tallennus vain sivun lopussa (vihreä Treeni valmis!, kuten salitreenissä), ei yläpalkissa.
         ],
@@ -700,7 +739,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 selected: {?w.intensity},
                 onSelectionChanged: (v) => setState(() => w.intensity = v.firstOrNull),
               ),
-              if (settings.watch)
+              if (settings.watch || w.healthSource != null)
                 WatchCard(
                   w: w,
                   onChanged: () async {

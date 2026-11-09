@@ -101,6 +101,13 @@ class _TreeniAppState extends State<TreeniApp> {
     locale: const Locale('fi'),
     supportedLocales: const [Locale('fi')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    // Android 15+ piirtää sovelluksen järjestelmän navigointipalkin alle (edge-to-edge). Sivujen omat
+    // ListView-reunukset ohittavat MediaQueryn alareunan, joten kolmen painikkeen palkki peitti sivujen lopun
+    // (sitä ei voinut vierittää esiin). Koko sovellukselle tila palkin yläpuolelle; palkin taakse sivun tausta.
+    builder: (context, child) => ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: SafeArea(top: false, left: false, right: false, child: child ?? const SizedBox.shrink()),
+    ),
     // Ensimmäisellä käynnistyskerralla kysytään nimi.
     home: settings.name == null || settings.name!.isEmpty
         ? const OnboardingScreen()

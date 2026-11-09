@@ -2,9 +2,13 @@
 """Gievran versio gitin tiedoista (sama malli kuin Sátni FST:ssä).
 
 Versio on muotoa X.Y.Z.VVVVKKPP.N: X.Y.Z tiedostosta RELEASE_VERSION (julkaisun tagi vX.Y.Z), VVVVKKPP
-viimeisimmän commitin päivä ja N monesko sen päivän commit se on. Sama commit saa saman version jokaisella
-koneella. Committaamattomat muutokset: loppuun "+muokattu".
-Androidin versionCode: päivämäärä * 100 + N (0.1.2.20261107.3 -> 2026110703), siksi N enintään 99.
+viimeisimmän commitin päivä ja N commitin kellonaika vartteina keskiyöstä (0–95). Sama commit saa saman version
+jokaisella koneella. Committaamattomat muutokset: loppuun "+muokattu".
+Androidin versionCode: päivämäärä * 100 + N (0.4.2.20261109.50 -> 2026110950).
+
+N on kellonaika eikä päivän committien määrä (muutettu 9.11.2026), koska julkaisuhaara (julkaisu) on eri historia
+kuin dev: julkaisun commiteja on päivässä vähän, dev-testiversioita paljon, ja julkaisu ei asentunut saman päivän
+testiversion päälle (pienempi versionCode). Kellonaika kasvaa molemmissa haaroissa samassa järjestyksessä.
 
   python3 tools/version.py          tulostaa version ja versionCoden
   python3 tools/version.py --flutter   tulostaa flutter build -argumentit
@@ -26,14 +30,12 @@ def version():
     try:
         if git("rev-parse", "--is-shallow-repository").strip() == "true":
             raise RuntimeError("git-historia on vajaa (shallow clone)")
-        dates = git("log", "--format=%cd", "--date=format:%Y%m%d", "HEAD").split()
-        date, number = dates[0], dates.count(dates[0])
+        date, hhmm = git("log", "-1", "--format=%cd", "--date=format:%Y%m%d %H%M", "HEAD").split()
+        number = (int(hhmm[:2]) * 60 + int(hhmm[2:])) // 15
         modified = git("status", "--porcelain", "--untracked-files=no") != ""
     except (OSError, subprocess.CalledProcessError, RuntimeError, IndexError) as e:
         print(f"Varoitus: versiota ei saatu gitistä ({e}), numero 0", file=sys.stderr)
         date, number, modified = datetime.date.today().strftime("%Y%m%d"), 0, True
-    if number > 99:
-        sys.exit(f"Päivällä {date} on yli 99 committia, versionCode ei riitä")
     name = f"{release}.{date}.{number}" + ("+muokattu" if modified else "")
     return name, int(date) * 100 + number
 

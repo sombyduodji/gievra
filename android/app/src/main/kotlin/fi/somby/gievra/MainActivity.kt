@@ -195,14 +195,16 @@ class MainActivity : FlutterActivity() {
                 "status" -> result.success(HealthBridge.status(this))
                 "granted" -> scope.launch {
                     try {
-                        result.success(HealthBridge.granted(this@MainActivity).containsAll(HealthBridge.readPermissions))
+                        val need = if (call.argument<Boolean>("import") == true) HealthBridge.importPermissions else HealthBridge.readPermissions
+                        result.success(HealthBridge.granted(this@MainActivity).containsAll(need))
                     } catch (e: Exception) {
                         result.error("health", e.message, null)
                     }
                 }
                 "request" -> {
                     val write = call.argument<Boolean>("write") == true && BuildConfig.DEBUG
-                    healthAsked = if (write) HealthBridge.readPermissions + HealthBridge.writePermissions else HealthBridge.readPermissions
+                    val read = if (call.argument<Boolean>("import") == true) HealthBridge.importPermissions else HealthBridge.readPermissions
+                    healthAsked = if (write) read + HealthBridge.writePermissions else read
                     healthResult = result
                     try {
                         if (android.os.Build.VERSION.SDK_INT >= 34) {
@@ -214,6 +216,15 @@ class MainActivity : FlutterActivity() {
                         }
                     } catch (e: Exception) {
                         healthResult = null
+                        result.error("health", e.message, null)
+                    }
+                }
+                "sessions" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.sessions(this@MainActivity, start, end))
+                    } catch (e: Exception) {
                         result.error("health", e.message, null)
                     }
                 }
