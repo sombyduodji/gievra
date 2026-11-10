@@ -46,7 +46,9 @@ Future<void> exportTemplate(BuildContext context, Program p) async {
     ),
   );
   if (ok != true) return;
-  final text = programToTemplate(p, name: name.text, author: author.text);
+  // Oletusnimi (tavoite käyttöliittymän kielellä) jätetään pois: vastaanottaja näkee sen omalla kielellään.
+  final defaultName = p.displayTitle.split(' · ').first;
+  final text = programToTemplate(p, name: name.text.trim() == defaultName ? null : name.text, author: author.text);
   final base = name.text.trim().isEmpty ? 'ohjelma' : name.text.trim().replaceAll(RegExp(r'[^\w\-äöåÄÖÅ ]'), '');
   final saved = await FilePicker.saveFile(
     dialogTitle: t('Tallenna ohjelmapohja'),

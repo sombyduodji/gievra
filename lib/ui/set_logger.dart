@@ -97,7 +97,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
           for (final m in Measure.values)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, m),
-              child: Text('${m == _m ? '● ' : ''}${m.label[0].toUpperCase()}${m.label.substring(1)}'),
+              child: Text('${m == _m ? '● ' : ''}${_cap(t(m.label))}'),
             ),
         ],
       ),
@@ -688,3 +688,6 @@ String? weightTotal(String exercise, double kg) =>
     kg > 0 && (pairedKettlebell.contains(exercise) || pairedDumbbell.contains(exercise))
     ? t('Molemmissa käsissä · yhteensä {0} kg', [fmtNum(kg * 2)])
     : null;
+
+/// Ensimmäinen kirjain isoksi (mittaustavan nimi otsikkona).
+String _cap(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';

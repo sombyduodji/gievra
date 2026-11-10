@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -8,10 +10,13 @@ import 'package:path_provider/path_provider.dart';
 
 import '../app_state.dart';
 import '../body.dart';
+import '../csv_export.dart';
 import '../garmin_import.dart';
+import '../import_detect.dart';
 import '../import_export.dart';
 import '../models.dart';
 import '../theme.dart';
+import 'program_template.dart' show importTemplate;
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -50,24 +55,60 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     return f;
   }
 
-  Future<void> _importFitnotes() => _run(() async {
-    final f = await _pick(['fitnotes', 'db', 'sqlite']);
-    if (f == null) return;
+  /// Tuo tiedosto: yksi painike, tyyppi tunnistetaan sisällöstä (FitNotes, Garmin, Gievran varmuuskopio,
+  /// .md-treenit, ohjelmapohja). Useampi .md-tiedosto kerralla tuodaan yhdessä.
+  Future<void> _importAny() => _run(() async {
+    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse tuotava tiedosto'));
+    if (files.isEmpty) return;
+    final picked = [for (final f in files) (f.name, await f.xFile.readAsBytes())];
+    final kinds = [for (final (n, b) in picked) detectImport(n, b)];
+    if (picked.length > 1) {
+      if (kinds.every((k) => k == ImportKind.md)) {
+        await _importMdTexts({for (final (n, b) in picked) n: utf8.decode(b, allowMalformed: true)});
+      } else {
+        _snack(t('Valitse yksi tiedosto kerrallaan (useampi vain .md-treenitiedostoina).'));
+      }
+      return;
+    }
+    final (name, bytes) = picked.single;
+    switch (kinds.single) {
+      case ImportKind.fitnotes:
+        await _importFitnotesBytes(bytes);
+      case ImportKind.garmin:
+        await _importGarminText(utf8.decode(bytes, allowMalformed: true));
+      case ImportKind.gievraZip:
+        await _preview(readZip(bytes));
+      case ImportKind.md:
+        await _importMdTexts({name: utf8.decode(bytes, allowMalformed: true)});
+      case ImportKind.template:
+        if (mounted) await importTemplate(context, text: utf8.decode(bytes, allowMalformed: true));
+      case ImportKind.mapPack:
+        _snack(t('Tämä on karttapaketti: tuo se Kartat-sivulla (Tuo tiedostosta).'));
+      case ImportKind.gievraCsv:
+        _snack(
+          t('Tämä on Gievran luettava CSV-vienti, ei varmuuskopio: sitä ei voi tuoda. Käytä varmuuskopiota (.zip).'),
+        );
+      case ImportKind.unknown:
+        _snack(
+          t(
+            'Tiedostoa ei tunnistettu. Tuettu: FitNotes (.fitnotes), Garmin Connect (.csv), Gievran varmuuskopio (.zip), .md-treenit ja ohjelmapohja (.gmd).',
+          ),
+        );
+    }
+  });
+
+  Future<void> _importFitnotesBytes(List<int> bytes) async {
     // SQLite tarvitsee tiedostopolun: kopioidaan väliaikaiskansioon.
     final tmp = File(p.join((await getTemporaryDirectory()).path, 'fitnotes-import.db'));
-    await tmp.writeAsBytes(await f.xFile.readAsBytes());
+    await tmp.writeAsBytes(bytes);
     try {
       await _preview(readFitnotes(tmp.path, translate: true));
     } finally {
       if (await tmp.exists()) await tmp.delete();
     }
-  });
+  }
 
-  Future<void> _importGarmin() => _run(() async {
-    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse Garmin Connectin CSV-tiedosto'));
-    final f = files.firstOrNull;
-    if (f == null) return;
-    final text = utf8.decode(await f.xFile.readAsBytes(), allowMalformed: true);
+  Future<void> _importGarminText(String text) async {
     // Tunnistamattomat lajit: käyttäjä valitsee parin (tai ohittaa), ei arvata.
     final choices = <String, String?>{};
     for (final (type, n) in garminUnknownTypes(text)) {
@@ -84,7 +125,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     if (!settings.sports) settings.setSports(true);
     if (!settings.watch && r.workouts.any((w) => w.hrAvg != null || w.kcal != null)) settings.setWatch(true);
     await _preview(r);
-  });
+  }
 
   /// Mikä Gievran laji vastaa toisen sovelluksen lajia [type] ([n] suoritusta)? null = ohita (ei tuoda).
   Future<String?> _askSport(String type, int n) =>
@@ -96,19 +137,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     await _preview(readZip(await f.xFile.readAsBytes()));
   });
 
-  Future<void> _importMd() => _run(() async {
-    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse .md-tiedostot'));
-    final texts = <String, String>{};
-    for (final f in files) {
-      if ((f.extension ?? '').toLowerCase().replaceAll('.', '') != 'md') continue;
-      texts[f.name] = utf8.decode(await f.xFile.readAsBytes(), allowMalformed: true);
-    }
-    if (texts.isEmpty) {
-      if (files.isNotEmpty) _snack(t('Valitse .md-tiedostoja'));
-      return;
-    }
-    await _preview(readMdFiles(texts));
-  });
+  Future<void> _importMdTexts(Map<String, String> texts) => _preview(readMdFiles(texts));
 
   Future<void> _export() => _run(() async {
     final bytes = await exportZip();
@@ -120,6 +149,152 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     );
     if (uri != null && mounted) _snack(t('Varmuuskopio tallennettu ({0} treeniä).', [store.workouts.length]));
   });
+
+  /// Luettava vienti (CSV) käyttäjän kielellä: käyttäjä valitsee, mitä jaetaan ja miltä ajalta.
+  Future<void> _exportCsv() async {
+    final today = dateOnly(DateTime.now());
+    var period = 90; // päiviä; 0 = kaikki, -1 = oma aikaväli
+    DateTimeRange? custom;
+    var gym = true, cardio = true, body = false, notes = false;
+    final hasBody = settings.body.weights.isNotEmpty;
+    DateTime from() => switch (period) {
+      0 => DateTime(1900),
+      -1 => custom?.start ?? today,
+      _ => today.subtract(Duration(days: period - 1)),
+    };
+    DateTime to() => period == -1 ? custom?.end ?? today : today;
+    CsvExportOptions opts() =>
+        CsvExportOptions(from: from(), to: to(), gym: gym, cardio: cardio, body: body && hasBody, notes: notes);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) {
+          final files = buildCsvExport(store.workouts, settings.body, opts());
+          final cs = Theme.of(ctx).colorScheme;
+          return AlertDialog(
+            scrollable: true,
+            title: Text(t('Vie luettavaksi tai taulukkoon')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Sami.yellow.withValues(alpha: .15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    t(
+                      '⚠️ Tämä on luettava vienti käyttöliittymän kielellä (CSV: Excel, LibreOffice, Google Sheets, '
+                      'valmentaja tai toinen sovellus), ei varmuuskopio. Siirtoon toiseen puhelimeen ja palautukseen '
+                      'käytä varmuuskopiota (.zip).',
+                    ),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(t('Aikaväli'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final (d, l) in [
+                      (30, t('30 päivää')),
+                      (90, t('90 päivää')),
+                      (365, t('12 kuukautta')),
+                      (0, t('Kaikki')),
+                    ])
+                      ChoiceChip(label: Text(l), selected: period == d, onSelected: (_) => setDialog(() => period = d)),
+                    ChoiceChip(
+                      label: Text(
+                        period == -1 && custom != null
+                            ? '${shortDate(custom!.start)} – ${shortDate(custom!.end)}'
+                            : t('Valitse päivät'),
+                      ),
+                      selected: period == -1,
+                      onSelected: (_) async {
+                        final r = await showDateRangePicker(
+                          context: ctx,
+                          firstDate: DateTime(2000),
+                          lastDate: today,
+                          initialDateRange: custom,
+                        );
+                        if (r != null) setDialog(() => (period, custom) = (-1, r));
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(t('Mitä viedään'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: gym,
+                  onChanged: (v) => setDialog(() => gym = v ?? false),
+                  title: Text(t('Salitreenit: sarjat, painot ja toistot')),
+                ),
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: cardio,
+                  onChanged: (v) => setDialog(() => cardio = v ?? false),
+                  title: Text(t('Liikunta: laji, kesto, matka, vauhti, syke')),
+                ),
+                if (hasBody)
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: body,
+                    onChanged: (v) => setDialog(() => body = v ?? false),
+                    title: Text(t('Punnitukset ja pituus')),
+                    subtitle: Text(t('Terveystietoa: jaa harkiten.'), style: TextStyle(color: cs.error)),
+                  ),
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: notes,
+                  onChanged: (v) => setDialog(() => notes = v ?? false),
+                  title: Text(t('Muistiinpanot')),
+                  subtitle: Text(t('Omat tekstisi treeneistä: voivat olla yksityisiä.')),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  files.isEmpty
+                      ? t('Valitulla aikavälillä ei ole vietävää.')
+                      : files.map((f) => t('{0}: {1} riviä', [f.name, f.rows])).join('\n'),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+              FilledButton(onPressed: files.isEmpty ? null : () => Navigator.pop(ctx, true), child: Text(t('Vie'))),
+            ],
+          );
+        },
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await _run(() async {
+      final files = buildCsvExport(store.workouts, settings.body, opts());
+      final stamp = isoDate(today);
+      final (name, bytes) = files.length == 1
+          ? ('gievra-${files.single.name.replaceAll('.csv', '')}-$stamp.csv', utf8.encode(files.single.text))
+          : (
+              'gievra-csv-$stamp.zip',
+              ZipEncoder().encodeBytes(
+                Archive()..files.addAll([for (final f in files) ArchiveFile.bytes(f.name, utf8.encode(f.text))]),
+              ),
+            );
+      final uri = await FilePicker.saveFile(
+        fileName: name,
+        bytes: Uint8List.fromList(bytes),
+        dialogTitle: t('Tallenna vienti'),
+      );
+      if (uri != null && mounted) _snack(t('Vienti tallennettu.'));
+    });
+  }
 
   Future<void> _exportFitnotes() => _run(() async {
     final ok = await showDialog<bool>(
@@ -284,7 +459,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       ),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(t('Tuonti ja varmuuskopio'))),
+      appBar: AppBar(title: Text(t('Tuonti, vienti ja varmuuskopio'))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
         children: [
@@ -292,29 +467,24 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           // Aina paikallaan (tyhjänä, kun ei käynnissä): listaan lisätty rivi siirtäisi painikkeita, jolloin
           // napautuksen korostus välähtäisi väärässä painikkeessa.
           SizedBox(height: 4, child: _busy ? const LinearProgressIndicator() : null),
-          SectionLabel(t('Tuo toisesta sovelluksesta')),
+          SectionLabel(t('Tuo')),
           tile(
-            Icons.fitness_center,
-            t('FitNotes'),
+            Icons.file_open_outlined,
+            t('Tuo tiedosto'),
             t(
-              'Varmuuskopio (.fitnotes). FitNotes: Asetukset → Varmuuskopio. Tunnetut liikkeet yhdistyvät Gievran liikkeisiin.',
+              'Sovellus tunnistaa tiedoston itse: FitNotes (.fitnotes, FitNotes: Asetukset → Varmuuskopio), '
+              'Garmin Connect (.csv, Suoritukset → Vie CSV), Gievran varmuuskopio (.zip), .md-treenit tai '
+              'ohjelmapohja (.gmd). Olemassa olevia päiviä ei ylikirjoiteta.',
             ),
-            _importFitnotes,
-          ),
-          tile(
-            Icons.watch_outlined,
-            t('Garmin Connect (.csv)'),
-            t(
-              'Garmin Connect → Suoritukset → Vie CSV. Juoksut, kävelyt, pyöräily ym.: matka, kesto, kalorit ja '
-              'syke; nousu ja askeltiheys muistiinpanoihin.',
-            ),
-            _importGarmin,
+            _importAny,
           ),
           SectionLabel(t('Gievran varmuuskopio')),
           tile(
             Icons.archive_outlined,
             t('Vie varmuuskopio (.zip)'),
-            t('Kaikki .md-tiedostot, reitit (.gpx) ja asetukset.md yhdessä zip-tiedostossa.'),
+            t(
+              'Kaikki treenit, reitit (.gpx), asetukset, ohjelma, punnitukset ja tallennetut ohjelmat yhdessä zip-tiedostossa.',
+            ),
             _export,
           ),
           tile(
@@ -323,16 +493,13 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
             t('Tuo treenit zipistä. Olemassa olevia päiviä ei ylikirjoiteta.'),
             _importZip,
           ),
+          SectionLabel(t('Vie')),
           tile(
-            Icons.note_add_outlined,
-            t('Tuo .md-tiedostoja'),
-            t(
-              'Yksi tai useampi treenitiedosto, esim. PC:llä tehty tai muokattu treeni. Olemassa olevia '
-              'päiviä ei ylikirjoiteta.',
-            ),
-            _importMd,
+            Icons.table_chart_outlined,
+            t('Vie luettavaksi tai taulukkoon (CSV)'),
+            t('Valitse, mitä jaetaan ja miltä ajalta. Käyttöliittymän kielellä; ei varmuuskopio.'),
+            _exportCsv,
           ),
-          SectionLabel(t('Vie toiseen sovellukseen')),
           tile(
             Icons.science_outlined,
             t('FitNotes (.fitnotes) – kokeellinen'),

@@ -219,6 +219,15 @@ const _cAscent = ['Kokonaisnousu', 'Total Ascent'];
 const _cSteps = ['Askeleet', 'Steps'];
 const _cPower = ['Keskiteho', 'Avg Power'];
 
+/// Onko teksti Garmin Connectin suoritusten CSV-vienti (otsikkorivillä laji ja päiväys, suomeksi tai englanniksi).
+bool isGarminCsv(String text) {
+  final first = text.replaceFirst('\uFEFF', '').split('\n').first;
+  final rows = parseCsv(first);
+  if (rows.isEmpty) return false;
+  final c = _Cols(rows.first);
+  return c.has(_cType) && c.has(_cDate);
+}
+
 /// Lukee Garmin Connectin CSV-viennin. [existing]: jo päiväkirjassa olevat treenit (kaksoiskappaleiden tunnistus
 /// ja saman päivän treenien numerointi). Palauttaa myös ohitettujen voimaharjoitusten määrän.
 (ImportResult, int skipped) readGarminCsv(
