@@ -41,12 +41,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
   }
 
   Future<void> _pickDate() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
+    final d = await pickDate(context, initial: _date, first: DateTime(2000), last: DateTime.now());
     if (d != null) setState(() => _date = dateOnly(d));
   }
 

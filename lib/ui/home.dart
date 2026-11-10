@@ -891,7 +891,7 @@ class _InsightsCard extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+${p.pct.toStringAsFixed(0)} %',
-              style: const TextStyle(color: Sami.green, fontWeight: FontWeight.w700, fontSize: 13),
+              style: TextStyle(color: greenText(context), fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ],
         ],

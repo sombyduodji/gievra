@@ -78,10 +78,12 @@ class WatchCard extends StatelessWidget {
         Row(
           children: [
             if (withDuration) ...[
-              box('⌚', t('kesto'), w.watchTime ? w.minutes : null, 'min', () async {
+              // Treenin kesto (ajastimesta, kellosta tai käsin): sama arvo kuin muualla. Muutos kiinnittää sen.
+              box('⌚', t('kesto'), w.minutes, 'min', () async {
                 await ask(t('Kesto kellosta (min)'), w.minutes, (v) {
                   w.watchTime = v != null;
-                  if (v != null) w.minutes = v;
+                  w.manualTime = false;
+                  w.minutes = v;
                 }, def: 60);
               }),
               const SizedBox(width: 6),
@@ -129,7 +131,7 @@ class WatchCard extends StatelessWidget {
                     w.healthSource!.isEmpty
                         ? t('Tiedot haettu Health Connectista')
                         : t('Tiedot haettu Health Connectista ({0})', [w.healthSource!]),
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Sami.green),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: greenText(context)),
                   ),
                 ),
               ],

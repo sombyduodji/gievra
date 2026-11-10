@@ -99,6 +99,12 @@ class Workout {
   int? steps; // askeleet (kävely ja muut kävelylajit, valinnainen)
   bool watchTime; // kesto tuli kellosta (ei sovelluksen ajastimesta)
 
+  /// Kesto asetettu käsin (Muokkaa kestoa): ajastin ei korvaa sitä. Tiedostossa "duration: 50 min (käsin)".
+  bool manualTime = false;
+
+  /// Kesto on kiinnitetty (kellosta tai käsin): sovelluksen ajastin ei muuta sitä.
+  bool get fixedTime => watchTime || manualTime;
+
   /// Kellon tietojen lähde, kun ne haettiin Health Connectista (esim. "Health Sync"; tyhjä = sovellusta ei tiedetä).
   String? healthSource;
 
@@ -262,7 +268,10 @@ String workoutToMarkdown(Workout w) {
   if (w.warmup != null) b.writeln('warmup: ${w.warmup!.equipment}, ${w.warmup!.minutes} min');
   if (w.bodyweight != null) b.writeln('bodyweight: ${fileNum(w.bodyweight!)}');
   if (w.started != null) b.writeln('start: ${_two(w.started!.hour)}:${_two(w.started!.minute)}');
-  if (w.minutes != null) b.writeln('duration: ${w.minutes} min${w.watchTime ? ' (kello)' : ''}');
+  if (w.minutes != null) {
+    final src = w.watchTime ? ' (kello)' : (w.manualTime ? ' (käsin)' : '');
+    b.writeln('duration: ${w.minutes} min$src');
+  }
   if (w.seconds != null) b.writeln('time: ${fmtDurationSec(w.seconds!)}');
   if (w.runType != null) b.writeln('run_type: ${w.runType}');
   if (w.steps != null) b.writeln('steps: ${w.steps}');
@@ -402,6 +411,7 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   w.hrAvg = num('hr_avg');
   w.hrMax = num('hr_max');
   w.watchTime = (meta['duration'] ?? '').contains('kello');
+  w.manualTime = !w.watchTime && (meta['duration'] ?? '').contains('käsin');
   final src = RegExp(r'^Health Connect(?: \((.*)\))?$').firstMatch(meta['watch_source']?.trim() ?? '');
   if (src != null) w.healthSource = src[1] ?? '';
   final hc = meta['hc_id']?.trim();

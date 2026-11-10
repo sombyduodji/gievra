@@ -312,7 +312,7 @@ class WeeklyLoadCard extends StatelessWidget {
                         if (done != null)
                           Text(
                             _doneLabel(done![m.muscle] ?? 0, m.sets),
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Sami.blue),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: blueText(context)),
                           ),
                       ],
                     ),
@@ -652,7 +652,7 @@ class DayCard extends StatelessWidget {
                             Text(trName(day.name), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                           if (suggested) _badge(t('suositus'), const Color(0xFF3FBF7F)),
                           if (doneToday)
-                            _badge(t('tehty tänään ✓'), Sami.green)
+                            _badge(t('tehty tänään ✓'), greenText(context))
                           else if (doneThisWeek)
                             _badge(t('tehty tällä viikolla ✓'), cs.onSurfaceVariant),
                         ],

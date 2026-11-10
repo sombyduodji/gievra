@@ -104,6 +104,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   (kesto, kalorit, keski- ja maksimisyke ja askeleet heti *Treeni valmis!* -näkymässä): käsin tai Androidilla
   **Health Connectista** – treenin jälkeen *Kellon tiedot → Health Connect*, Gievra etsii treenin aikaa lähellä
   olevan kellon harjoituksen ja kysyy *Onko tämä se?* (vain luku, vain tämän treenin aikaväli, ei koko historiaa)
+- salitreenin kesto ja aloitusaika käsin: ⋮ → *Muokkaa kestoa* (kellon tiedot käytössä: *Kellon tiedot* -ruudusta,
+  sama arvo)
 - *Lisää tehty liikunta Health Connectista* (asetus, oletus pois): etusivun painikkeesta päivän (oletus tänään)
   harjoitukset, joita ei vielä ole Gievrassa – esim. kävelymaton tai kellon sovelluksen tallentamat – avautuvat
   valmiiksi täytettynä liikuntana (laji, aika, matka, syke, kalorit, askeleet); askeleet ja matka harjoituksen

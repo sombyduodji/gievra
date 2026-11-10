@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show FontLoader, MethodChannel, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/custom_merge.dart';
@@ -7,6 +10,8 @@ import 'package:treenipaivakirja/exercise_names_en.dart';
 import 'package:treenipaivakirja/injuries.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/program.dart';
+import 'package:treenipaivakirja/sami_material.dart';
+import 'package:treenipaivakirja/theme.dart';
 import 'package:treenipaivakirja/ui/drawer.dart';
 import 'package:treenipaivakirja/ui/injury_screen.dart';
 import 'package:treenipaivakirja/ui/intro.dart';
@@ -20,6 +25,7 @@ import 'package:treenipaivakirja/ui/health_import.dart';
 import 'package:treenipaivakirja/ui/home.dart';
 import 'package:treenipaivakirja/ui/import_export.dart';
 import 'package:treenipaivakirja/ui/new_workout.dart';
+import 'package:treenipaivakirja/ui/picker.dart';
 import 'package:treenipaivakirja/ui/maxes_editor.dart';
 import 'package:treenipaivakirja/ui/programs_screen.dart';
 import 'package:treenipaivakirja/ui/running_screen.dart';
@@ -63,7 +69,7 @@ List<String> _finnish(WidgetTester tester, String lang) {
 }
 
 Future<void> _app(WidgetTester tester, Widget home) async {
-  await tester.pumpWidget(MaterialApp(home: home));
+  await tester.pumpWidget(_TApp(home: home));
   await tester.pumpAndSettle();
 }
 
@@ -77,20 +83,86 @@ Future<void> _tapText(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
+// Valinnainen kuvakaappaus jokaisesta tarkistetusta näkymästä (värien ja asettelun vertailuun):
+// GIEVRA_SHOTS=<kansio> GIEVRA_THEME=dark|light flutter test test/l10n_screens_test.dart
+final _shots = Platform.environment['GIEVRA_SHOTS'];
+final ThemeData? _shotTheme = switch (Platform.environment['GIEVRA_THEME']) {
+  'dark' => _withFallback(buildTheme(Brightness.dark)),
+  'light' => _withFallback(buildTheme(Brightness.light)),
+  _ => null,
+};
+ThemeData _withFallback(ThemeData t) =>
+    t.copyWith(textTheme: t.textTheme.apply(fontFamilyFallback: const ['DejaVu', 'Emoji']));
+
+/// Sovellus testissä: kuvakaappauksissa sovelluksen oma teema.
+class _TApp extends StatelessWidget {
+  final Widget home;
+  const _TApp({required this.home});
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    // Flutterin omat tekstit kuten sovelluksessa: käyttöliittymän kielellä (saame omana kerroksenaan).
+    child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: _shotTheme,
+      locale: flutterLocale(uiLang),
+      supportedLocales: appSupportedLocales,
+      localizationsDelegates: appLocalizationsDelegates,
+      home: home,
+    ),
+  );
+}
+
+Future<void> _loadShotFonts() async {
+  // Kuvakaappaus päästää näkymän oikeat taustatehtävät käyntiin (esim. tiedostolistat): väliaikainen kansio.
+  final tmp = Directory.systemTemp.createTempSync('gievra-shots').path;
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/path_provider'),
+    (_) async => tmp,
+  );
+  final root = '${Platform.environment['HOME']}/sdk/flutter/bin/cache/artifacts/material_fonts';
+  for (final (family, files) in [
+    ('Roboto', ['$root/Roboto-Regular.ttf', '$root/Roboto-Medium.ttf', '$root/Roboto-Bold.ttf']),
+    ('MaterialIcons', ['$root/MaterialIcons-Regular.otf']),
+    ('DejaVu', ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']),
+    ('Emoji', ['/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf']),
+  ]) {
+    final l = FontLoader(family);
+    for (final f in files) {
+      l.addFont(Future.value(File(f).readAsBytesSync().buffer.asByteData()));
+    }
+    await l.load();
+  }
+}
+
+Future<void> _capture(WidgetTester tester, String name) async {
+  final f = find.byType(RepaintBoundary).first;
+  if (f.evaluate().isEmpty) return;
+  await tester.runAsync(() async {
+    final img = await captureImage(f.evaluate().first);
+    final png = await img.toByteData(format: ui.ImageByteFormat.png);
+    Directory(_shots!).createSync(recursive: true);
+    File('$_shots/${name.replaceAll(RegExp(r'[^A-Za-z0-9äöÄÖ_-]+'), '_')}.png')
+        .writeAsBytesSync(png!.buffer.asUint8List());
+  });
+}
+
 void main() {
-  for (final lang in ['en', 'se']) {
+  // Suomi mukana asettelun vuoksi (pitkät sanat, ylivuodot): kielitarkistus vain englanniksi ja saameksi.
+  for (final lang in ['fi', 'en', 'se']) {
     group(lang, () {
       final found = <String, List<String>>{};
-      void check(WidgetTester tester, String where) {
-        final b = _finnish(tester, lang);
+      Future<void> check(WidgetTester tester, String where) async {
+        if (_shots != null) await _capture(tester, '$lang-$where');
+        final b = lang == 'fi' ? const <String>[] : _finnish(tester, lang);
         if (b.isNotEmpty) found[where] = b;
         expect(b, isEmpty, reason: 'suomenkielistä tekstiä näkymässä "$where" ($lang)');
       }
 
       setUpAll(() async {
         TestWidgetsFlutterBinding.ensureInitialized();
+        if (_shots != null) await _loadShotFonts();
         await setUiLang(lang);
-        final po = await rootBundle.loadString('assets/l10n/$lang.po');
+        final po = lang == 'fi' ? '' : await rootBundle.loadString('assets/l10n/$lang.po');
         final cat = parsePo(po);
         // Myös isolla alkukirjaimella (esim. "Sekunnit"), kun käännös on eri myös pienillä kirjaimilla.
         _fiKeys = {
@@ -137,10 +209,10 @@ void main() {
             ..program = null
             ..injuries = [];
           await _app(tester, const IntroScreen());
-          check(tester, 'kysely 1');
+          await check(tester, 'kysely 1');
           await _tapText(tester, t('Vastaan kysymyksiin itse'));
           for (var step = 2; step <= 12; step++) {
-            check(tester, 'kysely $step ($goal)');
+            await check(tester, 'kysely $step ($goal)');
             if (step == 2) await _tapText(tester, t(goal));
             if (step == 3 && exp != null) await _tapText(tester, t(exp));
             if (days != null && find.text(days).hitTestable().evaluate().isNotEmpty && step >= 5) {
@@ -153,7 +225,7 @@ void main() {
             await tester.tap(next.first);
             await tester.pumpAndSettle();
           }
-          check(tester, 'kysely: yhteenveto ($goal ${days ?? ''})');
+          await check(tester, 'kysely: yhteenveto ($goal ${days ?? ''})');
         });
       }
 
@@ -172,7 +244,7 @@ void main() {
           );
           settings.injuries = ids.take(4).toList();
           await _app(tester, const ProgramScreen());
-          check(tester, 'ohjelmasivu ($goal, vammoja)');
+          await check(tester, 'ohjelmasivu ($goal, vammoja)');
         }
       });
 
@@ -200,11 +272,11 @@ void main() {
             kbFocus: kb,
           );
           final where = '$g $e $d pv${kb == null ? '' : ' kahvakuula $kb'}';
-          await tester.pumpWidget(MaterialApp(home: NewWorkoutScreen(date: DateTime(2026, 11, 9))));
+          await tester.pumpWidget(_TApp(home: NewWorkoutScreen(date: DateTime(2026, 11, 9))));
           await tester.pump(const Duration(milliseconds: 300));
-          check(tester, 'uusi treeni: $where');
+          await check(tester, 'uusi treeni: $where');
           await _app(tester, const ProgramScreen());
-          check(tester, 'ohjelmasivu: $where');
+          await check(tester, 'ohjelmasivu: $where');
         }
         settings.program = null;
       });
@@ -229,12 +301,12 @@ void main() {
             distanceKm: 5,
           ),
         ];
-        await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+        await tester.pumpWidget(const _TApp(home: HomeScreen()));
         await tester.pump(const Duration(seconds: 1));
-        check(tester, 'etusivu treenien kanssa');
-        await tester.pumpWidget(const MaterialApp(home: StatsScreen()));
+        await check(tester, 'etusivu treenien kanssa');
+        await tester.pumpWidget(const _TApp(home: StatsScreen()));
         await tester.pump(const Duration(seconds: 1));
-        check(tester, 'tilastot treenien kanssa');
+        await check(tester, 'tilastot treenien kanssa');
         store.workouts = [];
       });
 
@@ -252,7 +324,7 @@ void main() {
         );
         final md = programToTemplate(p, author: 'Testi');
         await tester.pumpWidget(
-          MaterialApp(
+          _TApp(
             home: Builder(
               builder: (c) => Scaffold(
                 body: Center(
@@ -267,14 +339,42 @@ void main() {
         );
         await tester.tap(find.text('x'));
         await tester.pumpAndSettle();
-        check(tester, 'ohjelmapohjan esikatselu');
+        await check(tester, 'ohjelmapohjan esikatselu');
         settings.program = parseProgram(md);
         await _app(tester, const ProgramScreen());
-        check(tester, 'pohjasta otettu ohjelma');
-        await tester.pumpWidget(MaterialApp(home: NewWorkoutScreen(date: DateTime(2026, 11, 10))));
+        await check(tester, 'pohjasta otettu ohjelma');
+        await tester.pumpWidget(_TApp(home: NewWorkoutScreen(date: DateTime(2026, 11, 10))));
         await tester.pump(const Duration(milliseconds: 300));
-        check(tester, 'pohjasta otettu ohjelma: uusi treeni');
+        await check(tester, 'pohjasta otettu ohjelma: uusi treeni');
         settings.program = null;
+      });
+
+      // Vältettävän liikkeen rivi kertoo vamman nimen (ei liikkeen): käännetään vammana.
+      testWidgets('Liikkeen valinta ja sarjan kirjaus: vältettävä liike vammatilassa', (tester) async {
+        tester.view.physicalSize = const Size(1080, 6000);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.reset);
+        settings.injuries = [for (final r in injuryRegions) r.id];
+        await _app(tester, const ExercisePickerScreen());
+        expect(find.textContaining('⚠️'), findsWidgets, reason: 'vältettäviä liikkeitä näkyy');
+        await check(tester, 'liikkeen valinta, kaikki vammat');
+        settings.injuries = ['nivus_lahentaja'];
+        await tester.pumpWidget(
+          _TApp(
+            home: SetLoggerScreen(
+              date: DateTime(2026, 11, 10),
+              entry: ExerciseEntry('Sumomaastaveto', [SetEntry(100, 5)]),
+              onChanged: () async {},
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        // Liikevinkit saameksi tarkoituksella suomeksi (vammatilan ohjeiden kieli): suljetaan, tarkistetaan varoitus.
+        await tester.tap(find.byIcon(Icons.play_circle_outline).first);
+        await tester.pumpAndSettle();
+        expect(find.textContaining('⚠️'), findsWidgets);
+        await check(tester, 'sarjan kirjaus, vältettävä liike');
+        settings.injuries = [];
       });
 
       testWidgets('Sarjan kirjaus: vinkit, vammavaroitus, mittaustapa ja ohjelman liikkeen muokkaus', (tester) async {
@@ -284,7 +384,7 @@ void main() {
         settings.injuries = ['alaselka'];
         for (final ex in ['Maastaveto', 'Lankku', 'Good morning']) {
           await tester.pumpWidget(
-            MaterialApp(
+            _TApp(
               home: SetLoggerScreen(
                 date: DateTime(2026, 11, 10),
                 entry: ExerciseEntry(ex, [SetEntry(100, 5)]),
@@ -298,10 +398,10 @@ void main() {
             await tester.tap(tips.first);
             await tester.pumpAndSettle();
           }
-          check(tester, 'sarjan kirjaus: $ex');
+          await check(tester, 'sarjan kirjaus: $ex');
           await tester.tap(find.byIcon(Icons.straighten));
           await tester.pumpAndSettle();
-          check(tester, 'mittaustapa: $ex');
+          await check(tester, 'mittaustapa: $ex');
         }
         settings.injuries = [];
         settings.program = generateProgram(
@@ -314,12 +414,12 @@ void main() {
         await _app(tester, const ProgramScreen());
         await tester.tap(find.byType(ExName).first);
         await tester.pumpAndSettle();
-        check(tester, 'ohjelman liikkeen muokkaus');
+        await check(tester, 'ohjelman liikkeen muokkaus');
         final chip = find.byType(ChoiceChip);
         if (chip.evaluate().isNotEmpty) {
           await tester.tap(chip.first);
           await tester.pumpAndSettle();
-          check(tester, 'liikkeen vaihdon esikatselu');
+          await check(tester, 'liikkeen vaihdon esikatselu');
         }
         settings.program = null;
       });
@@ -334,13 +434,13 @@ void main() {
             ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)])),
         ];
         await _app(tester, const ImportExportScreen());
-        check(tester, 'tuonti ja vienti');
+        await check(tester, 'tuonti ja vienti');
         await tester.tap(find.byIcon(Icons.table_chart_outlined));
         await tester.pumpAndSettle();
-        check(tester, 'vienti CSV: valinnat');
+        await check(tester, 'vienti CSV: valinnat');
         await tester.tap(find.text(t('Kaikki')).last);
         await tester.pumpAndSettle();
-        check(tester, 'vienti CSV: kaikki');
+        await check(tester, 'vienti CSV: kaikki');
         store.workouts = [];
       });
 
@@ -349,7 +449,7 @@ void main() {
         tester.view.devicePixelRatio = 2.0;
         addTearDown(tester.view.reset);
         await _app(tester, InjuryScreen(initial: [for (final r in injuryRegions) r.id]));
-        check(tester, 'vammatila');
+        await check(tester, 'vammatila');
       });
 
       final day = DateTime(2026, 11, 9);
@@ -391,18 +491,70 @@ void main() {
           tester.view.devicePixelRatio = 2.0;
           addTearDown(tester.view.reset);
           settings.program = null;
-          await tester.pumpWidget(MaterialApp(home: make()));
+          await tester.pumpWidget(_TApp(home: make()));
           await tester.pump(const Duration(seconds: 1));
-          check(tester, name);
+          await check(tester, name);
         });
       }
+
+      testWidgets('Treenin valikko ja Muokkaa kestoa: kysymys, ikkuna, kellotaulu ja kalenteri', (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 2.6;
+        addTearDown(tester.view.reset);
+        settings.watch = false;
+        final w = Workout(date: DateTime(2026, 11, 7), title: 'Koko keho A')
+          ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(60, 8)]))
+          ..minutes = 52
+          ..started = DateTime(2026, 11, 7, 17, 30);
+        await tester.pumpWidget(_TApp(home: WorkoutScreen(workout: w)));
+        await tester.pump();
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+        await check(tester, 'treenin valikko');
+        await tester.tap(find.text(t('Muokkaa kestoa')));
+        await tester.pumpAndSettle();
+        await check(tester, 'muokataanko tallennettua');
+        await tester.tap(find.widgetWithText(FilledButton, t('Muokkaa')));
+        await tester.pumpAndSettle();
+        await check(tester, 'muokkaa kestoa');
+        await tester.tap(find.byIcon(Icons.schedule));
+        await tester.pumpAndSettle();
+        await check(tester, 'kellotaulu');
+        await tester.tap(find.widgetWithText(TextButton, t('Peruuta')).last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(TextButton, t('Peruuta')).last);
+        await tester.pumpAndSettle();
+        // Kalenteri (sama kuin uuden treenin päivän valinnassa).
+        await tester.pumpWidget(
+          _TApp(
+            home: Builder(
+              builder: (c) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    onPressed: () => pickDate(
+                      c,
+                      initial: DateTime(2026, 11, 10),
+                      first: DateTime(2000),
+                      last: DateTime(2026, 12, 31),
+                    ),
+                    child: const Text('x'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('x'));
+        await tester.pumpAndSettle();
+        await check(tester, 'kalenteri');
+      });
 
       testWidgets('Valikko ja asetukset auki', (tester) async {
         tester.view.physicalSize = const Size(1080, 9000);
         tester.view.devicePixelRatio = 2.0;
         addTearDown(tester.view.reset);
         await tester.pumpWidget(
-          const MaterialApp(
+          const _TApp(
             home: Scaffold(drawer: AppDrawer(), body: SizedBox()),
           ),
         );
@@ -411,14 +563,14 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text(t('Asetukset')));
         await tester.pumpAndSettle();
-        check(tester, 'valikko ja asetukset');
+        await check(tester, 'valikko ja asetukset');
       });
 
       testWidgets('Ilmoita ongelmasta: jokainen ongelmatyyppi ja sen vinkki', (tester) async {
         tester.view.physicalSize = const Size(1080, 6000);
         tester.view.devicePixelRatio = 2.0;
         addTearDown(tester.view.reset);
-        await tester.pumpWidget(const MaterialApp(home: BugReportScreen()));
+        await tester.pumpWidget(const _TApp(home: BugReportScreen()));
         await tester.pump(const Duration(seconds: 1));
         final types = [
           'Tuonti ei onnistu',
@@ -433,7 +585,7 @@ void main() {
         for (final x in types) {
           await tester.tap(find.textContaining(t(x)));
           await tester.pump();
-          check(tester, 'ilmoita ongelmasta: $x');
+          await check(tester, 'ilmoita ongelmasta: $x');
         }
         expect(find.byIcon(Icons.lightbulb_outline), findsNothing, reason: 'Muu: ei vinkkiä');
       });
@@ -451,7 +603,7 @@ void main() {
         );
         await tester.tap(find.text('x'));
         await tester.pumpAndSettle();
-        check(tester, 'palaute');
+        await check(tester, 'palaute');
       });
 
       testWidgets('Tauko: sairas tai loma', (tester) async {
@@ -468,7 +620,7 @@ void main() {
         );
         await tester.tap(find.text('x'));
         await tester.pumpAndSettle();
-        check(tester, 'tauko');
+        await check(tester, 'tauko');
       });
     });
   }

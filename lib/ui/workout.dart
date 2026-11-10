@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../rest.dart';
 import '../app_state.dart';
@@ -157,10 +158,36 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Future<void> _finish() async {
     rest.stop(); // treeni valmis: ei palautusmuistutusta
-    if (_isToday && _elapsed != null && !w.watchTime) w.minutes = _elapsed; // kellon kesto voittaa ajastimen
+    // Kellon tai käsin asetettu kesto voittaa ajastimen.
+    if (_isToday && _elapsed != null && !w.fixedTime) w.minutes = _elapsed;
     await _save();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SavedScreen(workout: w)));
+  }
+
+  /// Muokkaa kestoa (kun kellon tiedot eivät ole käytössä; muuten kesto muutetaan Kellon tiedot -ruudusta):
+  /// aloitusaika ja kesto, päättymisaika näytetään. Käsin asetettu kesto ei muutu ajastimesta.
+  Future<void> _editDuration() async {
+    if (_locked) {
+      await _unlock();
+      if (_locked || !mounted) return;
+    }
+    final r = await showDialog<(int, TimeOfDay?)>(
+      context: context,
+      builder: (_) => _DurationDialog(
+        minutes: w.minutes ?? _elapsed ?? 60,
+        start: w.started == null ? null : TimeOfDay.fromDateTime(w.started!),
+      ),
+    );
+    if (r == null || !mounted) return;
+    final (m, start) = r;
+    setState(() {
+      w.minutes = m;
+      w.manualTime = true;
+      w.watchTime = false;
+      if (start != null) w.started = DateTime(w.date.year, w.date.month, w.date.day, start.hour, start.minute);
+    });
+    await _save();
   }
 
   Future<void> _deleteWorkout() async {
@@ -223,11 +250,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             onSelected: (v) => switch (v) {
               'rename' => _locked ? _unlock() : _rename(),
               'share' => shareWorkout(context, w),
+              'duration' => _editDuration(),
               _ => _deleteWorkout(),
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'share', child: Text(t('Jaa'))),
               PopupMenuItem(value: 'rename', child: Text(t('Nimeä treeni'))),
+              // Kellon tiedot päällä: kesto muutetaan Kellon tiedot -ruudusta (sama arvo).
+              if (!settings.watch) PopupMenuItem(value: 'duration', child: Text(t('Muokkaa kestoa'))),
               PopupMenuItem(value: 'delete', child: Text(t('Poista treeni'))),
             ],
           ),
@@ -545,7 +575,7 @@ class _SavedScreenState extends State<SavedScreen> {
               padding: const EdgeInsets.only(top: 10),
               child: Text(
                 '🏆 ${c.prs > 1 ? t('{0} ennätystä!', [c.prs]) : t('1 ennätys!')}',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: Sami.yellow),
+                style: TextStyle(fontWeight: FontWeight.w700, color: yellowText(context)),
               ),
             ),
           const SizedBox(height: 14),
@@ -739,6 +769,75 @@ class _RunCompare extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Muokkaa kestoa -ikkuna: kesto minuutteina ja aloitusaika (valinnainen), päättymisaika näytetään.
+/// Oma tila, jotta tekstikentän ohjain vapautetaan vasta, kun ikkuna on sulkeutunut.
+class _DurationDialog extends StatefulWidget {
+  final int minutes;
+  final TimeOfDay? start;
+  const _DurationDialog({required this.minutes, required this.start});
+  @override
+  State<_DurationDialog> createState() => _DurationDialogState();
+}
+
+class _DurationDialogState extends State<_DurationDialog> {
+  late final _c = TextEditingController(text: '${widget.minutes}');
+  late TimeOfDay? _start = widget.start;
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final m = int.tryParse(_c.text.trim());
+    final valid = m != null && m > 0 && m <= 1440;
+    String end(TimeOfDay s, int m) =>
+        fmtClock(TimeOfDay.fromDateTime(DateTime(2000, 1, 1, s.hour, s.minute).add(Duration(minutes: m))));
+    return AlertDialog(
+      title: Text(t('Muokkaa kestoa')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _c,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(labelText: t('Kesto (min)')),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: Text(t('Aloitusaika'))),
+              TextButton.icon(
+                icon: const Icon(Icons.schedule, size: 18),
+                label: Text(_start == null ? t('ei tiedossa') : fmtClock(_start!)),
+                onPressed: () async {
+                  final v = await pickTime(context, _start ?? TimeOfDay.now(), title: t('Aloitusaika'));
+                  if (v != null && mounted) setState(() => _start = v);
+                },
+              ),
+            ],
+          ),
+          if (_start != null && valid)
+            Text(
+              t('Päättyi klo {0}', [end(_start!, m)]),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Peruuta'))),
+        FilledButton(onPressed: valid ? () => Navigator.pop(context, (m, _start)) : null, child: Text(t('Tallenna'))),
+      ],
     );
   }
 }

@@ -206,6 +206,40 @@ class SectionLabel extends StatelessWidget {
 }
 
 /// Kysyy luvun näppäimistöllä. Palauttaa null, jos peruttiin.
+/// Päivämäärän valinta: otsikko ja painikkeet käyttöliittymän kielellä (Flutterin omat tekstit tuntevat vain
+/// suomen ja englannin, eivät saamea). Vain kalenteri: tekstisyöttötilan ohjeita ei voi kääntää.
+Future<DateTime?> pickDate(
+  BuildContext context, {
+  required DateTime initial,
+  required DateTime first,
+  required DateTime last,
+}) => showDatePicker(
+  context: context,
+  initialDate: initial,
+  firstDate: first,
+  lastDate: last,
+  initialEntryMode: DatePickerEntryMode.calendarOnly,
+  helpText: t('Valitse päivä'),
+  cancelText: t('Peruuta'),
+  confirmText: 'OK',
+);
+
+/// Kellonajan valinta samoin (vain kellotaulu, 24 h).
+Future<TimeOfDay?> pickTime(BuildContext context, TimeOfDay initial, {required String title}) => showTimePicker(
+  context: context,
+  initialTime: initial,
+  initialEntryMode: TimePickerEntryMode.dialOnly,
+  helpText: title,
+  cancelText: t('Peruuta'),
+  confirmText: 'OK',
+  builder: (context, child) =>
+      MediaQuery(data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true), child: child!),
+);
+
+/// Kellonaika tekstinä: englanniksi 18:45, suomeksi ja saameksi 18.45.
+String fmtClock(TimeOfDay c) =>
+    '${c.hour.toString().padLeft(2, '0')}${isEnglish ? ':' : '.'}${c.minute.toString().padLeft(2, '0')}';
+
 Future<double?> askNumber(BuildContext context, String title, double current, {bool decimals = true}) async {
   final c = TextEditingController(text: fmtNum(current));
   final r = await showDialog<double>(
@@ -592,6 +626,8 @@ class TrainModePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SegmentedButton<String>(
     showSelectedIcon: false,
+    // Kapeassa valikossa vähemmän reunatilaa, jotta pitkä nimi (esim. saameksi Sávrivuohta) pienenee vähemmän.
+    style: icons ? null : const ButtonStyle(padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4))),
     segments: [
       for (final (v, icon, l) in [
         ('gym', Icons.fitness_center, t('Sali')),
@@ -653,7 +689,7 @@ class LockButton extends StatelessWidget {
     child: IconButton(
       tooltip: t('Tallennettu treeni: muokkaa'),
       onPressed: onTap,
-      icon: const Icon(Icons.lock_outline, color: Sami.green),
+      icon: Icon(Icons.lock_outline, color: greenText(context)),
     ),
   );
 }

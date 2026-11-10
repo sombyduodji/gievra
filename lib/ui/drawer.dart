@@ -938,12 +938,7 @@ Future<void> showPauseDialog(BuildContext context) async {
               icon: const Icon(Icons.calendar_today, size: 18),
               label: Text(t('Alkoi {0}.{1}.{2}', [start.day, start.month, start.year])),
               onPressed: () async {
-                final d = await showDatePicker(
-                  context: ctx,
-                  initialDate: start,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime.now(),
-                );
+                final d = await pickDate(ctx, initial: start, first: DateTime(2000), last: DateTime.now());
                 if (d != null) set(() => start = dateOnly(d));
               },
             ),

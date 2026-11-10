@@ -251,7 +251,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('•  ', style: TextStyle(color: Sami.yellow)),
+                          Text('•  ', style: TextStyle(color: yellowText(context))),
                           Expanded(child: Text(c, style: const TextStyle(fontSize: 13))),
                         ],
                       ),
@@ -302,7 +302,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               child: Text(
                 [
                   if (_inj.avoid.isNotEmpty)
-                    '⚠️ ${t('Vammatila ({0}): tätä liikettä kannattaa välttää.', [_inj.avoid.map(exerciseLabel).join(', ')])}'
+                    '⚠️ ${t('Vammatila ({0}): tätä liikettä kannattaa välttää.', [_inj.avoid.map(t).join(', ')])}'
                         '${_inj.substitute != null ? ' ${t('Kokeile: {0}.', [exerciseLabel(_inj.substitute!)])}' : ''}',
                   if (widget.note != null) '🩹 ${trNote(widget.note!)}' else ..._inj.modify.map((m) => '🩹 ${t(m)}'),
                   if (settings.injuries.isNotEmpty)

@@ -95,9 +95,11 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   Widget? _injuryLine(String n, ColorScheme cs) {
     final st = injuryStatus(n, settings.injuries);
     if (st.avoid.isNotEmpty) {
-      return Text(
-        '⚠️ ${t('Vältä ({0})', [st.avoid.map(exerciseLabel).join(', ')])}${st.substitute != null ? ' → ${exerciseLabel(st.substitute!)}' : ''}',
-        style: const TextStyle(fontSize: 11, color: Sami.red),
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: RedNote(
+          '⚠️ ${t('Vältä ({0})', [st.avoid.map(t).join(', ')])}${st.substitute != null ? ' → ${exerciseLabel(st.substitute!)}' : ''}',
+        ),
       );
     }
     if (st.modify.isNotEmpty) {
@@ -179,10 +181,10 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     onTap: () => Navigator.pop(context, n),
                   ),
                 ListTile(
-                  leading: const Icon(Icons.add, color: Sami.yellow),
+                  leading: Icon(Icons.add, color: yellowText(context)),
                   title: Text(
                     _q.isEmpty ? t('Luo oma liike') : t('Luo oma liike "{0}"', [_q]),
-                    style: const TextStyle(color: Sami.yellow),
+                    style: TextStyle(color: yellowText(context)),
                   ),
                   onTap: _create,
                 ),
