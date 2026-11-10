@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'exercises.dart';
+import 'l10n.dart' as l10n;
 
 /// Yksi sarja: paino, toistot, valinnainen RPE ja ennätysmerkintä.
 class SetEntry {
@@ -370,7 +371,7 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
     i++;
   }
   final date = DateTime.tryParse(meta['date'] ?? '') ?? fallbackDate;
-  if (date == null) throw const FormatException('Päivämäärä puuttuu');
+  if (date == null) throw FormatException(l10n.fi('Päivämäärä puuttuu'));
   // Negatiivinen tai nolla (käsin muokattu tiedosto) = arvoa ei ole.
   bool neg(String k) => RegExp(r'^\s*[-−]').hasMatch(meta[k] ?? '');
   double? pos(double? v) => v == null || v <= 0 ? null : v;

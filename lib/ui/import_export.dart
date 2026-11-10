@@ -32,7 +32,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     try {
       await f();
     } catch (e) {
-      if (mounted) _snack(t('Virhe: {0}', [e]));
+      if (mounted) _snack(t('Virhe: {0}', [errorText(e)]));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

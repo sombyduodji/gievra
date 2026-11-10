@@ -253,7 +253,7 @@ class _MapsScreenState extends State<MapsScreen> {
       );
       _used = await store.usedBytes();
     } catch (e) {
-      err = t('Karttapakettia ei voitu tuoda: {0}', [e]);
+      err = t('Karttapakettia ei voitu tuoda: {0}', [errorText(e)]);
     }
     if (progressOpen) nav.pop();
     progress.dispose();

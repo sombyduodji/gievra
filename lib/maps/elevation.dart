@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 
 import '../gps_filter.dart';
+import '../l10n.dart' as l10n;
 
 // Korkeustiedot (.elev, tools/elev_build.py): Maanmittauslaitoksen korkeusmalli 10 m (2019) noin 25 m:n
 // ruudukkona kunnittain. Korkeus maanpinnasta (ei puista eikä rakennuksista), puolen metrin tarkkuudella.
@@ -49,11 +50,11 @@ class ElevHeader {
 
   /// Heittää FormatExceptionin, jos tavut eivät ole .elev-otsake.
   static ElevHeader parse(Uint8List b) {
-    if (b.length < 52) throw const FormatException('ei korkeustiedosto');
+    if (b.length < 52) throw FormatException(l10n.fi('ei korkeustiedosto'));
     final magic = String.fromCharCodes(b.sublist(0, 8));
     final v2 = magic == elevMagic2;
-    if (!v2 && magic != elevMagic) throw const FormatException('ei korkeustiedosto');
-    if (v2 && b.length < 56) throw const FormatException('ei korkeustiedosto');
+    if (!v2 && magic != elevMagic) throw FormatException(l10n.fi('ei korkeustiedosto'));
+    if (v2 && b.length < 56) throw FormatException(l10n.fi('ei korkeustiedosto'));
     final d = ByteData.sublistView(b, 0, v2 ? 56 : 52);
     final h = ElevHeader(
       d.getUint32(8, Endian.little),
@@ -71,7 +72,7 @@ class ElevHeader {
     final okBlock = !v2 || (h.block >= 16 && h.block <= 4096 && h.blocksX * h.blocksY <= 4000000);
     final okGeo = h.dLon > 0 && h.dLat > 0 && h.west >= -180 && h.east <= 180.01 && h.north <= 90 && h.south >= -90;
     if (!okSize || !okBlock || !okGeo || h.bodyLength <= 0) {
-      throw const FormatException('korkeustiedoston otsake ei kelpaa');
+      throw FormatException(l10n.fi('korkeustiedoston otsake ei kelpaa'));
     }
     return h;
   }
@@ -80,7 +81,7 @@ class ElevHeader {
 /// Ennustevirheistä korkeudet (tools/elev_build.py encode): vasen + yläpuolinen − vasen yläkulma, int16 kiertäen.
 Int16List _unpredict(List<int> raw, int w, int h) {
   final n = w * h;
-  if (raw.length != n * 2) throw const FormatException('korkeustiedoston koko ei täsmää');
+  if (raw.length != n * 2) throw FormatException(l10n.fi('korkeustiedoston koko ei täsmää'));
   final r = ByteData.sublistView(Uint8List.fromList(raw));
   final out = Int16List(n);
   for (var i = 0; i < n; i++) {
@@ -119,7 +120,7 @@ class ElevationGrid {
   /// Koko tiedosto muistista (testit, pienet tiedostot): versio 1 tai 2 (kaikki lohkot).
   static Future<ElevationGrid> fromBytes(Uint8List bytes) async {
     final h = ElevHeader.parse(bytes);
-    if (bytes.length < h.requiredLength) throw const FormatException('korkeustiedosto on vajaa');
+    if (bytes.length < h.requiredLength) throw FormatException(l10n.fi('korkeustiedosto on vajaa'));
     if (h.version == 1) {
       final raw = ZLibDecoder().decodeBytes(bytes.sublist(h.headLength, h.requiredLength));
       return ElevationGrid(h, _unpredict(raw, h.width, h.height));
@@ -131,20 +132,20 @@ class ElevationGrid {
 
   /// Versio 2 tiedostosta: luetaan otsake ja hakemisto; lohkot vasta [loadAround]-kutsulla.
   static Future<ElevationGrid> open(ElevHeader h, ElevReader read) async {
-    if (h.version != 2) throw const FormatException('vain versio 2 luetaan lohkoittain');
+    if (h.version != 2) throw FormatException(l10n.fi('vain versio 2 luetaan lohkoittain'));
     final nb = h.blocksX * h.blocksY;
     final idx = await read(h.headLength, (nb + 1) * 4);
-    if (idx.length != (nb + 1) * 4) throw const FormatException('korkeustiedosto on vajaa');
+    if (idx.length != (nb + 1) * 4) throw FormatException(l10n.fi('korkeustiedosto on vajaa'));
     final index = Uint32List(nb + 1);
     final bd = ByteData.sublistView(idx);
     for (var i = 0; i <= nb; i++) {
       index[i] = bd.getUint32(i * 4, Endian.little);
     }
     for (var i = 1; i <= nb; i++) {
-      if (index[i] < index[i - 1]) throw const FormatException('korkeustiedoston hakemisto ei kelpaa');
+      if (index[i] < index[i - 1]) throw FormatException(l10n.fi('korkeustiedoston hakemisto ei kelpaa'));
     }
     if (h.headLength + (nb + 1) * 4 + index[nb] > h.requiredLength) {
-      throw const FormatException('korkeustiedoston hakemisto ei kelpaa');
+      throw FormatException(l10n.fi('korkeustiedoston hakemisto ei kelpaa'));
     }
     return ElevationGrid._lazy(h, index, read);
   }

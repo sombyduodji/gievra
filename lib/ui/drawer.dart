@@ -365,7 +365,10 @@ class _SettingsSection extends StatelessWidget {
           const SizedBox(height: 8),
           // Saamenkielisessä käyttöliittymässä vammatilan ohjeet suomeksi tai englanniksi (ei käännetty saameksi).
           if (isSami) ...[
-            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Vammatilan ohjeet'))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+              child: Text(t('Vammatilan ohjeet ja liikevinkit')),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SegmentedButton<String>(
@@ -381,7 +384,9 @@ class _SettingsSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: Text(
-                t('Vammatilan ohjeita ei ole käännetty saameksi: valitse, näytetäänkö ne suomeksi vai englanniksi.'),
+                t(
+                  'Vammatilan ohjeita ja liikevinkkejä ei ole käännetty saameksi: valitse, näytetäänkö ne suomeksi vai englanniksi.',
+                ),
                 style: sub,
               ),
             ),
@@ -1018,7 +1023,7 @@ Future<void> changeFolder(BuildContext context, String? newDir) async {
           ? t('Kopioitu {0} tiedostoa, {1} oli jo uudessa kansiossa. ', [c, sk])
           : t('Kopioitu {0} tiedostoa. ', [c]);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(t('Kopiointi epäonnistui: {0}', [e]))));
+      messenger.showSnackBar(SnackBar(content: Text(t('Kopiointi epäonnistui: {0}', [errorText(e)]))));
       return;
     }
   }
