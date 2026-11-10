@@ -208,6 +208,10 @@ object HealthBridge {
         }
         val steps = (listOfNotNull(own?.toDouble(), total?.toDouble(), minuteBest) + bySource.values)
             .maxOrNull()?.takeIf { it > 0 }?.toLong()
+        // Kaikkien sovellusten askeleet yhteensä aikaväliltä (samaa minuuttia ei lasketa kahdesti): kävelyyn
+        // ehdotetaan harjoituksen tallentaneen sovelluksen omien askelten rinnalla (Oura ei aina kirjaa niitä).
+        val allSteps = (listOfNotNull(total?.toDouble(), minuteBest) + bySource.values)
+            .maxOrNull()?.takeIf { it > 0 }?.toLong()
         val meters = ownMeters() ?: try {
             c.aggregate(AggregateRequest(setOf(DistanceRecord.DISTANCE_TOTAL), span))[DistanceRecord.DISTANCE_TOTAL]
                 ?.inMeters
@@ -217,6 +221,8 @@ object HealthBridge {
         return mapOf(
             "meters" to meters,
             "steps" to steps?.toInt(),
+            "ownSteps" to own?.toInt(),
+            "allSteps" to allSteps?.toInt(),
             // Vianetsintään: askeleet sovelluksittain ja Health Connectin kokonaissumma.
             "stepsBySource" to bySource.map { (k, v) -> "${appLabel(context, k)}: ${v.toLong()}" }.joinToString(", ") +
                 (if (minuteBest > 0) ", minuuteittain paras: ${minuteBest.toLong()}" else "") +
@@ -249,8 +255,12 @@ object HealthBridge {
             ) + stats(context, s.startTime, s.endTime, s.metadata.dataOrigin.packageName)
         }
         val own = stats(context, start, end)
-        if ((own["hrCount"] as Int) > 0) {
-            out += mapOf("kind" to "heartRate", "start" to startMs, "end" to endMs, "app" to "") + own
+        // Treenin oma aika: syke (kello ilman harjoitusta) tai pelkät askeleet (kävely puhelin taskussa);
+        // Gievra näyttää pelkät askeleet vain kävelylle ja retkeilylle, joilla on alkuaika.
+        val ownSteps = (own["allSteps"] as Int?) ?: 0
+        if ((own["hrCount"] as Int) > 0 || ownSteps > 0) {
+            val kind = if ((own["hrCount"] as Int) > 0) "heartRate" else "steps"
+            out += mapOf("kind" to kind, "start" to startMs, "end" to endMs, "app" to "") + own
         }
         return out
     }

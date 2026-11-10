@@ -82,7 +82,7 @@ msgstr "Warm-up"
 msgid "Ennätys"
 msgstr "Record"
 
-#: lib/csv_export.dart:111 lib/csv_export.dart:151 lib/ui/activity.dart:825 lib/ui/import_export.dart:258 …
+#: lib/csv_export.dart:111 lib/csv_export.dart:151 lib/ui/activity.dart:841 lib/ui/import_export.dart:258 …
 msgid "Muistiinpanot"
 msgstr "Notes"
 
@@ -98,7 +98,7 @@ msgstr "Sport"
 msgid "Kesto"
 msgstr "Duration"
 
-#: lib/csv_export.dart:144 lib/ui/activity.dart:775
+#: lib/csv_export.dart:144 lib/ui/activity.dart:791
 msgid "Matka (km)"
 msgstr "Distance (km)"
 
@@ -323,7 +323,7 @@ msgstr "GPS ready"
 msgid "Etsitään GPS-signaalia…"
 msgstr "Searching for GPS signal…"
 
-#: lib/health.dart:69
+#: lib/health.dart:75
 msgid "Puhelimen askelmittari"
 msgstr "Phone step counter"
 
@@ -1611,7 +1611,7 @@ msgstr "Long run"
 msgid "Viikon pisin, tasainen vauhti"
 msgstr "Longest of the week, steady pace"
 
-#: lib/sports.dart:78 lib/ui/activity.dart:217 lib/ui/activity.dart:789 lib/ui/workout.dart:534
+#: lib/sports.dart:78 lib/ui/activity.dart:217 lib/ui/activity.dart:805 lib/ui/workout.dart:534
 msgid "vauhti"
 msgstr "pace"
 
@@ -1768,7 +1768,7 @@ msgstr "time"
 msgid "matka"
 msgstr "distance"
 
-#: lib/ui/activity.dart:219 lib/ui/activity.dart:794
+#: lib/ui/activity.dart:219 lib/ui/activity.dart:810
 msgid "keskinopeus"
 msgstr "average speed"
 
@@ -1902,39 +1902,47 @@ msgstr "Remove route"
 msgid "Kesto (min)"
 msgstr "Duration (min)"
 
-#: lib/ui/activity.dart:762
+#: lib/ui/activity.dart:762 lib/ui/activity.dart:770 lib/ui/workout.dart:819 lib/ui/workout.dart:824
+msgid "Aloitusaika"
+msgstr "Start time"
+
+#: lib/ui/activity.dart:767 lib/ui/workout.dart:822
+msgid "ei tiedossa"
+msgstr "not known"
+
+#: lib/ui/activity.dart:778
 msgid "Matka"
 msgstr "Distance"
 
-#: lib/ui/activity.dart:802
+#: lib/ui/activity.dart:818
 msgid "Rasitus"
 msgstr "Effort"
 
-#: lib/ui/activity.dart:823 lib/ui/workout.dart:432 lib/ui/workout.dart:542
+#: lib/ui/activity.dart:839 lib/ui/workout.dart:432 lib/ui/workout.dart:542
 msgid "Miltä tuntui?"
 msgstr "How did it feel?"
 
-#: lib/ui/activity.dart:831
+#: lib/ui/activity.dart:847
 msgid "Reitti, sää, joukkue, tulos… (vapaaehtoinen)"
 msgstr "Route, weather, team, result… (optional)"
 
-#: lib/ui/activity.dart:848 lib/ui/workout.dart:418 lib/ui/workout.dart:511
+#: lib/ui/activity.dart:864 lib/ui/workout.dart:418 lib/ui/workout.dart:511
 msgid "Treeni valmis!"
 msgstr "Workout done!"
 
-#: lib/ui/activity.dart:889
+#: lib/ui/activity.dart:905
 msgid "📍 GPS-tila"
 msgstr "📍 GPS mode"
 
-#: lib/ui/activity.dart:889
+#: lib/ui/activity.dart:905
 msgid "Mittaa ajan, matkan ja reitin"
 msgstr "Measures time, distance and route"
 
-#: lib/ui/activity.dart:896
+#: lib/ui/activity.dart:912
 msgid "Manuaalinen"
 msgstr "Manual"
 
-#: lib/ui/activity.dart:896
+#: lib/ui/activity.dart:912
 msgid "Syötä matka ja aika itse"
 msgstr "Enter distance and time yourself"
 
@@ -3047,7 +3055,7 @@ msgstr ""
 "Gievra needs permission to read workouts, heart rate, calories, steps "
 "and distance from Health Connect. Nothing is sent anywhere."
 
-#: lib/ui/health_import.dart:299 lib/ui/health_sheet.dart:126
+#: lib/ui/health_import.dart:299 lib/ui/health_sheet.dart:148
 msgid "Anna lupa"
 msgstr "Allow access"
 
@@ -3077,7 +3085,7 @@ msgstr "1 is already in Gievra."
 msgid "{0} liikuntaa on jo Gievrassa."
 msgstr "{0} are already in Gievra."
 
-#: lib/ui/health_sheet.dart:99
+#: lib/ui/health_sheet.dart:121
 msgid ""
 "Health Connect ei ole käytettävissä tässä puhelimessa. Kirjoita syke "
 "ja kalorit käsin."
@@ -3085,15 +3093,15 @@ msgstr ""
 "Health Connect isn't available on this phone. Type the heart rate and "
 "calories by hand."
 
-#: lib/ui/health_sheet.dart:104
+#: lib/ui/health_sheet.dart:126
 msgid "Health Connect pitää asentaa tai päivittää Play Kaupasta."
 msgstr "Install or update Health Connect from the Play Store."
 
-#: lib/ui/health_sheet.dart:111
+#: lib/ui/health_sheet.dart:133
 msgid "Avaa Play Kauppa"
 msgstr "Open the Play Store"
 
-#: lib/ui/health_sheet.dart:121
+#: lib/ui/health_sheet.dart:143
 msgid ""
 "Gievra lukee Health Connectista vain tämän treenin ajalta "
 "harjoituksen, sykkeen, kalorit ja askeleet. Tiedot pysyvät "
@@ -3103,11 +3111,11 @@ msgstr ""
 "exercise session, heart rate, calories and steps. The data stays on "
 "the phone."
 
-#: lib/ui/health_sheet.dart:136
+#: lib/ui/health_sheet.dart:158
 msgid "Tätä treeniä vastaavaa harjoitusta ei vielä löytynyt."
 msgstr "No session matching this workout was found yet."
 
-#: lib/ui/health_sheet.dart:137
+#: lib/ui/health_sheet.dart:159
 msgid ""
 "Lopeta harjoitus kellosta ja odota, että kellon sovellus siirtää "
 "tiedot Health Connectiin."
@@ -3115,7 +3123,7 @@ msgstr ""
 "Stop the session on your watch and wait for the watch app to move the "
 "data to Health Connect."
 
-#: lib/ui/health_sheet.dart:142
+#: lib/ui/health_sheet.dart:164
 msgid ""
 "Siirto kestää yleensä muutaman minuutin. Voit jättää tämän auki ja "
 "tarkistaa välillä."
@@ -3123,64 +3131,91 @@ msgstr ""
 "This usually takes a few minutes. You can leave this open and check "
 "now and then."
 
-#: lib/ui/health_sheet.dart:149 lib/ui/health_sheet.dart:228
+#: lib/ui/health_sheet.dart:169
+msgid "Lisää liikunnalle aloitusaika, niin askeleet haetaan sen ajalta."
+msgstr "Add a start time to the activity to fetch the steps for that time."
+
+#: lib/ui/health_sheet.dart:175 lib/ui/health_sheet.dart:292
 msgid "Tarkista uudelleen"
 msgstr "Check again"
 
-#: lib/ui/health_sheet.dart:149
+#: lib/ui/health_sheet.dart:175
 msgid "Tarkista"
 msgstr "Check"
 
-#: lib/ui/health_sheet.dart:160
-msgid "Onko tämä se?"
-msgstr "Is this the one?"
-
-#: lib/ui/health_sheet.dart:169
-msgid "Sykedata treenin ajalta"
-msgstr "Heart rate during the workout"
-
-#. {0} = c.duration.inMinutes
-#: lib/ui/health_sheet.dart:176
-msgid "{0} min"
-msgstr "{0} min"
-
 #. {0} = c.kcal
-#: lib/ui/health_sheet.dart:184 lib/ui/watch.dart:163
+#: lib/ui/health_sheet.dart:187 lib/ui/watch.dart:163
 msgid "🔥 {0} kcal"
 msgstr "🔥 {0} kcal"
 
 #. {0} = thousands(c.steps!)
-#: lib/ui/health_sheet.dart:185
+#: lib/ui/health_sheet.dart:188 lib/ui/health_sheet.dart:189
 msgid "👣 {0} askelta"
 msgstr "👣 {0} steps"
 
+#: lib/ui/health_sheet.dart:194
+msgid "Onko tämä se?"
+msgstr "Is this the one?"
+
+#: lib/ui/health_sheet.dart:206
+msgid "Askeleet liikunnan ajalta"
+msgstr "Steps during the activity"
+
+#: lib/ui/health_sheet.dart:207
+msgid "Sykedata treenin ajalta"
+msgstr "Heart rate during the workout"
+
+#. {0} = c.duration.inMinutes
+#: lib/ui/health_sheet.dart:214
+msgid "{0} min"
+msgstr "{0} min"
+
+#: lib/ui/health_sheet.dart:225
+msgid "Mitkä askeleet lisätään?"
+msgstr "Which steps to add?"
+
+#. {0} = thousands(o.$2)
+#: lib/ui/health_sheet.dart:243
+msgid "Kaikki lähteet yhteensä: {0} askelta"
+msgstr "All sources combined: {0} steps"
+
+#. {0} = o.$1
+#. {1} = thousands(o.$2)
+#: lib/ui/health_sheet.dart:244
+msgid "{0}: {1} askelta"
+msgstr "{0}: {1} steps"
+
+#: lib/ui/health_sheet.dart:251
+msgid "Samaa minuuttia ei lasketa kahdesti."
+msgstr "The same minute is never counted twice."
+
 #. {0} = c.stepsInfo
-#: lib/ui/health_sheet.dart:192
+#: lib/ui/health_sheet.dart:256
 msgid "Askeleet lähteittäin: {0}"
 msgstr "Steps by source: {0}"
 
-#: lib/ui/health_sheet.dart:204
+#: lib/ui/health_sheet.dart:268
 msgid "Ei, seuraava"
 msgstr "No, next"
 
-#: lib/ui/health_sheet.dart:204 lib/ui/home.dart:927 lib/ui/home.dart:1146 lib/ui/maps_screen.dart:349 …
+#: lib/ui/health_sheet.dart:268 lib/ui/home.dart:927 lib/ui/home.dart:1146 lib/ui/maps_screen.dart:349 …
 msgid "Ohita"
 msgstr "Skip"
 
-#: lib/ui/health_sheet.dart:215 lib/ui/new_workout.dart:266 lib/ui/picker.dart:83
+#: lib/ui/health_sheet.dart:279 lib/ui/new_workout.dart:266 lib/ui/picker.dart:83
 msgid "Lisää"
 msgstr "Add"
 
 #. {0} = error ?? ''
-#: lib/ui/health_sheet.dart:226
+#: lib/ui/health_sheet.dart:290
 msgid "Health Connectin luku ei onnistunut: {0}"
 msgstr "Couldn't read Health Connect: {0}"
 
-#: lib/ui/health_sheet.dart:238 lib/ui/watch.dart:73
+#: lib/ui/health_sheet.dart:302 lib/ui/watch.dart:73
 msgid "Health Connect"
 msgstr "Health Connect"
 
-#: lib/ui/health_sheet.dart:248
+#: lib/ui/health_sheet.dart:312
 msgid "Harjoitus"
 msgstr "Exercise session"
 
@@ -6430,14 +6465,6 @@ msgstr "Previous {0} ({1}): {2} min/km"
 #: lib/ui/workout.dart:747
 msgid "juoksu"
 msgstr "run"
-
-#: lib/ui/workout.dart:819 lib/ui/workout.dart:824
-msgid "Aloitusaika"
-msgstr "Start time"
-
-#: lib/ui/workout.dart:822
-msgid "ei tiedossa"
-msgstr "not known"
 
 #. {0} = end(_start!, m)
 #: lib/ui/workout.dart:832

@@ -29,6 +29,10 @@ class HealthCandidate {
 
   /// Askeleet sovelluksittain (vianetsintä, näkyy Onko tämä se? -ikkunassa pienellä).
   final String? stepsInfo;
+
+  /// Harjoituksen tallentaneen sovelluksen omat askeleet ja kaikkien sovellusten askeleet samalta ajalta
+  /// (samaa minuuttia ei lasketa kahdesti). Kävelyyn ja retkeilyyn käyttäjä valitsee, kumpi lisätään.
+  final int? ownSteps, allSteps;
   const HealthCandidate({
     required this.session,
     required this.start,
@@ -45,6 +49,8 @@ class HealthCandidate {
     this.stepsOnly = false,
     this.pkg,
     this.stepsInfo,
+    this.ownSteps,
+    this.allSteps,
   });
 
   /// Askelista tehty liikunta saman ajan sykkeellä, kaloreilla ja matkalla (rangeStats).
@@ -82,10 +88,29 @@ class HealthCandidate {
     id: m['id'] as String?,
     meters: (m['meters'] as num?)?.toDouble(),
     stepsInfo: (m['stepsBySource'] as String?)?.trim().isEmpty ?? true ? null : appName(m['stepsBySource'] as String),
+    ownSteps: (m['ownSteps'] as num?)?.toInt(),
+    allSteps: (m['allSteps'] as num?)?.toInt(),
   );
+
+  /// Treenin oma aika ilman harjoitusta ja ilman sykettä: pelkät askeleet.
+  bool get stepsWindow => !session && hrAvg == null && hrMax == null;
 
   Duration get duration => end.difference(start);
   bool get hasData => hrAvg != null || hrMax != null || kcal != null || (steps ?? 0) > 0;
+}
+
+/// Lajit, joihin askeleet voi hakea treenin ajalta ilman harjoitusta ja joissa valitaan sovelluksen omat
+/// tai kaikkien lähteiden askeleet (käyttäjän valinta: kävely ja retkeily).
+const stepChoiceSports = {'Kävely', 'Retkeily'};
+bool stepChoiceSport(String? activity) => stepChoiceSports.contains(activity);
+
+/// Askelvaihtoehdot ehdokkaasta: (sovelluksen nimi tai null = kaikki lähteet, askeleet). Sama luku vain kerran.
+List<(String?, int)> stepOptions(HealthCandidate c) {
+  final own = c.ownSteps ?? 0, all = c.allSteps ?? c.steps ?? 0;
+  return [
+    if (c.session && own > 0 && c.app.isNotEmpty) (c.app, own),
+    if (all > 0 && !(c.session && own == all && c.app.isNotEmpty)) (null, all),
+  ];
 }
 
 /// Treenin aikaväli: alku ja kesto treenistä; ilman alkuaikaa koko päivä (kesto vain vertailuun).
@@ -128,11 +153,12 @@ List<HealthCandidate> rankCandidates(Workout w, List<HealthCandidate> all) {
 
 /// Täyttää treeniin syke- ja kaloritiedot ehdokkaasta (vain ne, jotka löytyivät); askeleet vain lajeihin, joissa
 /// ne kirjataan (kävely, juoksu, retkeily …).
-void applyCandidate(Workout w, HealthCandidate c, {bool steps = false}) {
+void applyCandidate(Workout w, HealthCandidate c, {bool steps = false, int? chosenSteps}) {
   if (c.hrAvg != null) w.hrAvg = c.hrAvg;
   if (c.hrMax != null) w.hrMax = c.hrMax;
   if (c.kcal != null) w.kcal = c.kcal;
-  if (steps && (c.steps ?? 0) > 0) w.steps = c.steps;
+  final n = chosenSteps ?? c.steps;
+  if (steps && (n ?? 0) > 0) w.steps = n;
   // Health Connectista lisätty liikunta (sama harjoitus): myös matka päivittyy, ellei sitä ole kirjoitettu käsin.
   if (w.hcId != null && w.hcId == c.id && (c.meters ?? 0) > 0 && !w.distanceManual) {
     w.distanceKm = (c.meters! / 10).round() / 100;
