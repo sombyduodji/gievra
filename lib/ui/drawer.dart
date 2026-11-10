@@ -719,7 +719,7 @@ Future<void> showAbout(BuildContext context) async {
           const SizedBox(height: 6),
           Text(
             t(
-              'Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti ja Espanja {0} (ODbL). Iso-Britannia: '
+              'Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti, Espanja ja Irlanti {0} (ODbL). Iso-Britannia: '
               'Office for National Statistics, Open Government Licence v3.0; sisältää OS:n aineistoa '
               '© Crown copyright and database right 2024.',
               [MapCredits.osm],
@@ -735,7 +735,7 @@ Future<void> showAbout(BuildContext context) async {
           const SizedBox(height: 6),
           Text(
             t(
-              'Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia ja Espanja): Copernicus DEM GLO-30, '
+              'Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia, Espanja ja Irlanti): Copernicus DEM GLO-30, '
               'muunnettu Gievraa varten noin 30 metrin ruudukoksi.',
             ),
           ),

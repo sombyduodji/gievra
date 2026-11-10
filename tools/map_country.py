@@ -29,9 +29,10 @@ COUNTRIES = {
     'is': {'fi': 'Islanti', 'en': 'Iceland', 'se': 'Islánda', 'local': 'Ísland'},
     'gb': {'fi': 'Iso-Britannia', 'en': 'United Kingdom', 'se': 'Stuorra-Británnia', 'local': 'United Kingdom'},
     'es': {'fi': 'Espanja', 'en': 'Spain', 'se': 'Spánja', 'local': 'España'},
+    'ie': {'fi': 'Irlanti', 'en': 'Ireland', 'se': 'Irlánda', 'local': 'Éire'},
 }
 # Mitä paketit ovat (sovellus näyttää: "Valitse kunnat" tms.).
-UNITS = {'se': 'kommun', 'no': 'kommune', 'dk': 'kommune', 'is': 'sveitarfélag', 'gb': 'council', 'es': 'provincia'}
+UNITS = {'se': 'kommun', 'no': 'kommune', 'dk': 'kommune', 'is': 'sveitarfélag', 'gb': 'council', 'es': 'provincia', 'ie': 'council'}  # ie: sovellus näyttää "alueet" (county-sanaa se ei tunne)
 GITHUB_MAX = 2 * 1024 ** 3 - 1  # GitHubin julkaisun tiedosto alle 2 GiB
 
 _EXTRA = {'ø': 'o', 'æ': 'ae', 'å': 'a', 'ß': 'ss', 'þ': 'th', 'ð': 'd', 'ł': 'l', 'đ': 'd', 'ŧ': 't', 'ŋ': 'n',

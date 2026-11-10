@@ -30,7 +30,7 @@ const mapCatalogUrl = String.fromEnvironment(
   defaultValue: 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/kartat.json',
 );
 
-/// Maaluettelo: maat ja niiden luetteloiden osoitteet (Suomi, Ruotsi, Norja, Tanska, Islanti, Iso-Britannia, Espanja).
+/// Maaluettelo: maat ja niiden luetteloiden osoitteet (Suomi, Ruotsi, Norja, Tanska, Islanti, Iso-Britannia, Espanja, Irlanti).
 const mapIndexUrl = String.fromEnvironment(
   'MAP_INDEX',
   defaultValue: 'https://github.com/sombyduodji/gievra/releases/download/kartat-2026-11/maat.json',

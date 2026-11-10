@@ -2652,15 +2652,15 @@ msgstr ""
 #. {0} = MapCredits.osm
 #: lib/ui/drawer.dart:722
 msgid ""
-"Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti ja Espanja "
-"{0} (ODbL). Iso-Britannia: Office for National Statistics, Open "
-"Government Licence v3.0; sisältää OS:n aineistoa © Crown copyright "
-"and database right 2024."
-msgstr ""
-"Earát riikkaid guovlorájit: Ruoŧŧa, Norga, Dánmárku, Islánda ja "
-"Spánja {0} (ODbL). Stuorra-Británnia: Office for National Statistics, "
-"Open Government Licence v3.0; sisttisdoallá OS:s ávdnasiid © Crown "
+"Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti, Espanja ja "
+"Irlanti {0} (ODbL). Iso-Britannia: Office for National Statistics, "
+"Open Government Licence v3.0; sisältää OS:n aineistoa © Crown "
 "copyright and database right 2024."
+msgstr ""
+"Earát riikkaid guovlorájit: Ruoŧŧa, Norga, Dánmárku, Islánda, Spánja "
+"ja Irlánda {0} (ODbL). Stuorra-Británnia: Office for National "
+"Statistics, Open Government Licence v3.0; sisttisdoallá OS:s "
+"ávdnasiid © Crown copyright and database right 2024."
 
 #: lib/ui/drawer.dart:731
 msgid ""
@@ -2672,13 +2672,13 @@ msgstr ""
 
 #: lib/ui/drawer.dart:738
 msgid ""
-"Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia ja "
-"Espanja): Copernicus DEM GLO-30, muunnettu Gievraa varten noin 30 "
+"Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia, Espanja "
+"ja Irlanti): Copernicus DEM GLO-30, muunnettu Gievraa varten noin 30 "
 "metrin ruudukoksi."
 msgstr ""
-"Allodatdieđut (Ruoŧŧa, Norga, Dánmárku, Islánda, Stuorra-Británnia ja "
-"Spánja): Copernicus DEM GLO-30, nuppástuhttojuvvon Gievrii sullii 30 "
-"mehtera ruvttuide."
+"Allodatdieđut (Ruoŧŧa, Norga, Dánmárku, Islánda, Stuorra-Británnia, "
+"Spánja ja Irlánda): Copernicus DEM GLO-30, nuppástuhttojuvvon Gievrii "
+"sullii 30 mehtera ruvttuide."
 
 #: lib/ui/drawer.dart:755
 msgid "Avoin lähdekoodi ja lisenssit"
