@@ -157,7 +157,7 @@ verkkoyhteys kirjattiin käytön aikana.
 | Kieli | Tila |
 |---|---|
 | **Suomi** | oletus, koko sovellus; liikkeiden ja lajien nimet suomeksi, englanniksi tai molemmilla (asetus) |
-| **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä, kaikki tekstit ja lajien nimet. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden nimet suomeksi, englanniksi tai molemmilla (asetus); vammatilan ohjeet suomeksi tai englanniksi (asetus); liikeohjeet suomeksi. |
+| **Davvisámegiella** (pohjoissaame) | kokeellinen käyttöliittymä, kaikki tekstit ja lajien nimet. Käännökset ovat toistaiseksi konekäännöksiä, jotka on tarkistettu saamen oikolukijalla, mutta niissä voi olla virheitä. Liikkeiden nimet suomeksi, englanniksi tai molemmilla (asetus); vammatilan ohjeet ja liikevinkit suomeksi tai englanniksi (asetus). |
 | **English** | koko käyttöliittymä (oikoluettu Hunspellilla); liikkeiden ja lajien nimet aina englanniksi; haku löytää molemmilla kielillä. Tiedostot tallentuvat aina samassa muodossa, joten kieltä voi vaihtaa milloin vain. |
 
 Korjaukset käännöksiin ovat erityisen tervetulleita, ks. [docs/kaannokset.md](docs/kaannokset.md).

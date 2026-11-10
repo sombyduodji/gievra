@@ -199,7 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              t('Oma liike {0} yhdistettiin Gievran liikkeeseen {1} ({2} treeniä).', [m.custom, exerciseLabel(m.builtin), n]),
+              t('Oma liike {0} yhdistettiin Gievran liikkeeseen {1} ({2} treeniä).', [
+                m.custom,
+                exerciseLabel(m.builtin),
+                n,
+              ]),
             ),
           ),
         );

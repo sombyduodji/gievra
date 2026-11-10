@@ -70,7 +70,7 @@ class _RecordScreenState extends State<RecordScreen> {
         await rec.open(widget.sport, title: title, text: text, channel: channel);
       }
     } catch (e) {
-      _error = t('GPS:ää ei voitu käynnistää: {0}', [e]);
+      _error = t('GPS:ää ei voitu käynnistää: {0}', [errorText(e)]);
     }
     if (mounted) setState(() => _busy = false);
   }

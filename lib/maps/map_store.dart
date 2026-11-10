@@ -50,7 +50,7 @@ const mapReleasesApi = String.fromEnvironment(
 String safeMapUrl(String url) {
   final u = Uri.tryParse(url);
   if (u == null || !(u.isScheme('https') || (kDebugMode && u.isScheme('http'))) || u.host.isEmpty) {
-    throw FormatException('karttojen osoite ei kelpaa: $url');
+    throw FormatException(l10n.fi('karttojen osoite ei kelpaa: {0}', [url]));
   }
   return url;
 }
@@ -59,7 +59,7 @@ String safeMapUrl(String url) {
 /// tiedostoa muualle (esim. ../ tai absoluuttinen polku).
 String safeMapFile(String name) {
   if (!RegExp(r'^[a-z0-9-]+\.(pmtiles|elev)$').hasMatch(name)) {
-    throw FormatException('karttatiedoston nimi ei kelpaa: $name');
+    throw FormatException(l10n.fi('karttatiedoston nimi ei kelpaa: {0}', [name]));
   }
   return name;
 }
@@ -105,7 +105,7 @@ class MapPack {
     final e = j['elev'] as Map<String, dynamic>?;
     if (e == null) return pack;
     final elev = MapPack._fromJson({...j, ...e, 'id': '${pack.id}-korkeus'}, country: country);
-    if (!elev.isElevation) throw FormatException('korkeustiedoston nimi ei kelpaa: ${elev.file}');
+    if (!elev.isElevation) throw FormatException(l10n.fi('korkeustiedoston nimi ei kelpaa: {0}', [elev.file]));
     return MapPack(
       id: pack.id,
       name: pack.name,
@@ -226,7 +226,7 @@ class MapCatalog {
 
   factory MapCatalog.fromJson(Map<String, dynamic> j) {
     final cc = j['country'] as String? ?? 'fi';
-    if (!RegExp(r'^[a-z]{2}$').hasMatch(cc)) throw FormatException('maakoodi ei kelpaa: $cc');
+    if (!RegExp(r'^[a-z]{2}$').hasMatch(cc)) throw FormatException(l10n.fi('maakoodi ei kelpaa: {0}', [cc]));
     final fi = cc == 'fi';
     MapPack pack(Map<String, dynamic> e) => MapPack.fromJson(e, country: cc);
     final all = j['all'] as Map<String, dynamic>?;
@@ -452,7 +452,9 @@ class MapStore extends ChangeNotifier {
       Future<void> fetch(String url, {String? expect}) async {
         final text = await get(url);
         final c = MapCatalog.fromJson(jsonDecode(text) as Map<String, dynamic>);
-        if (expect != null && c.country != expect) throw FormatException('luettelon maa ${c.country} ≠ $expect');
+        if (expect != null && c.country != expect) {
+          throw FormatException(l10n.fi('luettelon maa {0} ≠ {1}', [c.country, expect]));
+        }
         _add(c);
         await File(p.join(d.path, c.cacheName)).writeAsString(text);
       }
@@ -473,7 +475,7 @@ class MapStore extends ChangeNotifier {
         ]);
         if (errors.isNotEmpty && catalogs.isEmpty) err = errors.join('; ');
       } catch (e) {
-        err = '$e';
+        err = l10n.errorText(e);
       } finally {
         if (clientOverride == null) client.close();
       }
@@ -569,7 +571,7 @@ class MapStore extends ChangeNotifier {
           await _setVersion(x.file, x.sha256);
           unverified.remove(x.file);
         } catch (e) {
-          dl.error = _cancel ? 'peruttu' : '$e';
+          dl.error = _cancel ? l10n.t('peruttu') : l10n.errorText(e);
           failed.add(dl);
         }
         notifyListeners();
@@ -616,7 +618,7 @@ class MapStore extends ChangeNotifier {
       }
       await sink.close();
       hasher.close();
-      if (digest.value.toString() != x.sha256) throw const FormatException('tarkiste ei täsmää');
+      if (digest.value.toString() != x.sha256) throw FormatException(l10n.fi('tarkiste ei täsmää'));
       _grids.remove(x.file);
       await _open.remove(x.file)?.close(); // päivitys: vanha tiedosto suljetaan ennen korvaamista
       await part.rename(p.join(d.path, x.file));

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../l10n.dart' as l10n;
+
 // PMTiles v3 -karttatiedoston lukija (https://github.com/protomaps/PMTiles/blob/main/spec/v3/spec.md). Sama muoto
 // kuin tools/map_extract.py kirjoittaa. Vain tiedostosta, ei verkosta; hakemistot välimuistissa.
 
@@ -118,7 +120,7 @@ class PmTilesFile {
   Future<void> _init() async {
     final h = ByteData.sublistView(await _read(0, 127));
     String magic = String.fromCharCodes(Uint8List.sublistView(h, 0, 7));
-    if (magic != 'PMTiles' || h.getUint8(7) != 3) throw const FormatException('ei PMTiles v3 -tiedosto');
+    if (magic != 'PMTiles' || h.getUint8(7) != 3) throw FormatException(l10n.fi('ei PMTiles v3 -tiedosto'));
     int u64(int o) => h.getUint64(o, Endian.little);
     _rootOff = u64(8);
     _rootLen = u64(16);

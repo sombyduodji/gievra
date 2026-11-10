@@ -326,22 +326,22 @@ class LanguagePicker extends StatelessWidget {
                             ),
                             child: Text(
                               en
-                                  ? 'WARNING: Not everything is translated. Injury mode guidance is not available in Sámi: '
-                                        'choose below whether it is shown in Finnish or English. Exercise instructions are in '
-                                        'Finnish. The rest are machine translations checked only with a spell checker, not yet '
-                                        'by a native speaker: they may contain errors.'
-                                  : 'VAROITUS: Kaikkea ei ole käännetty. Vammatilan ohjeita ei ole saameksi: valitse alta, '
-                                        'näytetäänkö ne suomeksi vai englanniksi. Liikeohjeet ovat suomeksi. Muut käännökset '
-                                        'ovat konekäännöksiä, jotka on tarkistettu vain oikolukijalla, ei vielä natiivipuhujalla: '
+                                  ? 'WARNING: Not everything is translated. Injury mode guidance and exercise tips are not available '
+                                        'in Sámi: choose below whether they are shown in Finnish or English. The rest are '
+                                        'machine translations checked only with a spell checker, not yet by a native '
+                                        'speaker: they may contain errors.'
+                                  : 'VAROITUS: Kaikkea ei ole käännetty. Vammatilan ohjeita ja liikevinkkejä ei ole saameksi: '
+                                        'valitse alta, näytetäänkö ne suomeksi vai englanniksi. Muut käännökset ovat '
+                                        'konekäännöksiä, jotka on tarkistettu vain oikolukijalla, ei vielä natiivipuhujalla: '
                                         'niissä voi olla virheitä.',
                               style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            'VÁRUHUS: Sámegiel geavahanlávdi lea geahččaleapmi. Buot ii leat jorgaluvvon: vahátrávvagat eai '
-                            'leat sámegillii, vállje vuolábealde, čájehuvvojitgo dat suomagillii vai eaŋgalsgillii. '
-                            'Hárjehusaid rávvagat leat suomagillii. Eará jorgalusat leat '
+                            'VÁRUHUS: Sámegiel geavahanlávdi lea geahččaleapmi. Buot ii leat jorgaluvvon: vahátrávvagat ja '
+                            'hárjehusaid rávvagat eai leat sámegillii, vállje vuolábealde, čájehuvvojitgo dat suomagillii '
+                            'vai eaŋgalsgillii. Eará jorgalusat leat '
                             'mašiidnajorgalusat, maid ii leat vel dárkkistan sámegielat olmmoš, dušše čállinmeattáhusdárkkistus. '
                             'Sáhttet leat boasttuvuođat.',
                             style: TextStyle(fontWeight: FontWeight.w600),
@@ -360,7 +360,7 @@ class LanguagePicker extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  '${en ? 'Injury guidance' : 'Vammatilan ohjeet'} · Vahátrávvagat',
+                  '${en ? 'Injury guidance and exercise tips' : 'Vammatilan ohjeet ja liikevinkit'} · Rávvagat',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),

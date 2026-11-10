@@ -6,7 +6,7 @@ import '../progression.dart';
 import '../injuries.dart';
 import '../program.dart';
 import '../exercises.dart';
-import '../anim/cues.dart';
+import '../anim/cue_lang.dart';
 import '../anim/figure.dart';
 import '../anim/motions.dart';
 import '../theme.dart';
@@ -222,7 +222,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         children: [
           const SamiBand(height: 4, pattern: false),
           const SizedBox(height: 12),
-          if (exerciseMotions[e.name] != null || exerciseCues[e.name] != null)
+          if (exerciseMotions[e.name] != null || cuesFor(e.name).isNotEmpty)
             Card(
               margin: const EdgeInsets.only(bottom: 10),
               child: ExpansionTile(
@@ -238,9 +238,14 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 children: [
                   if (exerciseMotions[e.name] != null)
                     Center(child: FigureAnimation(motion: exerciseMotions[e.name]!, size: 200)),
-                  if ((exerciseCues[e.name] ?? const <String>[]).isNotEmpty)
-                    LangNotice(t('Liikevinkit ovat saatavilla vain suomeksi.'), show: uiLang != 'fi'),
-                  for (final c in exerciseCues[e.name] ?? const <String>[])
+                  if (cuesFor(e.name).isNotEmpty)
+                    LangNotice(
+                      healthTextLang == 'en'
+                          ? t('Ei saatavilla saameksi: liikevinkit näkyvät englanniksi.')
+                          : t('Ei saatavilla saameksi: liikevinkit näkyvät suomeksi.'),
+                      show: isSami,
+                    ),
+                  for (final c in cuesFor(e.name))
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Row(

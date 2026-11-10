@@ -96,6 +96,15 @@ String t(String fi, [List<Object?> args = const []]) {
 /// Näytetään käyttöliittymässä tr()-funktiolla.
 String fi(String template, [List<Object?> args = const []]) => fill(template, args);
 
+/// Virheen teksti käyttäjälle: sovelluksen omat virheviestit (kirjoitettu fi()-merkinnällä) käännetään, muiden
+/// virheiden teksti näytetään sellaisenaan ilman luokan nimeä.
+String errorText(Object e) {
+  final s = e is FormatException
+      ? e.message
+      : e.toString().replaceFirst(RegExp(r'^(HttpException|Exception|FileSystemException|StateError): '), '');
+  return tr(s);
+}
+
 /// Tallennettu huomio, jossa osat on erotettu " · ":llä (esim. vammatilan muutosohjeet): kukin osa käännetään.
 String trNote(String stored) => stored.split(' · ').map(tr).join(' · ');
 

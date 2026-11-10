@@ -237,7 +237,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
         );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Virhe: {0}', [e]))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Virhe: {0}', [errorText(e)]))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

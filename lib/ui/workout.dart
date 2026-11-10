@@ -79,7 +79,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       await store.save(w);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Tallennus epäonnistui: {0}', [e]))));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(t('Tallennus epäonnistui: {0}', [errorText(e)]))));
       }
     }
   }
