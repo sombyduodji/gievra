@@ -418,7 +418,7 @@ class _ItemSheetState extends State<_ItemSheet> {
             runSpacing: 6,
             children: [
               for (final x in same.take(12))
-                ChoiceChip(label: Text(x), selected: _preview == x, onSelected: (_) => setState(() => _preview = x)),
+                ChoiceChip(label: Text(exerciseLabel(x)), selected: _preview == x, onSelected: (_) => setState(() => _preview = x)),
               ActionChip(
                 avatar: const Icon(Icons.search, size: 16),
                 label: Text(t('Muu liike…')),

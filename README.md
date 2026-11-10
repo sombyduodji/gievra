@@ -136,7 +136,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 **Tiedostot ovat sinun**
 - treenit, asetukset ja ohjelma tavallisina `.md`-tiedostoina omassa kansiossasi
 - tuonti FitNotesista ja Garmin Connectista (suoritusten CSV-vienti: laji, aika, matka, kesto, kalorit ja syke),
-  varmuuskopio zip-tiedostona, yksittäisten `.md`-tiedostojen tuonti
+  varmuuskopio zip-tiedostona (treenit, GPS-reitit, asetukset, ohjelma, punnitukset ja tallennetut ohjelmat;
+  uuteen puhelimeen palautettaessa myös asetukset ja ohjelma sellaisinaan), yksittäisten `.md`-tiedostojen tuonti
 
 ## Mihin sovellus ottaa yhteyttä?
 

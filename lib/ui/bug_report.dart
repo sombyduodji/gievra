@@ -81,6 +81,13 @@ class _BugReportScreenState extends State<BugReportScreen> {
   static const _channel = MethodChannel('fi.somby.gievra/email');
   String _type = 'save';
   final _desc = TextEditingController();
+
+  @override
+  void dispose() {
+    _desc.dispose();
+    super.dispose();
+  }
+
   final _files = <_Attachment>[];
   bool _busy = false;
   int _shown = 3; // näytettyjä treenejä (uusimmasta alkaen)

@@ -24,7 +24,7 @@ class MaxesEditor extends StatelessWidget {
     final kb = kettlebellOnly(ex);
     final v = await askNumber(
       context,
-      kb ? t('{0}: raskain kuula, jolla teet 5 hyvää toistoa (kg)', [ex]) : t('{0}: 1 toiston maksimi (kg)', [ex]),
+      kb ? t('{0}: raskain kuula, jolla teet 5 hyvää toistoa (kg)', [exerciseLabel(ex)]) : t('{0}: 1 toiston maksimi (kg)', [exerciseLabel(ex)]),
       kb ? 16 : (maxes[ex] ?? 60),
     );
     if (v == null || v <= 0) return;
@@ -53,7 +53,7 @@ class MaxesEditor extends StatelessWidget {
                 child: ListTile(
                   tileColor: cs.surfaceContainer,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  title: Text(trName(l), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(exerciseLabel(l), style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: pr == null
                       ? Text(t('Oma arvio'), style: sub)
                       : Column(
@@ -98,7 +98,7 @@ class MaxesEditor extends StatelessWidget {
                     ],
                   ),
                   onTap: () async {
-                    final v = await askNumber(context, t('{0}: 1 toiston maksimi (kg)', [trName(l)]), maxes[l] ?? 60);
+                    final v = await askNumber(context, t('{0}: 1 toiston maksimi (kg)', [exerciseLabel(l)]), maxes[l] ?? 60);
                     if (v != null && v > 0) {
                       maxes[l] = v;
                       onChanged();

@@ -92,7 +92,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     final m = await showDialog<Measure>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: Text(t('Miten {0} mitataan?', [e.name])),
+        title: Text(t('Miten {0} mitataan?', [exerciseLabel(e.name)])),
         children: [
           for (final m in Measure.values)
             SimpleDialogOption(
@@ -297,8 +297,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               child: Text(
                 [
                   if (_inj.avoid.isNotEmpty)
-                    '⚠️ ${t('Vammatila ({0}): tätä liikettä kannattaa välttää.', [_inj.avoid.map(t).join(', ')])}'
-                        '${_inj.substitute != null ? ' ${t('Kokeile: {0}.', [_inj.substitute])}' : ''}',
+                    '⚠️ ${t('Vammatila ({0}): tätä liikettä kannattaa välttää.', [_inj.avoid.map(exerciseLabel).join(', ')])}'
+                        '${_inj.substitute != null ? ' ${t('Kokeile: {0}.', [exerciseLabel(_inj.substitute!)])}' : ''}',
                   if (widget.note != null) '🩹 ${trNote(widget.note!)}' else ..._inj.modify.map((m) => '🩹 ${t(m)}'),
                   if (settings.injuries.isNotEmpty)
                     t('Kipua enintään 3–5/10, ja sen pitää rauhoittua aamuun mennessä.'),

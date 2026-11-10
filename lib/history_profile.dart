@@ -85,7 +85,9 @@ HistoryProfile? analyzeHistory(List<Workout> all, {DateTime? now}) {
   // Kokemus
   final months = (last.difference(ws.first.date).inDays / 30.4).floor();
   final experience = months < 12 ? 'aloittelija' : (months < 36 ? 'keski' : 'kokenut');
-  why['experience'] = months < 12
+  why['experience'] = months < 1
+      ? l10n.t('treenihistoriaa alle kuukausi')
+      : months < 12
       ? l10n.t('treenihistoriaa {0} kk', [months])
       : l10n.t('treenihistoriaa {0} vuotta', [fmtDec(months / 12, 1)]);
 

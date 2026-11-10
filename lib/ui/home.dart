@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              t('Oma liike {0} yhdistettiin Gievran liikkeeseen {1} ({2} treeniä).', [m.custom, trName(m.builtin), n]),
+              t('Oma liike {0} yhdistettiin Gievran liikkeeseen {1} ({2} treeniä).', [m.custom, exerciseLabel(m.builtin), n]),
             ),
           ),
         );
@@ -214,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
             t(
               'Oma liikkeesi: {0}\nGievran liike: {1}\n\nJos ovat, treenisi, ohjelmasi ja ennätyksesi siirtyvät '
               'Gievran liikkeelle, ja saat sen liikeohjeen ja animaation.',
-              [m.custom, trName(m.builtin)],
+              [m.custom, exerciseLabel(m.builtin)],
             ),
           ),
           actions: [
@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final n = await mergeMove(m);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t('Yhdistetty: {0} treeniä siirtyi liikkeelle {1}.', [n, trName(m.builtin)]))),
+          SnackBar(content: Text(t('Yhdistetty: {0} treeniä siirtyi liikkeelle {1}.', [n, exerciseLabel(m.builtin)]))),
         );
       } else if (same == false) {
         await declineMatch(m);
@@ -837,7 +837,7 @@ class _Recent extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              w.exercises.where((e) => e.sets.isNotEmpty).map((e) => e.name).join(' · '),
+                              w.exercises.where((e) => e.sets.isNotEmpty).map((e) => exerciseLabel(e.name)).join(' · '),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),

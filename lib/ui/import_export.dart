@@ -205,9 +205,13 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                 ),
               if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
               if (r.newExercises.isNotEmpty) _row(t('Uusia omia liikkeitä'), '${r.newExercises.length}'),
-              if (r.settingsMd != null) _row(t('Asetukset'), t('yhdistetään')),
+              if (r.settingsMd != null) _row(t('Asetukset'), restoresAll(r) ? t('palautetaan') : t('yhdistetään')),
               if (r.programMd != null)
-                _row(t('Ohjelma'), settings.program == null ? t('tuodaan') : t('nykyinen säilyy')),
+                _row(
+                  t('Ohjelma'),
+                  restoresAll(r) ? t('palautetaan') : (settings.program == null ? t('tuodaan') : t('nykyinen säilyy')),
+                ),
+              if (r.savedPrograms.isNotEmpty) _row(t('Tallennetut ohjelmat'), '${r.savedPrograms.length}'),
               const SizedBox(height: 10),
               if (r.existing > 0)
                 Text(

@@ -928,7 +928,7 @@ class _ImportProgressDialog extends StatelessWidget {
               Text(phase, style: Theme.of(context).textTheme.titleMedium),
               if (x != null && x.name.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(x.name, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+                Text(t(x.name), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
               ],
               const SizedBox(height: 14),
               LinearProgressIndicator(value: f, minHeight: 6, borderRadius: BorderRadius.circular(3)),

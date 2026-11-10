@@ -22,6 +22,7 @@ const goals = {
   'kunto': 'Yleiskunto',
   'vapaa': 'Mennään fiiliksellä',
 };
+// l10n: data
 const experiences = {
   'aloittelija': 'Aloittelija (alle 1 v)',
   'keski': 'Keskitaso (1–3 v)',

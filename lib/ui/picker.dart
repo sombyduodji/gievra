@@ -96,7 +96,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     final st = injuryStatus(n, settings.injuries);
     if (st.avoid.isNotEmpty) {
       return Text(
-        '⚠️ ${t('Vältä ({0})', [st.avoid.map(t).join(', ')])}${st.substitute != null ? ' → ${exerciseLabel(st.substitute!)}' : ''}',
+        '⚠️ ${t('Vältä ({0})', [st.avoid.map(exerciseLabel).join(', ')])}${st.substitute != null ? ' → ${exerciseLabel(st.substitute!)}' : ''}',
         style: const TextStyle(fontSize: 11, color: Sami.red),
       );
     }
