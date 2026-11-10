@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -12,6 +11,7 @@ import 'demo.dart';
 import 'open_files.dart';
 import 'rest.dart';
 import 'l10n.dart';
+import 'sami_material.dart';
 import 'sync/sync_service.dart';
 import 'ongoing.dart';
 import 'theme.dart';
@@ -103,9 +103,10 @@ class _TreeniAppState extends State<TreeniApp> {
     theme: _lightTheme,
     darkTheme: _darkTheme,
     themeMode: settings.themeMode,
-    locale: const Locale('fi'),
-    supportedLocales: const [Locale('fi')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    // Flutterin omat tekstit (kalenteri, kellonaika, kopioi/liitä, vihjeet) käyttöliittymän kielellä.
+    locale: flutterLocale(uiLang),
+    supportedLocales: appSupportedLocales,
+    localizationsDelegates: appLocalizationsDelegates,
     // Android 15+ piirtää sovelluksen järjestelmän navigointipalkin alle (edge-to-edge). Sivujen omat
     // ListView-reunukset ohittavat MediaQueryn alareunan, joten kolmen painikkeen palkki peitti sivujen lopun
     // (sitä ei voinut vierittää esiin). Koko sovellukselle tila palkin yläpuolelle; palkin taakse sivun tausta.

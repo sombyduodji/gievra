@@ -67,12 +67,7 @@ class BodyScreen extends StatelessWidget {
   const BodyScreen({super.key});
 
   Future<void> _add(BuildContext context) async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
+    final d = await pickDate(context, initial: DateTime.now(), first: DateTime(2000), last: DateTime.now());
     if (d == null || !context.mounted) return;
     final kg = await askBodyValue(context, height: false, current: settings.body.weights[dateOnly(d)]);
     if (kg != null) await settings.setWeight(d, kg);

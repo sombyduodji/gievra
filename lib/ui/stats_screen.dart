@@ -104,8 +104,15 @@ class _StatsScreenState extends State<StatsScreen> {
               fit: BoxFit.scaleDown,
               child: Text(label, style: sub, maxLines: 1),
             ),
-            // Muutosrivi aina paikallaan, jotta rivin ruudut ovat yhtä korkeita.
-            Text(d.isEmpty ? ' ' : d, style: TextStyle(fontSize: 11, color: d.startsWith('↓') ? Sami.red : Sami.green)),
+            // Muutosrivi aina paikallaan ja yhtä korkea (myös korostettu lasku), jotta rivin ruudut ovat yhtä korkeita.
+            SizedBox(
+              height: 19,
+              child: Center(
+                child: d.startsWith('↓')
+                    ? RedNote(d, pill: true)
+                    : Text(d.isEmpty ? ' ' : d, style: TextStyle(fontSize: 11, color: greenText(context))),
+              ),
+            ),
           ],
         ),
       ),
@@ -382,7 +389,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           color: lt.light
                               ? cs.onSurfaceVariant
                               : (lt.change ?? 0) < 0
-                              ? Sami.red
+                              ? redText(context)
                               : null,
                         ),
                       ),
@@ -529,8 +536,8 @@ class _Split extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              side('🏋', t('Sali'), gym, gymMinutes, Sami.red, CrossAxisAlignment.start),
-              side('🏃', t('Kestävyys'), cardio, cardioMinutes, Sami.green, CrossAxisAlignment.end),
+              side('🏋', t('Sali'), gym, gymMinutes, redText(context), CrossAxisAlignment.start),
+              side('🏃', t('Kestävyys'), cardio, cardioMinutes, greenText(context), CrossAxisAlignment.end),
             ],
           ),
           const SizedBox(height: 8),

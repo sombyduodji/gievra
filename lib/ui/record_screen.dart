@@ -281,12 +281,7 @@ class _RecordScreenState extends State<RecordScreen> {
             color: paused ? cs.onSurfaceVariant : null,
           ),
         ),
-        if (paused)
-          Text(
-            t('Tauko'),
-            textAlign: TextAlign.center,
-            style: TextStyle(color: cs.primary, fontWeight: FontWeight.w700),
-          ),
+        if (paused) Center(child: RedNote(t('Tauko'), pill: true, fontSize: 14, weight: FontWeight.w700)),
         const SizedBox(height: 8),
         Row(
           children: [

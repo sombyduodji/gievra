@@ -7,6 +7,82 @@ class Sami {
   static const green = Color(0xFF007229);
   static const yellow = Color(0xFFFFCE00);
   static const all = [red, green, yellow, blue];
+
+  /// Punainen tekstinä tummassa teemassa: lipun punainen jää tummalla pohjalla himmeäksi (2,8–3,7:1,
+  /// pieni teksti vaatii 4,5:1), joten teksteissä vaaleampi sävy (5,9–7,7:1). Täytöt pysyvät lipun punaisina.
+  static const redLight = Color(0xFFFF8378);
+
+  /// Sama vihreälle: lipun vihreä tummalla pohjalla 2,3–3,0:1, vaaleampi 7,3–9,5:1.
+  static const greenLight = Color(0xFF5BD08A);
+
+  /// Vaaleassa teemassa punainen tekstinä hieman tummempana: dialogin pohjalla lipun punainen 4,1:1, tämä 4,8:1.
+  static const redDark = Color(0xFFC0261B);
+
+  /// Sininen tekstinä tummassa teemassa: lipun sininen 1,4–1,9:1, tämä 6,2–8,1:1.
+  static const blueLight = Color(0xFF8FA8FF);
+
+  /// Keltainen tekstinä vaaleassa teemassa: lipun keltainen 1,2–1,5:1, tämä 5,1–6,3:1.
+  static const yellowDark = Color(0xFF7A5C00);
+}
+
+/// Punainen tekstin väri teeman mukaan (vaaleassa [Sami.redDark], tummassa [Sami.redLight]).
+Color redText(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? Sami.redLight : Sami.redDark;
+
+/// Sininen tekstin väri teeman mukaan (tummassa [Sami.blueLight]).
+Color blueText(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? Sami.blueLight : Sami.blue;
+
+/// Keltainen tekstin (ja pienen kuvakkeen) väri teeman mukaan (vaaleassa [Sami.yellowDark]).
+Color yellowText(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? Sami.yellow : Sami.yellowDark;
+
+/// Vihreä tekstin väri teeman mukaan (vaaleassa lipun vihreä, tummassa [Sami.greenLight]).
+Color greenText(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? Sami.greenLight : Sami.green;
+
+/// Varoitus korostettuna: punertava pohja, lähes valkoinen (tai tummanpunainen) teksti ja punainen reuna.
+/// Pienet punaiset varoitustekstit (vältettävä liike, tauko, lasku) erottuvat näin kummassakin teemassa.
+class RedNote extends StatelessWidget {
+  final String text;
+  final double fontSize;
+  final FontWeight? weight;
+  final int? maxLines;
+
+  /// Pilleri (ympäri reunus) tai rivi (vasen reuna).
+  final bool pill;
+  final TextAlign? textAlign;
+  const RedNote(
+    this.text, {
+    super.key,
+    this.fontSize = 11,
+    this.weight,
+    this.maxLines,
+    this.pill = false,
+    this.textAlign,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final border = BorderSide(color: Sami.red, width: pill ? 1 : 3);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: pill ? 10 : 6, vertical: pill ? 2 : 1),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF3A1E22) : const Color(0xFFFBE0DC),
+        borderRadius: BorderRadius.circular(pill ? 999 : 4),
+        border: pill ? Border.fromBorderSide(border) : Border(left: border),
+      ),
+      child: Text(
+        text,
+        maxLines: maxLines,
+        overflow: maxLines == null ? null : TextOverflow.ellipsis,
+        textAlign: textAlign,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: weight,
+          color: dark ? const Color(0xFFFFD2CC) : const Color(0xFF8E1A10),
+        ),
+      ),
+    );
+  }
 }
 
 ThemeData buildTheme(Brightness b) {
@@ -28,9 +104,28 @@ ThemeData buildTheme(Brightness b) {
     surfaceContainerHigh: dark ? const Color(0xFF222B3D) : const Color(0xFFEAE7E0),
     outlineVariant: dark ? const Color(0xFF263047) : const Color(0xFFDDD9D0),
   );
+  // Tekstinä käytettävä punainen (tekstipainikkeet, kehyspainikkeet, kentän otsikko, kalenterin tänään).
+  final textRed = dark ? Sami.redLight : Sami.redDark;
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
+    textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: textRed)),
+    inputDecorationTheme: InputDecorationTheme(
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+        (s) => TextStyle(
+          color: s.contains(WidgetState.error)
+              ? scheme.error
+              : s.contains(WidgetState.focused)
+              ? textRed
+              : scheme.onSurfaceVariant,
+        ),
+      ),
+    ),
+    datePickerTheme: DatePickerThemeData(
+      todayForegroundColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? scheme.onPrimary : textRed,
+      ),
+    ),
     scaffoldBackgroundColor: scheme.surface,
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,
@@ -53,6 +148,7 @@ ThemeData buildTheme(Brightness b) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        foregroundColor: textRed,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       ),

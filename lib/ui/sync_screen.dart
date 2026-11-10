@@ -68,7 +68,7 @@ class SyncScreen extends StatelessWidget {
                         : (sync.status?.startsWith('Virhe') ?? false)
                         ? Icons.sync_problem
                         : Icons.cloud_done,
-                    color: (sync.status?.startsWith('Virhe') ?? false) ? cs.error : Sami.green,
+                    color: (sync.status?.startsWith('Virhe') ?? false) ? cs.error : greenText(context),
                   ),
                   title: Text(sync.email ?? t('Google Drive')),
                   subtitle: Text(
