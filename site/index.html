@@ -102,6 +102,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Uutta: luettavuus ja kielet <span class="badge">0.5.9</span></h2>
   <div class="card">
     <ul>
+      <li><b>Kartat: Irlanti</b> – 26 kreivikuntaa korkeustietoineen tai koko saari yhtenä tiedostona. Näkyy Kartat-sivulla ilman sovelluksen päivitystä.</li>
       <li><b>0.5.9:</b> <b>Kävelyn ja retkeilyn askeleet Health Connectista</b>: valitse harjoituksen sovelluksen (esim. Oura) omat askeleet tai kaikki lähteet yhteensä; ilman harjoitusta askeleet liikunnan ajalta. Liikunnalle aloitusaika.</li>
       <li><b>0.5.8:</b> <b>Luettavampi tumma teema</b>: punaiset, vihreät ja siniset tekstit vaaleampina, varoitukset korostettuina. Salitreenin <b>kesto ja aloitusaika käsin</b> (⋮ → Muokkaa kestoa). Kalenteri, kellonaika ja kopioi/liitä käyttöliittymän kielellä, myös saameksi.</li>
       <li><b>0.5.7:</b> <b>Tuonti yhdellä painikkeella</b>: sovellus tunnistaa tiedoston itse (FitNotes, Garmin Connect, Gievran varmuuskopio, .md-treenit, ohjelmapohja). Uusi <b>luettava CSV-vienti</b> taulukkolaskentaan tai valmentajalle: valitse aikaväli ja mitä jaetaan (salisarjat, liikunta, punnitukset, muistiinpanot).</li>
@@ -119,7 +120,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Korkeustiedot kaikkiin maihin <span class="badge">0.5.2</span></h2>
   <div class="card">
     <ul>
-      <li><b>Korkeustiedot myös Ruotsiin, Norjaan (myös Huippuvuoret), Tanskaan, Islantiin, Iso-Britanniaan ja Espanjaan</b>: nousut, laskut ja korkeusprofiili alueittain kuten Suomessa (Copernicus DEM, noin 30 m).</li>
+      <li><b>Korkeustiedot myös Ruotsiin, Norjaan (myös Huippuvuoret), Tanskaan, Islantiin, Iso-Britanniaan, Espanjaan ja Irlantiin</b>: nousut, laskut ja korkeusprofiili alueittain kuten Suomessa (Copernicus DEM, noin 30 m).</li>
       <li>Korkeustiedostot vievät nyt vähän muistia isoillakin alueilla (esim. Inari): sovellus lukee vain reitin kohdan. Jos latasit korkeustietoja 0.5:llä, sovellus ehdottaa päivitystä; uudet tiedostot tarkistetaan SHA-256:lla.</li>
       <li>Ilman korkeustietoja reitin alla näkyvät silti <b>kilometrit</b>: jokaisen kilometrin vauhti (pyöräilyssä km/h).</li>
       <li><b>0.5.2:</b> vähemmän muistia isoilla karttamäärillä ja pitkillä alueilla: karttojen ja korkeustietojen välimuistit on rajattu (koko maa tai satoja kuntia ladattuna ei kasvata muistin käyttöä).</li>
@@ -205,7 +206,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </section>
 
 <section>
-  <h2>GPS ja offline-kartat seitsemässä maassa <span class="badge">0.2.9</span></h2>
+  <h2>GPS ja offline-kartat kahdeksassa maassa <span class="badge">0.2.9</span></h2>
   <div class="feature">
     <img src="kuvat/gps.png" alt="Juoksun reitti kartalla Helsingin Töölönlahdella, aika 41:38">
     <div>
@@ -214,7 +215,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>Huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana. Paikallaanolo ei kasvata matkaa.</li>
         <li>Tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita.</li>
         <li>Reitti näkyy kartalla ja tallentuu <code>.gpx</code>-tiedostona treenin viereen: avoin muoto, aukeaa muissakin sovelluksissa.</li>
-        <li><b>Offline-kartat seitsemässä maassa:</b> Suomi, Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia paikallishallinnon alueittain ja Espanja maakunnittain. Lataa säteen mukaan (juoksu ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli) tai valitse alueet itse. Kartat toimivat ilman verkkoa, ja ne voi poistaa matkan jälkeen tai päivittää.</li>
+        <li><b>Offline-kartat kahdeksassa maassa:</b> Suomi, Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia paikallishallinnon alueittain, Espanja maakunnittain ja Irlanti kreivikunnittain. Lataa säteen mukaan (juoksu ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli) tai valitse alueet itse. Kartat toimivat ilman verkkoa, ja ne voi poistaa matkan jälkeen tai päivittää.</li>
       </ul>
       <p class="sub"><small>Kuvan reitti on keksitty esimerkki. Kartat © OpenStreetMap-tekijät (ODbL).</small></p>
     </div>
@@ -229,6 +230,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>kunnittain (kaupungit mukaan lukien): <b>Ruotsi</b> 290 kommunia · <b>Norja</b> 357 kommunea ja Huippuvuoret · <b>Tanska</b> 98 kommunea · <b>Islanti</b> 61 kuntaa</li>
         <li><b>Iso-Britannia</b>: 361 paikallishallinnon aluetta (council areas)</li>
         <li><b>Espanja</b>: 50 maakuntaa (provincias), myös Kanariansaaret ja Baleaarit</li>
+        <li><b>Irlanti</b>: 26 kreivikuntaa (counties) tai koko saari yhtenä tiedostona; Pohjois-Irlanti kuuluu Iso-Britannian karttoihin</li>
       </ul>
       <p class="sub">Valitse maa ja alueet, tai lataa kartat sijaintisi ympäriltä (myös rajan yli naapurimaahan). Kunnan kartta on tyypillisesti 5–30 Mt.</p>
       <p class="sub"><small>Kartat © OpenStreetMap-tekijät (ODbL). Iso-Britannian aluerajat: ONS, Open Government Licence v3.0. Korkeustiedot: Suomi Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0, 25 m:n ruudukkona; muut maat produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.</small></p>
@@ -347,7 +349,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>lenkin lisäys yhdellä napautuksella, käytetyimmät lajit ensin</li>
         <li>yli 30 lajia (myös <i>Muu liikunta</i>, GPS:llä tai ilman); kävelyssä ja retkeilyssä myös askeleet</li>
         <li>juoksulle oma kehitysnäkymä: vauhti ja keskinopeus, kilometrit, kevyiden lenkkien vauhti ja syke, ennätykset</li>
-        <li>valinnainen GPS: reitti kartalla ja <code>.gpx</code>-tiedostona, offline-kartat Suomeen, Pohjoismaihin, Iso-Britanniaan ja Espanjaan</li>
+        <li>valinnainen GPS: reitti kartalla ja <code>.gpx</code>-tiedostona, offline-kartat Suomeen, Pohjoismaihin, Iso-Britanniaan, Espanjaan ja Irlantiin</li>
         <li>älykellon tiedot (syke, kalorit, askeleet) Health Connectista tai käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
       </ul>
     </div>

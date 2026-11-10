@@ -128,13 +128,13 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   päivittyvät (aika ei); jalan kävely- ja pyörätiet ja jalkakäytävät ennen autoteitä, metsässä ja kaukana poluista
   GPS-reittiin luotetaan; alkuperäinen reitti säilyy .gpx-tiedostossa, joten korjausta voi muuttaa myöhemmin
 - OpenStreetMap-kartat ilman verkkoyhteyttä: Suomi (kaikki 308 kuntaa ja kaupunkia), Ruotsi, Norja, Tanska ja Islanti kunnittain, Iso-Britannia
-  paikallishallinnon alueittain (council areas) ja Espanja maakunnittain (provincias); lataus säteen mukaan (juoksu
+  paikallishallinnon alueittain (council areas), Espanja maakunnittain (provincias) ja Irlanti kreivikunnittain (counties); lataus säteen mukaan (juoksu
   ja kävely 20 km, pyöräily 100 km, säädettävä, myös rajan yli), omat alueet tai koko maa; ladattujen karttojen
   poisto ja päivitys
 - kartat myös kotisivun karttahausta tiedostoina; tuonnissa kartta tunnistetaan sisällöstä (SHA-256), myös vanhemmat
   versiot ja ilman verkkoa kotisivun tarkistetaulukolla; tunnistamattoman voi tuoda tarkistamattomana
 - korkeustiedot alueittain karttojen tapaan (Suomi: Maanmittauslaitoksen korkeusmalli 25 m:n ruudukkona; Ruotsi,
-  Norja, Tanska, Islanti, Iso-Britannia ja Espanja: Copernicus DEM GLO-30, noin 30 m): reitin alla nousu, lasku ja
+  Norja, Tanska, Islanti, Iso-Britannia, Espanja ja Irlanti: Copernicus DEM GLO-30, noin 30 m): reitin alla nousu, lasku ja
   korkeusprofiili, jossa jokaisen kilometrin vauhti (pyöräilyssä km/h); ilman korkeustietoja kilometrien vauhti
 
 **Tiedostot ovat sinun**
@@ -194,8 +194,8 @@ näkyvät sovelluksessa (☰ → Tietoa → Avoin lähdekoodi ja lisenssit).
 **Kartat:** ladattavat karttapaketit perustuvat OpenStreetMap-aineistoon (© OpenStreetMap contributors) ja
 ovat [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) -lisenssin alaisia (sovelluksen koodista
 erillisinä tiedostoina). Rannikot ja rajat pienillä mittakaavoilla: Natural Earth (public
-domain). Suomen kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Ruotsin, Norjan, Tanskan, Islannin ja
-Espanjan aluerajat: OpenStreetMap (ODbL). Iso-Britannian alueet: Office for National Statistics, Open Government
+domain). Suomen kunta- ja maakuntarajat: Tilastokeskus, CC BY 4.0. Ruotsin, Norjan, Tanskan, Islannin,
+Espanjan ja Irlannin aluerajat: OpenStreetMap (ODbL). Iso-Britannian alueet: Office for National Statistics, Open Government
 Licence v3.0; sisältää OS:n aineistoa © Crown copyright and database right 2024. Korkeustiedot (Suomi):
 Maanmittauslaitos, Korkeusmalli 10 m (2019), CC BY 4.0, keskiarvoistettu 25 metrin ruudukoksi. Muiden maiden
 korkeustiedot: produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH
