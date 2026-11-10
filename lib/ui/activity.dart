@@ -758,6 +758,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     },
                   ),
                 ],
+                // Aloitusaika: Health Connect etsii tiedot (kävelyllä ja retkeilyllä myös askeleet) tältä ajalta.
+                SectionLabel(t('Aloitusaika')),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.schedule, size: 18),
+                    label: Text(w.started == null ? t('ei tiedossa') : fmtClock(TimeOfDay.fromDateTime(w.started!))),
+                    onPressed: () async {
+                      final init = w.started == null ? TimeOfDay.now() : TimeOfDay.fromDateTime(w.started!);
+                      final v = await pickTime(context, init, title: t('Aloitusaika'));
+                      if (v == null || !mounted) return;
+                      setState(() => w.started = DateTime(w.date.year, w.date.month, w.date.day, v.hour, v.minute));
+                      Future.microtask(_saveDraft);
+                    },
+                  ),
+                ),
                 if (sport?.distance ?? false) ...[
                   SectionLabel(t('Matka')),
                   ValueStepper(

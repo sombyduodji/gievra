@@ -22,6 +22,7 @@ import 'package:treenipaivakirja/ui/activity.dart';
 import 'package:treenipaivakirja/ui/body_screen.dart';
 import 'package:treenipaivakirja/ui/bug_report.dart';
 import 'package:treenipaivakirja/ui/health_import.dart';
+import 'package:treenipaivakirja/ui/health_sheet.dart';
 import 'package:treenipaivakirja/ui/home.dart';
 import 'package:treenipaivakirja/ui/import_export.dart';
 import 'package:treenipaivakirja/ui/new_workout.dart';
@@ -547,6 +548,59 @@ void main() {
         await tester.tap(find.text('x'));
         await tester.pumpAndSettle();
         await check(tester, 'kalenteri');
+      });
+
+      testWidgets('Health Connect: kävelyn askeleet (Oura vai kaikki lähteet) ja pelkät askeleet', (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 2.6;
+        addTearDown(tester.view.reset);
+        const ch = MethodChannel('fi.somby.gievra/health');
+        final st = DateTime(2026, 11, 10, 17);
+        Map<String, Object?> c(String kind) => {
+          'kind': kind,
+          'start': st.millisecondsSinceEpoch,
+          'end': st.add(const Duration(minutes: 40)).millisecondsSinceEpoch,
+          'title': kind == 'session' ? 'Walking' : null,
+          'type': 79,
+          'app': kind == 'session' ? 'Oura' : '',
+          'steps': 4560,
+          'ownSteps': kind == 'session' ? 1230 : null,
+          'allSteps': 4560,
+        };
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(ch, null),
+        );
+        for (final kind in ['session', 'steps']) {
+          await tester.pumpWidget(const SizedBox()); // edellinen ikkuna kiinni
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+            ch,
+            (call) async => switch (call.method) {
+              'status' => 'available',
+              'granted' => true,
+              'candidates' => [c(kind)],
+              _ => null,
+            },
+          );
+          final w = Workout(date: DateTime(2026, 11, 10), title: 'Kävely', activity: 'Kävely')
+            ..minutes = 40
+            ..started = st;
+          await tester.pumpWidget(
+            _TApp(
+              home: Builder(
+                builder: (ctx) => Scaffold(
+                  body: Center(
+                    child: TextButton(onPressed: () => showHealthSheet(ctx, w), child: const Text('x')),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.tap(find.text('x'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(t('Tarkista')));
+          await tester.pumpAndSettle();
+          await check(tester, 'health connect askeleet $kind');
+        }
       });
 
       testWidgets('Valikko ja asetukset auki', (tester) async {
