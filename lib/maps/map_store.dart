@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:vector_tile/vector_tile.dart';
 
 import '../gps_filter.dart';
+import '../l10n.dart' as l10n;
 import 'elevation.dart';
 import 'file_hash.dart';
 import 'path_snap.dart';
@@ -244,9 +245,9 @@ class MapCatalog {
       overview: pack({
         ...(j['overview'] as Map<String, dynamic>),
         'id': fi ? 'yleiskartta' : '$cc-yleiskartta',
-        'name': 'Yleiskartta',
+        'name': l10n.fi('Yleiskartta'), // näytetään t():llä
       }),
-      all: all == null ? null : pack({...all, 'id': fi ? 'suomi' : '$cc-koko', 'name': 'Koko maa'}),
+      all: all == null ? null : pack({...all, 'id': fi ? 'suomi' : '$cc-koko', 'name': l10n.fi('Koko maa')}),
       packs: [for (final e in j['packs'] as List) pack(e as Map<String, dynamic>)],
       regions: [for (final r in (j['regions'] as List? ?? const [])) r as String],
     );

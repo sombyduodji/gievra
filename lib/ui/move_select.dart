@@ -81,7 +81,7 @@ class _MoveSelectScreenState extends State<MoveSelectScreen> {
               spacing: 6,
               runSpacing: 6,
               children: [
-                for (final x in _sel) InputChip(label: Text(x), onDeleted: () => setState(() => _sel.remove(x))),
+                for (final x in _sel) InputChip(label: Text(exerciseLabel(x)), onDeleted: () => setState(() => _sel.remove(x))),
               ],
             ),
           ],

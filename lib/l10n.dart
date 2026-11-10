@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'exercises.dart' show exerciseLabel;
 import 'injury_data.dart' show injuryRegions;
 import 'models.dart' show decimalComma;
 
@@ -112,8 +113,14 @@ String tr(String stored) {
     for (var i = 0; i < order.length; i++) {
       final v = m.group(i + 1)!;
       // Luettelo (esim. "rinta, takareisi, selkä"): jos koko tekstille ei ole käännöstä, osat käännetään erikseen.
-      final whole = t(v);
-      args[order[i]] = whole != v || !v.contains(', ') ? whole : v.split(', ').map(t).join(', ');
+      // Liikkeiden nimet (esim. suosikkiliikkeet) nimiasetuksen mukaan, muut käännöksestä.
+      String one(String x) {
+        final y = t(x);
+        return y != x ? y : exerciseLabel(x);
+      }
+
+      final whole = one(v);
+      args[order[i]] = whole != v || !v.contains(', ') ? whole : v.split(', ').map(one).join(', ');
     }
     return fill(_catalog[tmpl]!, args);
   }

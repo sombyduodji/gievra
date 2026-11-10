@@ -33,6 +33,9 @@ class ImportResult {
   /// Tunnistetut mittaustavat (esim. askelkyykky kirjattu edestakaisina).
   final Map<String, Measure> measures;
 
+  /// Tallennetut ohjelmat (ohjelmat/*.gmd) omasta varmuuskopiosta: tiedostonimi -> sisältö.
+  final Map<String, String> savedPrograms;
+
   ImportResult({
     required this.source,
     required this.workouts,
@@ -44,6 +47,7 @@ class ImportResult {
     this.programMd,
     this.bodyMd,
     this.measures = const {},
+    this.savedPrograms = const {},
   });
 
   DateTime? get first => workouts.isEmpty ? null : workouts.first.date;
@@ -221,7 +225,7 @@ Future<Uint8List> exportZip() async {
   final archive = Archive();
   if (await root.exists()) {
     await for (final f in root.list(recursive: true, followLinks: false)) {
-      if (f is! File || !(f.path.endsWith('.md') || f.path.endsWith('.gpx'))) continue;
+      if (f is! File || !isDataFile(f.path)) continue;
       final rel = p.relative(f.path, from: root.path).replaceAll('\\', '/');
       archive.addFile(ArchiveFile.bytes('Treenit/$rel', await f.readAsBytes()));
     }
@@ -262,6 +266,7 @@ ImportResult readZip(List<int> bytes) {
   final list = <Workout>[];
   String? settingsMd, programMd, bodyMd;
   final routes = <String, String>{}; // reittitiedoston nimi -> GPX
+  final saved = <String, String>{}; // tallennetut ohjelmat (.gmd)
   var sets = 0;
   for (final f in archive.files) {
     if (!f.isFile) continue;
@@ -269,6 +274,10 @@ ImportResult readZip(List<int> bytes) {
     final text = utf8.decode(f.content, allowMalformed: true);
     if (base.endsWith('.gpx')) {
       routes[base] = text;
+      continue;
+    }
+    if (base.endsWith('.gmd')) {
+      saved[base] = text;
       continue;
     }
     if (base == settingsFileName) {
@@ -308,19 +317,37 @@ ImportResult readZip(List<int> bytes) {
     settingsMd: settingsMd,
     programMd: programMd,
     bodyMd: bodyMd,
+    savedPrograms: saved,
   );
 }
 
+/// Palautetaanko oman varmuuskopion asetukset ja ohjelma kokonaan: kun päiväkirjassa ei vielä ole treenejä
+/// (uusi puhelin tai uusi asennus). Muuten yhdistetään nykyisiin.
+bool restoresAll(ImportResult r) => store.workouts.isEmpty && (r.settingsMd != null || r.programMd != null);
+
 /// Tallentaa tuonnin: uudet treenit (olemassa olevat päivät ohitetaan) ja omat liikkeet.
-/// Omasta varmuuskopiosta yhdistetään lämmittelylaitteet ja omat liikkeet nykyisiin.
+/// Omasta varmuuskopiosta: tyhjään päiväkirjaan asetukset ja ohjelma sellaisinaan, muuten lämmittelylaitteet,
+/// omat liikkeet mittaustapoineen ja tallennetut ohjelmat yhdistetään nykyisiin.
 Future<int> applyImport(ImportResult r) async {
-  if (r.settingsMd != null) {
+  for (final e in r.savedPrograms.entries) {
+    final rel = 'ohjelmat/${e.key}';
+    if (!await files.exists(rel)) await files.write(rel, e.value);
+  }
+  if (restoresAll(r)) {
+    if (r.settingsMd != null) await files.write(settingsFileName, r.settingsMd!);
+    if (r.programMd != null) await files.write(programFileName, r.programMd!);
+    await settings.loadFromFolder();
+  } else if (r.settingsMd != null) {
     final tmp = Settings()..applyMarkdown(r.settingsMd!);
     final names = settings.equipment.map((e) => e.name).toSet();
     settings.setEquipment([...settings.equipment, ...tmp.equipment.where((e) => !names.contains(e.name))]);
     settings.addCustomExercises({for (final n in tmp.customExercises) n: tmp.customCategory[n] ?? ownCategory});
     // Treenityyli ja ohjelma, jos tällä laitteella ei vielä ole omaa (ei ylikirjoiteta).
     if ((settings.style == null || settings.style!.isEmpty) && tmp.style != null) settings.setStyle(tmp.style);
+    // Omien liikkeiden mittaustavat (esim. aika tai matka), jos niitä ei vielä ole tällä laitteella.
+    for (final e in tmp.customMeasure.entries) {
+      if (!settings.customMeasure.containsKey(e.key)) settings.setMeasure(e.key, e.value);
+    }
   }
   if (r.programMd != null && settings.program == null) {
     final prog = parseProgram(r.programMd!);

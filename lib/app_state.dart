@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'body.dart';
+import 'custom_merge.dart' show builtinExercises;
 import 'l10n.dart';
 import 'models.dart';
 import 'program.dart';
@@ -360,6 +361,20 @@ class Settings extends ChangeNotifier {
     b
       ..writeln()
       ..writeln('## Omat liikkeet');
+    // Kategoriat heti otsikon alle: ennen 0.5.5 ne kirjoitettiin tiedoston loppuun (mittaustapojen, vammojen ja
+    // taukojen jälkeen), jolloin ne luettiin väärään osioon ja omat liikkeet katosivat.
+    final byCat = <String, List<String>>{};
+    for (final n in customExercises) {
+      (byCat[customCategory[n] ?? ownCategory] ??= []).add(n);
+    }
+    for (final e in byCat.entries) {
+      b
+        ..writeln()
+        ..writeln('### ${e.key}');
+      for (final n in e.value) {
+        b.writeln('- $n');
+      }
+    }
     if (customMeasure.isNotEmpty) {
       b
         ..writeln()
@@ -382,18 +397,6 @@ class Settings extends ChangeNotifier {
         ..writeln('## Tauot');
       for (final t in pauses) {
         b.writeln('- ${isoDate(t.start)} – ${t.end == null ? '' : isoDate(t.end!)} ${t.reason}'.replaceAll('  ', ' '));
-      }
-    }
-    final byCat = <String, List<String>>{};
-    for (final n in customExercises) {
-      (byCat[customCategory[n] ?? ownCategory] ??= []).add(n);
-    }
-    for (final e in byCat.entries) {
-      b
-        ..writeln()
-        ..writeln('### ${e.key}');
-      for (final n in e.value) {
-        b.writeln('- $n');
       }
     }
     return b.toString();
@@ -484,7 +487,13 @@ class Settings extends ChangeNotifier {
         continue;
       }
       if (t.startsWith('### ')) {
+        // ### on vain omien liikkeiden kategorioissa: vanhat tiedostot, joissa ne ovat muun osion perässä.
         sub = t.substring(4).trim();
+        if (section != 'Omat liikkeet') {
+          section = 'Omat liikkeet';
+          custom ??= [];
+          cats ??= {};
+        }
         continue;
       }
       if (!t.startsWith('- ')) continue;
@@ -560,13 +569,14 @@ class Settings extends ChangeNotifier {
 
   /// Vaihtaa treenikansion. Jos uudessa kansiossa on asetukset.md, se otetaan käyttöön,
   /// muuten nykyiset asetukset kirjoitetaan sinne.
-  /// Treenikansion .md-tiedostot (treenit, asetukset, ohjelma) ja GPS-reitit (.gpx) suhteellisina polkuina.
+  /// Treenikansion .md-tiedostot (treenit, asetukset, ohjelma, punnitukset), GPS-reitit (.gpx) ja tallennetut
+  /// ohjelmat (.gmd) suhteellisina polkuina.
   static Future<List<String>> mdFiles(Directory dir) async {
     if (!await dir.exists()) return [];
     final out = <String>[];
     try {
       await for (final e in dir.list(recursive: true, followLinks: false)) {
-        if (e is File && (e.path.endsWith('.md') || e.path.endsWith('.gpx'))) {
+        if (e is File && isDataFile(e.path)) {
           out.add(p.relative(e.path, from: dir.path));
         }
       }
@@ -574,7 +584,7 @@ class Settings extends ChangeNotifier {
     return out;
   }
 
-  /// Kopioi .md- ja .gpx-tiedostot kansiosta toiseen. Olemassa olevia ei ylikirjoiteta. Palauttaa (kopioitu, ohitettu).
+  /// Kopioi .md-, .gpx- ja .gmd-tiedostot kansiosta toiseen. Olemassa olevia ei ylikirjoiteta. Palauttaa (kopioitu, ohitettu).
   static Future<(int, int)> copyMdFiles(Directory from, Directory to) async {
     var copied = 0, skipped = 0;
     for (final rel in await mdFiles(from)) {
@@ -726,6 +736,10 @@ class Settings extends ChangeNotifier {
 }
 
 const settingsFileName = 'asetukset.md';
+
+/// Treenikansion omat tiedostot (kansion vaihto, varmuuskopio): .md (treenit, asetukset, ohjelma, punnitukset),
+/// .gpx (GPS-reitit) ja .gmd (tallennetut ohjelmat).
+bool isDataFile(String path) => path.endsWith('.md') || path.endsWith('.gpx') || path.endsWith('.gmd');
 const ownCategory = 'Omat';
 
 /// Lukee ja kirjoittaa treenit .md-tiedostoina valittuun kansioon.
@@ -776,7 +790,21 @@ class WorkoutStore extends ChangeNotifier {
     }
     list.sort((a, b) => b.date.compareTo(a.date));
     workouts = list;
+    _recoverCustomExercises();
     notifyListeners();
+  }
+
+  /// Treeneissä olevat liikkeet, joita ei ole luettelossa eikä omissa liikkeissä, lisätään omiin liikkeisiin.
+  /// Palauttaa ennen 0.5.5:ttä kadonneet omat liikkeet (asetukset.md:n järjestysvirhe) liikevalintaan.
+  void _recoverCustomExercises() {
+    final known = {...builtinExercises(), ...settings.customExercises};
+    final missing = <String, String>{};
+    for (final w in workouts) {
+      for (final e in w.exercises) {
+        if (e.name.trim().isNotEmpty && !known.contains(e.name)) missing[e.name] = ownCategory;
+      }
+    }
+    if (missing.isNotEmpty) settings.addCustomExercises(missing);
   }
 
   /// Päivän ensimmäinen treeni.

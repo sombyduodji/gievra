@@ -347,7 +347,7 @@ class _IntroScreenState extends State<IntroScreen> {
         _from('experience'),
         for (final e in experiences.entries)
           _choice(
-            e.value,
+            t(e.value),
             switch (e.key) {
               'aloittelija' => t('Isot liikkeet tutuiksi, paino nousee nopeasti'),
               'keski' => t('Nousu hidastunut, tarvitset rakennetta'),

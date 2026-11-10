@@ -18,6 +18,15 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _c = TextEditingController();
   final _height = TextEditingController(), _weight = TextEditingController();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    _height.dispose();
+    _weight.dispose();
+    super.dispose();
+  }
+
   String _mode = settings.trainMode;
   bool _body = false;
 

@@ -34,6 +34,12 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
   late PlanDay? _day = _sugg?.$1;
   final _newEq = TextEditingController();
 
+  @override
+  void dispose() {
+    _newEq.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickDate() async {
     final d = await showDatePicker(
       context: context,

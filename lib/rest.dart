@@ -196,7 +196,7 @@ class RestTimer extends ChangeNotifier {
     try {
       await _ch.invokeMethod(method, {
         'title': t('Mennään, tauko ohi! 💪'),
-        'body': t('Seuraava sarja: {0}', [rest.exercise]),
+        'body': t('Seuraava sarja: {0}', [exerciseLabel(rest.exercise)]),
         'sound': settings.restSound,
         'channel': t('Palautus ohi'),
         'channelDesc': t('Palautusajastin: sarjojen välinen tauko on ohi'),

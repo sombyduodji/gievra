@@ -202,6 +202,35 @@ void main() {
         settings.program = null;
       });
 
+      testWidgets('Etusivu ja tilastot treenien kanssa', (tester) async {
+        tester.view.physicalSize = const Size(1080, 6000);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.reset);
+        final now = DateTime.now();
+        store.workouts = [
+          Workout(date: DateTime(now.year, now.month, now.day), title: 'Koko keho A')
+            ..exercises.addAll([
+              ExerciseEntry('Takakyykky', [SetEntry(100, 5)]),
+              ExerciseEntry('Penkkipunnerrus', [SetEntry(80, 5)]),
+              ExerciseEntry('Kulmasoutu', [SetEntry(70, 8)]),
+            ]),
+          Workout(
+            date: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1)),
+            title: 'Juoksu',
+            activity: 'Juoksu',
+            minutes: 30,
+            distanceKm: 5,
+          ),
+        ];
+        await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+        await tester.pump(const Duration(seconds: 1));
+        check(tester, 'etusivu treenien kanssa');
+        await tester.pumpWidget(const MaterialApp(home: StatsScreen()));
+        await tester.pump(const Duration(seconds: 1));
+        check(tester, 'tilastot treenien kanssa');
+        store.workouts = [];
+      });
+
       testWidgets('Vammatila: kaikki alueet valittuina', (tester) async {
         tester.view.physicalSize = const Size(1080, 8000);
         tester.view.devicePixelRatio = 2.0;
@@ -234,6 +263,13 @@ void main() {
         'ilmoita ongelmasta': () => const BugReportScreen(),
         'ohjelmat': () => const ProgramsScreen(),
         'ennätykset': () => const MaxesScreen(),
+        'ennätysten syöttö': () => Scaffold(
+          body: ListView(
+            children: [
+              MaxesEditor(maxes: {'Takakyykky': 100, 'Penkkipunnerrus': 80, 'Maastaveto': 120}, onChanged: () {}),
+            ],
+          ),
+        ),
         'health connect -tuonti': () => const HealthImportScreen(),
       };
       for (final MapEntry(key: name, value: make) in screens.entries) {
