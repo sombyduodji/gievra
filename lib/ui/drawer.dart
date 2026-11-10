@@ -24,7 +24,6 @@ import 'import_export.dart';
 import 'injury_screen.dart';
 import 'intro.dart';
 import 'program_screen.dart';
-import 'program_template.dart';
 import 'programs_screen.dart';
 import 'body_screen.dart';
 import 'widgets.dart';
@@ -162,23 +161,13 @@ class AppDrawer extends StatelessWidget {
               if (!isDemo)
                 ListTile(
                   leading: const Icon(Icons.import_export),
-                  title: Text(t('Tuonti ja varmuuskopio')),
+                  title: Text(t('Tuonti, vienti ja varmuuskopio')),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ImportExportScreen()));
                   },
                 ),
-              // Harvoin tarvittava, siksi tuonnin vieressä eikä ohjelman alla.
-              ListTile(
-                leading: const Icon(Icons.file_open_outlined),
-                title: Text(t('Tuo ohjelmapohja')),
-                subtitle: Text(t('.gmd-tiedosto valmentajalta, kaverilta tai verkosta')),
-                onTap: () async {
-                  // Valikko pysyy auki dialogin ajan, jotta konteksti on voimassa; suljetaan lopuksi.
-                  await importTemplate(context);
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
+              // Ohjelmapohjan (.gmd) tuonti: Tuonti, vienti ja varmuuskopio → Tuo tiedosto, sekä Ohjelma ja tavoitteet.
               const Divider(indent: 18, endIndent: 18),
               ListTile(
                 leading: const Icon(Icons.info_outline),

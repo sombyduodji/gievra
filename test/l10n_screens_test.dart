@@ -11,6 +11,7 @@ import 'package:treenipaivakirja/ui/drawer.dart';
 import 'package:treenipaivakirja/ui/injury_screen.dart';
 import 'package:treenipaivakirja/ui/intro.dart';
 import 'package:treenipaivakirja/ui/program_screen.dart';
+import 'package:treenipaivakirja/ui/program_template.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/ui/activity.dart';
 import 'package:treenipaivakirja/ui/body_screen.dart';
@@ -24,6 +25,8 @@ import 'package:treenipaivakirja/ui/programs_screen.dart';
 import 'package:treenipaivakirja/ui/running_screen.dart';
 import 'package:treenipaivakirja/ui/stats_screen.dart';
 import 'package:treenipaivakirja/ui/workout.dart';
+import 'package:treenipaivakirja/ui/widgets.dart';
+import 'package:treenipaivakirja/ui/set_logger.dart';
 
 // Käännöstarkistus näkymittäin: englanniksi ja saameksi näkyvissä ei saa olla suomenkielistä tekstiä.
 // Tunnistus: (1) teksti on .po-tiedoston suomenkielinen alkuteksti, jolla on eri käännös, (2) siinä on ä tai ö
@@ -89,9 +92,13 @@ void main() {
         await setUiLang(lang);
         final po = await rootBundle.loadString('assets/l10n/$lang.po');
         final cat = parsePo(po);
+        // Myös isolla alkukirjaimella (esim. "Sekunnit"), kun käännös on eri myös pienillä kirjaimilla.
         _fiKeys = {
           for (final e in cat.entries)
-            if (e.value.isNotEmpty && e.value != e.key) e.key,
+            if (e.value.isNotEmpty && e.value.toLowerCase() != e.key.toLowerCase()) ...[
+              e.key,
+              if (e.key.isNotEmpty) '${e.key[0].toUpperCase()}${e.key.substring(1)}',
+            ],
         };
         _keep = {
           for (final e in cat.entries)
@@ -228,6 +235,112 @@ void main() {
         await tester.pumpWidget(const MaterialApp(home: StatsScreen()));
         await tester.pump(const Duration(seconds: 1));
         check(tester, 'tilastot treenien kanssa');
+        store.workouts = [];
+      });
+
+      testWidgets('Suomeksi tehty ohjelmapohja (.gmd) avataan toisella kielellä', (tester) async {
+        tester.view.physicalSize = const Size(1080, 6000);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.reset);
+        // Pohja tehdään suomeksi (tiedostomuoto on aina sama), avataan testattavalla kielellä.
+        final p = generateProgram(
+          goal: 'voimanosto',
+          experience: 'keski',
+          days: 4,
+          minutes: 60,
+          injuries: [injuryRegions.first.id],
+        );
+        final md = programToTemplate(p, author: 'Testi');
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (c) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    onPressed: () => importTemplate(c, text: md, activate: false),
+                    child: const Text('x'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('x'));
+        await tester.pumpAndSettle();
+        check(tester, 'ohjelmapohjan esikatselu');
+        settings.program = parseProgram(md);
+        await _app(tester, const ProgramScreen());
+        check(tester, 'pohjasta otettu ohjelma');
+        await tester.pumpWidget(MaterialApp(home: NewWorkoutScreen(date: DateTime(2026, 11, 10))));
+        await tester.pump(const Duration(milliseconds: 300));
+        check(tester, 'pohjasta otettu ohjelma: uusi treeni');
+        settings.program = null;
+      });
+
+      testWidgets('Sarjan kirjaus: vinkit, vammavaroitus, mittaustapa ja ohjelman liikkeen muokkaus', (tester) async {
+        tester.view.physicalSize = const Size(1080, 6000);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.reset);
+        settings.injuries = ['alaselka'];
+        for (final ex in ['Maastaveto', 'Lankku', 'Good morning']) {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: SetLoggerScreen(
+                date: DateTime(2026, 11, 10),
+                entry: ExerciseEntry(ex, [SetEntry(100, 5)]),
+                onChanged: () async {},
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 300));
+          final tips = find.byIcon(Icons.play_circle_outline);
+          if (tips.evaluate().isNotEmpty && find.text(t('Kokeellinen ohje')).evaluate().isNotEmpty) {
+            await tester.tap(tips.first);
+            await tester.pumpAndSettle();
+          }
+          check(tester, 'sarjan kirjaus: $ex');
+          await tester.tap(find.byIcon(Icons.straighten));
+          await tester.pumpAndSettle();
+          check(tester, 'mittaustapa: $ex');
+        }
+        settings.injuries = [];
+        settings.program = generateProgram(
+          goal: 'lihaskasvu',
+          experience: 'keski',
+          days: 3,
+          minutes: 60,
+          injuries: const [],
+        );
+        await _app(tester, const ProgramScreen());
+        await tester.tap(find.byType(ExName).first);
+        await tester.pumpAndSettle();
+        check(tester, 'ohjelman liikkeen muokkaus');
+        final chip = find.byType(ChoiceChip);
+        if (chip.evaluate().isNotEmpty) {
+          await tester.tap(chip.first);
+          await tester.pumpAndSettle();
+          check(tester, 'liikkeen vaihdon esikatselu');
+        }
+        settings.program = null;
+      });
+
+      testWidgets('Vienti luettavaksi tai taulukkoon: valintaikkuna', (tester) async {
+        tester.view.physicalSize = const Size(1080, 6000);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.reset);
+        final now = DateTime.now();
+        store.workouts = [
+          Workout(date: DateTime(now.year, now.month, now.day), title: 'Koko keho A')
+            ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)])),
+        ];
+        await _app(tester, const ImportExportScreen());
+        check(tester, 'tuonti ja vienti');
+        await tester.tap(find.byIcon(Icons.table_chart_outlined));
+        await tester.pumpAndSettle();
+        check(tester, 'vienti CSV: valinnat');
+        await tester.tap(find.text(t('Kaikki')).last);
+        await tester.pumpAndSettle();
+        check(tester, 'vienti CSV: kaikki');
         store.workouts = [];
       });
 

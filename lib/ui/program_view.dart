@@ -438,7 +438,7 @@ class _ItemSheetState extends State<_ItemSheet> {
               onMinus: () => _set(() => it.sets = (it.sets - 1).clamp(1, 10)),
               onPlus: () => _set(() => it.sets = (it.sets + 1).clamp(1, 10)),
             ),
-            SectionLabel(t('{0}{1}: alaraja', [m.label[0].toUpperCase(), m.label.substring(1)])),
+            SectionLabel(t('{0}{1}: alaraja', [t(m.label)[0].toUpperCase(), t(m.label).substring(1)])),
             ValueStepper(
               value: '${it.lo}',
               unit: m.unit,
@@ -448,7 +448,7 @@ class _ItemSheetState extends State<_ItemSheet> {
                 if (it.hi < it.lo) it.hi = it.lo;
               }),
             ),
-            SectionLabel(t('{0}{1}: yläraja', [m.label[0].toUpperCase(), m.label.substring(1)])),
+            SectionLabel(t('{0}{1}: yläraja', [t(m.label)[0].toUpperCase(), t(m.label).substring(1)])),
             ValueStepper(
               value: '${it.hi}',
               unit: m.unit,
