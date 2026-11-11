@@ -507,11 +507,10 @@ class _AutoBackupsState extends State<_AutoBackups> {
             // Päivä ja kellonaika otsikkona, versio ja koko alarivillä (koko koontinimi rivittyi kolmelle riville).
             title: Text(_title(f)),
             subtitle: Text(() {
-              final mb = fmtNum((size / 1e5).round() / 10);
               final parsed = AutoBackup.parseName(p.basename(f.path));
               return parsed == null
-                  ? t('{0} Mt', [mb])
-                  : t('ennen {0} · {1} Mt', [AutoBackup.shortVersion(parsed.$2), mb]);
+                  ? fmtBytes(size)
+                  : t('ennen {0} · {1}', [AutoBackup.shortVersion(parsed.$2), fmtBytes(size)]);
             }(), style: sub),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,

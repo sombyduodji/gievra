@@ -35,8 +35,11 @@ double defaultRadiusKm(String? sport) => switch (sport) {
   _ => 20,
 };
 
-String fmtBytes(int b) =>
-    b >= 1e9 ? t('{0} Gt', [fmtDec(b / 1e9, 2)]) : t('{0} Mt', [fmtDec(b / 1e6, b < 10e6 ? 1 : 0)]);
+String fmtBytes(int b) => b >= 1e9
+    ? t('{0} Gt', [fmtDec(b / 1e9, 2)])
+    : b < 1e6
+    ? t('{0} kt', [(b / 1e3).ceil()]) // pieni tiedosto ei näy nollana megatavuna
+    : t('{0} Mt', [fmtDec(b / 1e6, b < 10e6 ? 1 : 0)]);
 
 /// Kartat: lataa alue nykyisen sijainnin ympäriltä (säde lajin mukaan) tai valitse kunnat itse.
 class MapsScreen extends StatefulWidget {

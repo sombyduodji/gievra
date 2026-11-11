@@ -99,9 +99,10 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>New: clearer menu, backups and custom periods <span class="badge">0.6</span></h2>
+  <h2>New: clearer menu, backups and custom periods <span class="badge">0.6.1</span></h2>
   <div class="card">
     <ul>
+      <li><b>0.6.1:</b> The GPS route map no longer sometimes stays grey when first opened after the app starts. Deleting an unfinished gym workout no longer brings it back to the home screen. Small backups are shown in kB (was "0 MB"). New demo video and screenshots.</li>
       <li><b>0.6:</b> <b>Clearer menu</b>: <i>Training and health</i> and <i>Data and devices</i>; settings in five groups; about, feedback and support in one view. <b>Injury mode and breaks show at the top of the home screen</b>, where you can also end a break.</li>
       <li><b>Progress and statistics</b>: 1, 3 or 6 months or a <b>custom period</b> – from your first workout, to today or to any date. Long periods show workouts per year.</li>
       <li><b>Automatic backup</b> when a new version starts for the first time (in the workout folder's backup/ folder, at most three). Settings → Storage: save, share or delete.</li>
@@ -214,7 +215,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 <section>
   <h2>GPS and offline maps in eight countries <span class="badge">0.2.9</span></h2>
   <div class="feature">
-    <img src="../kuvat/en/gps.png" alt="A run route on a map around Töölönlahti in Helsinki, time 41:38">
+    <img src="../kuvat/en/gps.png" alt="A run route on a map around Töölönlahti in Helsinki, a 39 m climb and the elevation profile with pace per kilometre">
     <div>
       <ul>
         <li><b>📍 GPS mode</b> for running, walking and cycling, or <b>Manual</b> e.g. on a treadmill. GPS is always optional.</li>
@@ -255,7 +256,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <li>Download the area map (<code>.pmtiles</code>) and, once, the country's overview map.</li>
       <li>Move the files to your phone, e.g. via a synced folder (Seafile, Nextcloud…) or USB.</li>
       <li>No connection on the phone: also take the <a href="../kartat-tarkisteet.json" download>checksum table</a> (<code>kartat-tarkisteet.json</code>, SHA-256 of every map version) and pick it together with the maps when importing, and the app verifies them.</li>
-      <li>In Gievra: ☰ → Settings → <b>Maps</b> → <b>From file</b> and pick the files.</li>
+      <li>In Gievra: ☰ → <b>Maps</b> → <b>From file</b> and pick the files.</li>
     </ol>
     <p class="sub"><small class="maara"></small><br><small>Files download directly from GitHub. Maps © OpenStreetMap contributors (ODbL).</small></p>
   </div>
@@ -287,17 +288,17 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>See how Gievra works</h2>
   <video controls preload="none" playsinline poster="../gievra-video-en.jpg">
     <source src="../gievra-video-en.mp4" type="video/mp4">
-    <a href="../gievra-video-en.mp4">Download the video (MP4, 1.5 min)</a>
+    <a href="../gievra-video-en.mp4">Download the video (MP4, 2 min)</a>
   </video>
-  <p class="sub">1.5 min · in English · demo data · home-made background music</p>
-  <p class="sub"><small>The video shows version 0.2.4 (November 2026). Gievra keeps evolving, so the latest version may have more features and some screens may look different.</small></p>
+  <p class="sub">2 min · in English · made-up example data · home-made background music</p>
+  <p class="sub"><small>The video shows version 0.6 (November 2026): home screen and menu, a gym workout, a GPS run with its elevation profile, offline maps, statistics for a custom period, injury mode and the automatic backup. Gievra keeps evolving, so the latest version may have more features and some screens may look different.</small></p>
 </section>
 
 <div class="shots">
-  <img src="../kuvat/en/koti.png" alt="Home screen: Gym and Cardio views, Sámi greeting and calendar">
+  <img src="../kuvat/en/koti.png" alt="Home screen: Sámi greeting, Gym and Activity, week calendar and recent workouts">
   <img src="../kuvat/en/sarja.png" alt="Logging a set: weight suggestion and warm-up sets">
   <img src="../kuvat/en/ohjelma.png" alt="Training program: check and weekly volume">
-  <img src="../kuvat/en/tilastot.png" alt="Progress and statistics: overview of gym and cardio">
+  <img src="../kuvat/en/tilastot.png" alt="Progress and statistics: a 6-month overview of gym and cardio">
 </div>
 
 <section>
@@ -305,8 +306,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <div class="grid">
     <div class="card">
       <h3>🧪 Demo in your browser</h3>
-      <p>The app runs right in your browser with four weeks of example workouts: home screen, calendar, workout
-      logging and statistics. Nothing is saved, so feel free to try everything.</p>
+      <p>The app runs right in your browser with example data (four weeks of gym workouts, eight weeks of runs
+      and three months of weigh-ins): home screen, calendar, workout logging and statistics. Nothing is saved, so feel free to try everything.</p>
     </div>
     <div class="card">
       <h3>📋 Program builder</h3>
@@ -335,6 +336,9 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>warm-up sets filled in and a weight suggestion based on last time</li>
         <li><i>How did it feel?</i> 😫 😕 😐 🙂 🤩 – after a hard workout, feedback per exercise</li>
         <li>rest timer (optional): longer rests for heavy sets, alerts with sound and vibration even with the screen off</li>
+        <li><i>Mark move as done</i> stops the rest timer; a finished workout is locked 🔒 and asks before editing</li>
+        <li>a notification for the workout in progress (activity and elapsed time); an unfinished workout is saved every few seconds</li>
+        <li>your own exercises, weight per dumbbell or kettlebell, editing your maxes</li>
       </ul>
     </div>
     <div class="card">
@@ -344,7 +348,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>kettlebell programs and bodyweight training without a gym</li>
         <li>a 10-week powerlifting cycle and deload weeks</li>
         <li>program check and weekly volume per muscle group</li>
-        <li>you can start from your own FitNotes history</li>
+        <li>a program can start from your own workout history (logged in Gievra or imported from FitNotes)</li>
         <li><code>.gmd</code> program templates to share; on Android they open straight in Gievra</li>
       </ul>
     </div>
@@ -353,10 +357,13 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>choose <b>Gym</b>, <b>Cardio</b> or <b>Both</b>; switch views on the home screen with one tap</li>
         <li>add a run with one tap, most-used sports first</li>
-        <li>over 30 sports (plus <i>Other sport</i>, with or without GPS); walking and hiking also record steps</li>
+        <li>over 30 sports (plus <i>Other activity</i>, with or without GPS); walking, Nordic walking, running and hiking also record steps</li>
         <li>running has its own progress view: pace and average speed, kilometers, easy-run pace and heart rate, records</li>
-        <li>optional GPS: route on a map and as a <code>.gpx</code> file, offline maps for Finland, the Nordic countries, the UK and Spain</li>
-        <li>smartwatch data (heart rate, calories, steps) from Health Connect or by hand; Garmin Connect activities can be imported as a CSV file</li>
+        <li>optional GPS: route on a map and as a <code>.gpx</code> file, offline maps for Finland, the Nordic countries, the UK, Spain and Ireland</li>
+        <li>under a GPS route: ascent, descent, elevation profile and pace per km (km/h for cycling)</li>
+        <li>snap a GPS route to paths on the map; the original points are kept</li>
+        <li><i>Add completed exercise from Health Connect</i>: workouts and gym sessions saved by a watch or another app (sport, time, distance, heart rate, calories, steps), also steps from a walking pad</li>
+        <li>smartwatch data (heart rate, calories, steps) by hand too; Garmin Connect activities can be imported as a CSV file</li>
       </ul>
     </div>
     <div class="card">
@@ -375,7 +382,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li><i>Log morning weight</i> on the home screen when you haven't weighed yourself yet; weigh in whenever you like</li>
         <li>a comma or a dot both work (82,4 or 82.4)</li>
         <li>weight trend and BMI in statistics</li>
-        <li>weigh-ins and height are edited in Settings; FitNotes weigh-ins are imported too</li>
+        <li>weigh-ins and height: Settings → Body and devices → Weight and height; FitNotes weigh-ins are imported too</li>
       </ul>
     </div>
     <div class="card">
@@ -383,7 +390,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>injury mode: 20 body areas, exercises to avoid and alternatives</li>
         <li>sick or vacation break with an easier return</li>
-        <li>a deload week reminder after a long streak of training</li>
+        <li>injury mode and breaks show at the top of the home screen; end a break from there</li>
+        <li>without a program, a deload reminder after a long streak of training or when lifts stall</li>
         <li>148 exercises, each with a <i>How to do it</i> animation and technique tips</li>
       </ul>
     </div>
@@ -394,6 +402,9 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>sync with Nextcloud, Seafile, Syncthing or anything else</li>
         <li>import from FitNotes, Garmin Connect and <code>.md</code> files; backup as a zip file</li>
         <li>importing again never duplicates: existing workouts and weigh-ins are kept</li>
+        <li>automatic backup when a new version first starts (up to three); Settings → Storage: save, share or delete</li>
+        <li>export for reading or spreadsheets (CSV), with a chosen period and content</li>
+        <li>unreadable workout files are shown on the home screen with the reason; a wrong character encoding can be fixed (the original is kept as <code>.bak</code>)</li>
       </ul>
     </div>
   </div>
@@ -446,7 +457,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Feedback is more than welcome</h2>
   <p>Bugs, missing exercises, odd-looking exercise guides, ideas and translation fixes:</p>
   <ul>
-    <li>in the app: ☰ → <i>Report a problem</i> or <i>Send feedback</i></li>
+    <li>in the app: ☰ → <i>About, feedback and support</i> → <i>Report a problem</i> or <i>Send feedback</i></li>
     <li>email: <a href="mailto:treeni@somby.fi">treeni@somby.fi</a></li>
     <li>on GitHub: <a href="https://github.com/sombyduodji/gievra/issues">bug reports and suggestions</a></li>
   </ul>
