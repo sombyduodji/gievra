@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'app_info.dart';
 import 'app_state.dart';
+import 'auto_backup.dart';
 import 'demo.dart';
 import 'open_files.dart';
 import 'rest.dart';
@@ -51,6 +53,10 @@ Future<void> main() async {
   }
   runApp(const TreeniApp());
   listenOpenedFiles();
+  // Uuden version ensimmäinen käynnistys: treenikansio backup/-kansioon (etusivulla edistymisrivi).
+  unawaited(
+    PackageInfo.fromPlatform().then((i) => autoBackup.runIfUpdated(i.version, '${i.version}+${i.buildNumber}')),
+  );
   // Drive: PC:n tai toisen puhelimen muutokset taustalla; kalenteri päivittyy, kun valmista.
   if (syncReleased) unawaited(sync.startup());
 }

@@ -603,21 +603,43 @@ void main() {
         }
       });
 
-      testWidgets('Valikko ja asetukset auki', (tester) async {
+      testWidgets('Valikko, asetusten ryhmät ja Tietoa, palaute ja tuki', (tester) async {
         tester.view.physicalSize = const Size(1080, 9000);
         tester.view.devicePixelRatio = 2.0;
         addTearDown(tester.view.reset);
+        settings.injuries = ['polvi_etu'];
+        settings.setBodyTracker(true);
+        settings.setRestTimer(true);
+        settings.setTips(true);
+        addTearDown(() {
+          settings.injuries = [];
+          settings.setBodyTracker(false);
+          settings.setRestTimer(false);
+        });
         await tester.pumpWidget(
           const _TApp(
             home: Scaffold(drawer: AppDrawer(), body: SizedBox()),
           ),
         );
-        final state = tester.state<ScaffoldState>(find.byType(Scaffold));
-        state.openDrawer();
+        tester.state<ScaffoldState>(find.byType(Scaffold)).openDrawer();
         await tester.pumpAndSettle();
+        expect(find.text(t('Käytössä')), findsOneWidget, reason: 'vammatila päällä');
+        await check(tester, 'valikko');
         await tester.tap(find.text(t('Asetukset')));
         await tester.pumpAndSettle();
-        await check(tester, 'valikko ja asetukset');
+        await check(tester, 'asetukset');
+        for (final g in SettingsGroup.values) {
+          await tester.tap(find.text(SettingsScreen.title(g)));
+          await tester.pumpAndSettle();
+          await check(tester, 'asetukset: ${g.name}');
+          Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+          await tester.pumpAndSettle();
+        }
+        Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(const _TApp(home: AboutScreen()));
+        await tester.pumpAndSettle();
+        await check(tester, 'tietoa, palaute ja tuki');
       });
 
       testWidgets('Ilmoita ongelmasta: jokainen ongelmatyyppi ja sen vinkki', (tester) async {

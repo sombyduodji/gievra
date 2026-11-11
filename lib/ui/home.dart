@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
 import 'maps_screen.dart';
 import '../maps/map_store.dart';
@@ -12,6 +13,7 @@ import '../running.dart';
 import '../app_info.dart';
 import '../gps_recorder.dart';
 import '../app_state.dart';
+import '../auto_backup.dart';
 import '../custom_merge.dart';
 import '../drafts.dart';
 import '../exercises.dart';
@@ -21,10 +23,13 @@ import '../session_compare.dart';
 import '../program.dart';
 import '../theme.dart';
 import 'drawer.dart';
+import 'injury_screen.dart';
+import '../injuries.dart' show injuryById, injuryShortName, knownInjuries;
 import 'health_import.dart';
 import 'intro.dart';
 import 'program_screen.dart';
 import 'body_screen.dart';
+import 'bug_report.dart';
 import 'new_workout.dart';
 import 'stats_screen.dart';
 import 'widgets.dart';
@@ -281,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListenableBuilder(
-      listenable: Listenable.merge([settings, store]),
+      listenable: Listenable.merge([settings, store, autoBackup]),
       builder: (context, _) {
         final now = DateTime.now();
         final today = dateOnly(now);
@@ -306,6 +311,37 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const SizedBox(height: 4),
                 const SamiBand(),
+                // Vammatila ja tauko näkyvät heti ylhäällä, kun ne ovat päällä.
+                if (knownInjuries(settings.injuries).isNotEmpty) _InjuryBanner(),
+                if (settings.activePause != null) _PauseBanner(),
+                // Treenitiedostot, joita ei voitu lukea: ennen ne puuttuivat historiasta ilman selitystä.
+                if (store.unreadable.isNotEmpty) _UnreadableBanner(),
+                // Päivityksen jälkeinen automaattinen varmuuskopio: edistyminen ja mahdollinen virhe.
+                if (autoBackup.running)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          t('Varmuuskopioidaan treenit päivityksen jälkeen…'),
+                          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 6),
+                        const LinearProgressIndicator(),
+                      ],
+                    ),
+                  )
+                else if (autoBackup.error != null)
+                  _ModeBanner(
+                    color: Sami.red,
+                    emoji: '⚠️',
+                    title: autoBackup.error!,
+                    detail: t(
+                      'Yritetään uudelleen seuraavalla käynnistyksellä. Tee varmuuskopio itse: ☰ → Tuonti, vienti ja varmuuskopio.',
+                    ),
+                    onTap: () => autoBackup.dismissError(),
+                  ),
                 // Kuvakaappauksia varten demo ilman ilmoitusta: --dart-define=SCREENSHOT=true
                 if (isDemo && !const bool.fromEnvironment('SCREENSHOT'))
                   Container(
@@ -405,7 +441,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           const SizedBox(height: 6),
                           const WeightTodayCard(),
-                          if (settings.activePause != null) _PauseCard(),
                           if (settings.tips && settings.activePause == null) _InsightsCard(),
                         ],
                       );
@@ -444,7 +479,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   const SizedBox(height: 14),
                   const WeightTodayCard(),
-                  if (settings.activePause != null) _PauseCard(),
                   if (settings.tips && settings.activePause == null) _InsightsCard(),
                 ],
                 const SizedBox(height: 14),
@@ -978,54 +1012,221 @@ class _InsightsCard extends StatelessWidget {
   }
 }
 
-class _PauseCard extends StatelessWidget {
-  const _PauseCard();
+/// Ohut tilarivi etusivun yläreunassa (vammatila, tauko): napautus avaa tiedot.
+class _ModeBanner extends StatelessWidget {
+  final Color color;
+  final String emoji, title, detail;
+  final VoidCallback onTap;
+  const _ModeBanner({
+    required this.color,
+    required this.emoji,
+    required this.title,
+    required this.detail,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: color.withValues(alpha: .14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: color, width: 1.2),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+            child: Row(
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text(
+                        detail,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InjuryBanner extends StatelessWidget {
+  const _InjuryBanner();
+
+  @override
+  Widget build(BuildContext context) => _ModeBanner(
+    color: Sami.yellow,
+    emoji: '🩹',
+    title: t('Vammatila'),
+    // Lyhyet nimet kerran kukin (kaksi olkapään aluetta → Olkapää); tarkemmat tiedot napautuksella.
+    detail: {for (final id in knownInjuries(settings.injuries)) injuryShortName(t(injuryById(id)!.name))}.join(', '),
+    onTap: () =>
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => InjuryScreen(initial: settings.injuries))),
+  );
+}
+
+class _PauseBanner extends StatelessWidget {
+  const _PauseBanner();
 
   @override
   Widget build(BuildContext context) {
     final p = settings.activePause!;
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: (p.sick ? Sami.red : Sami.blue).withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: p.sick ? Sami.red : Sami.blue, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            p.sick ? t('🤒  Sairastat – parane pian!') : t('🏖  Lomalla – nauti!'),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            t(
-              'Tauko alkoi {0} ({1} pv). Kun palaat, sovellus ehdottaa kevyempiä kuormia ja vähemmän '
-              'sarjoja noin kahden viikon ajan.',
-              [shortDate(p.start), p.days],
-            ),
-            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-          ),
-          if (p.sick)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                t('Älä treenaa kuumeisena tai jos koko kroppa on kipeä.'),
-                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+    final title = p.sick ? t('🤒  Sairastat – parane pian!') : t('🏖  Lomalla – nauti!');
+    return _ModeBanner(
+      color: p.sick ? Sami.red : Sami.blue,
+      // Emoji rivin alkuun, otsikosta ilman sitä.
+      emoji: p.sick ? '🤒' : '🏖',
+      title: title.replaceFirst(RegExp(r'^[^\p{L}]+', unicode: true), ''),
+      detail: t('Alkoi {0}.{1}.{2}', [p.start.day, p.start.month, p.start.year]),
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t(
+                  'Tauko alkoi {0} ({1} pv). Kun palaat, sovellus ehdottaa kevyempiä kuormia ja vähemmän '
+                  'sarjoja noin kahden viikon ajan.',
+                  [shortDate(p.start), p.days],
+                ),
               ),
-            ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(onPressed: () => settings.endPause(), child: Text(t('Lopeta tauko'))),
+              if (p.sick)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(t('Älä treenaa kuumeisena tai jos koko kroppa on kipeä.')),
+                ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Sulje'))),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                settings.endPause();
+              },
+              child: Text(t('Lopeta tauko')),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// Lukukelvottomat treenitiedostot: tiedot, korjausyritys (väärä merkistö) ja ongelmaraportti tiedostot liitteenä.
+class _UnreadableBanner extends StatelessWidget {
+  const _UnreadableBanner();
+
+  static Future<void> _report(BuildContext context, Map<String, String> files) async {
+    final root = (await store.rootDir()).path;
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BugReportScreen(
+          type: 'save',
+          attach: [
+            for (final rel in files.keys) (p.basename(rel), p.joinAll([root, ...rel.split('/')])),
+          ],
+          description: t('Treenitiedostoja ei voitu lukea: {0}', [
+            [for (final e in files.entries) '${e.key} (${e.value})'].join('; '),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  static void _details(BuildContext context) => showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(t('Treenitiedostoja ei voitu lukea')),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t(
+                'Näitä treenejä ei näytetä historiassa. Tiedosto voi olla vaurioitunut tai tallennettu toisella '
+                'merkistöllä (esim. muokattu Windowsin Muistiossa). Tiedostoja ei poisteta.',
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final e in store.unreadable.entries) ...[
+              Text('• ${e.key}', style: const TextStyle(fontSize: 13, fontFamily: 'monospace')),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 6),
+                child: Text(e.value, style: TextStyle(fontSize: 12, color: redText(context))),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Sulje'))),
+        TextButton(
+          onPressed: () {
+            final files = {...store.unreadable};
+            Navigator.pop(ctx);
+            _report(context, files);
+          },
+          child: Text(t('Lähetä ongelmaraportti')),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            Navigator.pop(ctx);
+            final fixed = await store.repairUnreadable();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  fixed == 0
+                      ? t('Tiedostoja ei voitu korjata. Lähetä ne ongelmaraporttina.')
+                      : store.unreadable.isEmpty
+                      ? t('Korjattu {0}. Alkuperäiset ovat tallessa .bak-päätteellä.', [fixed])
+                      : t('Korjattu {0}, jäljellä {1}. Alkuperäiset ovat tallessa .bak-päätteellä.', [
+                          fixed,
+                          store.unreadable.length,
+                        ]),
+                ),
+              ),
+            );
+          },
+          child: Text(t('Yritä korjata')),
+        ),
+      ],
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => _ModeBanner(
+    color: Sami.red,
+    emoji: '⚠️',
+    title: t('Treenitiedostoja ei voitu lukea: {0}', [store.unreadable.length]),
+    detail: store.unreadable.keys.map(p.basename).join(', '),
+    onTap: () => _details(context),
+  );
 }
 
 /// Sali / Kestävyys -valinta etusivun yläreunassa (kielivalinnan tyylinen liuska).
