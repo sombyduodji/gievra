@@ -9,6 +9,7 @@ import 'package:treenipaivakirja/auto_backup.dart';
 import 'package:treenipaivakirja/import_export.dart';
 import 'package:treenipaivakirja/ui/bug_report.dart';
 import 'package:treenipaivakirja/ui/drawer.dart';
+import 'package:treenipaivakirja/ui/maps_screen.dart' show fmtBytes;
 
 // Päivityksen jälkeinen automaattinen varmuuskopio treenikansion backup/-alikansioon: tehdään kerran per versio,
 // enintään kolme säilyy, oma varmuuskopio korvaa ne, eikä backup/ kuulu treeneihin (luku, vienti, kansion kopio).
@@ -130,6 +131,13 @@ void main() {
     expect(AutoBackup.shortVersion('0.6+12'), '0.6');
   });
 
+  test('Koko: alle megatavun kilotavuina (ei 0 Mt)', () {
+    expect(fmtBytes(87612), '88 kt');
+    expect(fmtBytes(1500000), '1,5 Mt');
+    expect(fmtBytes(144000000), '144 Mt');
+    expect(fmtBytes(1930000000), '1,93 Gt');
+  });
+
   test('Kopion nimestä aika ja versio', () {
     expect(AutoBackup.parseName('gievra-automaattinen-2026-11-12-0705-ennen-0.6.zip'), (
       DateTime(2026, 11, 12, 7, 5),
@@ -168,6 +176,7 @@ void main() {
     expect(titles, ['20.11.2026 klo 18.30', '12.11.2026 klo 7.05'], reason: 'uusin ensin');
     expect(find.textContaining('ennen 0.6.1 · '), findsOneWidget);
     expect(find.textContaining('ennen 0.6 · '), findsOneWidget);
+    expect(find.textContaining(' kt'), findsNWidgets(2), reason: 'pieni kopio ei näy nollana megatavuna');
     expect(find.byTooltip('Tallenna'), findsNWidgets(2));
     expect(find.byTooltip('Jaa'), findsNWidgets(2));
     expect(tester.takeException(), isNull);

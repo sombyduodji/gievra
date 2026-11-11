@@ -74,41 +74,55 @@ USER = [
      "Juoksulla on oma kehitysnäkymä: kilometrit ja vauhti viikoittain, kevyiden lenkkien vauhti ja "
      "syke sekä ennätykset. Salitreeneillä omat tilastonsa ja ennätykset."),
 ]
-# Kotisivun video (0.2): sali, kestävyys, aamupaino ja yhteenveto. Kohtaukset v1 … v5, tiedostot v1_fi.mp4 / v1_en.mp4.
+# Kotisivun video (0.6): kohtaukset v1 … v7 keksityillä esimerkkitiedoilla, tiedostot v1_fi.mp4 / v1_en.mp4.
 HOME = {
     "fi": [
-        ("v1", "Sali, kestävyys tai molemmat",
-         "Etusivulla vaihdat salin ja kestävyyden välillä yhdellä napautuksella. Tervehdys on aina saameksi, ja "
-         "treenit tallentuvat tavallisiksi tiedostoiksi omaan kansioosi: ei tiliä, ei mainoksia."),
-        ("v2", "Aloita salitreeni",
-         "Ohjelman päivä ehdotetaan palautumisen mukaan. Lämmittelysarjat ja paino ovat valmiina, palautusajastin "
-         "kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
-        ("v3", "Lenkki yhdellä napautuksella",
-         "GPS-lenkki tai matka käsin: vauhti, kilometrit, nousut ja reitti kartalla. Yli 30 lajia, "
-         "kävelyssä myös askeleet. Garmin Connectin suoritukset voi tuoda CSV-tiedostona."),
-        ("v4", "Aamupaino",
-         "Valinnainen kehonpainon seuranta: merkitse aamupaino, kun haluat. Pilkku tai piste käy, ja rivi "
-         "katoaa merkinnän jälkeen."),
-        ("v5", "Yhteenveto ja kehitys",
-         "Viikko, kuukausi, 3 tai 6 kuukautta tai vuosi: sali ja kestävyys yhdessä tai erikseen, lajeittain, "
-         "kehonpaino ja painoindeksi. Mukana myös FitNotesista ja Garminista tuodut treenit."),
+        ("v1", "Etusivu ja valikko",
+         "Salitreeni ja liikunta vierekkäin, viikkokalenteri ja viimeisimmät treenit. Valikossa kaksi osaa: "
+         "Treeni ja terveys sekä Tiedot ja laitteet. Ei tiliä eikä mainoksia: treenit ovat tavallisia "
+         "tiedostoja omassa kansiossasi."),
+        ("v2", "Salitreeni ohjelmasta",
+         "Ohjelman päivä ehdotetaan palautumisen mukaan. Lämmittelysarjat ja paino ovat valmiina, "
+         "palautusajastin kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
+        ("v3", "GPS-lenkki kartalla",
+         "Reitti offline-kartalla, nousut, korkeusprofiili ja vauhti kilometreittäin. Reitin voi korjata "
+         "poluille. Syke, kalorit ja askeleet Health Connectista tai käsin."),
+        ("v4", "Offline-kartat",
+         "Lataa kunnat tai alue sijaintisi ympäriltä: Suomi, Pohjoismaat, Iso-Britannia, Espanja ja Irlanti, "
+         "korkeustiedot mukana. Kartat toimivat ilman verkkoa."),
+        ("v5", "Edistyminen ja tilastot",
+         "1, 3 tai 6 kuukautta tai oma aikaväli, esimerkiksi ensimmäisestä treenistä tähän päivään. Sali ja "
+         "kestävyys yhdessä tai erikseen, treenit viikoittain ja viikon kuorma lihasryhmittäin."),
+        ("v6", "Vammatila",
+         "20 kehon aluetta: vältettävät liikkeet ja hyvin siedetyt korvaavat, kipuasteikko ja punaiset liput. "
+         "Vammatila tai sairas- ja lomatauko näkyy etusivun ylälaidassa. Ei tee diagnoosia."),
+        ("v7", "Automaattinen varmuuskopio",
+         "Kun uusi versio käynnistyy ensimmäisen kerran, treenit pakataan varmuuskopioksi ennen kuin mitään "
+         "muutetaan. Asetukset › Tallennus: tallenna, jaa tai poista."),
     ],
     "en": [
-        ("v1", "Gym, cardio or both",
-         "Switch between gym and cardio on the home screen with one tap. The greeting is always in North Sámi, "
-         "and workouts are saved as plain files in your own folder: no account, no ads."),
-        ("v2", "Start a gym workout",
+        ("v1", "Home screen and menu",
+         "Gym and activity side by side, the week calendar and recent workouts. The menu has two parts: "
+         "Training and health, and Data and devices. No account, no ads: workouts are plain files in your "
+         "own folder."),
+        ("v2", "Gym workout from your program",
          "The program day is suggested based on your recovery. Warm-up sets and weights are filled in, the rest "
          "timer tells you when to go again, and a set is saved by answering »Reps in reserve?«."),
-        ("v3", "Add a run with one tap",
-         "A GPS run or the distance by hand: pace, kilometre splits, climbs and the route on a map. Over 30 "
-         "sports, with steps for walking. Garmin Connect activities can be imported as a CSV file."),
-        ("v4", "Morning weight",
-         "Optional body weight tracking: log your morning weight whenever you like. A comma or a dot both work, "
-         "and the button disappears once you've logged it."),
-        ("v5", "Overview and progress",
-         "A week, a month, 3 or 6 months or a year: gym and cardio together or separately, by sport, body weight "
-         "and BMI. Workouts imported from FitNotes and Garmin are included."),
+        ("v3", "GPS run on the map",
+         "The route on an offline map, climbs, the elevation profile and pace per kilometre. The route can be "
+         "snapped to paths. Heart rate, calories and steps from Health Connect or by hand."),
+        ("v4", "Offline maps",
+         "Download municipalities or the area around you: Finland, the Nordic countries, the UK, Spain and "
+         "Ireland, with elevation data. Maps work without a network."),
+        ("v5", "Progress and statistics",
+         "1, 3 or 6 months or a custom period, for example from your first workout to today. Gym and cardio "
+         "together or separately, workouts per week and weekly volume per muscle group."),
+        ("v6", "Injury mode",
+         "20 body areas: exercises to avoid and well-tolerated alternatives, a pain scale and red flags. Injury "
+         "mode or a sick or holiday break shows at the top of the home screen. It does not diagnose."),
+        ("v7", "Automatic backup",
+         "When a new version starts for the first time, your workouts are backed up before anything is "
+         "changed. Settings › Storage: save, share or delete."),
     ],
 }
 SCENES = TRAINER

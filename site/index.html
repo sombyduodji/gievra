@@ -99,9 +99,10 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
-  <h2>Uutta: selkeämpi valikko, varmuuskopiot ja oma aikaväli <span class="badge">0.6</span></h2>
+  <h2>Uutta: selkeämpi valikko, varmuuskopiot ja oma aikaväli <span class="badge">0.6.1</span></h2>
   <div class="card">
     <ul>
+      <li><b>0.6.1:</b> GPS-reitin kartta ei enää jää välillä harmaaksi, kun sen avaa ensimmäisen kerran sovelluksen käynnistyksen jälkeen. Keskeneräisen salitreenin poisto ei enää palauta treeniä etusivulle. Pienet varmuuskopiot kilotavuina (ennen "0 Mt"). Uusi esittelyvideo ja kuvakaappaukset.</li>
       <li><b>0.6:</b> <b>Selkeämpi valikko</b>: <i>Treeni ja terveys</i> sekä <i>Tiedot ja laitteet</i>; asetukset viiteen ryhmään; tietoa, palaute ja tuki yhdessä näkymässä. <b>Vammatila ja tauko näkyvät etusivun ylälaidassa</b>, ja tauon voi lopettaa sieltä.</li>
       <li><b>Edistyminen ja tilastot</b>: 1 kk, 3 kk, 6 kk tai <b>oma aikaväli</b> – ensimmäisestä treenistä, tähän päivään tai mihin tahansa päivään. Pitkällä aikavälillä treenit vuosittain.</li>
       <li><b>Automaattinen varmuuskopio</b>, kun uusi versio käynnistyy ensimmäisen kerran (treenikansion backup/-kansioon, enintään kolme). Asetukset → Tallennus: tallenna, jaa tai poista.</li>
@@ -214,7 +215,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 <section>
   <h2>GPS ja offline-kartat kahdeksassa maassa <span class="badge">0.2.9</span></h2>
   <div class="feature">
-    <img src="kuvat/gps.png" alt="Juoksun reitti kartalla Helsingin Töölönlahdella, aika 41:38">
+    <img src="kuvat/gps.png" alt="Juoksun reitti kartalla Helsingin Töölönlahdella, nousu 39 m ja korkeusprofiili kilometrien vauhteineen">
     <div>
       <ul>
         <li><b>📍 GPS-tila</b> juoksuun, kävelyyn ja pyöräilyyn, tai <b>Manuaalinen</b> esim. juoksumatolla. GPS on aina valinnainen.</li>
@@ -255,7 +256,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <li>Lataa alueen kartta (<code>.pmtiles</code>) ja kerran maan yleiskartta.</li>
       <li>Siirrä tiedostot puhelimeen, esim. synkronoituun kansioon (Seafile, Nextcloud…) tai USB:llä.</li>
       <li>Ilman verkkoa puhelimessa: ota mukaan myös <a href="kartat-tarkisteet.json" download>tarkistetaulukko</a> (<code>kartat-tarkisteet.json</code>, kaikkien karttaversioiden SHA-256) ja valitse se tuonnissa karttojen kanssa, niin sovellus tarkistaa kartat.</li>
-      <li>Gievrassa: ☰ → Asetukset → <b>Kartat</b> → <b>Tiedostosta</b> ja valitse tiedostot.</li>
+      <li>Gievrassa: ☰ → <b>Kartat</b> → <b>Tiedostosta</b> ja valitse tiedostot.</li>
     </ol>
     <p class="sub"><small class="maara"></small><br><small>Tiedostot ladataan suoraan GitHubista. Kartat © OpenStreetMap-tekijät (ODbL).</small></p>
   </div>
@@ -287,17 +288,17 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Katso, miten Gievra toimii</h2>
   <video controls preload="none" playsinline poster="gievra-video.jpg">
     <source src="gievra-video.mp4" type="video/mp4">
-    <a href="gievra-video.mp4">Lataa esittelyvideo (MP4, 1,5 min)</a>
+    <a href="gievra-video.mp4">Lataa esittelyvideo (MP4, 2 min)</a>
   </video>
-  <p class="sub">1,5 min · suomeksi · demo-tiedot · taustamusiikki tehty itse · <a href="en/">in English</a></p>
-  <p class="sub"><small>Video on tehty versiosta 0.2.4 (marraskuu 2026). Gievra kehittyy jatkuvasti, joten uusimmassa versiossa on enemmän ominaisuuksia ja osa näkymistä voi näyttää erilaiselta.</small></p>
+  <p class="sub">2 min · suomeksi · keksityt esimerkkitiedot · taustamusiikki tehty itse · <a href="en/">in English</a></p>
+  <p class="sub"><small>Video on tehty versiosta 0.6 (marraskuu 2026): etusivu ja valikko, salitreeni, GPS-lenkki korkeusprofiileineen, offline-kartat, tilastot omalla aikavälillä, vammatila ja automaattinen varmuuskopio. Gievra kehittyy jatkuvasti, joten uusimmassa versiossa on enemmän ominaisuuksia ja osa näkymistä voi näyttää erilaiselta.</small></p>
 </section>
 
 <div class="shots">
-  <img src="kuvat/koti.png" alt="Etusivu: tervehdys saameksi, kalenteri ja viikon treenit">
+  <img src="kuvat/koti.png" alt="Etusivu: tervehdys saameksi, Sali ja Liikunta, viikkokalenteri ja viimeisimmät treenit">
   <img src="kuvat/sarja.png" alt="Sarjan kirjaus: painoehdotus ja lämmittelysarjat">
   <img src="kuvat/ohjelma.png" alt="Treeniohjelma: tarkistus ja viikon kuorma">
-  <img src="kuvat/tilastot.png" alt="Edistyminen ja tilastot: fiilis viikoittain">
+  <img src="kuvat/tilastot.png" alt="Edistyminen ja tilastot: 6 kuukauden yhteenveto, sali ja kestävyys">
 </div>
 
 <section>
@@ -305,8 +306,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <div class="grid">
     <div class="card">
       <h3>🧪 Demo selaimessa</h3>
-      <p>Sovellus toimii suoraan selaimessa neljän viikon esimerkkitreeneillä: etusivu, kalenteri, treenin
-      kirjaus ja tilastot. Mitään ei tallenneta, joten voit kokeilla vapaasti.</p>
+      <p>Sovellus toimii suoraan selaimessa esimerkkitiedoilla (salitreenit neljältä viikolta, juoksut
+      kahdeksalta ja punnitukset kolmelta kuukaudelta): etusivu, kalenteri, treenin kirjaus ja tilastot. Mitään ei tallenneta, joten voit kokeilla vapaasti.</p>
     </div>
     <div class="card">
       <h3>📋 Ohjelmatyökalu</h3>
@@ -335,6 +336,9 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>lämmittelysarjat valmiiksi täytettyinä ja painoehdotus edellisen kerran perusteella</li>
         <li><i>Miltä tuntui?</i> 😫 😕 😐 🙂 🤩 – raskaan treenin jälkeen liikekohtainen palaute</li>
         <li>palautusajastin (valinnainen): raskaissa sarjoissa pidempi tauko, ilmoitus äänellä ja värinällä myös näytön ollessa pois päältä</li>
+        <li><i>Merkitse liike valmiiksi</i> pysäyttää palautusajastimen; valmis treeni lukittuu 🔒, ja muokkaus kysyy ensin</li>
+        <li>ilmoitus käynnissä olevasta treenistä (laji ja kulunut aika); keskeneräinen treeni tallentuu muutaman sekunnin välein</li>
+        <li>omat liikkeet, paino per käsipaino tai kahvakuula, ennätysten muokkaus</li>
       </ul>
     </div>
     <div class="card">
@@ -344,7 +348,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>kahvakuulaohjelmat ja kehonpainolla treenaaminen ilman salia</li>
         <li>voimanoston 10 viikon sykli ja kevennysviikot</li>
         <li>ohjelman tarkistus ja viikon kuorma lihasryhmittäin</li>
-        <li>lähtökohdaksi voi ottaa oman treenihistorian FitNotesista</li>
+        <li>ohjelma voi lähteä omasta treenihistoriasta (Gievrasta tai FitNotesista tuodusta)</li>
         <li><code>.gmd</code>-ohjelmapohjat jaettaviksi; Androidilla ne aukeavat suoraan Gievralla</li>
       </ul>
     </div>
@@ -353,10 +357,13 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>valitse <b>Sali</b>, <b>Kestävyys</b> tai <b>Molemmat</b>; etusivulla vaihdat näkymää yhdellä napautuksella</li>
         <li>lenkin lisäys yhdellä napautuksella, käytetyimmät lajit ensin</li>
-        <li>yli 30 lajia (myös <i>Muu liikunta</i>, GPS:llä tai ilman); kävelyssä ja retkeilyssä myös askeleet</li>
+        <li>yli 30 lajia (myös <i>Muu liikunta</i>, GPS:llä tai ilman); kävelyssä, sauvakävelyssä, juoksussa ja retkeilyssä myös askeleet</li>
         <li>juoksulle oma kehitysnäkymä: vauhti ja keskinopeus, kilometrit, kevyiden lenkkien vauhti ja syke, ennätykset</li>
         <li>valinnainen GPS: reitti kartalla ja <code>.gpx</code>-tiedostona, offline-kartat Suomeen, Pohjoismaihin, Iso-Britanniaan, Espanjaan ja Irlantiin</li>
-        <li>älykellon tiedot (syke, kalorit, askeleet) Health Connectista tai käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
+        <li>GPS-reitin alla nousu, lasku ja korkeusprofiili sekä vauhti kilometreittäin (pyöräilyssä km/h)</li>
+        <li>GPS-reitin voi korjata poluille kartan mukaan; alkuperäiset pisteet säilyvät</li>
+        <li><i>Lisää tehty liikunta Health Connectista</i>: kellon tai muun sovelluksen harjoitukset ja salitreenit (laji, aika, matka, syke, kalorit, askeleet), myös kävelymaton askeleet</li>
+        <li>älykellon tiedot (syke, kalorit, askeleet) myös käsin; Garmin Connectin suoritukset tuodaan CSV-tiedostona</li>
       </ul>
     </div>
     <div class="card">
@@ -375,7 +382,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li><i>Merkitse aamupaino</i> etusivulla, kun et ole vielä punninnut; punnitse milloin haluat</li>
         <li>pilkku tai piste käy (82,4 tai 82.4)</li>
         <li>painon kehitys ja painoindeksi tilastoissa</li>
-        <li>punnitukset ja pituus muokataan asetuksista; FitNotesin punnitukset tuodaan mukana</li>
+        <li>punnitukset ja pituus: Asetukset → Keho ja laitteet → Paino ja pituus; FitNotesin punnitukset tuodaan mukana</li>
       </ul>
     </div>
     <div class="card">
@@ -383,7 +390,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li>vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen</li>
         <li>sairas- ja lomatauko kevyemmällä paluulla</li>
-        <li>muistutus kevennysviikosta, kun on treenattu pitkään putkeen</li>
+        <li>vammatila ja tauko näkyvät etusivun ylälaidassa; tauon voi lopettaa sieltä</li>
+        <li>ilman ohjelmaa muistutus kevennysviikosta, kun on treenattu pitkään putkeen tai nostot junnaavat</li>
         <li>148 liikettä, joista jokaiselle <i>Näin teet</i> -animaatio ja tekniikkavinkit</li>
       </ul>
     </div>
@@ -394,6 +402,9 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>synkronoi Nextcloudilla, Seafilella, Syncthingillä tai muulla</li>
         <li>tuonti FitNotesista, Garmin Connectista ja <code>.md</code>-tiedostoista; varmuuskopio zip-tiedostona</li>
         <li>uusi tuonti ei tee kaksoiskappaleita: olemassa olevat treenit ja punnitukset säilyvät</li>
+        <li>automaattinen varmuuskopio, kun uusi versio käynnistyy ensimmäisen kerran (enintään kolme); Asetukset → Tallennus: tallenna, jaa tai poista</li>
+        <li>vienti luettavaksi tai taulukkoon (CSV): aikaväli ja sisältö valittavissa</li>
+        <li>lukukelvottomat treenitiedostot näkyvät etusivulla syineen; väärän merkistön voi korjata (alkuperäinen jää <code>.bak</code>-tiedostoksi)</li>
       </ul>
     </div>
   </div>
@@ -446,7 +457,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Palaute on enemmän kuin tervetullutta</h2>
   <p>Virheet, puuttuvat liikkeet, oudon näköiset liikeohjeet, ideat ja käännöskorjaukset:</p>
   <ul>
-    <li>sovelluksessa: ☰ → <i>Ilmoita ongelmasta</i> tai <i>Lähetä palautetta</i></li>
+    <li>sovelluksessa: ☰ → <i>Tietoa, palaute ja tuki</i> → <i>Ilmoita ongelmasta</i> tai <i>Lähetä palautetta</i></li>
     <li>sähköposti: <a href="mailto:treeni@somby.fi">treeni@somby.fi</a></li>
     <li>GitHubissa: <a href="https://github.com/sombyduodji/gievra/issues">virheilmoitukset ja ehdotukset</a></li>
   </ul>

@@ -190,6 +190,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     await _save();
   }
 
+  bool _deleted = false;
+
   Future<void> _deleteWorkout() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -203,6 +205,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       ),
     );
     if (ok != true) return;
+    // Ei tallennusta sivulta poistuttaessa (dispose), muuten poistettu treeni palaisi.
+    _deleted = true;
+    _notesSave?.cancel();
+    rest.stop(); // ei palautusmuistutusta poistetusta treenistä
     await store.delete(w.date, w.session);
     if (mounted) Navigator.of(context).pop();
   }
@@ -212,7 +218,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     _tick?.cancel();
     _notesSave?.cancel();
     w.notes = _notes.text;
-    if (!w.isEmpty) store.save(w);
+    if (!w.isEmpty && !_deleted) store.save(w);
     _notes.dispose();
     super.dispose();
   }

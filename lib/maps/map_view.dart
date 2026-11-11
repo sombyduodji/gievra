@@ -142,6 +142,10 @@ class _RouteMapState extends State<RouteMap> {
                     theme: theme,
                     tileProviders: TileProviders({'protomaps': OfflineTileProvider(files)}),
                     fileCacheMaximumSizeInBytes: 20 << 20,
+                    // Vektoritila: rasteritilassa (oletus) kylmän käynnistyksen jälkeisen ensimmäisen kartan laatat
+                    // jäivät välillä harmaiksi. Peruttu laatta jäi Flutterin kuvavälimuistiin keskeneräiseksi, ja
+                    // sama laatta uudelleen pyydettynä odotti sitä loputtomiin (vector_map_tiles 9.0.0-beta.13).
+                    layerMode: VectorTileLayerMode.vector,
                   ),
                   PolylineLayer(
                     polylines: [
