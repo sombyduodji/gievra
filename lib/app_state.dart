@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -36,6 +37,70 @@ class Equipment {
   final String icon;
   final String name;
   const Equipment(this.icon, this.name);
+}
+
+/// Treenitiedosto muussa merkistössä kuin UTF-8: UTF-16 (BOM) tai Windowsin Latin-1. Palauttaa tekstin vain, jos
+/// se näyttää Gievran treeniltä (etusivun --- tai # -otsikko) eikä siinä ole ohjausmerkkejä (ei binääritiedostoa).
+/// Kelvollinen UTF-8 palauttaa null: silloin vika ei ole merkistössä.
+String? decodeLegacyText(List<int> bytes) {
+  String text;
+  if (bytes.length >= 2 && ((bytes[0] == 0xFF && bytes[1] == 0xFE) || (bytes[0] == 0xFE && bytes[1] == 0xFF))) {
+    final le = bytes[0] == 0xFF;
+    final units = <int>[
+      for (var i = 2; i + 1 < bytes.length; i += 2)
+        le ? bytes[i] | (bytes[i + 1] << 8) : (bytes[i] << 8) | bytes[i + 1],
+    ];
+    text = String.fromCharCodes(units);
+  } else {
+    try {
+      utf8.decode(bytes);
+      return null;
+    } on FormatException {
+      text = latin1.decode(bytes);
+    }
+  }
+  text = text.replaceAll('\r\n', '\n');
+  if (RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]').hasMatch(text)) return null;
+  final head = text.trimLeft();
+  return head.startsWith('---') || head.startsWith('# ') ? text : null;
+}
+
+/// Miksi treenitiedostoa ei voitu lukea, käyttäjän kielellä: näytetään ilmoituksessa ja ongelmaraportissa.
+/// [bytes] null = tiedostoa ei saatu auki; [error] = sisällön tulkinta epäonnistui.
+String unreadableReason(List<int>? bytes, {Object? error}) {
+  if (bytes == null) return t('Tiedostoa ei voitu avata: {0}', [error == null ? '?' : errorText(error)]);
+  if (error != null) return t('Sisältöä ei voitu tulkita: {0}', [errorText(error)]);
+  if (bytes.isEmpty) return t('Tiedosto on tyhjä');
+  if (decodeLegacyText(bytes) != null) return t('Väärä merkistö (voidaan korjata)');
+  final sample = bytes.take(4096);
+  if (sample.any((b) => b < 9 || (b > 13 && b < 32 && b != 27))) {
+    return t('Ei tekstitiedosto: vaurioitunut tai väärä tiedosto');
+  }
+  return t('Merkistöä ei tunnistettu');
+}
+
+/// Onko teksti luettava tiedosto: ei tyhjä eikä ohjausmerkkejä (sarkain ja rivinvaihdot sallittu).
+bool looksLikeText(String text) => text.trim().isNotEmpty && !_controlChars.hasMatch(text);
+final _controlChars = RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1A\x1C-\x1F]');
+
+/// Tekstitiedoston luku tuonnissa: UTF-8, tai Windowsin Latin-1 / UTF-16 korjattuna ([decodeLegacyText]).
+/// Palauttaa (teksti, korjattiin) tai null, jos tiedostoa ei voi lukea. Ennen tuonti luki väärän merkistön
+/// hiljaa korvausmerkeillä (Kävely → K\uFFFDvely).
+(String, bool)? decodeTextFile(List<int> bytes) {
+  try {
+    final text = utf8.decode(bytes);
+    // Tyhjä tai ohjausmerkkejä (binääri, joka sattuu olemaan kelvollista UTF-8:aa): ei treeni.
+    return looksLikeText(text) ? (text, false) : null;
+  } on FormatException {
+    final text = decodeLegacyText(bytes);
+    return text == null ? null : (text, true);
+  }
+}
+
+/// vvvv-kk-pp vain, jos päivä on olemassa (ei 2026-13-40 tai 2026-02-30).
+DateTime? _validDate(String s) {
+  final d = DateTime.tryParse(s);
+  return d != null && isoDate(d) == s ? d : null;
 }
 
 /// Tauko treenaamisesta: sairaus tai loma. end == null = tauko on päällä.
@@ -536,11 +601,17 @@ class Settings extends ChangeNotifier {
             st!.kbFocus = v.isEmpty ? null : v;
         }
       } else if (section == 'Vammat') {
-        inj!.add(item.split(' ').first);
+        // Sama alue vain kerran (käsin muokattu tai yhdistetty tiedosto).
+        final id = item.split(' ').first;
+        if (id.isNotEmpty && !inj!.contains(id)) inj.add(id);
       } else if (section == 'Tauot') {
         final m = RegExp(r'^(\d{4}-\d{2}-\d{2})\s*[–-]\s*(\d{4}-\d{2}-\d{2})?\s*(\S+)?').firstMatch(item);
-        if (m != null) {
-          pauseList!.add(Pause(DateTime.parse(m[1]!), m[3] ?? 'loma', m[2] == null ? null : DateTime.parse(m[2]!)));
+        // Mahdoton päivä (esim. 2026-13-40) ohitetaan: DateTime.parse siirtäisi sen tulevaisuuteen, ja siitä
+        // tulisi käynnissä oleva tauko. Loppu ennen alkua = yhden päivän tauko.
+        final start = m == null ? null : _validDate(m[1]!);
+        final end = m?[2] == null ? null : _validDate(m![2]!);
+        if (start != null && (m![2] == null || end != null)) {
+          pauseList!.add(Pause(start, m[3] ?? 'loma', end == null || !end.isBefore(start) ? end : start));
         }
       } else if (section == 'Omat liikkeet') {
         if (!custom!.contains(item)) custom.add(item);
@@ -577,7 +648,8 @@ class Settings extends ChangeNotifier {
     try {
       await for (final e in dir.list(recursive: true, followLinks: false)) {
         if (e is File && isDataFile(e.path)) {
-          out.add(p.relative(e.path, from: dir.path));
+          final rel = p.relative(e.path, from: dir.path);
+          if (!isAutoBackupPath(rel)) out.add(rel);
         }
       }
     } catch (_) {}
@@ -635,6 +707,29 @@ class Settings extends ChangeNotifier {
     p.end = end;
     _persist();
   }
+
+  /// Varmuuskopion tauot käytössä olevaan päiväkirjaan: lisätään ne, joita täällä ei ole (sama alkupäivä =
+  /// sama tauko, tämän laitteen versio pysyy). Käynnissä oleva tauko vain, jos täällä ei ole omaa; jos täällä on
+  /// jo treeni sen alkupäivänä tai myöhemmin, tauko päätetään sitä edeltävään päivään.
+  void mergePauses(List<Pause> other, {Iterable<DateTime> trainedDays = const []}) {
+    final starts = {for (final p in pauses) p.start};
+    final days = [for (final d in trainedDays) dateOnly(d)]..sort();
+    final add = <Pause>[];
+    for (final p in other) {
+      if (starts.contains(p.start)) continue;
+      if (p.end != null) {
+        add.add(Pause(p.start, p.reason, p.end));
+      } else if (activePause == null && !add.any((a) => a.end == null)) {
+        final back = days.where((d) => !d.isBefore(p.start)).firstOrNull;
+        add.add(Pause(p.start, p.reason, back == null ? null : _maxDate(p.start, addDays(back, -1))));
+      }
+    }
+    if (add.isEmpty) return;
+    pauses = [...pauses, ...add]..sort((a, b) => a.start.compareTo(b.start));
+    _persist();
+  }
+
+  static DateTime _maxDate(DateTime a, DateTime b) => b.isBefore(a) ? a : b;
 
   /// [cls]: 0 kevyt, 1 keskiraskas, 2 raskas; [delta] ±15 s. Null nollaa.
   void adjustRest(int cls, int? delta) {
@@ -740,6 +835,12 @@ const settingsFileName = 'asetukset.md';
 /// Treenikansion omat tiedostot (kansion vaihto, varmuuskopio): .md (treenit, asetukset, ohjelma, punnitukset),
 /// .gpx (GPS-reitit) ja .gmd (tallennetut ohjelmat).
 bool isDataFile(String path) => path.endsWith('.md') || path.endsWith('.gpx') || path.endsWith('.gmd');
+
+/// Sovelluksen automaattiset varmuuskopiot treenikansion alikansiossa ([AutoBackup]): ei käyttäjän tietoa.
+const autoBackupDir = 'backup';
+
+/// Onko polku (treenikansion suhteen) varmuuskopiokansiossa: sitä ei lueta, viedä eikä kopioida.
+bool isAutoBackupPath(String rel) => rel.replaceAll(r'\', '/').split('/').first == autoBackupDir;
 const ownCategory = 'Omat';
 
 /// Lukee ja kirjoittaa treenit .md-tiedostoina valittuun kansioon.
@@ -757,6 +858,10 @@ class WorkoutStore extends ChangeNotifier {
 
   String? error;
 
+  /// Treenitiedostot (vvvv-kk-pp*.md), joita ei voitu lukea viimeksi: etusivu kertoo niistä, ja ne voi yrittää
+  /// korjata ([repairUnreadable]) tai lähettää ongelmaraporttina. Ennen ne ohitettiin hiljaa.
+  Map<String, String> unreadable = {}; // polku -> syy käyttäjän kielellä ([unreadableReason])
+
   Future<Directory> defaultDir() async {
     if (Platform.isAndroid) {
       // Sovelluksen oma kansio Android/data/... (ei vaadi lupia). Synkattava kansio valitaan asetuksista.
@@ -771,18 +876,62 @@ class WorkoutStore extends ChangeNotifier {
 
   String fileName(DateTime d, [int session = 1]) => p.joinAll(workoutPath(d, session).split('/'));
 
+  static final _workoutName = RegExp(r'^(\d{4}-\d{2}-\d{2}).*\.md$');
+
+  /// Yrittää korjata lukukelvottomat treenitiedostot: väärä merkistö (Windowsin Latin-1 tai UTF-16, esim.
+  /// käsin muokattu Muistiossa) tallennetaan UTF-8:na, alkuperäinen talteen viereen (.bak). Muita ei kosketa.
+  /// Palauttaa korjattujen määrän; jäljelle jääneet ovat [unreadable]-listassa.
+  Future<int> repairUnreadable() async {
+    final root = (await rootDir()).path;
+    var fixed = 0;
+    for (final rel in [...unreadable.keys]) {
+      try {
+        final f = File(p.joinAll([root, ...rel.split('/')]));
+        final text = decodeLegacyText(await f.readAsBytes());
+        if (text == null) continue;
+        final m = _workoutName.firstMatch(p.basename(rel))!;
+        parseWorkout(text, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(p.basename(rel)));
+        final bak = File('${f.path}.bak');
+        if (!await bak.exists()) await f.copy(bak.path);
+        await f.writeAsString(text);
+        fixed++;
+      } catch (_) {
+        // Ei korjattavissa: jää listaan raporttia varten.
+      }
+    }
+    await reload();
+    return fixed;
+  }
+
   Future<void> reload() async {
     error = null;
     final list = <Workout>[];
+    final failed = <String, String>{};
     try {
-      for (final e in (await files.all()).entries) {
+      final notRead = <String>[];
+      final all = await files.all(failed: notRead);
+      // Syy jokaiselle, jota ei voitu lukea: luetaan tavuina uudelleen (vain epäonnistuneet).
+      final root = notRead.isEmpty ? null : (await rootDir()).path;
+      for (final rel in notRead.where((rel) => _workoutName.firstMatch(p.basename(rel)) != null)) {
+        try {
+          failed[rel] = unreadableReason(await File(p.joinAll([root!, ...rel.split('/')])).readAsBytes());
+        } catch (e) {
+          failed[rel] = unreadableReason(null, error: e);
+        }
+      }
+      for (final e in all.entries) {
         final base = p.basename(e.key);
-        final m = RegExp(r'^(\d{4}-\d{2}-\d{2}).*\.md$').firstMatch(base);
+        final m = _workoutName.firstMatch(base);
         if (m == null) continue;
+        if (!looksLikeText(e.value)) {
+          failed[e.key] = unreadableReason(utf8.encode(e.value));
+          continue;
+        }
         try {
           list.add(parseWorkout(e.value, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(base)));
-        } catch (_) {
-          // Rikkinäinen tai vieras tiedosto: ohitetaan.
+        } catch (err) {
+          // Rikkinäinen tai vieras tiedosto: ei näytetä historiassa, mutta etusivu kertoo siitä ja syyn.
+          failed[e.key] = unreadableReason(utf8.encode(e.value), error: err);
         }
       }
     } catch (e) {
@@ -790,6 +939,7 @@ class WorkoutStore extends ChangeNotifier {
     }
     list.sort((a, b) => b.date.compareTo(a.date));
     workouts = list;
+    unreadable = Map.fromEntries(failed.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
     _recoverCustomExercises();
     notifyListeners();
   }
@@ -912,8 +1062,8 @@ abstract class TrainingFiles {
   Future<void> delete(String rel);
   Future<bool> exists(String rel);
 
-  /// Kaikki .md-tiedostot (suhteellinen polku -> sisältö).
-  Future<Map<String, String>> all();
+  /// Kaikki .md-tiedostot (suhteellinen polku -> sisältö). [failed]: tiedostot, joita ei voitu lukea.
+  Future<Map<String, String>> all({List<String>? failed});
 }
 
 class IoTrainingFiles implements TrainingFiles {
@@ -943,20 +1093,28 @@ class IoTrainingFiles implements TrainingFiles {
   Future<bool> exists(String rel) async => (await _f(rel)).exists();
 
   @override
-  Future<Map<String, String>> all() async {
+  Future<Map<String, String>> all({List<String>? failed}) async {
     final dir = await store.rootDir();
     final out = <String, String>{};
     if (!await dir.exists()) return out;
     final files = <File>[
       await for (final e in dir.list(recursive: true, followLinks: false))
-        if (e is File && (e.path.endsWith('.md') || e.path.endsWith('.gmd'))) e,
+        if (e is File &&
+            (e.path.endsWith('.md') || e.path.endsWith('.gmd')) &&
+            !isAutoBackupPath(p.relative(e.path, from: dir.path)))
+          e,
     ];
     // Luetaan 32 tiedostoa kerrallaan rinnakkain: satojen treenien kansio aukeaa nopeammin kuin yksi kerrallaan.
     for (var i = 0; i < files.length; i += 32) {
       final chunk = files.sublist(i, i + 32 > files.length ? files.length : i + 32);
       final texts = await Future.wait(chunk.map((f) => f.readAsString().then<String?>((t) => t, onError: (_) => null)));
       for (var j = 0; j < chunk.length; j++) {
-        if (texts[j] != null) out[p.relative(chunk[j].path, from: dir.path).replaceAll(r'\', '/')] = texts[j]!;
+        final rel = p.relative(chunk[j].path, from: dir.path).replaceAll(r'\', '/');
+        if (texts[j] != null) {
+          out[rel] = texts[j]!;
+        } else {
+          failed?.add(rel);
+        }
       }
     }
     return out;
@@ -983,7 +1141,7 @@ class MemoryTrainingFiles implements TrainingFiles {
   Future<bool> exists(String rel) async => data.containsKey(rel);
 
   @override
-  Future<Map<String, String>> all() async => {...data};
+  Future<Map<String, String>> all({List<String>? failed}) async => {...data};
 }
 
 /// Verkkoversio on demo: ei tiedostoja eikä pysyvää tallennusta.

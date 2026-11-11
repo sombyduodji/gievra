@@ -89,10 +89,11 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - oikea mittaustapa: lankku sekunteina, askelkyykkykävely askelina, kannot edestakaisina
 
 **Seuranta ja ehdotukset, jotka voi ohittaa**
-- yhteenveto viikolta, kuukaudelta, 3 tai 6 kuukaudelta ja vuodelta: kaikki treenit yhdessä tai sali ja kestävyys
-  erikseen (kerrat, aika, sarjat, volyymi, kilometrit, syke, lajeittain), treenit viikoittain tai kuukausittain;
+- yhteenveto 1, 3 tai 6 kuukaudelta tai omalta aikaväliltä (esim. ensimmäisestä treenistä tähän päivään): kaikki
+  treenit yhdessä tai sali ja kestävyys erikseen (kerrat, aika, sarjat, volyymi, kilometrit, syke, lajeittain),
+  treenit viikoittain, kuukausittain tai pitkällä aikavälillä vuosittain;
   mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
-- viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (viikko tai keskiarvo pidemmältä jaksolta)
+- viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (keskiarvo viikossa valitulta jaksolta)
 - kehonpainon seuranta (valinnainen): *Merkitse aamupaino* etusivulla, kun et ole vielä punninnut (pilkku tai piste
   käy), painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
   FitNotesin punnitukset tuodaan mukana
@@ -143,7 +144,12 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   aika, matka, kesto, kalorit ja syke), Gievran varmuuskopio, `.md`-treenit ja ohjelmapohjat (`.gmd`);
   luettava CSV-vienti käyttöliittymän kielellä taulukkolaskentaan tai valmentajalle (valittava sisältö ja aikaväli);
   varmuuskopio zip-tiedostona (treenit, GPS-reitit, asetukset, ohjelma, punnitukset ja tallennetut ohjelmat;
-  uuteen puhelimeen palautettaessa myös asetukset ja ohjelma sellaisinaan), yksittäisten `.md`-tiedostojen tuonti
+  uuteen puhelimeen palautettaessa myös asetukset ja ohjelma sellaisinaan; käytössä olevaan päiväkirjaan sairas- ja
+  lomatauot yhdistetään ja vammatilasta kysytään), yksittäisten `.md`-tiedostojen tuonti
+- automaattinen varmuuskopio, kun uusi versio käynnistyy ensimmäisen kerran: treenikansion `backup/`-kansioon,
+  enintään kolme, oma varmuuskopio korvaa ne; Asetukset → Tallennus: tallenna, jaa tai poista
+- lukukelvottomat treenitiedostot (esim. vaurioitunut tai väärä merkistö) kerrotaan syineen: väärän merkistön voi
+  korjata (alkuperäinen jää `.bak`-tiedostoksi), muut voi lähettää ongelmaraporttina; sama tarkistus tuonnissa
 
 ## Mihin sovellus ottaa yhteyttä?
 

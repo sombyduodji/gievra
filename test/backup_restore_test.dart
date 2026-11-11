@@ -7,6 +7,7 @@ import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/body.dart';
 import 'package:treenipaivakirja/exercises.dart';
 import 'package:treenipaivakirja/import_export.dart';
+import 'package:treenipaivakirja/injuries.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/program.dart';
 
@@ -32,6 +33,8 @@ void _fresh(Directory dir) {
   settings.customCategory = {};
   settings.customMeasure = {};
   settings.body = BodyLog();
+  settings.pauses = [];
+  settings.injuries = [];
 }
 
 /// Täysi treenikansio: treeni + reitti, asetukset, ohjelma, punnitukset, tallennettu ohjelma.
@@ -142,6 +145,125 @@ void main() {
     expect(settings.customExercises, contains('Oma veto'));
     expect(settings.customMeasure['Oma veto'], Measure.seconds, reason: 'mittaustapa tulee omien liikkeiden mukana');
     expect(File(p.join(b.path, 'ohjelmat/Oma pohja.gmd')).existsSync(), isTrue);
+  });
+
+  group('Sairas- ja lomatauot palautuksessa', () {
+    final holiday = Pause(DateTime(2026, 10, 25), 'loma', DateTime(2026, 10, 27));
+    // Varmuuskopio sairastaessa: loma takana, sairastaminen käynnissä 3.11. alkaen.
+    Future<ImportResult> sickBackup() async {
+      await _fill(a);
+      settings.pauses = [Pause(holiday.start, 'loma', holiday.end), Pause(DateTime(2026, 11, 3), 'sairas')];
+      await files.write(settingsFileName, settings.settingsToMarkdown());
+      final zip = await exportZip();
+      _fresh(b);
+      return readZip(zip);
+    }
+
+    List<String> got() => [
+      for (final p in settings.pauses) '${isoDate(p.start)}..${p.end == null ? '' : isoDate(p.end!)} ${p.reason}',
+    ];
+
+    test('Uusi puhelin: käynnissä oleva tauko ja aiemmat palautuvat', () async {
+      final r = await sickBackup();
+      await applyImport(r);
+      expect(got(), ['2026-10-25..2026-10-27 loma', '2026-11-03.. sairas']);
+      expect(settings.activePause!.sick, isTrue);
+    });
+
+    test('Käytössä oleva päiväkirja: puuttuvat tauot lisätään, sama tauko vain kerran', () async {
+      final r = await sickBackup();
+      await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+      settings.pauses = [Pause(holiday.start, 'loma', holiday.end)];
+      await applyImport(r);
+      expect(got(), ['2026-10-25..2026-10-27 loma', '2026-11-03.. sairas']);
+      // Tallentui asetuksiin.
+      final saved = Settings()..applyMarkdown(await files.read(settingsFileName) ?? '');
+      expect(saved.activePause?.start, DateTime(2026, 11, 3));
+    });
+
+    test('Tämän puhelimen käynnissä oleva tauko säilyy, varmuuskopion käynnissä olevaa ei lisätä', () async {
+      final r = await sickBackup();
+      await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+      settings.pauses = [Pause(DateTime(2026, 11, 6), 'loma')];
+      await applyImport(r);
+      expect(got(), ['2026-10-25..2026-10-27 loma', '2026-11-06.. loma']);
+    });
+
+    test('Kävely tauon aikana ei päätä taukoa (kuten sovelluksessa)', () async {
+      final r = await sickBackup();
+      await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+      await store.save(Workout(date: DateTime(2026, 11, 5), title: 'Kävely', activity: 'Kävely'));
+      await applyImport(r);
+      expect(settings.activePause?.start, DateTime(2026, 11, 3));
+    });
+
+    test('Treeni tällä puhelimella tauon alun jälkeen: tauko päättyy edelliseen päivään', () async {
+      final r = await sickBackup();
+      await store.save(Workout(date: DateTime(2026, 11, 8), title: 'Oma'));
+      await applyImport(r);
+      expect(got(), ['2026-10-25..2026-10-27 loma', '2026-11-03..2026-11-07 sairas']);
+      expect(settings.activePause, isNull);
+    });
+  });
+
+  group('Vammatila palautuksessa', () {
+    Future<ImportResult> injuryBackup() async {
+      await _fill(a);
+      settings.injuries = ['polvi_etu', 'ranne'];
+      await files.write(settingsFileName, settings.settingsToMarkdown());
+      final zip = await exportZip();
+      _fresh(b);
+      return readZip(zip);
+    }
+
+    test('Uusi puhelin: vamma-alueet palautuvat sellaisinaan, ei kysytä', () async {
+      final r = await injuryBackup();
+      expect(newInjuries(r), isEmpty);
+      await applyImport(r);
+      expect(settings.injuries, ['polvi_etu', 'ranne']);
+    });
+
+    test('Käytössä oleva päiväkirja: alueet vain, jos käyttäjä valitsee', () async {
+      final r = await injuryBackup();
+      await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+      settings.injuries = ['ranne'];
+      expect(newInjuries(r), ['polvi_etu'], reason: 'jo valittu ranne ei tule uudelleen');
+      await applyImport(r);
+      expect(settings.injuries, ['ranne']);
+    });
+
+    test('Käytössä oleva päiväkirja, valittu: alueet lisätään ja tallentuvat', () async {
+      final r = await injuryBackup();
+      await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+      settings.injuries = ['ranne'];
+      await applyImport(r, addInjuries: true);
+      expect(settings.injuries, ['ranne', 'polvi_etu']);
+      final saved = Settings()..applyMarkdown(await files.read(settingsFileName) ?? '');
+      expect(saved.injuries, ['ranne', 'polvi_etu']);
+    });
+
+    test('Ei kysytä, kun varmuuskopion alueet ovat jo valittuna', () async {
+      final r = await injuryBackup();
+      await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+      settings.injuries = ['ranne', 'polvi_etu'];
+      expect(newInjuries(r), isEmpty);
+    });
+  });
+
+  test('Käsin muokattu tai vaurioitunut asetukset.md: mahdottomat päivät ohitetaan, alue kerran', () {
+    final s = Settings()
+      ..applyMarkdown(
+        '## Vammat\n- ranne\n- ranne\n- vanha_alue\n-\n'
+        '## Tauot\n- 2026-13-40 – sairas\n- 2026-02-30 – loma\n- 2026-11-02 – 2026-11-40 sairas\n'
+        '- 2026-11-05 – 2026-11-01 loma\n- roskaa\n- 2026-11-07 – sairas\n',
+      );
+    expect(s.injuries, ['ranne', 'vanha_alue'], reason: 'tuntematon säilyy tiedostossa, tupla ei');
+    expect(knownInjuries(s.injuries), ['ranne']);
+    expect(
+      [for (final p in s.pauses) '${isoDate(p.start)}..${p.end == null ? '' : isoDate(p.end!)} ${p.reason}'],
+      ['2026-11-05..2026-11-05 loma', '2026-11-07.. sairas'],
+    );
+    expect(s.activePause!.start, DateTime(2026, 11, 7), reason: 'ei tulevaisuuteen siirtynyttä taukoa');
   });
 
   // Aiempien versioiden oikeat varmuuskopiot (tehty kunkin version omalla exportZip-koodilla).

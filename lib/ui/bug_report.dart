@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,15 +14,44 @@ import '../app_state.dart';
 import '../body.dart';
 import '../l10n.dart';
 import '../maps/map_store.dart';
+import '../models.dart' show isoDate;
 import '../theme.dart';
 import 'widgets.dart';
 
 /// ☰ → Ilmoita ongelmasta: ongelman tyyppi, kuvaus ja liitteet (treenitiedostot, asetukset, kuvakaappaukset).
 /// Androidilla avautuu sähköpostisovellus valmiilla vastaanottajalla, aiheella ja liitteillä; muualla jakovalikko.
 class BugReportScreen extends StatefulWidget {
-  const BugReportScreen({super.key});
+  /// Valmiiksi valittu ongelmatyyppi ja liitteet (nimi, polku), esim. lukukelvottomat treenitiedostot.
+  final String? type;
+  final List<(String, String)> attach;
+  final String? description;
+  const BugReportScreen({super.key, this.type, this.attach = const [], this.description});
   @override
   State<BugReportScreen> createState() => _BugReportScreenState();
+}
+
+bool _isImage(String name) => RegExp(r'\.(png|jpe?g|webp|gif)$', caseSensitive: false).hasMatch(name);
+
+/// Liitteet lähetettäväksi kansioon [dir]: [zip] = muut kuin kuvat yhdeksi zip-tiedostoksi (ensimmäisenä),
+/// kuvakaappaukset erikseen. Palauttaa polut.
+Future<List<String>> reportAttachments(List<(String, String)> files, Directory dir, {required bool zip}) async {
+  final paths = <String>[];
+  final archive = Archive();
+  for (final (name, path) in files) {
+    if (zip && !_isImage(name)) {
+      archive.addFile(ArchiveFile.bytes(name, await File(path).readAsBytes()));
+      continue;
+    }
+    final target = File(p.join(dir.path, name));
+    await File(path).copy(target.path);
+    paths.add(target.path);
+  }
+  if (zip && archive.isNotEmpty) {
+    final z = File(p.join(dir.path, 'gievra-liitteet-${isoDate(DateTime.now())}.zip'));
+    await z.writeAsBytes(ZipEncoder().encodeBytes(archive));
+    paths.insert(0, z.path);
+  }
+  return paths;
 }
 
 class _Attachment {
@@ -89,6 +119,10 @@ class _BugReportScreenState extends State<BugReportScreen> {
   }
 
   final _files = <_Attachment>[];
+
+  /// Useampi tiedosto yhtenä zip-liitteenä (kuvakaappaukset erikseen, jotta ne näkyvät viestissä).
+  bool _zip = true;
+  int get _zippable => _files.where((a) => a.on && !_isImage(a.name)).length;
   bool _busy = false;
   int _shown = 3; // näytettyjä treenejä (uusimmasta alkaen)
 
@@ -128,11 +162,17 @@ class _BugReportScreenState extends State<BugReportScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.type != null) _type = widget.type!;
+    if (widget.description != null) _desc.text = widget.description!;
+    for (final (name, path) in widget.attach) {
+      _files.add(_Attachment(name, path));
+    }
     _addDefaults();
   }
 
   Future<void> _addDefaults() async {
     for (final (name, path, on, warning) in await defaultReportAttachments()) {
+      if (_files.any((a) => a.name == name)) continue;
       _files.add(_Attachment(name, path, on: on, warning: warning));
     }
     if (mounted) setState(() {});
@@ -203,14 +243,14 @@ class _BugReportScreenState extends State<BugReportScreen> {
       final dir = Directory(p.join((await getTemporaryDirectory()).path, 'reports'));
       if (await dir.exists()) await dir.delete(recursive: true);
       await dir.create(recursive: true);
-      final paths = <String>[];
-      for (final a in _files.where((a) => a.on)) {
-        final target = File(p.join(dir.path, a.name));
-        await File(a.path).copy(target.path);
-        paths.add(target.path);
-      }
+      final paths = await reportAttachments(
+        [for (final a in _files.where((a) => a.on)) (a.name, a.path)],
+        dir,
+        zip: _zip && _zippable >= 2,
+      );
       // Viesti suomeksi kehittäjälle (tyyppi myös käyttäjän kielellä).
-      final subject = 'Gievra: ${type.$3}';
+      // Versio myös otsikkoon: näkyy postilaatikossa avaamatta viestiä.
+      final subject = 'Gievra ${(await PackageInfo.fromPlatform()).version}: ${type.$3}';
       final body = [
         'Ongelma: ${type.$3} [${type.$1}]',
         '',
@@ -328,6 +368,16 @@ class _BugReportScreenState extends State<BugReportScreen> {
                 icon: const Icon(Icons.expand_more, size: 18),
                 label: Text(t('Näytä vanhempia treenejä ({0} lisää)', [store.workouts.length - _shown])),
               ),
+            ),
+          if (_zippable >= 2)
+            CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              value: _zip,
+              onChanged: (v) => setState(() => _zip = v ?? false),
+              title: Text(t('Lähetä tiedostot yhtenä zip-liitteenä')),
+              subtitle: Text(t('{0} tiedostoa yhteen liitteeseen; kuvakaappaukset erikseen.', [_zippable]), style: sub),
+              secondary: const Icon(Icons.folder_zip_outlined, size: 20),
             ),
           Wrap(
             spacing: 8,

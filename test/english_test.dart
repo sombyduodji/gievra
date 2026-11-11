@@ -128,6 +128,13 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Rest timer'), findsOneWidget);
+    for (final g in ['General', 'Training', 'Body and devices', 'Storage']) {
+      expect(find.text(g), findsOneWidget);
+    }
+    // Englanniksi liikkeiden nimille ei ole valintaa, joten alaotsikko ei mainitse niitä.
+    expect(find.text('Name, language, theme'), findsOneWidget);
+    await tester.tap(find.text('General'));
+    await tester.pumpAndSettle();
     expect(find.text('English'), findsWidgets);
     // Testifontti (Ahem) on leveämpi kuin oikea fontti: raportoidaan, mutta oikea tarkistus tehdään emulaattorilla.
     if (overflows.isNotEmpty) debugPrint('Ylivuotoja testifontilla: ${overflows.length}');

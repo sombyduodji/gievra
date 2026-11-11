@@ -11,20 +11,23 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_info.dart';
 import '../app_state.dart';
+import '../auto_backup.dart';
 import '../rest.dart';
 import '../models.dart';
 import '../theme.dart';
 import 'bug_report.dart';
 import 'import_export.dart';
+import '../injuries.dart' show knownInjuries;
 import 'injury_screen.dart';
 import 'intro.dart';
 import 'program_screen.dart';
-import 'programs_screen.dart';
 import 'body_screen.dart';
 import 'widgets.dart';
 import '../l10n.dart';
@@ -46,12 +49,46 @@ Future<Directory> _rootDir() {
   return _root!;
 }
 
+/// Valikon kohta: suljetaan valikko ja avataan näkymä.
+void _go(BuildContext context, {required WidgetBuilder builder}) {
+  Navigator.pop(context);
+  Navigator.of(context).push(MaterialPageRoute(builder: builder));
+}
+
+/// Valikon ryhmän pieni otsikko.
+Widget _cap(BuildContext context, String text) => Padding(
+  padding: const EdgeInsets.fromLTRB(18, 10, 18, 2),
+  child: Text(
+    text,
+    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant),
+  ),
+);
+
+/// Alarivin teksti ja "Käytössä"-merkki rinnakkain.
+Widget _withBadge(Widget text) =>
+    Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [text, const ActiveBadge()]);
+
+/// Pieni "Käytössä"-merkki valikossa (vammatila, tauko).
+class ActiveBadge extends StatelessWidget {
+  const ActiveBadge({super.key});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(color: Sami.yellow.withValues(alpha: .2), borderRadius: BorderRadius.circular(10)),
+    child: Text(
+      t('Käytössä'),
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: yellowText(context)),
+    ),
+  );
+}
+
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     return Drawer(
       child: SafeArea(
         child: ListenableBuilder(
@@ -85,120 +122,83 @@ class AppDrawer extends StatelessWidget {
               ),
               const Padding(padding: EdgeInsets.symmetric(horizontal: 18), child: SamiBand(height: 4, pattern: false)),
               const SizedBox(height: 8),
-              ExpansionTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: Text(t('Asetukset')),
-                shape: const Border(),
-                children: const [_SettingsSection()],
-              ),
+              _cap(context, t('Treeni ja terveys')),
               ListTile(
                 leading: const Icon(Icons.event_note),
                 title: Text(t('Ohjelma ja tavoitteet')),
-                subtitle: Text(
-                  settings.program?.displayTitle ?? t('Treenaat vapaasti'),
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProgramScreen()));
-                },
+                subtitle: Text(settings.program?.displayTitle ?? t('Treenaat vapaasti'), style: sub),
+                onTap: () => _go(context, builder: (_) => const ProgramScreen()),
               ),
               ListTile(
                 leading: const Icon(Icons.insights),
                 title: Text(t('Edistyminen ja tilastot')),
-                subtitle: Text(t('Viikko- ja kuukausikoosteet, fiilis, voimakehitys')),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StatsScreen()));
-                },
+                subtitle: Text(t('Viikko- ja kuukausikoosteet, fiilis, voimakehitys'), style: sub),
+                onTap: () => _go(context, builder: (_) => const StatsScreen()),
               ),
-              const Divider(indent: 18, endIndent: 18),
               ListTile(
                 leading: const Icon(Icons.healing),
                 title: Text(t('Vammatila')),
-                subtitle: settings.injuries.isEmpty
-                    ? null
-                    : Text(
-                        t('{0} aluetta valittuna', [settings.injuries.length]),
-                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                // Kuvaus myös pois päältä, jotta vammatila löytyy; "Käytössä" alarivillä, ettei otsikko rivity.
+                subtitle: knownInjuries(settings.injuries).isEmpty
+                    ? Text(t('Kipu tai vamma: vältettävät liikkeet ja korvaavat'), style: sub)
+                    : _withBadge(
+                        Text(t('{0} aluetta valittuna', [knownInjuries(settings.injuries).length]), style: sub),
                       ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (_) => InjuryScreen(initial: settings.injuries)));
-                },
+                onTap: () => _go(context, builder: (_) => InjuryScreen(initial: settings.injuries)),
               ),
               ListTile(
                 leading: Icon(settings.activePause == null ? Icons.bedtime_outlined : Icons.play_circle_outline),
                 title: Text(settings.activePause == null ? t('Tauko: sairas tai loma') : t('Lopeta tauko')),
                 subtitle: settings.activePause == null
                     ? null
-                    : Text(
-                        settings.activePause!.sick ? t('Sairauslomalla') : t('Lomalla'),
-                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                      ),
+                    : _withBadge(Text(settings.activePause!.sick ? t('Sairauslomalla') : t('Lomalla'), style: sub)),
                 onTap: () {
                   Navigator.pop(context);
                   settings.activePause == null ? showPauseDialog(context) : settings.endPause();
                 },
               ),
-              // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
-              if (!isDemo && syncReleased)
-                ListenableBuilder(
-                  listenable: sync,
-                  builder: (context, _) => ListTile(
-                    leading: const Icon(Icons.cloud_sync_outlined),
-                    title: Text(t('Synkronointi')),
-                    subtitle: Text(
-                      sync.enabled ? 'Google Drive · ${sync.status ?? ''}' : t('Pois päältä (valinnainen)'),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SyncScreen()));
-                    },
+              // Kartat, synkronointi ja tiedostot (ei selainversiossa).
+              if (!isDemo) ...[
+                const Divider(indent: 18, endIndent: 18),
+                _cap(context, t('Tiedot ja laitteet')),
+                if (Platform.isAndroid)
+                  ListTile(
+                    leading: const Icon(Icons.map_outlined),
+                    title: Text(t('Kartat')),
+                    subtitle: Text(t('Offline-kartat GPS-reiteille: lataa alue tai kunnat'), style: sub),
+                    onTap: () => _go(context, builder: (_) => const MapsScreen()),
                   ),
-                ),
-              if (!isDemo)
+                // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
+                if (syncReleased)
+                  ListenableBuilder(
+                    listenable: sync,
+                    builder: (context, _) => ListTile(
+                      leading: const Icon(Icons.cloud_sync_outlined),
+                      title: Text(t('Synkronointi')),
+                      subtitle: Text(
+                        sync.enabled ? 'Google Drive · ${sync.status ?? ''}' : t('Pois päältä (valinnainen)'),
+                        style: sub,
+                      ),
+                      onTap: () => _go(context, builder: (_) => const SyncScreen()),
+                    ),
+                  ),
+                // Ohjelmapohjan (.gmd) tuonti: Tuo tiedosto, sekä Ohjelma ja tavoitteet.
                 ListTile(
                   leading: const Icon(Icons.import_export),
                   title: Text(t('Tuonti, vienti ja varmuuskopio')),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ImportExportScreen()));
-                  },
+                  onTap: () => _go(context, builder: (_) => const ImportExportScreen()),
                 ),
-              // Ohjelmapohjan (.gmd) tuonti: Tuonti, vienti ja varmuuskopio → Tuo tiedosto, sekä Ohjelma ja tavoitteet.
+              ],
               const Divider(indent: 18, endIndent: 18),
               ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: Text(t('Asetukset')),
+                onTap: () => _go(context, builder: (_) => const SettingsScreen()),
+              ),
+              ListTile(
                 leading: const Icon(Icons.info_outline),
-                title: Text(t('Tietoa')),
-                onTap: () => showAbout(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.mail_outline),
-                title: Text(t('Lähetä palautetta')),
-                onTap: () => showFeedback(context),
-              ),
-              if (!isDemo)
-                ListTile(
-                  leading: const Icon(Icons.bug_report_outlined),
-                  title: Text(t('Ilmoita ongelmasta')),
-                  subtitle: Text(t('Tallennus, tuonti, vienti… liitteineen')),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen()));
-                  },
-                ),
-              ListTile(
-                leading: const Icon(Icons.favorite_outline, color: Sami.red),
-                title: Text(t('Osallistu ja tue')),
-                onTap: () => showSupport(context),
-              ),
-              ListTile(
-                leading: const Text('☕', style: TextStyle(fontSize: 20)),
-                title: Text(t('Tarjoa kahvit')),
-                subtitle: Text(t('Vapaaehtoinen tuki kehitykselle')),
-                onTap: () => _open(AppInfo.coffee),
+                title: Text(t('Tietoa, palaute ja tuki')),
+                onTap: () => _go(context, builder: (_) => const AboutScreen()),
               ),
               FutureBuilder(
                 future: _packageInfo,
@@ -218,22 +218,321 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection();
+enum SettingsGroup { general, training, rest, body, storage }
 
-  Future<void> _editName(BuildContext context) async {
-    final c = TextEditingController(text: settings.name);
-    final v = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('Miksi sinua kutsutaan?')),
-        content: TextField(controller: c, autofocus: true, onSubmitted: (v) => Navigator.pop(ctx, v)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: Text(t('Tallenna'))),
+/// Asetukset omana näkymänään: ryhmät, joista kukin avaa oman sivun.
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  static String title(SettingsGroup g) => switch (g) {
+    SettingsGroup.general => t('Yleiset'),
+    SettingsGroup.training => t('Harjoittelu'),
+    SettingsGroup.rest => t('Palautusajastin'),
+    SettingsGroup.body => t('Keho ja laitteet'),
+    SettingsGroup.storage => t('Tallennus'),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final sub = TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant);
+    final groups = [
+      (
+        SettingsGroup.general,
+        Icons.person_outline,
+        // Englanniksi liikkeiden nimet ovat aina englanniksi, eikä valintaa näytetä.
+        isEnglish ? t('Nimi, kieli, teema') : t('Nimi, kieli, teema, liikkeiden nimet'),
+      ),
+      (SettingsGroup.training, Icons.fitness_center, t('Mitä treenaat, painon lisäys, lämmittely, vinkit ja kevennys')),
+      (SettingsGroup.rest, Icons.timer_outlined, t('Ääni, palautusajat ja ilmoitus')),
+      (SettingsGroup.body, Icons.monitor_heart_outlined, t('Kehonpaino, sykemittari, Health Connect')),
+      // Selainversiossa ei omaa treenikansiota.
+      if (!isDemo) (SettingsGroup.storage, Icons.folder_outlined, t('Treenikansio (.md)')),
+    ];
+    return Scaffold(
+      appBar: AppBar(title: Text(t('Asetukset'))),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          for (final (g, icon, text) in groups)
+            ListTile(
+              leading: Icon(icon),
+              title: Text(title(g)),
+              subtitle: Text(text, style: sub),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: Text(title(g))),
+                    body: ListView(padding: const EdgeInsets.only(top: 8, bottom: 24), children: [_SettingsSection(g)]),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+}
+
+/// Tietoa, palaute ja tuki yhdessä näkymässä (ennen viisi valikon kohtaa).
+class AboutScreen extends StatelessWidget {
+  const AboutScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    void push({required WidgetBuilder builder}) => Navigator.of(context).push(MaterialPageRoute(builder: builder));
+    return Scaffold(
+      appBar: AppBar(title: Text(t('Tietoa, palaute ja tuki'))),
+      body: FutureBuilder(
+        future: _packageInfo,
+        builder: (context, snap) {
+          final version = snap.data?.version ?? '';
+          return ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                child: Row(
+                  children: [
+                    const AppLogo(size: 56),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(AppInfo.fullName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                          Text(
+                            t('Tekijä: {0}', [AppInfo.author]),
+                            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                          ),
+                          if (version.isNotEmpty) Text(t('Versio {0}', [version]), style: sub),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(t('Tietoa')),
+                onTap: () => showAbout(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.code),
+                title: Text(t('Avoin lähdekoodi ja lisenssit')),
+                onTap: () => push(builder: (_) => LicensesScreen(version: version)),
+              ),
+              const Divider(indent: 18, endIndent: 18),
+              ListTile(
+                leading: const Icon(Icons.mail_outline),
+                title: Text(t('Lähetä palautetta')),
+                onTap: () => showFeedback(context),
+              ),
+              if (!isDemo)
+                ListTile(
+                  leading: const Icon(Icons.bug_report_outlined),
+                  title: Text(t('Ilmoita ongelmasta')),
+                  subtitle: Text(t('Tallennus, tuonti, vienti… liitteineen'), style: sub),
+                  onTap: () => push(builder: (_) => const BugReportScreen()),
+                ),
+              const Divider(indent: 18, endIndent: 18),
+              ListTile(
+                leading: const Icon(Icons.favorite_outline, color: Sami.red),
+                title: Text(t('Osallistu ja tue')),
+                onTap: () => showSupport(context),
+              ),
+              ListTile(
+                leading: const Text('☕', style: TextStyle(fontSize: 20)),
+                title: Text(t('Tarjoa kahvit')),
+                subtitle: Text(t('Vapaaehtoinen tuki kehitykselle'), style: sub),
+                onTap: () => _open(AppInfo.coffee),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Nimen muokkaus. Oma tila, jotta tekstikenttä vapautetaan vasta, kun dialogi on kokonaan suljettu
+/// (sulkuanimaatio käyttää kenttää vielä muutaman ruudun ajan).
+class _NameDialog extends StatefulWidget {
+  const _NameDialog();
+
+  @override
+  State<_NameDialog> createState() => _NameDialogState();
+}
+
+class _NameDialogState extends State<_NameDialog> {
+  late final _c = TextEditingController(text: settings.name);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(t('Miksi sinua kutsutaan?')),
+    content: TextField(controller: _c, autofocus: true, onSubmitted: (v) => Navigator.pop(context, v)),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Peruuta'))),
+      FilledButton(onPressed: () => Navigator.pop(context, _c.text), child: Text(t('Tallenna'))),
+    ],
+  );
+}
+
+/// Automaattiset varmuuskopiot (backup/): päiväys, versio ja koko; tallenna (esim. Lataukset) tai jaa.
+class _AutoBackups extends StatefulWidget {
+  @override
+  State<_AutoBackups> createState() => _AutoBackupsState();
+}
+
+class _AutoBackupsState extends State<_AutoBackups> {
+  List<(File, int)> _files = [];
+
+  @override
+  void initState() {
+    super.initState();
+    autoBackup.addListener(_load);
+    settings.addListener(_load); // kansion vaihto
+    _load();
+  }
+
+  @override
+  void dispose() {
+    autoBackup.removeListener(_load);
+    settings.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final out = <(File, int)>[];
+    try {
+      for (final f in await autoBackup.list()) {
+        out.add((f, await f.length()));
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _files = out);
+  }
+
+  Future<void> _save(File f) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final uri = await FilePicker.saveFile(
+        fileName: p.basename(f.path),
+        bytes: await f.readAsBytes(),
+        mimeType: 'application/zip',
+        dialogTitle: t('Tallenna varmuuskopio'),
+      );
+      if (uri != null) messenger.showSnackBar(SnackBar(content: Text(t('Varmuuskopio tallennettu.'))));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(t('Virhe: {0}', [errorText(e)]))));
+    }
+  }
+
+  String _title(File f) {
+    final parsed = AutoBackup.parseName(p.basename(f.path));
+    if (parsed == null) return p.basename(f.path);
+    final at = parsed.$1;
+    return t('{0} klo {1}', [
+      numDate(at, year: true),
+      '${at.hour}${isEnglish ? ':' : '.'}${at.minute.toString().padLeft(2, '0')}',
+    ]);
+  }
+
+  Future<void> _delete(File f) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Poistetaanko "{0}"?', [_title(f)])),
+        content: Text(t('Poistettua varmuuskopiota ei voi palauttaa.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Poista'))),
+        ],
+      ),
+    );
+    if (ok == true) await autoBackup.delete(f);
+  }
+
+  Future<void> _share(File f) async {
+    // Jaetaan väliaikaisen kopion kautta (kuten treenin .md-tiedosto).
+    final tmp = File(p.join((await getTemporaryDirectory()).path, p.basename(f.path)));
+    await f.copy(tmp.path);
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(tmp.path, mimeType: 'application/zip')],
+        subject: p.basename(f.path),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sub = TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            t('Automaattiset varmuuskopiot'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: Text(
+            t(
+              'Tehdään, kun uusi versio käynnistyy ensimmäisen kerran, ennen kuin se muuttaa mitään. Enintään 3; oma '
+              'varmuuskopio korvaa ne. Ne ovat treenikansiossa, joten ne poistuvat, jos oletuskansiota käyttävä '
+              'sovellus poistetaan: tallenna tärkeä kopio talteen.',
+            ),
+            style: sub,
+          ),
+        ),
+        if (_files.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(t('Ei vielä automaattisia varmuuskopioita.'), style: sub),
+          ),
+        for (final (f, size) in _files)
+          ListTile(
+            leading: const Icon(Icons.folder_zip_outlined),
+            // Päivä ja kellonaika otsikkona, versio ja koko alarivillä (koko koontinimi rivittyi kolmelle riville).
+            title: Text(_title(f)),
+            subtitle: Text(() {
+              final mb = fmtNum((size / 1e5).round() / 10);
+              final parsed = AutoBackup.parseName(p.basename(f.path));
+              return parsed == null
+                  ? t('{0} Mt', [mb])
+                  : t('ennen {0} · {1} Mt', [AutoBackup.shortVersion(parsed.$2), mb]);
+            }(), style: sub),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(tooltip: t('Tallenna'), icon: const Icon(Icons.save_alt), onPressed: () => _save(f)),
+                IconButton(tooltip: t('Jaa'), icon: const Icon(Icons.share_outlined), onPressed: () => _share(f)),
+                IconButton(tooltip: t('Poista'), icon: const Icon(Icons.delete_outline), onPressed: () => _delete(f)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  final SettingsGroup group;
+  const _SettingsSection(this.group);
+
+  Future<void> _editName(BuildContext context) async {
+    final v = await showDialog<String>(context: context, builder: (_) => const _NameDialog());
     if (v != null && v.trim().isNotEmpty) settings.setName(v);
   }
 
@@ -298,318 +597,330 @@ class _SettingsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            title: Text(t('Nimesi')),
-            subtitle: Text(settings.name ?? '', style: sub),
-            trailing: const Icon(Icons.edit, size: 18),
-            onTap: () => _editName(context),
-          ),
-          ListTile(
-            title: Text(t('Ohjelmat')),
-            subtitle: Text(t('Tallennetut ohjelmat: vaihda, nimeä, vie, tuo, poista'), style: sub),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProgramsScreen())),
-          ),
-          const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text('Kieli · Giella')),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: LanguagePicker()),
-          const SizedBox(height: 8),
-          Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Teema'))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SegmentedButton<ThemeMode>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Auto'), maxLines: 1)),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Tumma'), maxLines: 1)),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Vaalea'), maxLines: 1)),
-                ),
-              ],
-              selected: {settings.themeMode},
-              onSelectionChanged: (s) => settings.setTheme(s.first),
+          if (group == SettingsGroup.general) ...[
+            ListTile(
+              title: Text(t('Nimesi')),
+              subtitle: Text(settings.name ?? '', style: sub),
+              trailing: const Icon(Icons.edit, size: 18),
+              onTap: () => _editName(context),
             ),
-          ),
-          Padding(padding: EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Painon lisäys (kg)'))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SegmentedButton<double>(
-              showSelectedIcon: false,
-              segments: [
-                const ButtonSegment(value: 1, label: Text('1')),
-                ButtonSegment(value: 1.25, label: Text(fmtNum(1.25))),
-                ButtonSegment(value: 2.5, label: Text(fmtNum(2.5))),
-                const ButtonSegment(value: 5, label: Text('5')),
-              ],
-              selected: {settings.weightStep},
-              onSelectionChanged: (s) => settings.setWeightStep(s.first),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Saamenkielisessä käyttöliittymässä vammatilan ohjeet suomeksi tai englanniksi (ei käännetty saameksi).
-          if (isSami) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-              child: Text(t('Vammatilan ohjeet ja liikevinkit')),
-            ),
+            const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text('Kieli · Giella')),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: LanguagePicker()),
+            const SizedBox(height: 8),
+            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Teema'))),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(value: 'fi', label: Text(t('Suomi'))),
-                  const ButtonSegment(value: 'en', label: Text('English')),
-                ],
-                selected: {settings.healthLang},
-                onSelectionChanged: (s) => settings.setHealthLang(s.first),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Text(
-                t(
-                  'Vammatilan ohjeita ja liikevinkkejä ei ole käännetty saameksi: valitse, näytetäänkö ne suomeksi vai englanniksi.',
-                ),
-                style: sub,
-              ),
-            ),
-          ],
-          // Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi: valintaa ei tarvita.
-          if (!isEnglish) ...[
-            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Liikkeiden nimet'))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<String>(
+              child: SegmentedButton<ThemeMode>(
                 showSelectedIcon: false,
                 segments: [
                   ButtonSegment(
-                    value: 'fi',
-                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Suomi'), maxLines: 1)),
-                  ),
-                  const ButtonSegment(
-                    value: 'en',
-                    label: FittedBox(fit: BoxFit.scaleDown, child: Text('English', maxLines: 1)),
+                    value: ThemeMode.system,
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Auto'), maxLines: 1)),
                   ),
                   ButtonSegment(
-                    value: 'both',
-                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Molemmat'), maxLines: 1)),
+                    value: ThemeMode.dark,
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Tumma'), maxLines: 1)),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Vaalea'), maxLines: 1)),
                   ),
                 ],
-                selected: {settings.moveNames},
-                onSelectionChanged: (s) => settings.setMoveNames(s.first),
+                selected: {settings.themeMode},
+                onSelectionChanged: (s) => settings.setTheme(s.first),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Text(
-                t(
-                  'Liikkeiden ja lajien nimet. Haku löytää ne aina molemmilla kielillä, ja tiedostoihin nimet tallentuvat suomeksi.',
+            // Saamenkielisessä käyttöliittymässä vammatilan ohjeet suomeksi tai englanniksi (ei käännetty saameksi).
+            if (isSami) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                child: Text(t('Vammatilan ohjeet ja liikevinkit')),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(value: 'fi', label: Text(t('Suomi'))),
+                    const ButtonSegment(value: 'en', label: Text('English')),
+                  ],
+                  selected: {settings.healthLang},
+                  onSelectionChanged: (s) => settings.setHealthLang(s.first),
                 ),
-                style: sub,
               ),
-            ),
-          ],
-          Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TrainModePicker(value: settings.trainMode, icons: false, onChanged: (v) => _changeMode(context, v)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-            child: Text(
-              t(
-                'Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja muut lajit. Molemmat: '
-                'etusivulla valinta Sali / Kestävyys.',
-              ),
-              style: sub,
-            ),
-          ),
-          SwitchListTile(
-            title: Text(t('Kehonpainon seuranta')),
-            subtitle: Text(
-              t('Tämän päivän paino etusivulla, painon kehitys ja painoindeksi tilastoissa. Punnitse milloin haluat.'),
-              style: sub,
-            ),
-            value: settings.bodyTracker,
-            onChanged: settings.setBodyTracker,
-          ),
-          if (settings.bodyTracker)
-            ListTile(
-              leading: const Icon(Icons.monitor_weight_outlined),
-              title: Text(t('Paino ja pituus')),
-              subtitle: Text(
-                settings.body.isEmpty
-                    ? t('Lisää punnitus ja pituus')
-                    : [
-                        if (settings.body.sorted.lastOrNull case final last?) '${fmtNum(last.$2)} kg',
-                        if (settings.body.heightCm != null) '${settings.body.heightCm} cm',
-                      ].join(' · '),
-                style: sub,
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BodyScreen())),
-            ),
-          SwitchListTile(
-            title: Text(t('Palautusajastin')),
-            subtitle: Text(
-              t(
-                'Sarjan tallennus käynnistää palautuksen: raskaissa ja lähellä maksimia pidempi, kevennysviikolla lyhyempi. Ohjelman liikkeillä ohjelman tauko.',
-              ),
-              style: sub,
-            ),
-            value: settings.restTimer,
-            onChanged: (v) async {
-              settings.setRestTimer(v);
-              // Ilmoitus näkyy ja soi myös näytön ollessa pois päältä tai toisessa sovelluksessa.
-              if (v && RestTimer.native) {
-                RestTimer.notificationsOk = (await Permission.notification.request()).isGranted;
-              }
-            },
-          ),
-          if (settings.restTimer && !isDemo) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-              child: Text(t('Ilmoitusääni'), style: sub),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SegmentedButton<String>(
-                      showSelectedIcon: false,
-                      segments: [
-                        for (final (v, l) in [
-                          ('pling', 'Pling'),
-                          ('boop', 'Boop'),
-                          ('chime', t('Kello')),
-                          ('none', t('Värinä')),
-                        ])
-                          ButtonSegment(
-                            value: v,
-                            label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
-                          ),
-                      ],
-                      selected: {settings.restSound},
-                      onSelectionChanged: (s) {
-                        settings.setRestSound(s.first);
-                        RestTimer.preview();
-                      },
-                    ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  t(
+                    'Vammatilan ohjeita ja liikevinkkejä ei ole käännetty saameksi: valitse, näytetäänkö ne suomeksi vai englanniksi.',
                   ),
-                  IconButton(
-                    tooltip: t('Kuuntele'),
-                    onPressed: RestTimer.preview,
-                    icon: const Icon(Icons.volume_up_outlined),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            const _RestTimes(),
-          ],
-          if (!isDemo && Platform.isAndroid)
-            SwitchListTile(
-              title: Text(t('Ilmoitus käynnissä olevasta treenistä')),
-              subtitle: Text(
-                t('Pudotusvalikossa näkyy esim. "Salitreeni käynnissä" ja kulunut aika, kunnes treeni on valmis.'),
-                style: sub,
-              ),
-              value: settings.ongoingNote,
-              onChanged: settings.setOngoingNote,
-            ),
-          SwitchListTile(
-            title: Text(t('Sykemittari ja älykello')),
-            subtitle: Text(
-              t('Kirjaa kellosta kesto, kalorit sekä keski- ja maksimisyke treeneihin ja liikuntaan.'),
-              style: sub,
-            ),
-            value: settings.watch,
-            onChanged: settings.setWatch,
-          ),
-          // Tehdyn liikunnan lisäys Health Connectista etusivun painikkeesta (Android, kestävyyslajit; oletus pois).
-          if (!isDemo && Platform.isAndroid && settings.sports)
-            SwitchListTile(
-              title: Text(t('Lisää tehty liikunta Health Connectista')),
-              subtitle: Text(
-                t(
-                  'Etusivulle painike, josta kellon tai muun sovelluksen Health Connectiin tallentama liikunta '
-                  'lisätään Gievraan: laji, aika, matka, syke, kalorit ja askeleet.',
-                ),
-                style: sub,
-              ),
-              value: settings.hcImport,
-              onChanged: settings.setHcImport,
-            ),
-          // Offline-kartat GPS-reiteille (vain Androidissa).
-          if (!isDemo && Platform.isAndroid)
-            ListTile(
-              title: Text(t('Kartat')),
-              subtitle: Text(t('Offline-kartat GPS-reiteille: lataa alue tai kunnat'), style: sub),
-              trailing: const Icon(Icons.map_outlined),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MapsScreen())),
-            ),
-          SwitchListTile(
-            title: Text(t('Vinkit ja edistyminen')),
-            subtitle: Text(t('Edistyminen etusivulla ja kevennysviikon ehdotukset.'), style: sub),
-            value: settings.tips,
-            onChanged: settings.setTips,
-          ),
-          if (settings.tips) ...[
-            Padding(padding: EdgeInsets.fromLTRB(16, 4, 16, 6), child: Text(t('Ehdota kevennystä (viikon välein)'))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<int>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 4, label: Text('4')),
-                  ButtonSegment(value: 5, label: Text('5')),
-                  ButtonSegment(value: 6, label: Text('6')),
-                  ButtonSegment(value: 8, label: Text('8')),
-                ],
-                selected: {settings.deloadEvery},
-                onSelectionChanged: (s) => settings.setDeloadEvery(s.first),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (!isDemo)
-            FutureBuilder(
-              future: _rootDir(),
-              builder: (context, snap) => ListTile(
-                title: Text(t('Treenikansio (.md)')),
-                subtitle: Text(
-                  '${snap.data?.path ?? ''}\n${t('Valitse esim. Nextcloud-, Seafile-, ownCloud- tai Drive-synkattu kansio.')}',
                   style: sub,
                 ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.folder_open),
-                onTap: () => _pickFolder(context),
+              ),
+            ],
+            // Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi: valintaa ei tarvita.
+            if (!isEnglish) ...[
+              Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Liikkeiden nimet'))),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                      value: 'fi',
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Suomi'), maxLines: 1)),
+                    ),
+                    const ButtonSegment(
+                      value: 'en',
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text('English', maxLines: 1)),
+                    ),
+                    ButtonSegment(
+                      value: 'both',
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Molemmat'), maxLines: 1)),
+                    ),
+                  ],
+                  selected: {settings.moveNames},
+                  onSelectionChanged: (s) => settings.setMoveNames(s.first),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  t(
+                    'Liikkeiden ja lajien nimet. Haku löytää ne aina molemmilla kielillä, ja tiedostoihin nimet tallentuvat suomeksi.',
+                  ),
+                  style: sub,
+                ),
+              ),
+            ],
+          ],
+          if (group == SettingsGroup.training) ...[
+            Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TrainModePicker(
+                value: settings.trainMode,
+                icons: false,
+                onChanged: (v) => _changeMode(context, v),
               ),
             ),
-          if (settings.folder != null && !isDemo)
             Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: TextButton(onPressed: () => changeFolder(context, null), child: Text(t('Palauta oletuskansio'))),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: Text(
+                t(
+                  'Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja muut lajit. Molemmat: '
+                  'etusivulla valinta Sali / Kestävyys.',
+                ),
+                style: sub,
+              ),
             ),
-          ListTile(
-            title: Text(t('Lämmittelylaitteet')),
-            subtitle: Text(settings.equipment.map((e) => t(e.name)).join(', '), style: sub),
-            trailing: TextButton(
-              onPressed: () => settings.setEquipment([...Settings.defaultEquipment]),
-              child: Text(t('Palauta')),
+            Padding(padding: EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Painon lisäys (kg)'))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<double>(
+                showSelectedIcon: false,
+                segments: [
+                  const ButtonSegment(value: 1, label: Text('1')),
+                  ButtonSegment(value: 1.25, label: Text(fmtNum(1.25))),
+                  ButtonSegment(value: 2.5, label: Text(fmtNum(2.5))),
+                  const ButtonSegment(value: 5, label: Text('5')),
+                ],
+                selected: {settings.weightStep},
+                onSelectionChanged: (s) => settings.setWeightStep(s.first),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: Text(t('Laitteita voi lisätä ja poistaa uuden treenin Muokkaa-napista.'), style: sub),
-          ),
+            const SizedBox(height: 8),
+            ListTile(
+              title: Text(t('Lämmittelylaitteet')),
+              subtitle: Text(settings.equipment.map((e) => t(e.name)).join(', '), style: sub),
+              trailing: TextButton(
+                onPressed: () => settings.setEquipment([...Settings.defaultEquipment]),
+                child: Text(t('Palauta')),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Text(t('Laitteita voi lisätä ja poistaa uuden treenin Muokkaa-napista.'), style: sub),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              title: Text(t('Vinkit ja edistyminen')),
+              subtitle: Text(t('Edistyminen etusivulla ja kevennysviikon ehdotukset.'), style: sub),
+              value: settings.tips,
+              onChanged: settings.setTips,
+            ),
+            if (settings.tips) ...[
+              Padding(padding: EdgeInsets.fromLTRB(16, 4, 16, 6), child: Text(t('Ehdota kevennystä (viikon välein)'))),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<int>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(value: 4, label: Text('4')),
+                    ButtonSegment(value: 5, label: Text('5')),
+                    ButtonSegment(value: 6, label: Text('6')),
+                    ButtonSegment(value: 8, label: Text('8')),
+                  ],
+                  selected: {settings.deloadEvery},
+                  onSelectionChanged: (s) => settings.setDeloadEvery(s.first),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+          if (group == SettingsGroup.rest) ...[
+            SwitchListTile(
+              title: Text(t('Palautusajastin')),
+              subtitle: Text(
+                t(
+                  'Sarjan tallennus käynnistää palautuksen: raskaissa ja lähellä maksimia pidempi, kevennysviikolla lyhyempi. Ohjelman liikkeillä ohjelman tauko.',
+                ),
+                style: sub,
+              ),
+              value: settings.restTimer,
+              onChanged: (v) async {
+                settings.setRestTimer(v);
+                // Ilmoitus näkyy ja soi myös näytön ollessa pois päältä tai toisessa sovelluksessa.
+                if (v && RestTimer.native) {
+                  RestTimer.notificationsOk = (await Permission.notification.request()).isGranted;
+                }
+              },
+            ),
+            if (settings.restTimer && !isDemo) ...[
+              // Kuuntele-painike otsikkoriville: neljä ääntä saa koko leveyden (saameksi "Doarggistus"
+              // kutistui kapealla puhelimella lukukelvottomaksi).
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 4, 0),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(t('Ilmoitusääni'), style: sub)),
+                    IconButton(
+                      tooltip: t('Kuuntele'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: RestTimer.preview,
+                      icon: const Icon(Icons.volume_up_outlined),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  expandedInsets: EdgeInsets.zero,
+                  style: const ButtonStyle(
+                    padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4)),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  segments: [
+                    for (final (v, l) in [
+                      ('pling', 'Pling'),
+                      ('boop', 'Boop'),
+                      ('chime', t('Kello')),
+                      ('none', t('Värinä')),
+                    ])
+                      ButtonSegment(
+                        value: v,
+                        label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+                      ),
+                  ],
+                  selected: {settings.restSound},
+                  onSelectionChanged: (s) {
+                    settings.setRestSound(s.first);
+                    RestTimer.preview();
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              const _RestTimes(),
+            ],
+            if (!isDemo && Platform.isAndroid)
+              SwitchListTile(
+                title: Text(t('Ilmoitus käynnissä olevasta treenistä')),
+                subtitle: Text(
+                  t('Pudotusvalikossa näkyy esim. "Salitreeni käynnissä" ja kulunut aika, kunnes treeni on valmis.'),
+                  style: sub,
+                ),
+                value: settings.ongoingNote,
+                onChanged: settings.setOngoingNote,
+              ),
+          ],
+          if (group == SettingsGroup.body) ...[
+            SwitchListTile(
+              title: Text(t('Kehonpainon seuranta')),
+              subtitle: Text(
+                t(
+                  'Tämän päivän paino etusivulla, painon kehitys ja painoindeksi tilastoissa. Punnitse milloin haluat.',
+                ),
+                style: sub,
+              ),
+              value: settings.bodyTracker,
+              onChanged: settings.setBodyTracker,
+            ),
+            if (settings.bodyTracker)
+              ListTile(
+                leading: const Icon(Icons.monitor_weight_outlined),
+                title: Text(t('Paino ja pituus')),
+                subtitle: Text(
+                  settings.body.isEmpty
+                      ? t('Lisää punnitus ja pituus')
+                      : [
+                          if (settings.body.sorted.lastOrNull case final last?) '${fmtNum(last.$2)} kg',
+                          if (settings.body.heightCm != null) '${settings.body.heightCm} cm',
+                        ].join(' · '),
+                  style: sub,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BodyScreen())),
+              ),
+            SwitchListTile(
+              title: Text(t('Sykemittari ja älykello')),
+              subtitle: Text(
+                t('Kirjaa kellosta kesto, kalorit sekä keski- ja maksimisyke treeneihin ja liikuntaan.'),
+                style: sub,
+              ),
+              value: settings.watch,
+              onChanged: settings.setWatch,
+            ),
+            // Tehdyn liikunnan lisäys Health Connectista etusivun painikkeesta (Android, kestävyyslajit; oletus pois).
+            if (!isDemo && Platform.isAndroid && settings.sports)
+              SwitchListTile(
+                title: Text(t('Lisää tehty liikunta Health Connectista')),
+                subtitle: Text(
+                  t(
+                    'Etusivulle painike, josta kellon tai muun sovelluksen Health Connectiin tallentama liikunta '
+                    'lisätään Gievraan: laji, aika, matka, syke, kalorit ja askeleet.',
+                  ),
+                  style: sub,
+                ),
+                value: settings.hcImport,
+                onChanged: settings.setHcImport,
+              ),
+          ],
+          if (group == SettingsGroup.storage) ...[
+            if (!isDemo)
+              FutureBuilder(
+                future: _rootDir(),
+                builder: (context, snap) => ListTile(
+                  title: Text(t('Treenikansio (.md)')),
+                  subtitle: Text(
+                    '${snap.data?.path ?? ''}\n${t('Valitse esim. Nextcloud-, Seafile-, ownCloud- tai Drive-synkattu kansio.')}',
+                    style: sub,
+                  ),
+                  isThreeLine: true,
+                  trailing: const Icon(Icons.folder_open),
+                  onTap: () => _pickFolder(context),
+                ),
+              ),
+            if (settings.folder != null && !isDemo)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: TextButton(onPressed: () => changeFolder(context, null), child: Text(t('Palauta oletuskansio'))),
+              ),
+            // Sovelluksen omat kopiot: oletuskansio (Android/data) ei näy puhelimen tiedostonhallinnassa, joten
+            // tallennus ja jakaminen tästä.
+            if (!isDemo) _AutoBackups(),
+          ],
         ],
       ),
     );

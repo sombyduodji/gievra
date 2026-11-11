@@ -25,28 +25,133 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  String _span = 'week'; // week, month, quarter (3 kk), half (6 kk), year (12 kk)
-  int _offset = 0; // 0 = tämä jakso, 1 = edellinen …
+  String _span = 'month'; // month (1 kk), quarter (3 kk), half (6 kk), custom (oma aikaväli)
+  int _offset = 0; // 0 = tämä jakso, 1 = edellinen … (ei omalla aikavälillä)
+  DateTime? _from, _to; // oma aikaväli, molemmat päivät mukaan
   late String _kind = widget.kind ?? (settings.trainMode == 'cardio' ? 'cardio' : 'all');
 
-  /// Kuukausien määrä jaksossa (6 kk / vuosi); viikolla ja kuukaudella 0 / 1.
+  /// Kuukausien määrä jaksossa; omalla aikavälillä 0.
   int get _months => switch (_span) {
     'quarter' => 3,
     'half' => 6,
-    'year' => 12,
     'month' => 1,
     _ => 0,
   };
 
-  /// Jakso [back] jakson päähän: viikko, kalenterikuukausi tai tämän kuun kanssa päättyvät 6 / 12 kuukautta.
+  bool get _custom => _span == 'custom' && _from != null && _to != null;
+
+  static int _days(DateTime a, DateTime b) =>
+      DateTime.utc(b.year, b.month, b.day).difference(DateTime.utc(a.year, a.month, a.day)).inDays;
+
+  /// Jakso [back] jakson päähän: kalenterikuukausi tai tämän kuun kanssa päättyvät 3 / 6 kuukautta. Oma aikaväli:
+  /// [back] 1 = yhtä pitkä jakso juuri ennen (vertailu). Loppu on aina seuraava päivä (puoliavoin väli).
   (DateTime, DateTime) _period(int back) {
     final today = dateOnly(DateTime.now());
-    if (_months == 0) {
-      final w = addDays(weekStart(today), -7 * back);
-      return (w, addDays(w, 7));
+    if (_custom) {
+      final len = _days(_from!, _to!) + 1;
+      return (addDays(_from!, -len * back), addDays(_to!, 1 - len * back));
     }
     final end = DateTime(today.year, today.month + 1 - _months * back);
     return (DateTime(end.year, end.month - _months), end);
+  }
+
+  DateTime get _firstWorkout => store.workouts.isEmpty
+      ? dateOnly(DateTime.now())
+      : store.workouts.map((w) => w.date).reduce((a, b) => a.isBefore(b) ? a : b);
+
+  /// Oman aikavälin valinta: alku ja loppu kalenterista tai pikapainikkeilla. null = peruttiin.
+  Future<(DateTime, DateTime)?> _pickRange() {
+    final today = dateOnly(DateTime.now());
+    final first = dateOnly(_firstWorkout);
+    var from = _from ?? first, to = _to ?? today;
+    // Kalenterin rajat: ensimmäisestä treenistä (tai vuosi sitten) tähän päivään.
+    final min = first.isBefore(DateTime(today.year - 1, today.month, today.day)) ? first : DateTime(today.year - 1);
+    return showModalBottomSheet<(DateTime, DateTime)>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) {
+          final sub = TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant);
+          Widget field(DateTime d, ValueChanged<DateTime> onPick) => OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft, minimumSize: const Size.fromHeight(44)),
+            icon: const Icon(Icons.calendar_today_outlined, size: 18),
+            label: Text(numDate(d, year: true), style: const TextStyle(fontSize: 15)),
+            onPressed: () async {
+              final v = await pickDate(ctx, initial: d, first: min, last: today);
+              if (v != null) set(() => onPick(dateOnly(v)));
+            },
+          );
+          Widget quick(String label, bool on, VoidCallback tap) =>
+              ChoiceChip(label: Text(label), selected: on, showCheckmark: false, onSelected: (_) => set(tap));
+          final lastSunday = addDays(weekStart(today), -1);
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t('Oma aikaväli'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 14),
+                  Text(t('Alkaen'), style: sub),
+                  const SizedBox(height: 4),
+                  // Alku loppua myöhemmin: loppu siirtyy mukana (ja päinvastoin), joten väli on aina kelvollinen.
+                  field(from, (v) {
+                    from = v;
+                    if (to.isBefore(from)) to = from;
+                  }),
+                  const SizedBox(height: 6),
+                  quick(t('Ensimmäisestä treenistä'), from == first, () {
+                    from = first;
+                    if (to.isBefore(from)) to = from;
+                  }),
+                  const SizedBox(height: 12),
+                  Text(t('Päättyen'), style: sub),
+                  const SizedBox(height: 4),
+                  field(to, (v) {
+                    to = v;
+                    if (to.isBefore(from)) from = to;
+                  }),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      quick(t('Tänään'), to == today, () {
+                        to = today;
+                      }),
+                      quick(t('Viime viikon loppu'), to == lastSunday, () {
+                        to = lastSunday;
+                        if (to.isBefore(from)) from = to;
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
+                      const SizedBox(width: 8),
+                      FilledButton(onPressed: () => Navigator.pop(ctx, (from, to)), child: Text(t('Näytä'))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _chooseCustom() async {
+    final r = await _pickRange();
+    if (r == null || !mounted) return;
+    setState(() {
+      _from = r.$1;
+      _to = r.$2;
+      _span = 'custom';
+      _offset = 0;
+    });
   }
 
   String _monthName(DateTime d) {
@@ -55,6 +160,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   String _label(DateTime a, DateTime b) {
+    if (_custom) return '${numDate(a, year: true)} – ${numDate(addDays(b, -1), year: true)}';
     if (_months == 1) return _monthName(a);
     if (_months > 1) return '${_monthName(a)} – ${_monthName(DateTime(b.year, b.month - 1))}';
     final e = addDays(b, -1);
@@ -76,11 +182,21 @@ class _StatsScreenState extends State<StatsScreen> {
     final r = recap(ws, a, b, kind: kind), p = recap(ws, pa, pb, kind: kind);
     // Pylväät päättyvät valitun jakson loppuun: viikot (viikko, kuukausi) tai kuukaudet (6 kk, vuosi).
     final lastDay = addDays(b, -1);
-    // 3 kk: 13 viikkoa; 6 kk ja vuosi kuukausittain.
-    final monthly = _months > 3;
-    final bars = monthly
-        ? monthlyCounts(ws, lastDay, months: _months)
-        : weeklyCounts(ws, lastDay, weeks: _months == 3 ? 13 : 12);
+    // 1 kk: 12 viikkoa, 3 kk: 13 viikkoa, 6 kk kuukausittain. Oma aikaväli: enintään noin 4 kk viikoittain,
+    // enintään 2 vuotta kuukausittain, pidempi vuosittain (ei satoja ohuita pylväitä).
+    final span = _days(a, b);
+    final weeksN = _custom ? (span + 6) ~/ 7 : (_months == 3 ? 13 : 12);
+    final monthsN = _custom ? (lastDay.year - a.year) * 12 + lastDay.month - a.month + 1 : _months;
+    final bucket = _custom
+        ? (span <= 126 ? 'week' : (monthsN <= 24 ? 'month' : 'year'))
+        : (_months > 3 ? 'month' : 'week');
+    final monthly = bucket == 'month';
+    final bars = switch (bucket) {
+      'year' => yearlyCounts(ws, a, lastDay),
+      'month' => monthlyCounts(ws, lastDay, months: monthsN),
+      _ => weeklyCounts(ws, lastDay, weeks: weeksN),
+    };
+    final hasEarlier = ws.any((w) => w.date.isBefore(a));
     final today = dateOnly(DateTime.now());
     final fs = feelingStats(ws, today);
     final tips = feelingSuggestions(ws, today);
@@ -164,23 +280,25 @@ class _StatsScreenState extends State<StatsScreen> {
           SegmentedButton<String>(
             showSelectedIcon: false,
             segments: [
-              for (final (v, l) in [
-                ('week', t('Viikko')),
-                ('month', t('Kuukausi')),
-                ('quarter', t('3 kk')),
-                ('half', t('6 kk')),
-                ('year', t('Vuosi')),
-              ])
+              for (final (v, l) in [('month', t('1 kk')), ('quarter', t('3 kk')), ('half', t('6 kk'))])
                 ButtonSegment(
                   value: v,
                   label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
                 ),
+              ButtonSegment(
+                value: 'custom',
+                icon: const Icon(Icons.calendar_month_outlined, size: 16),
+                label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Oma'), maxLines: 1)),
+              ),
             ],
-            selected: {_span},
-            onSelectionChanged: (v) => setState(() {
-              _span = v.first;
-              _offset = 0;
-            }),
+            selected: {_custom ? 'custom' : _span},
+            // Oma: valitaan aikaväli; peruttaessa edellinen jakso jää voimaan. Uudelleen napautus avaa valinnan.
+            onSelectionChanged: (v) => v.first == 'custom'
+                ? _chooseCustom()
+                : setState(() {
+                    _span = v.first;
+                    _offset = 0;
+                  }),
           ),
           const SizedBox(height: 4),
           Row(
@@ -188,19 +306,34 @@ class _StatsScreenState extends State<StatsScreen> {
               Expanded(
                 child: Text(_label(a, b), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               ),
-              IconButton(onPressed: () => setState(() => _offset++), icon: const Icon(Icons.chevron_left)),
-              IconButton(
-                onPressed: _offset == 0 ? null : () => setState(() => _offset--),
-                icon: const Icon(Icons.chevron_right),
-              ),
+              if (_custom)
+                IconButton(
+                  tooltip: t('Muuta aikaväliä'),
+                  onPressed: _chooseCustom,
+                  icon: const Icon(Icons.edit_calendar_outlined),
+                )
+              else ...[
+                IconButton(onPressed: () => setState(() => _offset++), icon: const Icon(Icons.chevron_left)),
+                IconButton(
+                  onPressed: _offset == 0 ? null : () => setState(() => _offset--),
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
             ],
           ),
+          if (_custom)
+            Text(
+              _from == dateOnly(_firstWorkout) && _to == today
+                  ? t('Ensimmäisestä treenistä tähän päivään · {0} pv', [span])
+                  : t('{0} pv', [span]),
+              style: sub,
+            ),
           Text(switch (_span) {
-            'month' => t('Vertailu edelliseen kuukauteen'),
+            _ when _custom =>
+              hasEarlier ? t('Vertailu yhtä pitkään jaksoon ennen') : t('Ei vertailua: ennen jaksoa ei ole treenejä'),
             'quarter' => t('Vertailu edelliseen 3 kuukauteen'),
             'half' => t('Vertailu edelliseen 6 kuukauteen'),
-            'year' => t('Vertailu edelliseen 12 kuukauteen'),
-            _ => t('Vertailu edelliseen viikkoon'),
+            _ => t('Vertailu edelliseen kuukauteen'),
           }, style: sub),
           const SizedBox(height: 10),
           if (kind != 'cardio') ...[
@@ -293,14 +426,13 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
           ],
-          SectionLabel(
-            monthly
-                ? t('Treenit kuukausittain ({0} kk)', [_months])
-                : _months == 3
-                ? t('Treenit viikoittain (13 viikkoa)')
-                : t('Treenit viikoittain (12 viikkoa)'),
-          ),
-          _StackBars(weeks: bars, kind: kind, monthly: monthly),
+          SectionLabel(switch (bucket) {
+            'year' => t('Treenit vuosittain ({0} v)', [bars.length]),
+            'month' => t('Treenit kuukausittain ({0} kk)', [monthsN]),
+            _ when _custom => t('Treenit viikoittain ({0} viikkoa)', [weeksN]),
+            _ => _months == 3 ? t('Treenit viikoittain (13 viikkoa)') : t('Treenit viikoittain (12 viikkoa)'),
+          }),
+          _StackBars(weeks: bars, kind: kind, monthly: monthly, yearly: bucket == 'year'),
           // Ohjelman viikon kuorma: suunniteltu ja toteutunut lihasryhmittäin. Viikolla valitun viikon sarjat,
           // pidemmällä jaksolla keskimäärin viikossa (kuluvasta jaksosta vain tähän päivään asti).
           if (kind != 'cardio' && settings.program != null) ...[
@@ -310,15 +442,13 @@ class _StatsScreenState extends State<StatsScreen> {
               done: () {
                 final end = b.isAfter(today) ? addDays(today, 1) : b;
                 final sets = loggedSets(ws, a, end);
-                final weeks = _span == 'week' ? 1.0 : (end.difference(a).inDays / 7).clamp(1.0, 1000.0);
+                final weeks = (end.difference(a).inDays / 7).clamp(1.0, 100000.0);
                 return {for (final e in sets.entries) e.key: (e.value / weeks * 10).round() / 10};
               }(),
-              doneLabel: _span == 'week'
-                  ? (b.isAfter(today) ? t('toteutunut tällä viikolla') : t('toteutunut sillä viikolla'))
-                  : t('toteutunut, keskimäärin viikossa'),
+              doneLabel: t('toteutunut, keskimäärin viikossa'),
             ),
           ],
-          if (settings.bodyTracker) _BodySection(from: _months > 1 ? a : addDays(b, -84), to: b),
+          if (settings.bodyTracker) _BodySection(from: _span == 'month' && !_custom ? addDays(b, -84) : a, to: b),
           if (tips.isNotEmpty) ...[
             SectionLabel(t('Huomiot ja ehdotukset')),
             for (final tip in tips)
@@ -572,8 +702,9 @@ class _Split extends StatelessWidget {
 class _StackBars extends StatelessWidget {
   final List<(DateTime, int, int)> weeks;
   final String kind;
-  final bool monthly; // pylväs = kuukausi (6 kk / vuosi), muuten viikko
-  const _StackBars({required this.weeks, required this.kind, this.monthly = false});
+  final bool monthly; // pylväs = kuukausi (6 kk tai oma aikaväli), muuten viikko
+  final bool yearly; // pylväs = vuosi (pitkä oma aikaväli)
+  const _StackBars({required this.weeks, required this.kind, this.monthly = false, this.yearly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -622,7 +753,11 @@ class _StackBars extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          monthly ? _monthShort(weeks[i].$1.month) : numDate(weeks[i].$1),
+                          yearly
+                              ? '${weeks[i].$1.year}'
+                              : monthly
+                              ? _monthShort(weeks[i].$1.month)
+                              : numDate(weeks[i].$1),
                           style: label,
                           maxLines: 1,
                         ),

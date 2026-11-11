@@ -132,6 +132,21 @@ List<(DateTime, int, int)> weeklyCounts(List<Workout> ws, DateTime today, {int w
 }
 
 /// Treenit kuukausittain [months] kuukaudelta, viimeisenä [last]:n kuukausi: (kuun alku, salitreenit, kestävyys).
+/// Vuosittaiset määrät (sali, kestävyys) pitkälle omalle aikavälille: [first]–[last] vuodet.
+List<(DateTime, int, int)> yearlyCounts(List<Workout> ws, DateTime first, DateTime last) {
+  final years = last.year - first.year + 1;
+  final out = [for (var i = 0; i < years; i++) (DateTime(first.year + i), 0, 0)];
+  for (final w in ws) {
+    final k = workoutKind(w);
+    if (k == null || w.date.isBefore(first) || w.date.isAfter(last)) continue;
+    final i = w.date.year - first.year;
+    final parts = workoutParts(w).map((p) => p.$1);
+    final (d, g, c) = out[i];
+    out[i] = (d, g + (parts.contains('gym') ? 1 : 0), c + (parts.contains('cardio') ? 1 : 0));
+  }
+  return out;
+}
+
 List<(DateTime, int, int)> monthlyCounts(List<Workout> ws, DateTime last, {int months = 12}) {
   final first = DateTime(last.year, last.month - (months - 1));
   final out = [for (var i = 0; i < months; i++) (DateTime(first.year, first.month + i), 0, 0)];

@@ -9,13 +9,16 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../app_state.dart';
+import '../auto_backup.dart';
 import '../body.dart';
 import '../csv_export.dart';
 import '../garmin_import.dart';
 import '../import_detect.dart';
 import '../import_export.dart';
+import '../injuries.dart' show injuryById, injuryShortName;
 import '../models.dart';
 import '../theme.dart';
+import 'bug_report.dart';
 import 'program_template.dart' show importTemplate;
 import 'widgets.dart';
 import '../l10n.dart';
@@ -64,7 +67,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final kinds = [for (final (n, b) in picked) detectImport(n, b)];
     if (picked.length > 1) {
       if (kinds.every((k) => k == ImportKind.md)) {
-        await _importMdTexts({for (final (n, b) in picked) n: utf8.decode(b, allowMalformed: true)});
+        await _preview(readMdBytes({for (final (n, b) in picked) n: b}));
       } else {
         _snack(t('Valitse yksi tiedosto kerrallaan (useampi vain .md-treenitiedostoina).'));
       }
@@ -79,7 +82,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       case ImportKind.gievraZip:
         await _preview(readZip(bytes));
       case ImportKind.md:
-        await _importMdTexts({name: utf8.decode(bytes, allowMalformed: true)});
+        await _preview(readMdBytes({name: bytes}));
       case ImportKind.template:
         if (mounted) await importTemplate(context, text: utf8.decode(bytes, allowMalformed: true));
       case ImportKind.mapPack:
@@ -137,8 +140,6 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     await _preview(readZip(await f.xFile.readAsBytes()));
   });
 
-  Future<void> _importMdTexts(Map<String, String> texts) => _preview(readMdFiles(texts));
-
   Future<void> _export() => _run(() async {
     final bytes = await exportZip();
     final uri = await FilePicker.saveFile(
@@ -147,7 +148,10 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       mimeType: 'application/zip',
       dialogTitle: t('Tallenna varmuuskopio'),
     );
-    if (uri != null && mounted) _snack(t('Varmuuskopio tallennettu ({0} treeniä).', [store.workouts.length]));
+    if (uri == null) return;
+    // Oma täysi varmuuskopio korvaa sovelluksen automaattiset (backup/-kansio).
+    await autoBackup.deleteAll();
+    if (mounted) _snack(t('Varmuuskopio tallennettu ({0} treeniä).', [store.workouts.length]));
   });
 
   /// Luettava vienti (CSV) käyttäjän kielellä: käyttäjä valitsee, mitä jaetaan ja miltä ajalta.
@@ -328,9 +332,13 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     if (uri != null && mounted) _snack(t('Viety {0} treeniä, {1} sarjaa.', [store.workouts.length, sets]));
   });
 
+  /// Testeille: tuonnin yhteenveto ilman tiedostovalitsinta.
+  @visibleForTesting
+  Future<void> previewForTest(ImportResult r) => _preview(r);
+
   Future<void> _preview(ImportResult r) async {
     if (!mounted) return;
-    if (r.workouts.isEmpty && r.bodyMd == null) {
+    if (r.workouts.isEmpty && r.bodyMd == null && r.unreadable.isEmpty) {
       _snack(t('Tiedostosta ei löytynyt treenejä.'));
       return;
     }
@@ -340,6 +348,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final weighIns = r.bodyMd == null ? const <DateTime, double>{} : parseBody(r.bodyMd!).weights;
     final newWeighIns = weighIns.keys.where((d) => !settings.body.weights.containsKey(d)).length;
     var enableTracker = !settings.bodyTracker && newWeighIns > 0;
+    // Vammatila ei tule yhdistettäessä itsestään (vanha vamma voi olla jo parantunut): oletuksena pois.
+    final injuries = newInjuries(r);
+    var enableInjuries = false;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -378,6 +389,20 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                   title: Text(t('Ota kehonpainon seuranta käyttöön')),
                   subtitle: Text(t('Paino ja painoindeksi tilastoissa, tämän päivän paino etusivulla.')),
                 ),
+              if (injuries.isNotEmpty)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: enableInjuries,
+                  onChanged: (v) => setDialog(() => enableInjuries = v ?? false),
+                  title: Text(t('Ota vammatila käyttöön')),
+                  subtitle: Text(
+                    t('Varmuuskopiossa: {0}. Valitse vain, jos vaiva on yhä ajankohtainen.', [
+                      {for (final id in injuries) injuryShortName(t(injuryById(id)!.name))}.join(', '),
+                    ]),
+                  ),
+                ),
               if (r.cardioNotes > 0) _row(t('Kardio/aika muistiinpanoihin'), '${r.cardioNotes}'),
               if (r.newExercises.isNotEmpty) _row(t('Uusia omia liikkeitä'), '${r.newExercises.length}'),
               if (r.settingsMd != null) _row(t('Asetukset'), restoresAll(r) ? t('palautetaan') : t('yhdistetään')),
@@ -387,6 +412,26 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                   restoresAll(r) ? t('palautetaan') : (settings.program == null ? t('tuodaan') : t('nykyinen säilyy')),
                 ),
               if (r.savedPrograms.isNotEmpty) _row(t('Tallennetut ohjelmat'), '${r.savedPrograms.length}'),
+              // Väärä merkistö luettiin korjattuna; lukukelvottomat voi lähettää ongelmaraporttina.
+              if (r.repaired > 0) _row(t('Merkistö korjattu'), '${r.repaired}'),
+              if (r.unreadable.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  t('Treenitiedostoja ei voitu lukea: {0}', [r.unreadable.length]),
+                  style: TextStyle(color: redText(context), fontWeight: FontWeight.w600),
+                ),
+                for (final e in r.unreadableWhy.entries.take(8))
+                  Text('${e.key}: ${e.value}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                if (r.unreadable.length > 8) Text('…', style: TextStyle(color: cs.onSurfaceVariant)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => _reportUnreadable(r),
+                    icon: const Icon(Icons.mail_outline, size: 18),
+                    label: Text(t('Lähetä ongelmaraportti')),
+                  ),
+                ),
+              ],
               const SizedBox(height: 10),
               if (r.existing > 0)
                 Text(
@@ -422,7 +467,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       ),
     );
     if (ok != true) return;
-    final n = await applyImport(r);
+    final n = await applyImport(r, addInjuries: enableInjuries);
     if (enableTracker) settings.setBodyTracker(true);
     if (mounted) {
       _snack(
@@ -431,6 +476,31 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
             : t('Tuotiin {0} treeniä. Giitu!', [n]),
       );
     }
+  }
+
+  /// Lukukelvottomat tiedostot sellaisinaan (alkuperäiset tavut) ongelmaraportin liitteiksi.
+  Future<void> _reportUnreadable(ImportResult r) async {
+    final dir = Directory(p.join((await getTemporaryDirectory()).path, 'unreadable'));
+    if (await dir.exists()) await dir.delete(recursive: true);
+    await dir.create(recursive: true);
+    final attach = <(String, String)>[];
+    for (final e in r.unreadable.entries) {
+      final f = File(p.join(dir.path, p.basename(e.key)));
+      await f.writeAsBytes(e.value);
+      attach.add((p.basename(e.key), f.path));
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BugReportScreen(
+          type: 'import',
+          attach: attach,
+          description: t('Treenitiedostoja ei voitu lukea: {0}', [
+            [for (final e in r.unreadableWhy.entries) '${e.key} (${e.value})'].join('; '),
+          ]),
+        ),
+      ),
+    );
   }
 
   Widget _row(String a, String b) => Padding(

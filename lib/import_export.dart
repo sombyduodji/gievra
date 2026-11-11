@@ -9,6 +9,7 @@ import 'app_state.dart';
 import 'body.dart';
 export 'fitnotes_db_stub.dart' if (dart.library.ffi) 'fitnotes_db.dart';
 import 'exercises.dart';
+import 'injuries.dart' show injuryById;
 import 'models.dart';
 import 'program.dart';
 
@@ -36,9 +37,24 @@ class ImportResult {
   /// Tallennetut ohjelmat (ohjelmat/*.gmd) omasta varmuuskopiosta: tiedostonimi -> sisältö.
   final Map<String, String> savedPrograms;
 
+  /// Väärällä merkistöllä tallennetut tiedostot, jotka luettiin korjattuina ([decodeTextFile]).
+  final int repaired;
+
+  /// Treenitiedostot, joita ei voitu lukea: nimi -> alkuperäinen sisältö (ongelmaraportin liitteeksi).
+  final Map<String, List<int>> unreadable;
+
+  /// Lukukelvottomien syyt ([unreadableReason]): nimi -> syy.
+  Map<String, String> get unreadableWhy => {
+    for (final e in unreadable.entries) e.key: why[e.key] ?? unreadableReason(e.value),
+  };
+  final Map<String, String> why;
+
   ImportResult({
     required this.source,
     required this.workouts,
+    this.repaired = 0,
+    this.unreadable = const {},
+    this.why = const {},
     this.newExercises = const {},
     this.sets = 0,
     this.bodyweights = 0,
@@ -227,6 +243,8 @@ Future<Uint8List> exportZip() async {
     await for (final f in root.list(recursive: true, followLinks: false)) {
       if (f is! File || !isDataFile(f.path)) continue;
       final rel = p.relative(f.path, from: root.path).replaceAll('\\', '/');
+      // Sovelluksen omat varmuuskopiot eivät kuulu varmuuskopioon (ei sisäkkäisiä kopioita).
+      if (isAutoBackupPath(rel)) continue;
       archive.addFile(ArchiveFile.bytes('Treenit/$rel', await f.readAsBytes()));
     }
   }
@@ -235,7 +253,9 @@ Future<Uint8List> exportZip() async {
 
 /// Yksittäiset .md-treenit (esim. PC:llä tehdyt, joita Drive-synkronointi ei näe): nimi -> sisältö.
 /// Päivämäärä otsikkotiedoista tai tiedostonimestä. Asetukset ja ohjelma ohitetaan.
-ImportResult readMdFiles(Map<String, String> files) {
+ImportResult readMdFiles(Map<String, String> files, {int repaired = 0, Map<String, List<int>>? unreadable}) {
+  final failed = unreadable ?? <String, List<int>>{};
+  final why = <String, String>{};
   final list = <Workout>[];
   var sets = 0;
   String? bodyMd;
@@ -255,10 +275,38 @@ ImportResult readMdFiles(Map<String, String> files) {
       );
       sets += w.exercises.fold(0, (a, x) => a + x.sets.length);
       list.add(w);
-    } catch (_) {}
+    } catch (err) {
+      failed[base] = utf8.encode(e.value);
+      why[base] = unreadableReason(failed[base], error: err);
+    }
   }
   list.sort((a, b) => a.date.compareTo(b.date));
-  return ImportResult(source: '.md-tiedostot', workouts: list, sets: sets, bodyMd: bodyMd);
+  return ImportResult(
+    source: '.md-tiedostot',
+    workouts: list,
+    sets: sets,
+    bodyMd: bodyMd,
+    repaired: repaired,
+    unreadable: failed,
+    why: why,
+  );
+}
+
+/// Valitut .md-tiedostot tavuina: merkistö tunnistetaan ([decodeTextFile]), lukukelvottomat raporttia varten.
+ImportResult readMdBytes(Map<String, List<int>> files) {
+  final texts = <String, String>{};
+  final failed = <String, List<int>>{};
+  var repaired = 0;
+  for (final e in files.entries) {
+    final d = decodeTextFile(e.value);
+    if (d == null) {
+      failed[p.basename(e.key)] = e.value;
+      continue;
+    }
+    texts[e.key] = d.$1;
+    if (d.$2) repaired++;
+  }
+  return readMdFiles(texts, repaired: repaired, unreadable: failed);
 }
 
 ImportResult readZip(List<int> bytes) {
@@ -267,11 +315,15 @@ ImportResult readZip(List<int> bytes) {
   String? settingsMd, programMd, bodyMd;
   final routes = <String, String>{}; // reittitiedoston nimi -> GPX
   final saved = <String, String>{}; // tallennetut ohjelmat (.gmd)
-  var sets = 0;
+  final failed = <String, List<int>>{};
+  final why = <String, String>{};
+  var sets = 0, repaired = 0;
   for (final f in archive.files) {
     if (!f.isFile) continue;
     final base = p.basename(f.name);
-    final text = utf8.decode(f.content, allowMalformed: true);
+    final decoded = decodeTextFile(f.content);
+    if (decoded != null && decoded.$2) repaired++;
+    final text = decoded?.$1 ?? utf8.decode(f.content, allowMalformed: true);
     if (base.endsWith('.gpx')) {
       routes[base] = text;
       continue;
@@ -294,11 +346,18 @@ ImportResult readZip(List<int> bytes) {
     }
     final m = _dateFile.firstMatch(base);
     if (m == null) continue;
+    if (decoded == null) {
+      failed[base] = f.content;
+      continue;
+    }
     try {
       final w = parseWorkout(text, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(base));
       sets += w.exercises.fold(0, (a, e) => a + e.sets.length);
       list.add(w);
-    } catch (_) {}
+    } catch (err) {
+      failed[base] = f.content;
+      why[base] = unreadableReason(f.content, error: err);
+    }
   }
   // Reitit mukaan treeneille, joiden .md viittaa niihin; kirjoitetaan tallennettaessa (store.saveMany).
   for (final w in list) {
@@ -318,6 +377,9 @@ ImportResult readZip(List<int> bytes) {
     programMd: programMd,
     bodyMd: bodyMd,
     savedPrograms: saved,
+    repaired: repaired,
+    unreadable: failed,
+    why: why,
   );
 }
 
@@ -325,10 +387,26 @@ ImportResult readZip(List<int> bytes) {
 /// (uusi puhelin tai uusi asennus). Muuten yhdistetään nykyisiin.
 bool restoresAll(ImportResult r) => store.workouts.isEmpty && (r.settingsMd != null || r.programMd != null);
 
+/// Varmuuskopion vamma-alueet, joita tässä päiväkirjassa ei ole valittuna. Vain yhdistettäessä (tyhjään
+/// päiväkirjaan asetukset palautuvat sellaisinaan): vammatila kuvaa nykytilaa, joten käyttäjä päättää itse.
+List<String> newInjuries(ImportResult r) {
+  if (r.settingsMd == null || restoresAll(r)) return const [];
+  final tmp = Settings()..applyMarkdown(r.settingsMd!);
+  return [
+    for (final id in tmp.injuries)
+      if (!settings.injuries.contains(id) && injuryById(id) != null) id,
+  ];
+}
+
 /// Tallentaa tuonnin: uudet treenit (olemassa olevat päivät ohitetaan) ja omat liikkeet.
 /// Omasta varmuuskopiosta: tyhjään päiväkirjaan asetukset ja ohjelma sellaisinaan, muuten lämmittelylaitteet,
 /// omat liikkeet mittaustapoineen ja tallennetut ohjelmat yhdistetään nykyisiin.
-Future<int> applyImport(ImportResult r) async {
+/// [addInjuries]: käyttäjä valitsi tuonnin yhteenvedossa ottaa varmuuskopion vamma-alueet käyttöön ([newInjuries]).
+Future<int> applyImport(ImportResult r, {bool addInjuries = false}) async {
+  if (addInjuries) {
+    final add = newInjuries(r);
+    if (add.isNotEmpty) settings.setInjuries([...settings.injuries, ...add]);
+  }
   for (final e in r.savedPrograms.entries) {
     final rel = 'ohjelmat/${e.key}';
     if (!await files.exists(rel)) await files.write(rel, e.value);
@@ -348,6 +426,15 @@ Future<int> applyImport(ImportResult r) async {
     for (final e in tmp.customMeasure.entries) {
       if (!settings.customMeasure.containsKey(e.key)) settings.setMeasure(e.key, e.value);
     }
+    // Sairas- ja lomatauot: ilman niitä paluun kevyemmät kuormat ja käynnissä oleva tauko katosivat.
+    // Kuten sovelluksessa, vain salitreeni päättää tauon; kävely tai muu liikunta tauon aikana ei.
+    settings.mergePauses(
+      tmp.pauses,
+      trainedDays: [
+        for (final w in store.workouts)
+          if (w.activity == null) w.date,
+      ],
+    );
   }
   if (r.programMd != null && settings.program == null) {
     final prog = parseProgram(r.programMd!);
