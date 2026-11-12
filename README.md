@@ -114,6 +114,10 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   valmiiksi täytettynä liikuntana (laji, aika, matka, syke, kalorit, askeleet); askeleet ja matka harjoituksen
   omasta sovelluksesta, myös salitreenit (kellon tiedot päivän salitreeniin tai uusi salitreeni) ja askeleet
   ilman harjoitusta (yhtenäinen kävely vähintään 10 min, esim. kävelymatolta)
+- *Päivän askeleet* (asetus, oletus pois): päivän askeleet Health Connectista ilman päällekkäisyyksiä (puhelin, Oura
+  ym.), kävelymaton puuttuvat askeleet lisättyinä; etusivun kortissa, kalenterissa renkaana ja tilastojen
+  Askeleet-välilehdellä, `askeleet.md`-tiedostossa ja varmuuskopioissa. Kalenterin päivän napautus avaa päivän
+  yhteenvedon (treenit, aika, matka, askeleet), jossa pyyhkäisy vaihtaa päivää
 - yksi ilmoitus käynnissä olevasta treenistä (laji ja kulunut aika; salitreeni, ajanotto tai GPS-lenkki)
 - juoksulle oma kehitysnäkymä, erillään salista: tarkka aika, vauhti min/km ja keskinopeus, kilometrit
   viikoittain, kevyiden lenkkien (rasitus Kevyt) vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km,

@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'app_info.dart';
 import 'app_state.dart';
+import 'daily_steps.dart';
 import 'auto_backup.dart';
 import 'demo.dart';
 import 'open_files.dart';
@@ -32,6 +33,8 @@ Future<void> main() async {
   if (isDemo) await seedDemo();
   await store.reload();
   final tStore = sw.elapsedMilliseconds;
+  // Päivän askeleet tallennetusta tiedostosta (Health Connect -haku etusivulla).
+  unawaited(dailySteps.load());
   await sync.load();
   // Käynnissä oleva treeni pudotusvalikossa: päivittyy treenien ja asetusten muuttuessa.
   store.addListener(Ongoing.refresh);

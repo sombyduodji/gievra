@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:archive/archive.dart';
+
 import 'body.dart';
 import 'exercises.dart';
 import 'import_detect.dart' show gievraCsvMarker;
@@ -9,7 +13,7 @@ import 'models.dart';
 /// Suomeksi ja saameksi erottimena puolipiste ja desimaalipilkku (Excel avaa suoraan), englanniksi pilkku ja piste.
 class CsvExportOptions {
   final DateTime from, to; // päivät mukaan lukien
-  final bool gym, cardio, body, notes;
+  final bool gym, cardio, body, notes, steps;
   const CsvExportOptions({
     required this.from,
     required this.to,
@@ -17,6 +21,7 @@ class CsvExportOptions {
     this.cardio = true,
     this.body = false,
     this.notes = false,
+    this.steps = false,
   });
 }
 
@@ -62,8 +67,22 @@ bool _inRange(DateTime d, CsvExportOptions o) => !d.isBefore(dateOnly(o.from)) &
 /// Liikkeen nimi viennissä: käyttöliittymän kielellä (englanniksi aina englanninkielinen nimi).
 String _exerciseName(String name) => isEnglish ? (englishOf(name) ?? exerciseDisplay(name)) : exerciseLabel(name);
 
+/// Useampi CSV-tiedosto yhtenä zippinä. Archive.files on vain luku -lista, joten tiedostot lisätään addFile-kutsulla.
+List<int> csvZip(List<CsvFile> files) {
+  final a = Archive();
+  for (final f in files) {
+    a.addFile(ArchiveFile.bytes(f.name, utf8.encode(f.text)));
+  }
+  return ZipEncoder().encodeBytes(a);
+}
+
 /// Tekee valitut CSV-tiedostot. Tyhjiä tiedostoja ei tehdä.
-List<CsvFile> buildCsvExport(List<Workout> workouts, BodyLog body, CsvExportOptions o) {
+List<CsvFile> buildCsvExport(
+  List<Workout> workouts,
+  BodyLog body,
+  CsvExportOptions o, {
+  Map<DateTime, int> steps = const {},
+}) {
   final ws = [...workouts.where((w) => _inRange(w.date, o))]
     ..sort((a, b) => a.date == b.date ? a.session.compareTo(b.session) : a.date.compareTo(b.date));
   final out = <CsvFile>[];
@@ -165,6 +184,16 @@ List<CsvFile> buildCsvExport(List<Workout> workouts, BodyLog body, CsvExportOpti
       out.add(
         CsvFile('${t('punnitukset')}.csv', _table([t('Päivä'), t('Paino (kg)'), t('Pituus (cm)')], rows), rows.length),
       );
+    }
+  }
+  // Päivän askeleet (askeleet.md): yksi rivi päivää kohden.
+  if (o.steps) {
+    final days = steps.keys.where((d) => _inRange(d, o)).toList()..sort();
+    final rows = [
+      for (final d in days) [isoDate(d), steps[d]],
+    ];
+    if (rows.isNotEmpty) {
+      out.add(CsvFile('${t('askeleet')}.csv', _table([t('Päivä'), t('Askeleet')], rows), rows.length));
     }
   }
   return out;

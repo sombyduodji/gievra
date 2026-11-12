@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
@@ -12,6 +13,7 @@ import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -19,6 +21,8 @@ import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.Period
 import java.time.ZoneOffset
 
 /**
@@ -35,6 +39,20 @@ object HealthBridge {
         HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getReadPermission(StepsRecord::class),
     )
+
+    /** Päivän askeleet: vain askelten luku (ei harjoituksia, sykettä eikä kaloreita). */
+    val stepsPermissions = setOf(HealthPermission.getReadPermission(StepsRecord::class))
+
+    /** Vanhempi historia (yli 30 päivää ennen luvan antamista): askelten lupa ja historialupa. */
+    val historyPermissions = stepsPermissions + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+
+    /** Tukeeko laitteen Health Connect historian lukua (uudemmat versiot). */
+    fun historyAvailable(context: Context): Boolean = try {
+        client(context).features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY) ==
+            HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+    } catch (e: Throwable) {
+        false
+    }
 
     /** Tehdyn liikunnan lisääminen (asetus, oletus pois): lisäksi matka. Kysytään vasta, kun toimintoa käytetään. */
     val importPermissions = readPermissions + HealthPermission.getReadPermission(DistanceRecord::class)
@@ -312,6 +330,84 @@ object HealthBridge {
             token = r.pageToken
         } while (token != null && out.size < 50000)
         return out
+    }
+
+    /**
+     * Päivän askeleet päivittäin [from]..[to] (paikallinen aika, vvvv-kk-pp): Health Connectin oma koonti, joka
+     * poistaa päällekkäiset askeleet sovellusten tärkeysjärjestyksen mukaan (esim. puhelin ja Oura samalta
+     * tunnilta lasketaan kerran). Lisäksi sovellukset, joiden tiedoista päivän luku tuli. Vain luku.
+     */
+    suspend fun dailySteps(context: Context, from: String, to: String): List<Map<String, Any?>> {
+        val start = LocalDate.parse(from).atStartOfDay()
+        val end = LocalDate.parse(to).plusDays(1).atStartOfDay()
+        val rows = client(context).aggregateGroupByPeriod(
+            AggregateGroupByPeriodRequest(setOf(StepsRecord.COUNT_TOTAL), TimeRangeFilter.between(start, end), Period.ofDays(1)),
+        )
+        val labels = mutableMapOf<String, String>()
+        return rows.map { r ->
+            mapOf(
+                "date" to r.startTime.toLocalDate().toString(),
+                "steps" to (r.result[StepsRecord.COUNT_TOTAL] ?: 0L),
+                "apps" to r.result.dataOrigins.map { o -> labels.getOrPut(o.packageName) { appLabel(context, o.packageName) } },
+            )
+        }
+    }
+
+    /**
+     * Laitteen sovelluksen (esim. kävelymatto, [label] = sovelluksen nimi) liikunta päivänä [date]: montako sen
+     * askelista päivän koonti jo sisältää ("included" = päivän koonti − koonti ilman sovellusta) ja muiden
+     * sovellusten askeleet liikunnan ajalta ("others"). Aikavälin koonti yksin ei kelpaa: Health Connect voi antaa
+     * liikunnan ajalle maton askeleet, vaikka päivän koonnista ne puuttuvat (Ouran koko päivän tietue on
+     * tärkeämpi). "included" = -1, jos sovellusta ei löydy päivän tietueista.
+     */
+    suspend fun deviceSteps(context: Context, date: String, startMs: Long, endMs: Long, label: String): Map<String, Long> {
+        val d = LocalDate.parse(date)
+        val day = TimeRangeFilter.between(d.atStartOfDay(), d.plusDays(1).atStartOfDay())
+        val c = client(context)
+        val pkgs = mutableSetOf<String>()
+        var token: String? = null
+        do {
+            val r = c.readRecords(ReadRecordsRequest(StepsRecord::class, day, pageSize = 5000, pageToken = token))
+            r.records.forEach { pkgs += it.metadata.dataOrigin.packageName }
+            token = r.pageToken
+        } while (token != null)
+        val dev = pkgs.filter { it == label || appLabel(context, it) == label }.toSet()
+        if (dev.isEmpty()) return mapOf("included" to -1L, "others" to 0L)
+        val others = (pkgs - dev).map { DataOrigin(it) }.toSet()
+        suspend fun sum(span: TimeRangeFilter, origins: Set<DataOrigin>): Long =
+            c.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), span, origins))[StepsRecord.COUNT_TOTAL] ?: 0L
+        val all = sum(day, emptySet())
+        val without = if (others.isEmpty()) 0L else sum(day, others)
+        val win = TimeRangeFilter.between(Instant.ofEpochMilli(startMs), Instant.ofEpochMilli(endMs))
+        val othersWin = if (others.isEmpty()) 0L else sum(win, others)
+        return mapOf("included" to maxOf(0L, all - without), "others" to othersWin)
+    }
+
+    /** Aikavälin askeleet Health Connectin koonnista (ilman päällekkäisyyksiä, tärkeysjärjestyksen mukaan). */
+    suspend fun stepsInRange(context: Context, startMs: Long, endMs: Long): Long {
+        val span = TimeRangeFilter.between(Instant.ofEpochMilli(startMs), Instant.ofEpochMilli(endMs))
+        return client(context).aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), span))[StepsRecord.COUNT_TOTAL] ?: 0L
+    }
+
+    /**
+     * Yhden päivän askeleet sovelluksittain (kunkin oma koonti, ennen päällekkäisyyksien poistoa) vertailuun,
+     * esim. Oura vs. puhelin. Päivän tietueet saa lisäksi stepRecords-kutsulla.
+     */
+    suspend fun dayStepsByApp(context: Context, date: String): List<Map<String, Any?>> {
+        val d = LocalDate.parse(date)
+        val span = TimeRangeFilter.between(d.atStartOfDay(), d.plusDays(1).atStartOfDay())
+        val c = client(context)
+        val pkgs = mutableSetOf<String>()
+        var token: String? = null
+        do {
+            val r = c.readRecords(ReadRecordsRequest(StepsRecord::class, span, pageSize = 5000, pageToken = token))
+            r.records.forEach { pkgs += it.metadata.dataOrigin.packageName }
+            token = r.pageToken
+        } while (token != null)
+        return pkgs.map { pkg ->
+            val n = c.aggregate(AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), span, setOf(DataOrigin(pkg))))[StepsRecord.COUNT_TOTAL]
+            mapOf("pkg" to pkg, "app" to appLabel(context, pkg), "steps" to (n ?: 0L))
+        }
     }
 
     /** Aikavälin syke, kalorit, askeleet ja matka sovellukselta [pkg] (askelista tehty liikunta). */

@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 
 import 'app_state.dart';
 import 'body.dart';
+import 'daily_steps.dart';
 export 'fitnotes_db_stub.dart' if (dart.library.ffi) 'fitnotes_db.dart';
 import 'exercises.dart';
 import 'injuries.dart' show injuryById;
@@ -30,6 +31,9 @@ class ImportResult {
 
   /// kehonpaino.md (punnitukset ja pituus), jos tuonnissa oli sellainen.
   final String? bodyMd;
+
+  /// askeleet.md (päivän askeleet Health Connectista), jos tuonnissa oli sellainen.
+  final String? stepsMd;
 
   /// Tunnistetut mittaustavat (esim. askelkyykky kirjattu edestakaisina).
   final Map<String, Measure> measures;
@@ -62,6 +66,7 @@ class ImportResult {
     this.settingsMd,
     this.programMd,
     this.bodyMd,
+    this.stepsMd,
     this.measures = const {},
     this.savedPrograms = const {},
   });
@@ -258,12 +263,17 @@ ImportResult readMdFiles(Map<String, String> files, {int repaired = 0, Map<Strin
   final why = <String, String>{};
   final list = <Workout>[];
   var sets = 0;
-  String? bodyMd;
+  String? bodyMd, stepsMd;
   for (final e in files.entries) {
     final base = p.basename(e.key);
     if (base == settingsFileName || base == 'ohjelma.md') continue;
     if (base == bodyFileName) {
       bodyMd = e.value;
+      continue;
+    }
+    // Päivän askeleet eivät ole treeni (ennen tätä tiedosto olisi näkynyt lukukelvottomana treeninä).
+    if (base == stepsFileName) {
+      stepsMd = e.value;
       continue;
     }
     final m = _dateFile.firstMatch(base);
@@ -286,6 +296,7 @@ ImportResult readMdFiles(Map<String, String> files, {int repaired = 0, Map<Strin
     workouts: list,
     sets: sets,
     bodyMd: bodyMd,
+    stepsMd: stepsMd,
     repaired: repaired,
     unreadable: failed,
     why: why,
@@ -312,7 +323,7 @@ ImportResult readMdBytes(Map<String, List<int>> files) {
 ImportResult readZip(List<int> bytes) {
   final archive = ZipDecoder().decodeBytes(bytes);
   final list = <Workout>[];
-  String? settingsMd, programMd, bodyMd;
+  String? settingsMd, programMd, bodyMd, stepsMd;
   final routes = <String, String>{}; // reittitiedoston nimi -> GPX
   final saved = <String, String>{}; // tallennetut ohjelmat (.gmd)
   final failed = <String, List<int>>{};
@@ -342,6 +353,10 @@ ImportResult readZip(List<int> bytes) {
     }
     if (base == bodyFileName) {
       bodyMd = text;
+      continue;
+    }
+    if (base == stepsFileName) {
+      stepsMd = text;
       continue;
     }
     final m = _dateFile.firstMatch(base);
@@ -376,6 +391,7 @@ ImportResult readZip(List<int> bytes) {
     settingsMd: settingsMd,
     programMd: programMd,
     bodyMd: bodyMd,
+    stepsMd: stepsMd,
     savedPrograms: saved,
     repaired: repaired,
     unreadable: failed,
@@ -448,6 +464,14 @@ Future<int> applyImport(ImportResult r, {bool addInjuries = false}) async {
       if (r.settingsMd != null && (Settings()..applyMarkdown(r.settingsMd!)).bodyTracker) {
         settings.setBodyTracker(true);
       }
+    }
+  }
+  // Päivän askeleet: puuttuvat päivät lisätään, tämän laitteen luvut pysyvät. Asetus päälle palautuksessa, jos
+  // se oli päällä varmuuskopiossa.
+  if (r.stepsMd != null) {
+    await dailySteps.mergeFrom(r.stepsMd!);
+    if (r.settingsMd != null && (Settings()..applyMarkdown(r.settingsMd!)).dailySteps && !settings.dailySteps) {
+      settings.setDailySteps(true);
     }
   }
   settings.addCustomExercises(r.newExercises);

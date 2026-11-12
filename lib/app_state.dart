@@ -203,6 +203,13 @@ class Settings extends ChangeNotifier {
     _persist();
   }
 
+  /// Päivän askeleet Health Connectista (Android; oletus pois): etusivun kortti ja tilastot (daily_steps.dart).
+  bool dailySteps = false;
+  void setDailySteps(bool v) {
+    dailySteps = v;
+    _persist();
+  }
+
   /// Etusivun "Lisää tehty liikunta Health Connectista" (Android; oletus pois).
   bool hcImport = false;
   void setHcImport(bool v) {
@@ -398,6 +405,7 @@ class Settings extends ChangeNotifier {
       ..writeln('health_lang: $healthLang')
       ..writeln('watch: $watch')
       ..writeln('hc_import: $hcImport')
+      ..writeln('daily_steps: $dailySteps')
       ..writeln('ongoing_note: $ongoingNote')
       ..writeln('elev_with_maps: $elevWithMaps')
       ..writeln('rest_timer: $restTimer')
@@ -519,6 +527,8 @@ class Settings extends ChangeNotifier {
             watch = v == 'true';
           case 'hc_import':
             hcImport = v == 'true';
+          case 'daily_steps':
+            dailySteps = v == 'true';
           case 'ongoing_note':
             ongoingNote = v != 'false';
           case 'elev_with_maps':

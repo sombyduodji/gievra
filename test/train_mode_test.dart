@@ -43,7 +43,8 @@ void main() {
     expect(find.text('Sali'), findsOneWidget);
     expect(find.text('Liikunta'), findsOneWidget);
     expect(find.text('Pyöräily'), findsNothing); // lajit omalla sivulla, ei pikavalintoina
-    expect(find.textContaining('6 km', findRichText: true), findsOneWidget);
+    // Tämän päivän lenkki rivinä (ja tilastokortin Juoksu-puolella).
+    expect(find.textContaining('6 km', findRichText: true), findsWidgets);
     // Pelkkä sali: ei valintaa, vanha etusivu.
     settings.setTrainMode('gym');
     await tester.pump();

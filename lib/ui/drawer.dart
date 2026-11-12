@@ -31,6 +31,8 @@ import 'program_screen.dart';
 import 'body_screen.dart';
 import 'widgets.dart';
 import 'plate_sheet.dart';
+import 'steps_ui.dart' show stepsSupported, StepsHistoryTile;
+import '../daily_steps.dart';
 import 'whats_new_dialog.dart';
 import '../whats_new.dart';
 import '../l10n.dart';
@@ -925,6 +927,27 @@ class _SettingsSection extends StatelessWidget {
               value: settings.watch,
               onChanged: settings.setWatch,
             ),
+            // Päivän askeleet Health Connectista (Android; oletus pois): etusivun kortti ja tilastojen välilehti.
+            if (stepsSupported)
+              SwitchListTile(
+                title: Text(t('Päivän askeleet')),
+                subtitle: Text(
+                  t(
+                    'Askeleet päivittäin Health Connectista (esim. puhelin ja Oura) ilman päällekkäisyyksiä: etusivulla '
+                    'ja tilastoissa. Vain luku; treeneihin ei kosketa.',
+                  ),
+                  style: sub,
+                ),
+                value: settings.dailySteps,
+                onChanged: (v) async {
+                  settings.setDailySteps(v);
+                  if (!v) return;
+                  // Vain askelten lukulupa (ei harjoituksia, sykettä eikä kaloreita).
+                  await dailySteps.requestPermission();
+                },
+              ),
+            // Vanhemmat askeleet historialuvalla (kun Health Connect tukee sitä).
+            if (stepsSupported && settings.dailySteps) StepsHistoryTile(),
             // Tehdyn liikunnan lisäys Health Connectista etusivun painikkeesta (Android, kestävyyslajit; oletus pois).
             if (!isDemo && Platform.isAndroid && settings.sports)
               SwitchListTile(
@@ -1434,6 +1457,7 @@ Future<void> changeFolder(BuildContext context, String? newDir) async {
   }
   await settings.setFolder(newDir);
   await store.reload();
+  await dailySteps.load(); // uuden kansion askeleet.md
   messenger.showSnackBar(SnackBar(content: Text(t('{0}Löytyi {1} treeniä.', [msg, store.workouts.length]))));
 }
 

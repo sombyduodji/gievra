@@ -42,11 +42,11 @@ String? reducedReason(DateTime date, Program? p) {
   final d = dateOnly(date);
   for (final pause in settings.pauses) {
     final end = pause.end ?? dateOnly(DateTime.now());
-    if (!d.isBefore(pause.start) && !d.isAfter(end)) return pause.sick ? 'sairausjakso' : 'loma';
+    if (!d.isBefore(pause.start) && !d.isAfter(end)) return pause.sick ? l10n.t('sairausjakso') : l10n.t('loma');
   }
   final ret = returnFor(d);
   if (ret != null) return ret.$1.sick ? l10n.t('paluu sairauden jälkeen') : l10n.t('paluu lomalta');
-  if (p != null && !d.isBefore(p.start) && p.isDeloadWeek(d)) return 'kevennysviikko';
+  if (p != null && !d.isBefore(p.start) && p.isDeloadWeek(d)) return l10n.t('kevennysviikko');
   return null;
 }
 
