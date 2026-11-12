@@ -11,6 +11,7 @@ import '../running.dart';
 import '../sports.dart';
 import '../exercises.dart';
 import '../session_compare.dart';
+import '../superset.dart';
 import '../theme.dart';
 import 'new_workout.dart';
 import 'picker.dart';
@@ -59,6 +60,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
     if (_isToday && w.started != null) {
       _tick = Timer.periodic(const Duration(seconds: 30), (_) => mounted ? setState(() {}) : null);
+    }
+    // Uusi treeni ohjelmasta: ohjelman supersarjat treeniin (muokattavissa ⋮ → Supersarjat).
+    if (w.supersets.isEmpty && w.exercises.every((e) => e.sets.isEmpty) && widget.planDay != null) {
+      final groups = <String, List<String>>{};
+      for (final i in widget.planDay!.items) {
+        if (i.group != null) groups.putIfAbsent(i.group!, () => []).add(i.exercise);
+      }
+      w.supersets = [
+        for (final k in groups.keys.toList()..sort())
+          if (groups[k]!.toSet().length >= 2) groups[k]!.toSet().toList(),
+      ];
     }
     // Muistiinpanot tallentuvat 2 s kirjoittamisen jälkeen (ei vasta kentästä poistuttaessa).
     _notes.addListener(() {
@@ -112,7 +124,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Future<void> _log(ExerciseEntry e) async {
     final it = _planItem(e.name);
     final p = settings.program;
-    final doneNow = await Navigator.of(context).push<bool>(
+    final group = supersetOf(w, e.name);
+    // Paluuarvo: true = liike merkitty valmiiksi, liikkeen nimi = supersarjan seuraava liike.
+    final result = await Navigator.of(context).push<Object?>(
       MaterialPageRoute(
         builder: (_) => SetLoggerScreen(
           date: w.date,
@@ -120,14 +134,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           onChanged: _save,
           target: it == null || p == null ? null : targetFor(p, it, w.date),
           note: it?.note,
+          superset: group,
+          supersetNext: group == null ? null : () => supersetNext(w, e.name, planned: _planned),
         ),
       ),
     );
+    // Tyhjät liikkeet pois; supersarjan jäsenet näkyvät ryhmäkortissa silti (ryhmä on treenin tiedoissa).
     w.exercises.removeWhere((x) => x.sets.isEmpty && x != e);
     if (e.sets.isEmpty) w.exercises.remove(e);
-    if (doneNow == true && e.sets.isNotEmpty) w.doneMoves.add(e.name);
+    if (result == true && e.sets.isNotEmpty) w.doneMoves.add(e.name);
     setState(() {});
     await _save();
+    if (result is String && mounted) await _logByName(result);
   }
 
   /// Liike tehty: merkitty valmiiksi tai ohjelman työsarjat täynnä.
@@ -225,6 +243,298 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     super.dispose();
   }
 
+  /// Tehty liike korttina (sarjat näkyvissä).
+  Widget _doneCard(ExerciseEntry e, ColorScheme cs) => Padding(
+    padding: const EdgeInsets.only(top: 10),
+    child: Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _log(e),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (_isDone(e))
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: Icon(Icons.check_circle, color: Sami.green, size: 22),
+                    ),
+                  Expanded(
+                    child: ExName(e.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                  Text(setsLabel(e.workSets.length), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final s in e.sets)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: s.pr ? Sami.yellow : (s.warmup ? Colors.transparent : cs.surfaceContainerHigh),
+                        borderRadius: BorderRadius.circular(20),
+                        border: s.warmup ? Border.all(color: cs.outlineVariant) : null,
+                      ),
+                      child: Text(
+                        '${s.warmup ? '🔥 ' : ''}${fmtSet(e.name, s)}${s.pr ? ' 🏆' : ''}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: s.pr ? Colors.black : (s.warmup ? cs.onSurfaceVariant : null),
+                          fontWeight: s.pr ? FontWeight.w700 : null,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /// Ohjelman liike, jota ei ole vielä aloitettu.
+  Widget _planTile(PlanItem it, ColorScheme cs) => Padding(
+    padding: const EdgeInsets.only(top: 10),
+    child: Material(
+      color: cs.surfaceContainer.withValues(alpha: .5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        leading: const Icon(Icons.radio_button_unchecked),
+        title: ExName(it.exercise),
+        subtitle: Builder(
+          builder: (_) {
+            final tg = targetFor(settings.program!, it, w.date);
+            final mu = measureOf(it.exercise);
+            return Text(
+              '${tg.sets} × ${tg.reps}${mu == Measure.reps ? '' : ' ${t(mu.unit)}'}'
+              '${it.pct == null || it.kind != null ? '' : ' @ ${fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1)))} %'}'
+              ' · ${reserveTarget(mu, tg.rir)}${it.note != null ? '\n🩹 ${it.note}' : ''}',
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            );
+          },
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _logPlanned(it),
+      ),
+    ),
+  );
+
+  /// Liikkeet järjestyksessä: tehdyt, sitten ohjelman jäljellä olevat; supersarja yhtenä korttina ensimmäisen
+  /// jäsenensä kohdalla.
+  List<Widget> _items(List<ExerciseEntry> done, ColorScheme cs) {
+    final showPlan = !_locked && widget.planDay != null && settings.program != null;
+    final planned = showPlan
+        ? widget.planDay!.items.where((i) => !done.any((e) => e.name == i.exercise)).toList()
+        : <PlanItem>[];
+    final order = [...done.map((e) => e.name), ...planned.map((i) => i.exercise)];
+    final out = <Widget>[];
+    final shown = <List<String>>{};
+    for (final n in order) {
+      final g = supersetOf(w, n);
+      if (g != null) {
+        if (shown.add(g)) out.add(_groupCard(g, cs));
+        continue;
+      }
+      final e = done.where((x) => x.name == n).firstOrNull;
+      out.add(e != null ? _doneCard(e, cs) : _planTile(planned.firstWhere((i) => i.exercise == n), cs));
+    }
+    return out;
+  }
+
+  /// Ohjelman sarjamäärä liikkeelle (null = ei ohjelmassa): supersarjan kierrokset.
+  int? _planned(String name) {
+    final it = _planItem(name);
+    final p = settings.program;
+    return it == null || p == null ? null : targetFor(p, it, w.date).sets;
+  }
+
+  /// Supersarja tai kiertoharjoittelu yhtenä korttina: jäsenet järjestyksessä, seuraava korostettuna.
+  Widget _groupCard(List<String> g, ColorScheme cs) {
+    final label = supersetLabel(w, g.first).substring(0, 1);
+    final current = supersetCurrent(w, g, planned: _planned);
+    final round = supersetRound(w, g, planned: _planned);
+    final rounds = g.map(_planned).whereType<int>().fold<int>(0, (a, b) => a > b ? a : b);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: cs.primary, width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.link, size: 18, color: cs.primary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    g.length > 2 ? t('Kiertoharjoittelu {0}', [label]) : t('Supersarja {0}', [label]),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: cs.primary),
+                  ),
+                ),
+                Text(
+                  current == null
+                      ? t('valmis ✓')
+                      : rounds > 0
+                      ? t('kierros {0} / {1}', [round, rounds])
+                      : t('kierros {0}', [round]),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            for (final n in g)
+              Builder(
+                builder: (_) {
+                  final e = w.exercises.where((x) => x.name == n).firstOrNull;
+                  final sets = e?.workSets ?? const <SetEntry>[];
+                  final it = _planItem(n);
+                  final finished = e != null && _isDone(e);
+                  final next = n == current;
+                  return Material(
+                    color: next ? cs.primary.withValues(alpha: .10) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _logByName(n),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 30,
+                              child: Text(supersetLabel(w, n), style: const TextStyle(fontWeight: FontWeight.w700)),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ExName(n, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  Text(
+                                    sets.isNotEmpty
+                                        ? sets.map((s) => fmtSet(n, s)).join(' · ')
+                                        : it != null && settings.program != null
+                                        ? '${targetFor(settings.program!, it, w.date).sets} × ${targetFor(settings.program!, it, w.date).reps}'
+                                        : t('ei vielä sarjoja'),
+                                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (finished)
+                              const Icon(Icons.check_circle, color: Sami.green, size: 20)
+                            else if (next)
+                              Text(t('seuraava ›'), style: TextStyle(fontSize: 12, color: cs.primary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _logByName(String name) async {
+    var entry = w.exercises.where((e) => e.name == name).firstOrNull;
+    if (entry == null) {
+      entry = ExerciseEntry(name);
+      w.exercises.add(entry);
+    }
+    await _log(entry);
+  }
+
+  /// Supersarjojen muokkaus: nykyiset ryhmät (purku) ja uusi ryhmä valituista liikkeistä.
+  Future<void> _editSupersets() async {
+    final names = {
+      ...w.exercises.where((e) => e.sets.isNotEmpty).map((e) => e.name),
+      ...?widget.planDay?.items.map((i) => i.exercise),
+    }.toList();
+    final picked = <String>[];
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) {
+          final free = names.where((n) => supersetOf(w, n) == null).toList();
+          return AlertDialog(
+            title: Text(t('Supersarjat')),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t('Valitut liikkeet tehdään vuorotellen valintajärjestyksessä, tauko vasta kierroksen jälkeen.'),
+                    style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                  ),
+                  for (final g in w.supersets)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.link),
+                      title: Text(g.map(exerciseLabel).join(' → ')),
+                      trailing: IconButton(
+                        tooltip: t('Pura supersarja'),
+                        icon: const Icon(Icons.link_off),
+                        onPressed: () => set(() => w.supersets.remove(g)),
+                      ),
+                    ),
+                  if (free.length >= 2) ...[
+                    const Divider(),
+                    for (final n in free)
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        value: picked.contains(n),
+                        title: Text(
+                          picked.contains(n) ? '${picked.indexOf(n) + 1}. ${exerciseLabel(n)}' : exerciseLabel(n),
+                        ),
+                        onChanged: (v) => set(() => v == true ? picked.add(n) : picked.remove(n)),
+                      ),
+                  ] else if (w.supersets.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(t('Lisää ensin vähintään kaksi liikettä.')),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Valmis'))),
+              if (picked.length >= 2)
+                FilledButton(
+                  onPressed: () => set(() {
+                    w.supersets.add([...picked]);
+                    picked.clear();
+                  }),
+                  child: Text(t('Yhdistä ({0})', [picked.length])),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+    if (!mounted) return;
+    setState(() {});
+    await _save();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -259,11 +569,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               'rename' => _locked ? _unlock() : _rename(),
               'share' => shareWorkout(context, w),
               'duration' => _editDuration(),
+              'superset' => _locked ? _unlock() : _editSupersets(),
               _ => _deleteWorkout(),
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'share', child: Text(t('Jaa'))),
               PopupMenuItem(value: 'rename', child: Text(t('Nimeä treeni'))),
+              PopupMenuItem(value: 'superset', child: Text(t('Supersarjat'))),
               // Kellon tiedot päällä: kesto muutetaan Kellon tiedot -ruudusta (sama arvo).
               if (!settings.watch) PopupMenuItem(value: 'duration', child: Text(t('Muokkaa kestoa'))),
               PopupMenuItem(value: 'delete', child: Text(t('Poista treeni'))),
@@ -320,95 +632,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 style: TextStyle(color: cs.onSurfaceVariant),
               ),
             ),
-          for (final e in done)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () => _log(e),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (_isDone(e))
-                              const Padding(
-                                padding: EdgeInsets.only(right: 8),
-                                child: Icon(Icons.check_circle, color: Sami.green, size: 22),
-                              ),
-                            Expanded(
-                              child: ExName(e.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                            ),
-                            Text(
-                              setsLabel(e.workSets.length),
-                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            for (final s in e.sets)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: s.pr ? Sami.yellow : (s.warmup ? Colors.transparent : cs.surfaceContainerHigh),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: s.warmup ? Border.all(color: cs.outlineVariant) : null,
-                                ),
-                                child: Text(
-                                  '${s.warmup ? '🔥 ' : ''}${fmtSet(e.name, s)}${s.pr ? ' 🏆' : ''}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: s.pr ? Colors.black : (s.warmup ? cs.onSurfaceVariant : null),
-                                    fontWeight: s.pr ? FontWeight.w700 : null,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // Lukitussa treenissä vain tehty: ei jäljellä olevia liikkeitä eikä painoehdotuksia.
-          if (!_locked && widget.planDay != null && settings.program != null) ...[
-            for (final it in widget.planDay!.items.where((i) => !done.any((e) => e.name == i.exercise)))
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Material(
-                  color: cs.surfaceContainer.withValues(alpha: .5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: cs.outlineVariant),
-                  ),
-                  child: ListTile(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    leading: const Icon(Icons.radio_button_unchecked),
-                    title: ExName(it.exercise),
-                    subtitle: Builder(
-                      builder: (_) {
-                        final tg = targetFor(settings.program!, it, w.date);
-                        final mu = measureOf(it.exercise);
-                        return Text(
-                          '${tg.sets} × ${tg.reps}${mu == Measure.reps ? '' : ' ${t(mu.unit)}'} · ${reserveTarget(mu, tg.rir)}${it.note != null ? '\n🩹 ${it.note}' : ''}',
-                          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                        );
-                      },
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _logPlanned(it),
-                  ),
-                ),
-              ),
-          ],
+          ..._items(done, cs),
           if (done.isNotEmpty && !_locked)
             Padding(
               padding: const EdgeInsets.only(top: 18),

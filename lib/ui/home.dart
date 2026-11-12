@@ -23,6 +23,7 @@ import '../session_compare.dart';
 import '../program.dart';
 import '../theme.dart';
 import 'drawer.dart';
+import 'whats_new_dialog.dart';
 import 'injury_screen.dart';
 import '../injuries.dart' show injuryById, injuryShortName, knownInjuries;
 import 'health_import.dart';
@@ -150,7 +151,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _resume();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkMoves().then((_) => _checkElevFormat()));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkMoves().then((_) => _checkElevFormat()).then((_) => _checkWhatsNew()),
+    );
+  }
+
+  /// Päivityksen jälkeen kerran: uudet ominaisuudet (ei verkkodemossa).
+  Future<void> _checkWhatsNew() async {
+    if (isDemo || !mounted) return;
+    try {
+      await maybeShowWhatsNew(context);
+    } catch (_) {}
   }
 
   /// Päivityksen jälkeen: ladatut korkeustiedostot vanhassa muodossa (0.5) → kerro ja tarjoa päivitystä. Vanhat

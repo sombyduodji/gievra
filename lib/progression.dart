@@ -1,17 +1,24 @@
+import 'dart:math' as math;
+
 import 'app_state.dart';
 import 'l10n.dart' as l10n;
 import 'exercises.dart';
 import 'models.dart';
+import 'plates.dart';
 import 'program.dart';
 
 // Seuraavan kerran paino/toisto-ehdotus. Kaikki lasketaan laitteella omista .md-tiedoista.
 //
 // Perusajatus: tuplaprogressio + RIR-autoregulaatio (toistoja varastossa, Zourdos ym. 2016 RIR-RPE-asteikko).
-//  - RIR 3+ edellisen kerran työsarjoissa: paino ylös yhdellä lisäyksellä.
-//  - RIR 1–2: sama paino, yksi toisto lisää.
+//  - RIR 3+ edellisen kerran työsarjoissa: paino ylös, toistot arvioidun maksimin mukaan.
+//  - RIR 1–2: sama paino, yksi toisto lisää, kunnes toistoja on toistoalueen ylärajan verran (repBand:
+//    moninivel voima-alue 6 tai 10, eristävät 15). Sitten paino ylös ja toistot alas: toistoja ei kannata lisätä loputtomiin (Plotkin ym. 2022,
+//    PeerJ 10:e14142: toisto- ja kuormaprogressio yhtä hyviä, mutta kuormaa on lisättävä jossain vaiheessa).
 //  - RIR 0: sama paino ja toistot (toistetaan, kunnes tuntuu kevyemmältä).
 //  - RIR merkitsemättä: toistetaan edellinen.
-// Alavartalon liikkeissä lisäys on kaksinkertainen (tavallinen käytäntö: 5 kg alakroppa / 2,5 kg yläkroppa).
+// Tankoliikkeissä lisäys 5 tai 10 kg (ks. nextLoad): 10 kg vain, jos se on enintään 10 % ja toistot pysyvät
+// toistoalueella. Esim. maastaveto 10 × 100 kg (varaa 1–2) → 110 kg × 6, ei 102,5 kg × 10.
+// Raskaalta tuntunut edellinen kerta (fiilis 😫/😕) pitää painon ennallaan: varovainen valmennuskäytäntö.
 //
 // Paluu tauolta: voima säilyy yleensä hyvin 2–4 viikon tauon yli (Mujika & Padilla 2000, Sports Med 30:79–87),
 // mutta paluu tehdään silti kevyemmin, sairauden jälkeen varovaisemmin. Kerroin palautuu täyteen
@@ -62,6 +69,59 @@ double returnLoadFactor(int days, {required bool sick}) {
 
 double _round(double kg, double step) => (kg / step).round() * step;
 
+/// Moninivelliike (kyykky, maastaveto, punnerrukset, vedot): isompi lisäys ja alempi toistoyläraja.
+bool _compound(String exercise) => slots[slotOf(exercise)]?.compound ?? false;
+
+/// Toistoalue, jossa toistoja lisätään ennen painon nostoa (ilman ohjelmaa), edellisten toistojen mukaan:
+/// moninivel 1–6 toistoa = voima-alue 4–6, muuten 6–10; eristävät 8–15. Kuormat ≤ 8RM kehittävät maksimivoimaa
+/// parhaiten ja lihaskasvu on samanlaista laajalla alueella (Schoenfeld ym. 2017 JSCR 31:3508; Lopez ym. 2021
+/// MSSE 53:1206). Yli 10 toiston sarjoista maksimi- ja varaa-arviot ovat epätarkempia (Zourdos ym. 2021).
+(int, int) repBand(String exercise, int reps) {
+  if (!_compound(exercise)) return (8, 15);
+  return reps <= 6 ? (4, 6) : (6, 10);
+}
+
+/// Toistoyläraja ilman ohjelmaa: tämän jälkeen paino ylös ja toistot alas.
+int repCeiling(String exercise, [int reps = 10]) => repBand(exercise, reps).$2;
+
+/// Toistot uudella painolla [kg], kun arvioitu maksimi on [e1] ja varaa jää noin 1–2 (Epleyn kaava).
+int repsAtLoad(double e1, double kg, {int max = 30}) => (30 * (e1 / kg - 1) - 1.5).round().clamp(1, max);
+
+/// Kahvakuulaliike tai kuulalla tehty liike (esim. goblet-kyykky kuulakoon painolla): seuraava paino on seuraava
+/// kuulakoko (yleensä +4 kg, 16 → 20 kg = +25 %).
+bool _bell(String exercise, double top) =>
+    kettlebellOnly(exercise) ||
+    ((exerciseEquipment[exercise]?.contains(Equip.kahvakuula) ?? false) &&
+        !isBarbell(exercise) &&
+        kettlebellSizes.contains(top));
+
+/// Toistojen yläraja, jonka jälkeen raskaampaan siirrytään, vaikka sillä onnistuisi vain muutama toisto.
+const _repCap = 20;
+
+/// Seuraava paino, kun nostetaan, ja toistot sillä.
+/// Tankoliikkeet (moninivel): vain 5 tai 10 kg kerrallaan. 10 kg vain, kun se on enintään 10 % painosta
+/// (NSCA/ACSM: alavartalo 5–10 %, ylävartalo 2,5–5 % ylittäessä toistotavoitteen) ja arvioidut toistot uudella
+/// painolla pysyvät toistoalueella ([floor]); muuten 5 kg. Muut moninivelliikkeet 4–5 % (vähintään yksi lisäys),
+/// eristävät pienin lisäys (alavartalossa kaksi), kahvakuulat seuraava kuula.
+/// [e1]: arvioitu maksimi viime kerrasta; [maxReps]: toistoja enintään (ei enempää kuin viimeksi).
+(double, int) nextLoad(String exercise, double top, {double? e1, int floor = 1, int maxReps = 30}) {
+  final step = settings.weightStep;
+  final legs = bodyGroupOf(exercise) == BodyGroup.legs;
+  double up;
+  if (_bell(exercise, top)) {
+    up = nextKettlebell(top);
+  } else if (_compound(exercise) && isBarbell(exercise)) {
+    up = top + 5;
+    if (top >= 100 && (e1 == null || repsAtLoad(e1, top + 10, max: maxReps) >= floor)) up = top + 10;
+  } else if (_compound(exercise)) {
+    up = top + math.max(legs ? 2 * step : step, _round(top * (legs ? .05 : .04), step));
+  } else {
+    up = top + (legs ? 2 * step : step);
+  }
+  final reps = e1 == null ? maxReps : repsAtLoad(e1, up, max: maxReps);
+  return (up, reps);
+}
+
 /// Toistoja varastossa luvuksi: ei yhtään 0, muutama 1,5, reilusti 3, merkitsemätön 2.
 double _rirNum(int? r) => switch (r) {
   0 => 0,
@@ -97,7 +157,6 @@ Suggestion? suggestForTarget(String exercise, DateTime date, Target t) =>
 Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
   final mu = measureOf(exercise);
   if (mu != Measure.reps) return _suggestOther(exercise, date, mu);
-  final step = settings.weightStep * (bodyGroupOf(exercise) == BodyGroup.legs ? 2 : 1);
   Suggestion? s;
   if (t.pct != null) {
     final e1 = workingE1rm(exercise, date);
@@ -117,12 +176,29 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
       final minReps = work.map((x) => x.reps).reduce((a, b) => a < b ? a : b);
       final noReserve = work.any((x) => x.rir == 0);
       if (minReps >= t.hi && !noReserve) {
-        final up = kettlebellOnly(exercise) ? nextKettlebell(top) : top + step;
-        s = Suggestion(
-          up,
-          t.lo,
-          l10n.t('Kaikki sarjat ylärajalla ({0}): +{1} kg, toistot alas {2}:een.', [t.hi, fmtNum(up - top), t.lo]),
-        );
+        // Paino ylös prosentteina; toistot arvioidun maksimin mukaan ohjelman rajoissa (ei aina alarajalle).
+        final rir = work.map((x) => x.rir).whereType<int>().fold<int?>(null, (a, b) => a == null || b < a ? b : a);
+        final e1 = top * (1 + (minReps + _rirNum(rir)) / 30);
+        final (up, r) = nextLoad(exercise, top, e1: e1, floor: t.lo, maxReps: t.hi);
+        final reps = r.clamp(t.lo, t.hi);
+        if (r < t.lo && !(isBarbell(exercise) && _compound(exercise)) && minReps < _repCap) {
+          // Seuraava kuula tai paino olisi vielä liian raskas ohjelman toistoille: toistoja ylärajan yli ensin.
+          final more = math.min(minReps + 1, _repCap);
+          s = Suggestion(
+            top,
+            more,
+            l10n.t(
+              'Seuraava paino ({0} kg) olisi vielä liian raskas (noin {1} toistoa): samalla painolla {2} toistoa.',
+              [fmtNum(up), r, more],
+            ),
+          );
+        } else {
+          s = Suggestion(
+            up,
+            reps,
+            l10n.t('Kaikki sarjat ylärajalla ({0}): +{1} kg, toistot alas {2}:een.', [t.hi, fmtNum(up - top), reps]),
+          );
+        }
       } else if (noReserve) {
         s = Suggestion(
           top,
@@ -230,11 +306,9 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
   final work = e.sets.where((s) => s.kg >= top * .9).toList();
   final reps = work.first.reps;
   final rirs = work.map((s) => s.rir).whereType<int>().toList();
-  final step = settings.weightStep * (bodyGroupOf(exercise) == BodyGroup.legs ? 2 : 1);
-
   double kg = top;
   var r = reps;
-  String why;
+  String why = '';
   if (rirs.isEmpty) {
     why = l10n.t('Toista edellinen ({0} kg × {1}). Vastaa sarjan jälkeen "jäikö varaa", niin ehdotus tarkentuu.', [
       fmtNum(top),
@@ -242,9 +316,43 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
     ]);
   } else {
     final minRir = rirs.reduce((a, b) => a < b ? a : b);
-    if (minRir >= 3) {
-      kg = top + step;
-      why = l10n.t('Edellisellä kerralla jäi reilusti varaa: +{0} kg.', [fmtNum(step)]);
+    final (floor, ceiling) = repBand(exercise, reps);
+    if (minRir >= 3 || (minRir >= 1 && reps >= ceiling)) {
+      // Paino ylös; toistot arvioidun maksimin mukaan (enintään edelliset), jotta varaa jää noin 1–2.
+      final e1 = top * (1 + (reps + _rirNum(minRir)) / 30);
+      // Reilusti varaa: toistot pysyvät lähes ennallaan (enintään yksi vähemmän); ylärajalta noustessa
+      // toistot saavat laskea toistoalueen alarajalle.
+      final low = math.min(minRir >= 3 ? math.max(floor, reps - 1) : floor, reps);
+      (kg, r) = nextLoad(exercise, top, e1: e1, floor: low, maxReps: reps);
+      // Iso hyppy (kahvakuula +4 kg, kevyt paino): jos toistot uudella painolla jäisivät alle toistoalueen,
+      // ensin pienempi lisäys, jos sellainen on, muuten lisää toistoja samalla painolla (tuplaprogressio).
+      // Raja on toistoalueen alaraja myös, kun varaa jäi reilusti (muuten reilu vara nostaisi myöhemmin kuin
+      // muutama).
+      final band = math.min(floor, reps);
+      if (r < band && !(isBarbell(exercise) && _compound(exercise)) && reps < _repCap) {
+        final step = settings.weightStep;
+        final small = top + step;
+        if (!_bell(exercise, top) && kg - top > step && repsAtLoad(e1, small, max: reps) >= band) {
+          (kg, r) = (small, repsAtLoad(e1, small, max: reps));
+        } else {
+          final next = kg;
+          final nextReps = r;
+          kg = top;
+          r = math.min(reps + (minRir >= 3 ? 2 : 1), _repCap);
+          why = l10n.t(
+            'Seuraava paino ({0} kg) olisi vielä liian raskas (noin {1} toistoa): samalla painolla {2} toistoa.',
+            [fmtNum(next), nextReps, r],
+          );
+        }
+      }
+      if (kg > top) {
+        why = minRir >= 3
+            ? l10n.t('Edellisellä kerralla jäi reilusti varaa: +{0} kg, noin {1} toistoa.', [fmtNum(kg - top), r])
+            : l10n.t(
+                'Toistoja jo {0}: paino ylös +{1} kg ja toistot alas ({2}). Toistoja ei kannata lisätä loputtomiin.',
+                [reps, fmtNum(kg - top), r],
+              );
+      }
     } else if (minRir >= 1) {
       r = reps + 1;
       why = l10n.t('Edellisellä kerralla jäi muutama: sama paino, yksi toisto lisää.');
@@ -337,11 +445,16 @@ Suggestion? _afterFeedback(String exercise, DateTime date, Suggestion? s) {
       );
     }
   }
-  if (w.dayReasons.isNotEmpty && (w.feeling ?? 3) <= 2 && s.kg > top) {
+  // Raskaalta tuntunut kerta (liikkeen oma fiilis, muuten koko treenin): ei nosteta painoa, toistetaan edellinen.
+  final feel = w.moveFeeling[exercise] ?? w.feeling ?? 3;
+  if (feel <= 2 && s.kg > top) {
+    final lastReps = w.exercises.firstWhere((e) => e.name == exercise).workSets.where((x) => x.kg == top).first.reps;
     return Suggestion(
       top,
-      s.reps,
-      l10n.t('Viime kerta oli raskas ({0}): sama paino kuin viimeksi.', [w.dayReasons.map(l10n.t).join(', ')]),
+      lastReps,
+      w.dayReasons.isNotEmpty
+          ? l10n.t('Viime kerta oli raskas ({0}): sama paino kuin viimeksi.', [w.dayReasons.map(l10n.t).join(', ')])
+          : l10n.t('Viime kerta tuntui raskaalta: sama paino kuin viimeksi.'),
       setsFactor: s.setsFactor,
     );
   }

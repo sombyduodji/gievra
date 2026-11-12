@@ -30,6 +30,9 @@ import 'intro.dart';
 import 'program_screen.dart';
 import 'body_screen.dart';
 import 'widgets.dart';
+import 'plate_sheet.dart';
+import 'whats_new_dialog.dart';
+import '../whats_new.dart';
 import '../l10n.dart';
 import '../maps/elevation.dart' show copernicusAttribution;
 
@@ -320,6 +323,16 @@ class AboutScreen extends StatelessWidget {
                 title: Text(t('Tietoa')),
                 onTap: () => showAbout(context),
               ),
+              // Uusimman version uudet ominaisuudet uudelleen luettaviksi.
+              if (latestFeatures(AutoBackup.shortVersion(version)).isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.new_releases_outlined),
+                  title: Text(t('Uutta tässä versiossa')),
+                  onTap: () {
+                    final v = AutoBackup.shortVersion(version);
+                    showWhatsNew(context, latestFeatures(v), latestFeatures(v).first.version);
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.code),
                 title: Text(t('Avoin lähdekoodi ja lisenssit')),
@@ -749,6 +762,15 @@ class _SettingsSection extends StatelessWidget {
                 selected: {settings.weightStep},
                 onSelectionChanged: (s) => settings.setWeightStep(s.first),
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.fitness_center),
+              title: Text(t('Levyt ja tanko')),
+              subtitle: Text(
+                t('Levylaskuri: {0} · tanko {1} kg', [settings.plates.map(fmtNum).join(', '), fmtNum(settings.barKg)]),
+                style: sub,
+              ),
+              onTap: () => showPlateSheet(context),
             ),
             const SizedBox(height: 8),
             ListTile(

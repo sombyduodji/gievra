@@ -18,6 +18,7 @@ class SportShare {
 class Recap {
   final DateTime from, to; // to = seuraavan jakson alku
   int gym = 0, activities = 0, sets = 0, prs = 0, minutes = 0, kcal = 0;
+  int dropSets = 0, amrapSets = 0; // pudotus- ja AMRAP-sarjat (sisältyvät sarjoihin)
   int gymMinutes = 0, cardioMinutes = 0;
   int timed = 0, parts = 0; // osia (sali / kestävyys) yhteensä ja niistä kesto kirjattu
   double volume = 0, km = 0;
@@ -99,6 +100,8 @@ Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'})
         r.gymMinutes += mins;
         r.sets += w.exercises.fold(0, (a, e) => a + e.workSets.length);
         r.prs += w.exercises.expand((e) => e.sets).where((s) => s.pr).length;
+        r.dropSets += w.exercises.expand((e) => e.workSets).where((s) => s.kind == dropSet).length;
+        r.amrapSets += w.exercises.expand((e) => e.workSets).where((s) => s.kind == amrapSet).length;
         r.volume += workVolume(w);
       }
     }
