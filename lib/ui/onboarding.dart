@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import '../daily_steps.dart';
+import 'steps_ui.dart' show stepsSupported;
+
 import 'package:flutter/services.dart';
 
 import '../app_state.dart';
@@ -29,6 +33,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   String _mode = settings.trainMode;
   bool _body = false;
+  bool _steps = false;
 
   void _done() {
     if (_c.text.trim().isEmpty) return;
@@ -41,6 +46,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final kg = parseWeight(_weight.text);
       if (kg != null) b.weights[dateOnly(DateTime.now())] = kg;
       if (!b.isEmpty) settings.setBody(b);
+    }
+    // Päivän askeleet: Health Connectin lupa kysytään heti (etusivun kortissa on myös Salli-painike).
+    if (_steps && stepsSupported) {
+      settings.dailySteps = true;
+      dailySteps.requestPermission();
     }
     // Pelkkä kestävyys: salin ohjelmakysely ohitetaan (sen voi tehdä myöhemmin valikosta).
     if (_mode == 'cardio') settings.introDone = true;
@@ -120,6 +130,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
+            if (stepsSupported) ...[
+              SectionLabel(t('Seurataanko päivän askeleita?')),
+              SegmentedButton<bool>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: true, label: Text(t('Kyllä'))),
+                  ButtonSegment(value: false, label: Text(t('Ei nyt'))),
+                ],
+                selected: {_steps},
+                onSelectionChanged: (v) => setState(() => _steps = v.first),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  t(
+                    'Askeleet päivittäin Health Connectista (puhelin, älysormus tai -kello) ilman päällekkäisyyksiä. '
+                    'Näkyvät etusivulla ja tilastoissa. Voit muuttaa tätä myöhemmin asetuksista.',
+                  ),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+              ),
+            ],
             SectionLabel(t('Seurataanko kehonpainoa?')),
             SegmentedButton<bool>(
               showSelectedIcon: false,

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -11,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../app_state.dart';
 import '../auto_backup.dart';
 import '../body.dart';
+import '../daily_steps.dart';
 import '../csv_export.dart';
 import '../garmin_import.dart';
 import '../import_detect.dart';
@@ -159,21 +159,30 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final today = dateOnly(DateTime.now());
     var period = 90; // päiviä; 0 = kaikki, -1 = oma aikaväli
     DateTimeRange? custom;
-    var gym = true, cardio = true, body = false, notes = false;
+    var gym = true, cardio = true, body = false, notes = false, steps = false;
     final hasBody = settings.body.weights.isNotEmpty;
+    // Askeleet valittavissa, kun päivän askeleet ovat päällä tai niitä on tallennettu (luettu käynnistyessä).
+    final hasSteps = settings.dailySteps || dailySteps.days.isNotEmpty;
     DateTime from() => switch (period) {
       0 => DateTime(1900),
       -1 => custom?.start ?? today,
       _ => today.subtract(Duration(days: period - 1)),
     };
     DateTime to() => period == -1 ? custom?.end ?? today : today;
-    CsvExportOptions opts() =>
-        CsvExportOptions(from: from(), to: to(), gym: gym, cardio: cardio, body: body && hasBody, notes: notes);
+    CsvExportOptions opts() => CsvExportOptions(
+      from: from(),
+      to: to(),
+      gym: gym,
+      cardio: cardio,
+      body: body && hasBody,
+      notes: notes,
+      steps: steps && hasSteps,
+    );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) {
-          final files = buildCsvExport(store.workouts, settings.body, opts());
+          final files = buildCsvExport(store.workouts, settings.body, opts(), steps: dailySteps.days);
           final cs = Theme.of(ctx).colorScheme;
           return AlertDialog(
             scrollable: true,
@@ -254,6 +263,15 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                     title: Text(t('Punnitukset ja pituus')),
                     subtitle: Text(t('Terveystietoa: jaa harkiten.'), style: TextStyle(color: cs.error)),
                   ),
+                if (hasSteps)
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: steps,
+                    onChanged: (v) => setDialog(() => steps = v ?? false),
+                    title: Text(t('Päivän askeleet')),
+                    subtitle: Text(t('Terveystietoa: jaa harkiten.'), style: TextStyle(color: cs.error)),
+                  ),
                 CheckboxListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
@@ -281,16 +299,11 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     );
     if (ok != true || !mounted) return;
     await _run(() async {
-      final files = buildCsvExport(store.workouts, settings.body, opts());
+      final files = buildCsvExport(store.workouts, settings.body, opts(), steps: dailySteps.days);
       final stamp = isoDate(today);
       final (name, bytes) = files.length == 1
           ? ('gievra-${files.single.name.replaceAll('.csv', '')}-$stamp.csv', utf8.encode(files.single.text))
-          : (
-              'gievra-csv-$stamp.zip',
-              ZipEncoder().encodeBytes(
-                Archive()..files.addAll([for (final f in files) ArchiveFile.bytes(f.name, utf8.encode(f.text))]),
-              ),
-            );
+          : ('gievra-csv-$stamp.zip', csvZip(files));
       final uri = await FilePicker.saveFile(
         fileName: name,
         bytes: Uint8List.fromList(bytes),
@@ -338,7 +351,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
 
   Future<void> _preview(ImportResult r) async {
     if (!mounted) return;
-    if (r.workouts.isEmpty && r.bodyMd == null && r.unreadable.isEmpty) {
+    if (r.workouts.isEmpty && r.bodyMd == null && r.stepsMd == null && r.unreadable.isEmpty) {
       _snack(t('Tiedostosta ei löytynyt treenejä.'));
       return;
     }
@@ -348,6 +361,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final weighIns = r.bodyMd == null ? const <DateTime, double>{} : parseBody(r.bodyMd!).weights;
     final newWeighIns = weighIns.keys.where((d) => !settings.body.weights.containsKey(d)).length;
     var enableTracker = !settings.bodyTracker && newWeighIns > 0;
+    // Askelpäivät: uusia ovat päivät, joita tällä laitteella ei vielä ole (olemassa olevat säilyvät).
+    final stepDays = r.stepsMd == null ? const <DateTime, int>{} : parseSteps(r.stepsMd!).$1;
+    final newStepDays = stepDays.keys.where((d) => !dailySteps.days.containsKey(d)).length;
     // Vammatila ei tule yhdistettäessä itsestään (vanha vamma voi olla jo parantunut): oletuksena pois.
     final injuries = newInjuries(r);
     var enableInjuries = false;
@@ -369,6 +385,14 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                   '${fmtNum((r.workouts.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0)) * 10).round() / 10)} km',
                 ),
               if (r.first != null) _row(t('Aikaväli'), '${isoDate(r.first!)} – ${isoDate(r.last!)}'),
+              // Päivän askeleet (askeleet.md): puuttuvat päivät lisätään, tämän laitteen luvut pysyvät.
+              if (r.stepsMd != null)
+                _row(
+                  t('Askelpäiviä'),
+                  newStepDays == stepDays.length
+                      ? '${stepDays.length}'
+                      : t('{0} (uusia {1})', [stepDays.length, newStepDays]),
+                ),
               // Punnitukset (kaikki päivät) kehonpaino.md:hen; vanha laskuri vain, jos punnituksia ei ole erikseen.
               if (r.bodyMd != null)
                 _row(
@@ -444,6 +468,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                     : t('Tuodaan {0} uutta treeniä.', [newCount]),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
+              if (newStepDays > 0) Text(t('Lisäksi {0} askelpäivää.', [newStepDays])),
               if (r.newExercises.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -457,9 +482,10 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
-            // Tuotavaa on, jos on uusia treenejä tai uusia punnituksia (esim. FitNotes-tuonti uudelleen punnitusten takia).
+            // Tuotavaa on, jos on uusia treenejä, punnituksia tai askelpäiviä (esim. FitNotes-tuonti uudelleen
+            // punnitusten takia tai varmuuskopio, josta tulee vain askeleita).
             FilledButton(
-              onPressed: newCount == 0 && newWeighIns == 0 ? null : () => Navigator.pop(ctx, true),
+              onPressed: newCount == 0 && newWeighIns == 0 && newStepDays == 0 ? null : () => Navigator.pop(ctx, true),
               child: Text(t('Tuo')),
             ),
           ],
@@ -553,7 +579,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
             Icons.archive_outlined,
             t('Vie varmuuskopio (.zip)'),
             t(
-              'Kaikki treenit, reitit (.gpx), asetukset, ohjelma, punnitukset ja tallennetut ohjelmat yhdessä zip-tiedostossa.',
+              'Kaikki treenit, reitit (.gpx), asetukset, ohjelma, punnitukset, askeleet ja tallennetut ohjelmat yhdessä zip-tiedostossa.',
             ),
             _export,
           ),

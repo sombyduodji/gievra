@@ -13,6 +13,24 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.4',
+    Icons.directions_walk,
+    'Päivän askeleet',
+    'Askeleet päivittäin Health Connectista (esim. puhelin ja Oura) ilman päällekkäisyyksiä; kävelymaton askeleet lisätään. Etusivun kortissa, kalenterissa renkaana ja tilastojen Askeleet-välilehdellä. Ota käyttöön: Asetukset → Keho ja laitteet → Päivän askeleet.',
+  ),
+  NewFeature(
+    '0.6.4',
+    Icons.today,
+    'Päivän yhteenveto',
+    'Kalenterin päivän napautus näyttää päivän treenit, ajan, matkan ja askeleet. Pyyhkäise sivulle vaihtaaksesi päivää.',
+  ),
+  NewFeature(
+    '0.6.4',
+    Icons.directions_run,
+    'Juoksu etusivun kortissa',
+    'Etusivun kortissa Edistyminen, Juoksu ja Askeleet: pyyhkäise tai valitse otsikosta. Juoksu näkyy, kun juoksuja on tallennettu.',
+  ),
+  NewFeature(
     '0.6.3',
     Icons.fitness_center,
     'Levylaskuri',

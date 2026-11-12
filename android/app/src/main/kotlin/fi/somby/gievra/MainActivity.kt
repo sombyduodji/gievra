@@ -214,9 +214,15 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/health").setMethodCallHandler { call, result ->
             when (call.method) {
                 "status" -> result.success(HealthBridge.status(this))
+                "historyAvailable" -> result.success(HealthBridge.historyAvailable(this))
                 "granted" -> scope.launch {
                     try {
-                        val need = if (call.argument<Boolean>("import") == true) HealthBridge.importPermissions else HealthBridge.readPermissions
+                        val need = when {
+                            call.argument<Boolean>("history") == true -> HealthBridge.historyPermissions
+                            call.argument<Boolean>("steps") == true -> HealthBridge.stepsPermissions
+                            call.argument<Boolean>("import") == true -> HealthBridge.importPermissions
+                            else -> HealthBridge.readPermissions
+                        }
                         result.success(HealthBridge.granted(this@MainActivity).containsAll(need))
                     } catch (e: Exception) {
                         result.error("health", e.message, null)
@@ -224,7 +230,12 @@ class MainActivity : FlutterActivity() {
                 }
                 "request" -> {
                     val write = call.argument<Boolean>("write") == true && BuildConfig.DEBUG
-                    val read = if (call.argument<Boolean>("import") == true) HealthBridge.importPermissions else HealthBridge.readPermissions
+                    val read = when {
+                        call.argument<Boolean>("history") == true -> HealthBridge.historyPermissions
+                        call.argument<Boolean>("steps") == true -> HealthBridge.stepsPermissions
+                        call.argument<Boolean>("import") == true -> HealthBridge.importPermissions
+                        else -> HealthBridge.readPermissions
+                    }
                     healthAsked = if (write) read + HealthBridge.writePermissions else read
                     healthResult = result
                     try {
@@ -254,6 +265,44 @@ class MainActivity : FlutterActivity() {
                         val start = (call.argument<Number>("start") ?: 0).toLong()
                         val end = (call.argument<Number>("end") ?: 0).toLong()
                         result.success(HealthBridge.stepRecords(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "dailySteps" -> scope.launch {
+                    try {
+                        result.success(HealthBridge.dailySteps(this@MainActivity, call.argument<String>("from")!!, call.argument<String>("to")!!))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "deviceSteps" -> scope.launch {
+                    try {
+                        result.success(
+                            HealthBridge.deviceSteps(
+                                this@MainActivity,
+                                call.argument<String>("date")!!,
+                                (call.argument<Number>("start") ?: 0).toLong(),
+                                (call.argument<Number>("end") ?: 0).toLong(),
+                                call.argument<String>("label")!!,
+                            ),
+                        )
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "stepsInRange" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.stepsInRange(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "dayStepsByApp" -> scope.launch {
+                    try {
+                        result.success(HealthBridge.dayStepsByApp(this@MainActivity, call.argument<String>("date")!!))
                     } catch (e: Exception) {
                         result.error("health", e.message, null)
                     }

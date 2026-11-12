@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../app_info.dart';
 import '../app_state.dart';
 import '../body.dart';
+import '../daily_steps.dart';
 import '../l10n.dart';
 import '../maps/map_store.dart';
 import '../models.dart' show isoDate;
@@ -79,6 +80,16 @@ Future<List<(String, String, bool, String?)>> defaultReportAttachments() async {
       body.path,
       false,
       t('⚠ Sisältää punnituksesi ja pituutesi (terveystietoa). Lähetä vain, jos ongelma liittyy painoon.'),
+    ));
+  }
+  // Päivän askeleet: terveystietoa, valittavana mutta oletuksena pois.
+  final steps = File(p.join(root, stepsFileName));
+  if (await steps.exists()) {
+    out.add((
+      stepsFileName,
+      steps.path,
+      false,
+      t('⚠ Sisältää päivittäiset askeleesi (terveystietoa). Lähetä vain, jos ongelma liittyy askeliin.'),
     ));
   }
   return out;

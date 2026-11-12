@@ -181,12 +181,27 @@ class HealthConnect {
   }
 
   /// [import]: tehdyn liikunnan lisäys tarvitsee lisäksi matkan lukuluvan.
-  static Future<bool> granted({bool import = false}) async =>
-      await _ch.invokeMethod<bool>('granted', {'import': import}) ?? false;
+  static Future<bool> granted({bool import = false, bool steps = false, bool history = false}) async =>
+      await _ch.invokeMethod<bool>('granted', {'import': import, 'steps': steps, 'history': history}) ?? false;
+
+  /// Tukeeko Health Connect vanhemman historian lukua (yli 30 päivää ennen luvan antamista).
+  static Future<bool> historyAvailable() async {
+    try {
+      return await _ch.invokeMethod<bool>('historyAvailable') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Lupakysely; [write] vain kehitysversiossa (testitiedot emulaattorille).
-  static Future<bool> request({bool write = false, bool import = false}) async =>
-      await _ch.invokeMethod<bool>('request', {'write': write, 'import': import}) ?? false;
+  static Future<bool> request({
+    bool write = false,
+    bool import = false,
+    bool steps = false,
+    bool history = false,
+  }) async =>
+      await _ch.invokeMethod<bool>('request', {'write': write, 'import': import, 'steps': steps, 'history': history}) ??
+      false;
 
   /// Päivän [day] harjoitukset (alkavat sinä päivänä, laitteen aikavyöhykkeellä) tunnisteineen ja matkoineen.
   static Future<List<HealthCandidate>> sessions(DateTime day) async {
@@ -223,6 +238,50 @@ class HealthConnect {
       'end': end.millisecondsSinceEpoch,
     });
     return [for (final m in r ?? const []) HealthCandidate.fromMap(m as Map)];
+  }
+
+  /// Päivän askeleet päivittäin (Health Connectin koonti ilman päällekkäisyyksiä): päivä -> (askeleet, sovellukset).
+  static Future<Map<DateTime, (int, List<String>)>> dailySteps(DateTime from, DateTime to) async {
+    final r = await _ch.invokeMethod<List>('dailySteps', {'from': isoDate(from), 'to': isoDate(to)});
+    return {
+      for (final m in (r ?? const []).cast<Map>())
+        DateTime.parse(m['date'] as String): (
+          (m['steps'] as num).toInt(),
+          [for (final a in (m['apps'] as List? ?? const [])) HealthCandidate.appName(a as String?)],
+        ),
+    };
+  }
+
+  /// Laitteen sovelluksen [label] liikunta päivänä [day] ajalla [start]..[end]: (päivän koonnin jo sisältämät
+  /// sovelluksen askeleet, muiden sovellusten askeleet liikunnan ajalta). Null, jos sovellusta ei löydy.
+  static Future<(int, int)?> deviceSteps(DateTime day, DateTime start, DateTime end, String label) async {
+    final m = await _ch.invokeMethod<Map>('deviceSteps', {
+      'date': isoDate(day),
+      'start': start.millisecondsSinceEpoch,
+      'end': end.millisecondsSinceEpoch,
+      'label': label,
+    });
+    final inc = (m?['included'] as num?)?.toInt() ?? -1;
+    if (inc < 0) return null;
+    return (inc, (m?['others'] as num?)?.toInt() ?? 0);
+  }
+
+  /// Aikavälin askeleet Health Connectin koonnista (ilman päällekkäisyyksiä).
+  static Future<int> stepsInRange(DateTime start, DateTime end) async =>
+      ((await _ch.invokeMethod<num>('stepsInRange', {
+                'start': start.millisecondsSinceEpoch,
+                'end': end.millisecondsSinceEpoch,
+              })) ??
+              0)
+          .toInt();
+
+  /// Yhden päivän askeleet sovelluksittain (vertailuun): sovellus -> askeleet.
+  static Future<Map<String, int>> dayStepsByApp(DateTime day) async {
+    final r = await _ch.invokeMethod<List>('dayStepsByApp', {'date': isoDate(day)});
+    return {
+      for (final m in (r ?? const []).cast<Map>())
+        HealthCandidate.appName(m['app'] as String?): (m['steps'] as num).toInt(),
+    };
   }
 
   static Future<void> openSettings() => _ch.invokeMethod('settings');

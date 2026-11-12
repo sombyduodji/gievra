@@ -94,4 +94,12 @@ void main() {
     expect(detectImport('salisarjat.csv', b(csv)), ImportKind.gievraCsv);
     expect(detectImport('kuva.png', Uint8List.fromList([0x89, 0x50, 0x4e, 0x47])), ImportKind.unknown);
   });
+
+  test('Useampi tiedosto zippinä (ennen: Cannot add to an unmodifiable list)', () {
+    final files = buildCsvExport(ws, body, CsvExportOptions(from: DateTime(2000), to: DateTime(2030), body: true));
+    expect(files.length, greaterThan(1));
+    final zip = ZipDecoder().decodeBytes(csvZip(files));
+    expect(zip.files.map((f) => f.name), files.map((f) => f.name));
+    expect(zip.files.first.content, utf8.encode(files.first.text));
+  });
 }

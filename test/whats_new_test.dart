@@ -60,8 +60,15 @@ void main() {
     expect(find.text('Uutta versiossa 0.6.3'), findsNothing);
     await run(tester, '0.6.3');
     expect(find.text('Uutta versiossa 0.6.3'), findsNothing, reason: 'ei uudelleen');
-    // Seuraava versio ilman uusia ominaisuuksia: ei ikkunaa.
+    // Seuraava versio: vain sen uudet (askeleet), ei 0.6.3:n kohtia uudelleen.
     await run(tester, '0.6.4');
+    expect(find.text('Uutta versiossa 0.6.4'), findsOneWidget);
+    expect(find.text('Päivän askeleet'), findsOneWidget);
+    expect(find.text('Levylaskuri'), findsNothing);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    await run(tester, '0.6.5');
     expect(find.byType(AlertDialog), findsNothing);
   });
 
