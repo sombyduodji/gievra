@@ -590,8 +590,15 @@ Measure measureOf(String exercise) => settings.customMeasure[exercise] ?? _built
 /// Sarja tekstinä liikkeen mittaustavan mukaan: "100 kg × 5", "45 s", "20 kg × 2 edestakaisin".
 String fmtSet(String exercise, SetEntry s) {
   final m = measureOf(exercise);
-  if (m == Measure.reps) return '${fmtNum(s.kg)} kg × ${s.reps}';
-  return s.kg == 0 ? '${s.reps} ${m.unit}' : '${fmtNum(s.kg)} kg × ${s.reps} ${m.unit}';
+  final base = m == Measure.reps
+      ? '${fmtNum(s.kg)} kg × ${s.reps}'
+      : (s.kg == 0 ? '${s.reps} ${m.unit}' : '${fmtNum(s.kg)} kg × ${s.reps} ${m.unit}');
+  // Pudotussarjan jatko nuolella, AMRAP merkittynä.
+  return switch (s.kind) {
+    dropSet => '↘ $base',
+    amrapSet => '$base AMRAP',
+    _ => base,
+  };
 }
 
 /// Hakusanat: arkikieli ja englanti (FitNotes / netti), jotta "lankutus" tai "plank" löytää Lankun.

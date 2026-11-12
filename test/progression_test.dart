@@ -38,8 +38,11 @@ void main() {
 
   test('RIR ohjaa ehdotusta; alavartalossa tuplalisäys', () {
     final d = DateTime(2026, 11, 6);
+    // Reilusti varaa: tankoliike +5 kg (10 kg pudottaisi toistot alle 4), toistot pysyvät.
     store.workouts = [bench(DateTime(2026, 11, 3), 100, 5, 3)];
-    expect(suggestNext('Penkkipunnerrus', d)!.kg, 102.5);
+    expect((suggestNext('Penkkipunnerrus', d)!.kg, suggestNext('Penkkipunnerrus', d)!.reps), (105, 5));
+    store.workouts = [bench(DateTime(2026, 11, 3), 80, 8, 3)];
+    expect(suggestNext('Penkkipunnerrus', d)!.kg, 85, reason: 'tankoliikkeessä vain 5 tai 10 kg');
     store.workouts = [bench(DateTime(2026, 11, 3), 100, 5, 1)];
     final s = suggestNext('Penkkipunnerrus', d)!;
     expect((s.kg, s.reps), (100, 6));
@@ -53,7 +56,70 @@ void main() {
         ],
       ),
     ];
-    expect(suggestNext('Takakyykky', d)!.kg, 145);
+    expect(suggestNext('Takakyykky', d)!.kg, 150, reason: '140 × 5, reilusti varaa: +10 kg, toistot 4');
+  });
+
+  test('Toistoja ei lisätä loputtomiin: ylärajalla paino ylös ja toistot alas', () {
+    final d = DateTime(2026, 11, 6);
+    Workout one(String ex, double kg, int reps, int? rir) => Workout(
+      date: DateTime(2026, 11, 3),
+      exercises: [
+        ExerciseEntry(ex, [SetEntry(kg, reps, rir: rir), SetEntry(kg, reps, rir: rir)]),
+      ],
+    );
+    // Maastaveto 10 × 100, varaa 1–2: ei 10 × 102,5 vaan 110 × 6 (10 kg = 10 %, toistot pysyvät 6–10:ssä).
+    store.workouts = [one('Maastaveto', 100, 10, 1)];
+    var s = suggestNext('Maastaveto', d)!;
+    expect((s.kg, s.reps), (110, 6));
+    // Voima-alue (≤ 6 toistoa): 6 × 100 → 105 × 4 (10 kg pudottaisi kolmeen).
+    store.workouts = [one('Maastaveto', 100, 6, 1)];
+    s = suggestNext('Maastaveto', d)!;
+    expect((s.kg, s.reps), (105, 4));
+    // Alle 100 kg vain 5 kg kerrallaan.
+    store.workouts = [one('Penkkipunnerrus', 80, 10, 1)];
+    s = suggestNext('Penkkipunnerrus', d)!;
+    expect((s.kg, s.reps), (85, 8));
+    // Alle ylärajan: sama paino, toisto lisää.
+    store.workouts = [one('Maastaveto', 100, 8, 1)];
+    s = suggestNext('Maastaveto', d)!;
+    expect((s.kg, s.reps), (100, 9));
+    // Eristävä liike: yläraja 15, pienin lisäys.
+    store.workouts = [one('Hauiskääntö', 15, 15, 1)];
+    s = suggestNext('Hauiskääntö', d)!;
+    expect(s.kg, 17.5);
+    expect(s.reps, lessThan(15));
+    store.workouts = [one('Hauiskääntö', 15, 12, 1)];
+    expect(suggestNext('Hauiskääntö', d)!.reps, 13);
+    expect(nextLoad('Maastaveto', 200).$1, 210);
+    expect(nextLoad('Maastaveto', 90).$1, 95, reason: '10 kg olisi yli 10 %');
+  });
+
+  test('Varaa vaikuttaa: ei yhtään, muutama ja reilusti antavat eri ehdotuksen', () {
+    final d = DateTime(2026, 11, 6);
+    final out = <(double, int)>[];
+    for (final rir in [null, 0, 1, 3]) {
+      store.workouts = [bench(DateTime(2026, 11, 3), 80, 8, rir)];
+      final s = suggestNext('Penkkipunnerrus', d)!;
+      out.add((s.kg, s.reps));
+    }
+    expect(out, [(80, 8), (80, 8), (80, 9), (85, 7)]);
+  });
+
+  test('Raskaalta tuntunut kerta pitää painon, myös ilman syytä', () {
+    final d = DateTime(2026, 11, 6);
+    store.workouts = [bench(DateTime(2026, 11, 3), 80, 8, 3)..feeling = 2];
+    var s = suggestNext('Penkkipunnerrus', d)!;
+    expect((s.kg, s.reps), (80, 8));
+    expect(s.reason, contains('raskaalta'));
+    // Liikkeen oma fiilis voittaa koko treenin fiiliksen.
+    store.workouts = [
+      bench(DateTime(2026, 11, 3), 80, 8, 3)
+        ..feeling = 2
+        ..moveFeeling = {'Penkkipunnerrus': 4},
+    ];
+    expect(suggestNext('Penkkipunnerrus', d)!.kg, 85);
+    store.workouts = [bench(DateTime(2026, 11, 3), 80, 8, 3)..feeling = 5];
+    expect(suggestNext('Penkkipunnerrus', d)!.kg, 85);
   });
 
   test('Aikaliikkeissä "olisitko jaksanut pidempään" ohjaa aikaa', () {
@@ -125,5 +191,36 @@ void main() {
     // Ei ennätystä eikä historiaa: ei ehdotusta (käyttäjä valitsee painon itse).
     expect(suggestForTarget('Kulmasoutu', d, t), isNull);
     settings.program = null;
+  });
+
+  test('Kahvakuula: seuraava kuula vasta, kun sillä onnistuu toistoalueen verran (16 → 20 kg = +25 %)', () {
+    final d = DateTime(2026, 11, 6);
+    Workout kb(String ex, double kg, int reps, int rir) => Workout(
+      date: DateTime(2026, 11, 3),
+      exercises: [
+        ExerciseEntry(ex, [SetEntry(kg, reps, rir: rir), SetEntry(kg, reps, rir: rir)]),
+      ],
+    );
+    // Ei 20 kg × 1–2: samalla kuulalla lisää toistoja.
+    store.workouts = [kb('Kahvakuulapystypunnerrus', 16, 10, 1)];
+    var s = suggestNext('Kahvakuulapystypunnerrus', d)!;
+    expect((s.kg, s.reps), (16, 11));
+    expect(s.reason, contains('liian raskas'));
+    store.workouts = [kb('Kahvakuulapystypunnerrus', 16, 5, 3)];
+    s = suggestNext('Kahvakuulapystypunnerrus', d)!;
+    expect((s.kg, s.reps), (16, 7), reason: 'reilusti varaa: +2 toistoa');
+    // 15 toistoa 16 kg:lla → 20 kg × 6.
+    store.workouts = [kb('Kahvakuulapystypunnerrus', 16, 15, 1)];
+    s = suggestNext('Kahvakuulapystypunnerrus', d)!;
+    expect((s.kg, s.reps), (20, 6));
+    // Reilusti varaa nostaa vähintään yhtä aikaisin kuin muutama.
+    store.workouts = [kb('Kahvakuulapystypunnerrus', 16, 14, 3)];
+    expect(suggestNext('Kahvakuulapystypunnerrus', d)!.kg, 20);
+    // Goblet-kyykky kuulakoon painolla: seuraava kuula, ei 21 kg.
+    store.workouts = [kb('Goblet-kyykky', 16, 15, 1)];
+    expect(suggestNext('Goblet-kyykky', d)!.kg, 20);
+    // Yläraja 20 toistoa: sitten raskaampaan joka tapauksessa.
+    store.workouts = [kb('Kahvakuulahauiskääntö', 16, 20, 1)];
+    expect(suggestNext('Kahvakuulahauiskääntö', d)!.kg, 20);
   });
 }

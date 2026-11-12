@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'body.dart';
 import 'custom_merge.dart' show builtinExercises;
 import 'l10n.dart';
+import 'plates.dart';
 import 'models.dart';
 import 'program.dart';
 import 'exercises.dart';
@@ -152,6 +153,10 @@ class Settings extends ChangeNotifier {
   String? folder;
   ThemeMode themeMode = ThemeMode.system; // oletus: järjestelmän asetus
   double weightStep = 2.5;
+
+  /// Levylaskuri: omat levyt (kg) ja tangon paino.
+  List<double> plates = [...defaultPlates];
+  double barKg = defaultBarKg;
   bool tips = true;
 
   /// Kehonpainon seuranta (asetukset.md: body_tracker). Punnitukset ja pituus kehonpaino.md:ssä ([body]).
@@ -383,6 +388,8 @@ class Settings extends ChangeNotifier {
       ..writeln('name: ${name ?? ''}')
       ..writeln('theme: ${themeMode.name}')
       ..writeln('weightStep: ${fileNum(weightStep)}')
+      ..writeln('plates: ${plates.map(fileNum).join('; ')}')
+      ..writeln('bar: ${fileNum(barKg)}')
       ..writeln('tips: $tips')
       ..writeln('body_tracker: $bodyTracker')
       ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
@@ -483,6 +490,15 @@ class Settings extends ChangeNotifier {
             themeMode = ThemeMode.values.firstWhere((m) => m.name == v, orElse: () => themeMode);
           case 'weightStep':
             weightStep = parseNum(v) ?? weightStep;
+          case 'plates':
+            final ps = [
+              for (final x in v.split(';'))
+                if (parseNum(x) case final p? when p > 0 && p <= 100) p,
+            ];
+            if (ps.isNotEmpty) plates = (ps.toSet().toList()..sort((a, b) => b.compareTo(a)));
+          case 'bar':
+            final b = parseNum(v);
+            if (b != null && b >= 0 && b <= 50) barKg = b;
           case 'tips':
             tips = v != 'false';
           case 'body_tracker':
@@ -818,6 +834,12 @@ class Settings extends ChangeNotifier {
 
   void setWeightStep(double v) {
     weightStep = v;
+    _persist();
+  }
+
+  void setPlates(List<double> v, double bar) {
+    plates = v.toSet().toList()..sort((a, b) => b.compareTo(a));
+    barKg = bar;
     _persist();
   }
 

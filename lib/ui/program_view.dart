@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../exercises.dart';
 import '../program.dart';
-import '../models.dart' show fmtDec;
+import '../models.dart' show fmtDec, fmtNum;
 import '../program_check.dart';
 import '../program_edit.dart';
 import '../theme.dart';
@@ -141,13 +141,22 @@ class ProgramView extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
+                                  if (i.group != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: Text(
+                                        '${i.group}${d.items.where((x) => x.group == i.group).toList().indexOf(i) + 1}',
+                                        style: TextStyle(fontWeight: FontWeight.w700, color: cs.primary),
+                                      ),
+                                    ),
                                   Expanded(child: ExName(i.exercise)),
                                   Text(switch (i.kind) {
                                     'H' => t('raskas, viikon mukaan'),
                                     'V' => t('volyymi, viikon mukaan'),
                                     _ =>
                                       '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}'
-                                          '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}',
+                                          '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
+                                          '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
                                   }, style: const TextStyle(fontWeight: FontWeight.w600)),
                                   if (_editable) ...[
                                     const SizedBox(width: 6),
@@ -458,6 +467,26 @@ class _ItemSheetState extends State<_ItemSheet> {
               }),
               onPlus: () => _set(() => it.hi += m.step),
             ),
+            // Paino prosentteina arvioidusta maksimista (painoliikkeet).
+            if (m == Measure.reps) ...[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(t('Paino prosentteina maksimista')),
+                subtitle: Text(
+                  t('Sovellus laskee painon arvioidusta maksimista (e1RM).'),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                value: it.pct != null,
+                onChanged: (v) => _set(() => it.pct = v ? .75 : null),
+              ),
+              if (it.pct != null)
+                ValueStepper(
+                  value: fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1))),
+                  unit: '%',
+                  onMinus: () => _set(() => it.pct = ((it.pct! * 100 - 2.5).clamp(40, 100)) / 100),
+                  onPlus: () => _set(() => it.pct = ((it.pct! * 100 + 2.5).clamp(40, 100)) / 100),
+                ),
+            ],
             const SizedBox(height: 10),
             for (final msg in assessItem(widget.program, it)) Text(msg, style: const TextStyle(fontSize: 13)),
             const SizedBox(height: 6),
@@ -485,6 +514,32 @@ class _ItemSheetState extends State<_ItemSheet> {
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
+          SectionLabel(t('Supersarja')),
+          Text(
+            t(
+              'Saman kirjaimen liikkeet tehdään vuorotellen, tauko vasta kierroksen jälkeen. 3 tai useampi = kiertoharjoittelu.',
+            ),
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            children: [
+              ChoiceChip(
+                label: Text(t('Ei')),
+                selected: it.group == null,
+                onSelected: (_) => _set(() => it.group = null),
+              ),
+              for (final g in const ['A', 'B', 'C', 'D'])
+                ChoiceChip(
+                  label: Text(
+                    '$g${widget.day.items.where((x) => x != it && x.group == g).isEmpty ? '' : ' · ${widget.day.items.where((x) => x != it && x.group == g).map((x) => exerciseLabel(x.exercise)).join(', ')}'}',
+                  ),
+                  selected: it.group == g,
+                  onSelected: (_) => _set(() => it.group = g),
+                ),
+            ],
+          ),
           const SizedBox(height: 18),
           Row(
             children: [

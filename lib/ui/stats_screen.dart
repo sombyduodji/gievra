@@ -374,6 +374,19 @@ class _StatsScreenState extends State<StatsScreen> {
                 tile('${r.prs}', t('ennätystä'), ''),
               ],
             ),
+            // Erikoissarjat erikseen, vain kun niitä on.
+            if (r.dropSets + r.amrapSets > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  [
+                    if (r.dropSets > 0) t('pudotussarjoja {0}', [r.dropSets]),
+                    if (r.amrapSets > 0) t('AMRAP-sarjoja {0}', [r.amrapSets]),
+                  ].join(' · '),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
           ],
           if (kind != 'gym') ...[
             if (kind == 'all') const SizedBox(height: 6),

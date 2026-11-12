@@ -207,6 +207,10 @@ class RestTimer extends ChangeNotifier {
     }
   }
 
+  /// Aikasarjan ajastin päättyi: sama ääni ja värinä kuin palautuksen lopussa.
+  static Future<void> holdDone(String exercise) =>
+      _native('preview', {'title': t('Aika täynnä! 💪'), 'body': exerciseLabel(exercise)});
+
   /// Äänen esikuuntelu asetuksista.
   static Future<void> preview() => _native('preview', {'body': t('Näin palautusajastin ilmoittaa.')});
 }

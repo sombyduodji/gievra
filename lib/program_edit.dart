@@ -154,9 +154,21 @@ Program _clone(Program p) => Program(
   notes: [...p.notes],
   plan: [
     for (final d in p.plan)
-      PlanDay(d.name, [
+      PlanDay(d.name, label: d.label, [
         for (final i in d.items)
-          PlanItem(i.exercise, i.slot, i.sets, i.lo, i.hi, i.rir, i.restSec, kind: i.kind, note: i.note),
+          PlanItem(
+            i.exercise,
+            i.slot,
+            i.sets,
+            i.lo,
+            i.hi,
+            i.rir,
+            i.restSec,
+            kind: i.kind,
+            note: i.note,
+            pct: i.pct,
+            group: i.group,
+          ),
       ]),
   ],
 );

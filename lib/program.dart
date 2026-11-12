@@ -208,8 +208,8 @@ final Map<String, List<(String, List<T>)>> _kettlebell = {
       [
         slotT('LON', 3, 3, 5, ex: 'Tuplakahvakuulan rinnalleveto'),
         slotT('PTY', 5, 3, 5, ex: 'Tuplakahvakuulapystypunnerrus'),
+        slotT('VVE', 4, 5, 8, ex: 'Tuplakahvakuulasoutu'),
         slotT('KYY', 5, 3, 5, ex: 'Kahvakuulan etukyykky'),
-        slotT('VVE', 3, 5, 8, ex: 'Tuplakahvakuulasoutu'),
       ],
     ),
     (
@@ -217,8 +217,8 @@ final Map<String, List<(String, List<T>)>> _kettlebell = {
       [
         slotT('LON', 4, 3, 6, ex: 'Tuplakahvakuulamaastaveto'),
         slotT('VTY', 4, 4, 6, ex: 'Tuplakahvakuulalattiapunnerrus'),
+        slotT('VVE', 4, 5, 6, ex: 'Renegade-soutu'),
         slotT('YKS', 3, 5, 6, ex: 'Tuplakahvakuula-askelkyykky'),
-        slotT('VVE', 3, 5, 6, ex: 'Renegade-soutu'),
         slotT('KES', 3, 1, 2, ex: 'Turkkilainen ylösnousu'),
       ],
     ),
@@ -226,6 +226,7 @@ final Map<String, List<(String, List<T>)>> _kettlebell = {
       'Kahvakuula C',
       [
         slotT('PTY', 5, 2, 3, ex: 'Tuplakahvakuulatyöntö'),
+        slotT('VVE', 4, 5, 8, ex: 'Tuplakahvakuulasoutu'),
         slotT('KYY', 4, 3, 5, ex: 'Kahvakuulan etukyykky'),
         slotT('LON', 5, 5, 5, ex: 'Tuplakahvakuulaheilautus'),
         slotT('KAN', 3, 1, 2, ex: 'Matkalaukkukanto'),
@@ -277,7 +278,7 @@ final Map<String, List<(String, List<T>)>> _kettlebell = {
         slotT('LON', 5, 10, 15, ex: 'Yhden käden heilautus'),
         slotT('YKS', 3, 10, 12, ex: 'Kahvakuula-askelkyykky'),
         slotT('PTY', 3, 8, 12, ex: 'Kahvakuulapystypunnerrus'),
-        slotT('LON', 3, 10, 15, ex: 'Kahvakuulan sumoveto'),
+        slotT('VVE', 3, 10, 12, ex: 'Kahvakuulasoutu'),
       ],
     ),
     (
@@ -286,6 +287,7 @@ final Map<String, List<(String, List<T>)>> _kettlebell = {
         slotT('LON', 5, 5, 10, ex: 'Kahvakuulatempaus'),
         slotT('KYY', 3, 10, 15, ex: 'Goblet-kyykky'),
         slotT('VTY', 3, 10, 12, ex: 'Kahvakuulalattiapunnerrus'),
+        slotT('VVE', 3, 10, 12, ex: 'Kahvakuulasoutu'),
         slotT('KES', 3, 1, 2, ex: 'Turkkilainen ylösnousu'),
       ],
     ),
@@ -315,6 +317,7 @@ final Map<String, List<(String, List<T>)>> _kettlebell = {
         slotT('LON', 5, 10, 10, ex: 'Yhden käden heilautus'),
         slotT('YKS', 3, 6, 8, ex: 'Kahvakuula-askelkyykky'),
         slotT('VTY', 3, 8, 10, ex: 'Kahvakuulalattiapunnerrus'),
+        slotT('VVE', 3, 8, 10, ex: 'Kahvakuulasoutu'),
         slotT('KAN', 3, 1, 2, ex: 'Matkalaukkukanto'),
       ],
     ),
@@ -709,7 +712,25 @@ class PlanItem {
   int restSec;
   String? kind; // H, V, L (lineaarinen), null = tuplaprogressio
   String? note;
-  PlanItem(this.exercise, this.slot, this.sets, this.lo, this.hi, this.rir, this.restSec, {this.kind, this.note});
+
+  /// Paino prosentteina arvioidusta maksimista (0,75 = 75 %); vain tavallisille liikkeille (ei H/V/L).
+  double? pct;
+
+  /// Supersarja tai kiertoharjoittelu: saman kirjaimen liikkeet vuorotellen, tauko vasta kierroksen jälkeen.
+  String? group;
+  PlanItem(
+    this.exercise,
+    this.slot,
+    this.sets,
+    this.lo,
+    this.hi,
+    this.rir,
+    this.restSec, {
+    this.kind,
+    this.note,
+    this.pct,
+    this.group,
+  });
   bool get compound => slots[slot]?.compound ?? false;
 }
 
@@ -838,6 +859,18 @@ Target targetFor(Program p, PlanItem it, DateTime date) {
       it.restSec,
       l10n.t('Kevennysviikko: puolet sarjoista, painot −10 %, ei maksimiyrityksiä'),
       loadFactor: .9,
+      pct: it.kind == null ? it.pct : null,
+    );
+  }
+  if (it.kind == null && it.pct != null) {
+    return Target(
+      it.sets,
+      it.lo,
+      it.hi,
+      it.rir,
+      it.restSec,
+      l10n.t('Viikko {0} · {1} %', [week + 1, fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1)))]),
+      pct: it.pct,
     );
   }
   return Target(it.sets, it.lo, it.hi, it.rir, it.restSec, l10n.t('Viikko {0}', [week + 1]));
@@ -918,6 +951,15 @@ Program generateProgram({
       tpl = _powerlifting[dd]!;
       if (d > 4) {
         notes.add(l10n.fi('Voimanostossa 4 päivää riittää tähän ohjelmaan. Lisäpäivät: kevyt tekniikka tai kardio.'));
+      }
+      // Pääliikkeet raskailla sarjoilla ja 2–5 min tauoilla (NSCA) vievät noin tunnin; lyhyempi aika ei riitä.
+      if (minutes < 60) {
+        notes.add(
+          l10n.fi(
+            'Voimanoston pääliikkeet pitkine taukoineen vievät noin 60–75 min. Jos aikaa on vähemmän, tee '
+            'pääliikkeet ja jätä lisäliikkeet pois.',
+          ),
+        );
       }
       notes.add(
         l10n.fi(
@@ -1516,6 +1558,8 @@ void _fitTime(List<PlanItem> items, int minutes, {Set<String> keep = const {}}) 
 
 // --- ohjelma.md ----------------------------------------------------------
 
+String _pctText(double pct) => fileNum(double.parse((pct * 100).toStringAsFixed(1)));
+
 String _min(int s) => s % 60 == 0 ? '${s ~/ 60} min' : '${fileNum(s / 60)} min';
 
 String programToMarkdown(Program p) {
@@ -1552,7 +1596,10 @@ String programToMarkdown(Program p) {
         'L' => 'lineaarinen ${i.sets} × ${i.lo}',
         _ => '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}',
       };
-      b.write('- ${i.exercise} | $pres | varaa ${i.rir} | tauko ${_min(i.restSec)} | ${i.slot}');
+      b.write('- ${i.exercise} | $pres');
+      if (i.pct case final pct? when i.kind == null) b.write(' | @ ${_pctText(pct)} %');
+      b.write(' | varaa ${i.rir} | tauko ${_min(i.restSec)} | ${i.slot}');
+      if (i.group != null) b.write(' | supersarja ${i.group}');
       if (i.note != null) b.write(' | huom: ${i.note}');
       b.writeln();
     }
@@ -1636,8 +1683,20 @@ Program? parseProgram(String md) {
       String? kind;
       var sets = 3, lo = 8, hi = 12;
       var rir = '1–3', rest = 120, slot = '';
-      String? note;
+      String? note, group;
+      double? pct;
       for (final x in f.skip(1)) {
+        final pm = RegExp(r'^@\s*(\d+(?:[.,]\d+)?)\s*%$').firstMatch(x);
+        final gm = RegExp(r'^supersarja\s+([A-Z])$').firstMatch(x);
+        if (pm != null) {
+          final v = parseNum(pm[1]!)! / 100;
+          if (v > 0 && v <= 1.2) pct = v;
+          continue;
+        }
+        if (gm != null) {
+          group = gm[1];
+          continue;
+        }
         final m = presRe.firstMatch(x.replaceFirst('lineaarinen ', ''));
         if (x == 'raskas') {
           kind = 'H';
@@ -1658,7 +1717,21 @@ Program? parseProgram(String md) {
           slot = x;
         }
       }
-      p.plan.last.items.add(PlanItem(f[0], slot, sets, lo, hi, rir, rest, kind: kind, note: note));
+      p.plan.last.items.add(
+        PlanItem(
+          f[0],
+          slot,
+          sets,
+          lo,
+          hi,
+          rir,
+          rest,
+          kind: kind,
+          note: note,
+          pct: kind == null ? pct : null,
+          group: group,
+        ),
+      );
     }
   }
   p.plan.removeWhere((d) => d.items.isEmpty);

@@ -15,8 +15,15 @@ class SetEntry {
 
   /// Lämmittelysarja: ei lasketa volyymiin, ennätyksiin eikä painoehdotuksiin. Tiedostossa "(lämmittely)".
   bool warmup;
-  SetEntry(this.kg, this.reps, {this.rpe, this.pr = false, this.rir, this.warmup = false});
+
+  /// Sarjan tyyppi: null tavallinen, [dropSet] (pudotussarjan jatko: kevyempi paino heti ilman taukoa) tai
+  /// [amrapSet] (niin monta toistoa kuin jaksaa). Tiedostossa "(pudotus)" / "(amrap)".
+  String? kind;
+  SetEntry(this.kg, this.reps, {this.rpe, this.pr = false, this.rir, this.warmup = false, this.kind});
 }
+
+const dropSet = 'pudotus';
+const amrapSet = 'amrap';
 
 const rirLabels = {0: '0', 1: '1-2', 3: '3+'};
 
@@ -88,6 +95,10 @@ class Workout {
 
   /// Liikkeet, jotka on merkitty valmiiksi (Merkitse liike valmiiksi).
   Set<String> doneMoves = {};
+
+  /// Supersarjat ja kiertoharjoittelu: liikkeet tehdään ryhmän järjestyksessä vuorotellen, tauko kierroksen jälkeen.
+  /// Tiedostossa "superset: Leuanveto + Pystypunnerrus; ...".
+  List<List<String>> supersets = [];
   String? programDay; // ohjelmapäivän pysyvä nimi (esim. "Koko keho A"), vaikka otsikko olisi oma
   int session; // saman päivän treenin numero: 1 = vvvv-kk-pp.md, 2 = vvvv-kk-pp-2.md …
   String? activity; // urheilulaji tai liikunta (esim. Juoksu); null = salitreeni
@@ -293,6 +304,7 @@ String workoutToMarkdown(Workout w) {
   }
   if (w.dayReasons.isNotEmpty) b.writeln('day_feeling: ${w.dayReasons.join(', ')}');
   if (w.doneMoves.isNotEmpty) b.writeln('done: ${w.doneMoves.join('; ')}');
+  if (w.supersets.isNotEmpty) b.writeln('superset: ${w.supersets.map((g) => g.join(' + ')).join('; ')}');
   b
     ..writeln('tags: [treeni]')
     ..writeln('---')
@@ -338,6 +350,7 @@ String workoutToMarkdown(Workout w) {
       if (s.rir != null) b.write(' RIR ${rirLabels[s.rir]}');
       if (s.pr) b.write(' 🏆 ennätys');
       if (s.warmup) b.write(' (lämmittely)');
+      if (s.kind != null) b.write(' (${s.kind})');
       b.writeln();
     }
   }
@@ -366,6 +379,13 @@ int? _parseRir(String rest) {
   if (r.startsWith('3') || (int.tryParse(r) ?? 0) >= 3) return 3;
   if (r.startsWith('1') || r == '2') return 1;
   return 0;
+}
+
+String? _kindOf(String rest) {
+  final r = rest.toLowerCase();
+  if (r.contains('(pudotus)')) return dropSet;
+  if (r.contains('(amrap)')) return amrapSet;
+  return null;
 }
 
 Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession = 1}) {
@@ -440,6 +460,15 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
     for (final r in (meta['done'] ?? '').split(';'))
       if (r.trim().isNotEmpty) exerciseRenames[r.trim()] ?? r.trim(),
   };
+  w.supersets = [
+    for (final g in (meta['superset'] ?? '').split(';'))
+      if ([
+            for (final x in g.split(' + '))
+              if (x.trim().isNotEmpty) exerciseRenames[x.trim()] ?? x.trim(),
+          ]
+          case final names when names.toSet().length >= 2)
+        names.toSet().toList(),
+  ];
   w.minutes = num('duration');
   w.seconds = parseDurationSec(meta['time'] ?? '');
   final rt = meta['run_type']?.trim();
@@ -489,6 +518,7 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
             pr: (bw[2] ?? '').contains('🏆'),
             rir: _parseRir(bw[2] ?? ''),
             warmup: (bw[2] ?? '').contains('lämmittely'),
+            kind: _kindOf(bw[2] ?? ''),
           ),
         );
         continue;
@@ -504,6 +534,7 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
             rpe: rpe == null ? null : parseNum(rpe[1]!),
             pr: rest.contains('🏆'),
             warmup: rest.contains('lämmittely'),
+            kind: _kindOf(rest),
             rir: rir == null
                 ? null
                 : rir.startsWith('3') || (int.tryParse(rir) ?? 0) >= 3
