@@ -110,6 +110,67 @@ void main() {
     expect(find.text(range(first, today)), findsOneWidget);
   });
 
+  testWidgets('Oma aikaväli: tulevaisuuteen päivätty treeni ei kaada kalenteria', (tester) async {
+    // Ainoa treeni ensi viikolla (esim. päivä kirjoitettu väärin): alku ei saa olla tämän päivän jälkeen.
+    store.workouts = [Workout(date: addDays(today, 10), title: 'Koko keho A')];
+    await open(tester);
+    await tester.tap(find.text('Oma'));
+    await tester.pumpAndSettle();
+    expect(find.text(numDate(today, year: true)), findsNWidgets(2), reason: 'alku ja loppu tänään');
+    await tester.tap(find.byIcon(Icons.calendar_today_outlined).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Valitse päivä'), findsOneWidget);
+  });
+
+  testWidgets('Oma aikaväli: vanhimpien treenien poiston jälkeen aiempi alku rajoihin', (tester) async {
+    await open(tester);
+    await tester.tap(find.text('Oma'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Näytä'));
+    await tester.pumpAndSettle();
+    // Vanhimmat poistetaan: aiemmin valittu alku (900 pv sitten) on nyt kalenterin rajan ulkopuolella.
+    store.workouts.removeWhere((w) => w.date.isBefore(addDays(today, -30)));
+    await tester.tap(find.byTooltip('Muuta aikaväliä'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.calendar_today_outlined).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Valitse päivä'), findsOneWidget);
+  });
+
+  testWidgets('Oma aikaväli: lyhyt väli, viikot ja päivä yksikössä', (tester) async {
+    // Kaksi treeniä: tänään ja eilen. Väli ensimmäisestä tähän päivään = 2 päivää.
+    store.workouts = [
+      for (final d in [1, 0]) Workout(date: addDays(today, -d), title: 'Koko keho A'),
+    ];
+    await open(tester);
+    await tester.tap(find.text('Oma'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Näytä'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ensimmäisestä treenistä tähän päivään · 2 pv'), findsOneWidget);
+    // Maanantaina eilinen on edellisellä viikolla: kaksi viikkopylvästä, muuten yksi.
+    final weeks = today.weekday == DateTime.monday ? 2 : 1;
+    final label = weeks == 1 ? 'Treenit viikoittain (1 viikko)' : 'Treenit viikoittain (2 viikkoa)';
+    expect(find.text(label.toUpperCase()), findsOneWidget);
+    // Yksi päivä: Tänään-pikapainike alkuun ei ole, joten loppu eiliseen ("Viime viikon loppu" ei käy aina).
+    store.workouts = [Workout(date: today, title: 'Koko keho A')];
+    await tester.tap(find.byTooltip('Muuta aikaväliä'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ensimmäisestä treenistä'));
+    await tester.pump();
+    await tester.tap(find.text('Näytä'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ensimmäisestä treenistä tähän päivään · 1 päivä'), findsOneWidget);
+    expect(find.text('Treenit viikoittain (1 viikko)'.toUpperCase()), findsOneWidget);
+  });
+
+  test('Englanniksi yksi päivä ja viikko yksikössä', () {
+    expect(po['en']!['1 päivä'], '1 day');
+    expect(po['en']!['Treenit viikoittain (1 viikko)'], 'Workouts per week (1 week)');
+  });
+
   for (final l in ['fi', 'en', 'se']) {
     testWidgets('Oma aikaväli ($l): valinta ja tulos ilman virheitä', (tester) async {
       debugSetCatalog(l, l == 'fi' ? const {} : po[l]!, english: po['en']);
@@ -128,7 +189,14 @@ void main() {
       }
       await tester.tap(find.text(t('Näytä')));
       await tester.pumpAndSettle();
-      expect(find.text(t('Ensimmäisestä treenistä tähän päivään · {0} pv', [901])), findsOneWidget);
+      expect(
+        find.text(
+          t('Ensimmäisestä treenistä tähän päivään · {0}', [
+            t('{0} pv', [901]),
+          ]),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
   }

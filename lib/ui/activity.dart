@@ -392,9 +392,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
             value: on,
             onChanged: noMaps
                 ? null
-                : (v) => _locked
-                      ? _unlock()
-                      : _applySnap(v ? (settings.snapFor(w.activity!) > 0 ? settings.snapFor(w.activity!) : 5) : 0),
+                : (v) async {
+                    // Tallennettu treeni: lupa kysytään ja muutos tehdään samalla napautuksella.
+                    if (_locked) {
+                      await _unlock();
+                      if (_locked || !mounted) return;
+                    }
+                    _applySnap(v ? (settings.snapFor(w.activity!) > 0 ? settings.snapFor(w.activity!) : 5) : 0);
+                  },
           ),
           if (on)
             Row(
@@ -578,7 +583,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(t('Poistetaanko liikunta?')),
-        content: Text(t('Tiedosto {0}.md poistetaan.', ['${isoDate(w.date)}${w.session > 1 ? '-${w.session}' : ''}'])),
+        content: Text(
+          t('Tiedosto {0}.md poistetaan.', [workoutPath(w.date, w.session).split('/').last.replaceAll('.md', '')]),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Poista'))),
@@ -596,8 +603,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (await askEditSaved(context) && mounted) setState(() => _locked = false);
   }
 
-  List<Widget> _guard(List<Widget> xs) =>
-      !_locked ? xs : [xs.first, for (final x in xs.skip(1)) EditGuard(locked: true, onTap: _unlock, child: x)];
+  /// Reittikortti jää lukkoon kuulumattomaksi: karttaa voi siirtää ja karttoja ladata muokkaamatta treeniä, ja
+  /// polulle korjauksen kytkin kysyy muokkausluvan itse.
+  static const _routeKey = ValueKey('route');
+
+  List<Widget> _guard(List<Widget> xs) => !_locked
+      ? xs
+      : [
+          xs.first,
+          for (final x in xs.skip(1)) x.key == _routeKey ? x : EditGuard(locked: true, onTap: _unlock, child: x),
+        ];
 
   @override
   Widget build(BuildContext context) {
@@ -680,6 +695,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ] else ...[
               if (_hasRoute)
                 Padding(
+                  key: _routeKey,
                   padding: const EdgeInsets.only(top: 12),
                   child: Card(
                     child: Column(

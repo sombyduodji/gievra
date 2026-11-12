@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/import_export.dart';
+import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/ui/bug_report.dart';
 import 'package:treenipaivakirja/ui/home.dart';
 
@@ -127,5 +128,18 @@ void main() {
       '2026-11-05.md': 'Ei tekstitiedosto: vaurioitunut tai väärä tiedosto',
       '2026-11-06.md': 'Tiedosto on tyhjä',
     });
+  });
+
+  test('Mahdoton päivä etusivulla: päivä tiedoston nimestä, ei siirry toiseen päivään', () {
+    Workout parse(String date) => parseWorkout(
+      '---\ndate: $date\ntitle: Salitreeni\n---\n\n## Liikkeet\n- Takakyykky: 100 kg × 5\n',
+      fallbackDate: DateTime(2026, 10, 26),
+    );
+    // Ennen 2026-13-40 → 2027-02-09 (tulevaisuuteen) ja 2026-02-30 → 2026-03-02.
+    expect(parse('2026-13-40').date, DateTime(2026, 10, 26));
+    expect(parse('2026-02-30').date, DateTime(2026, 10, 26));
+    expect(parse('2026-10-25').date, DateTime(2026, 10, 25));
+    expect(parse('2026-10-25T07:30').date, DateTime(2026, 10, 25));
+    expect(() => parseWorkout('---\ndate: 2026-13-40\n---\n'), throwsFormatException);
   });
 }

@@ -1121,10 +1121,18 @@ class _PauseBanner extends StatelessWidget {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Sulje'))),
+            // Vahingossa aloitettu tauko pois kokonaan.
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                removePauseUndo(context, p);
+              },
+              child: Text(t('Poista tauko')),
+            ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                settings.endPause();
+                stopPause(context);
               },
               child: Text(t('Lopeta tauko')),
             ),

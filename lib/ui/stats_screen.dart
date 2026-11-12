@@ -59,13 +59,18 @@ class _StatsScreenState extends State<StatsScreen> {
       ? dateOnly(DateTime.now())
       : store.workouts.map((w) => w.date).reduce((a, b) => a.isBefore(b) ? a : b);
 
+  static DateTime _clamp(DateTime d, DateTime lo, DateTime hi) => d.isBefore(lo) ? lo : (d.isAfter(hi) ? hi : d);
+
   /// Oman aikavälin valinta: alku ja loppu kalenterista tai pikapainikkeilla. null = peruttiin.
   Future<(DateTime, DateTime)?> _pickRange() {
     final today = dateOnly(DateTime.now());
-    final first = dateOnly(_firstWorkout);
-    var from = _from ?? first, to = _to ?? today;
+    // Tulevaisuuteen päivätty treeni ei siirrä alkua tämän päivän jälkeen (kalenteri ei salli sitä).
+    final first = _clamp(dateOnly(_firstWorkout), DateTime(1900), today);
     // Kalenterin rajat: ensimmäisestä treenistä (tai vuosi sitten) tähän päivään.
     final min = first.isBefore(DateTime(today.year - 1, today.month, today.day)) ? first : DateTime(today.year - 1);
+    // Aiempi valinta rajojen sisään: vanhimmat treenit on voitu poistaa tai päivä vaihtunut.
+    var from = _clamp(_from ?? first, min, today);
+    var to = _clamp(_to ?? today, from, today);
     return showModalBottomSheet<(DateTime, DateTime)>(
       context: context,
       showDragHandle: true,
@@ -185,7 +190,10 @@ class _StatsScreenState extends State<StatsScreen> {
     // 1 kk: 12 viikkoa, 3 kk: 13 viikkoa, 6 kk kuukausittain. Oma aikaväli: enintään noin 4 kk viikoittain,
     // enintään 2 vuotta kuukausittain, pidempi vuosittain (ei satoja ohuita pylväitä).
     final span = _days(a, b);
-    final weeksN = _custom ? (span + 6) ~/ 7 : (_months == 3 ? 13 : 12);
+    // Yksi päivä yksikössä (englanniksi muuten "1 days").
+    final days = span == 1 ? t('1 päivä') : t('{0} pv', [span]);
+    // Omalla aikavälillä kaikki viikot, joihin väli osuu (myös maanantain yli menevä lyhyt väli).
+    final weeksN = _custom ? _days(weekStart(a), weekStart(lastDay)) ~/ 7 + 1 : (_months == 3 ? 13 : 12);
     final monthsN = _custom ? (lastDay.year - a.year) * 12 + lastDay.month - a.month + 1 : _months;
     final bucket = _custom
         ? (span <= 126 ? 'week' : (monthsN <= 24 ? 'month' : 'year'))
@@ -324,8 +332,8 @@ class _StatsScreenState extends State<StatsScreen> {
           if (_custom)
             Text(
               _from == dateOnly(_firstWorkout) && _to == today
-                  ? t('Ensimmäisestä treenistä tähän päivään · {0} pv', [span])
-                  : t('{0} pv', [span]),
+                  ? t('Ensimmäisestä treenistä tähän päivään · {0}', [days])
+                  : days,
               style: sub,
             ),
           Text(switch (_span) {
@@ -429,6 +437,7 @@ class _StatsScreenState extends State<StatsScreen> {
           SectionLabel(switch (bucket) {
             'year' => t('Treenit vuosittain ({0} v)', [bars.length]),
             'month' => t('Treenit kuukausittain ({0} kk)', [monthsN]),
+            _ when _custom && weeksN == 1 => t('Treenit viikoittain (1 viikko)'),
             _ when _custom => t('Treenit viikoittain ({0} viikkoa)', [weeksN]),
             _ => _months == 3 ? t('Treenit viikoittain (13 viikkoa)') : t('Treenit viikoittain (12 viikkoa)'),
           }),

@@ -66,7 +66,9 @@ class AutoBackup extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final previous = prefs.getString(_prefKey);
     if (previous == build) return;
-    if (store.workouts.isEmpty) {
+    // Kansiota ei voitu lukea (esim. lupa puuttuu): ei merkitä tehdyksi, yritetään seuraavalla käynnistyksellä.
+    if (store.error != null) return;
+    if (store.workouts.isEmpty && store.unreadable.isEmpty) {
       await prefs.setString(_prefKey, build);
       return;
     }

@@ -238,6 +238,8 @@ bool decimalComma = true;
 
 /// Tiedostoihin: aina pilkku, kielestä riippumatta. 2.5 -> "2,5", 100.0 -> "100"
 String fileNum(double v) {
+  // Enintään kolme desimaalia: liukulukuvirhe ei päädy tiedostoon eikä näytölle (3,3 kg − 1 → 2,2999999999999998).
+  if (v.isFinite) v = (v * 1000).roundToDouble() / 1000;
   final s = v == v.truncateToDouble() ? v.toInt().toString() : v.toString();
   return s.replaceAll('.', ',');
 }
@@ -379,7 +381,11 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
     }
     i++;
   }
-  final date = DateTime.tryParse(meta['date'] ?? '') ?? fallbackDate;
+  // Mahdoton päivä (2026-13-40, 2026-02-30) ohitetaan: DateTime.parse siirtäisi sen toiseen päivään, jopa
+  // tulevaisuuteen. Silloin päivä tiedoston nimestä.
+  final rawDate = (meta['date'] ?? '').trim();
+  final parsed = DateTime.tryParse(rawDate);
+  final date = (parsed != null && rawDate.startsWith(isoDate(parsed)) ? parsed : null) ?? fallbackDate;
   if (date == null) throw FormatException(l10n.fi('Päivämäärä puuttuu'));
   // Negatiivinen tai nolla (käsin muokattu tiedosto) = arvoa ei ole.
   bool neg(String k) => RegExp(r'^\s*[-−]').hasMatch(meta[k] ?? '');

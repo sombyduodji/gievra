@@ -698,13 +698,32 @@ class Settings extends ChangeNotifier {
     _persist();
   }
 
-  /// Päättää tauon. [lastDay] = viimeinen taukopäivä (oletus eilen).
+  /// Päättää tauon. [lastDay] = viimeinen taukopäivä (oletus eilen). Jos se on ennen alkupäivää (tauko aloitettiin
+  /// tänään tai treeni kirjattiin alkupäivälle), tauko poistetaan: muuten koko päivä näkyisi taukona, myös sen
+  /// päivän treenit.
   void endPause([DateTime? lastDay]) {
     final p = activePause;
     if (p == null) return;
-    var end = dateOnly(lastDay ?? addDays(DateTime.now(), -1));
-    if (end.isBefore(p.start)) end = p.start;
+    final end = dateOnly(lastDay ?? addDays(DateTime.now(), -1));
+    if (end.isBefore(p.start)) {
+      removePause(p);
+      return;
+    }
     p.end = end;
+    _persist();
+  }
+
+  /// Poistaa tauon kokonaan (vahingossa lisätty).
+  void removePause(Pause p) {
+    pauses = [...pauses.where((x) => !identical(x, p))];
+    _persist();
+  }
+
+  /// Palauttaa poistetun tauon (kumoa).
+  void restorePause(Pause p) {
+    if (pauses.any((x) => x.start == p.start)) return;
+    if (p.end == null && activePause != null) return;
+    pauses = [...pauses, p]..sort((a, b) => a.start.compareTo(b.start));
     _persist();
   }
 
@@ -935,7 +954,7 @@ class WorkoutStore extends ChangeNotifier {
         }
       }
     } catch (e) {
-      error = 'Kansiota ei voitu lukea: $e';
+      error = t('Kansiota ei voitu lukea: {0}', [errorText(e)]);
     }
     list.sort((a, b) => b.date.compareTo(a.date));
     workouts = list;

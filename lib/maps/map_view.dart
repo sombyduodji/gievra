@@ -11,6 +11,7 @@ import 'package:vector_tile_renderer/vector_tile_renderer.dart' show Theme, Them
 
 import '../app_info.dart';
 import '../gps_filter.dart';
+import '../l10n.dart';
 import '../theme.dart';
 import 'map_store.dart';
 import 'pmtiles.dart';
@@ -19,12 +20,15 @@ import 'pmtiles.dart';
 // vaalea tai tumma teema (CC0, assets/map/). Ei verkkoliikennettä. Kulmassa aina © OpenStreetMap contributors.
 
 /// Laatat ladatuista tiedostoista: ensin tarkimmasta (kunta tai koko Suomi), sitten yleiskartasta.
+/// [maxZoom]: tarkin pyydettävä taso; tarkemmat suurennetaan siitä (yleiskartta alueella, jolle ei ole karttaa).
 class OfflineTileProvider extends VectorTileProvider {
   final List<PmTilesFile> files;
-  OfflineTileProvider(List<PmTilesFile> files) : files = [...files]..sort((a, b) => b.maxZoom.compareTo(a.maxZoom));
+  final int maxZoom;
+  OfflineTileProvider(List<PmTilesFile> files, {this.maxZoom = 15})
+    : files = [...files]..sort((a, b) => b.maxZoom.compareTo(a.maxZoom));
 
   @override
-  int get maximumZoom => 15;
+  int get maximumZoom => maxZoom;
   @override
   int get minimumZoom => 0;
   @override
@@ -84,6 +88,21 @@ class _RouteMapState extends State<RouteMap> {
     }
   }
 
+  @override
+  void dispose() {
+    // Itse luotu ohjain: FlutterMap vapauttaa vain itse luomansa (tapahtumavirta ja animaatio jäivät auki).
+    _map.dispose();
+    super.dispose();
+  }
+
+  /// Kattaako ladattu tarkka kartta reitin (alku, keskikohta tai loppu; elävässä viimeisin piste).
+  bool _covered(List<LatLng> pts) {
+    // Ilman luetteloa (vain tuotuja tiedostoja) kattavuutta ei tiedetä: ei varoiteta turhaan.
+    if (MapStore.instance.catalogs.isEmpty) return true;
+    final probe = widget.live ? [pts.last] : [pts.first, pts[pts.length ~/ 2], pts.last];
+    return probe.any((q) => MapStore.instance.covers(q.latitude, q.longitude));
+  }
+
   List<LatLng> get _pts => [
     for (final s in widget.segments)
       for (final p in s) LatLng(p.lat, p.lon),
@@ -108,6 +127,10 @@ class _RouteMapState extends State<RouteMap> {
         if (data == null || data.$2.isEmpty) return widget.fallback;
         final (theme, files) = data;
         final pts = _pts;
+        // Reitin alueelle ei ole ladattu tarkkaa karttaa (vain yleiskartta tai muiden alueiden kartat): yleiskartta
+        // suurennetaan, ettei kartta jää tyhjäksi, ja kerrotaan syy.
+        final missing = pts.isNotEmpty && !_covered(pts);
+        final tileZoom = missing ? files.map((f) => f.maxZoom).reduce((a, b) => a < b ? a : b).clamp(0, 15) : 15;
         final MapOptions options;
         if (pts.length >= 2 && !widget.live) {
           options = MapOptions(
@@ -140,7 +163,7 @@ class _RouteMapState extends State<RouteMap> {
                 children: [
                   VectorTileLayer(
                     theme: theme,
-                    tileProviders: TileProviders({'protomaps': OfflineTileProvider(files)}),
+                    tileProviders: TileProviders({'protomaps': OfflineTileProvider(files, maxZoom: tileZoom)}),
                     fileCacheMaximumSizeInBytes: 20 << 20,
                     // Vektoritila: rasteritilassa (oletus) kylmän käynnistyksen jälkeisen ensimmäisen kartan laatat
                     // jäivät välillä harmaiksi. Peruttu laatta jäi Flutterin kuvavälimuistiin keskeneräiseksi, ja
@@ -199,6 +222,26 @@ class _RouteMapState extends State<RouteMap> {
                   ),
                 ),
               ),
+              if (missing)
+                Positioned(
+                  left: 8,
+                  top: 8,
+                  right: widget.live && !_follow ? 64 : 8,
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: cs.surface.withValues(alpha: .85),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        t('Tämän alueen karttaa ei ole ladattu'),
+                        style: TextStyle(fontSize: 12, color: cs.onSurface),
+                      ),
+                    ),
+                  ),
+                ),
               if (widget.live && !_follow)
                 Positioned(
                   right: 8,

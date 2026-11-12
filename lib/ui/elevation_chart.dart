@@ -37,9 +37,11 @@ class ElevationCard extends StatelessWidget {
             children: [
               const Text('⛰️', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
-              Text(
-                t('Nousu {0} m · Lasku {1} m', [profile.climb.round(), profile.descent.round()]),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  t('Nousu {0} m · Lasku {1} m', [profile.climb.round(), profile.descent.round()]),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -64,6 +66,10 @@ class ElevationCard extends StatelessWidget {
     );
   }
 
+  /// Tekstin leveys: [every] kilometrin matka (viimeisellä vain jäljellä oleva), vähintään 34 px.
+  static double _labelWidth(double maxWidth, double total, double start, int every) =>
+      total <= 0 ? 34 : math.max(maxWidth * math.min(1000.0 * every, total - start) / total, 34);
+
   /// Kilometrien vauhti (tai nopeus) kunkin kilometrin kohdalla; kapeilla kilometreillä vain joka n:s.
   Widget _splitRow(TextStyle sub) => LayoutBuilder(
     builder: (context, box) {
@@ -81,8 +87,15 @@ class ElevationCard extends StatelessWidget {
               for (var i = 0; i < splits.length; i++)
                 if (i % every == 0)
                   Positioned(
-                    left: total <= 0 ? 0 : box.maxWidth * splits[i].$1 / total,
-                    width: math.max(perKm * every, 34),
+                    // Viimeinen (vajaa) kilometri ei saa mennä kaavion oikean reunan yli: siirretään vasemmalle.
+                    left: math.max(
+                      0,
+                      math.min(
+                        total <= 0 ? 0 : box.maxWidth * splits[i].$1 / total,
+                        box.maxWidth - _labelWidth(box.maxWidth, total, splits[i].$1, every),
+                      ),
+                    ),
+                    width: _labelWidth(box.maxWidth, total, splits[i].$1, every),
                     child: Text(
                       splitText(splits[i], speed: speed),
                       textAlign: TextAlign.center,
