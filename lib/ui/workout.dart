@@ -197,7 +197,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(t('Poistetaanko treeni?')),
-        content: Text(t('Tiedosto {0}.md poistetaan.', [isoDate(w.date)])),
+        content: Text(
+          t('Tiedosto {0}.md poistetaan.', [workoutPath(w.date, w.session).split('/').last.replaceAll('.md', '')]),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Poista'))),

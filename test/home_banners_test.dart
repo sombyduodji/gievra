@@ -91,4 +91,55 @@ void main() {
     await tester.pump();
     expect(find.text('Vammatila'), findsNothing);
   });
+
+  testWidgets('Tänään aloitettu tauko: lopetus kysyy, poistetaanko vai jätetäänkö', (tester) async {
+    final today = DateTime.now();
+    settings.startPause('sairas', today);
+    await home(tester);
+    await tester.tap(find.text('Sairastat – parane pian!'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lopeta tauko'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tauko kesti vain päivän'), findsOneWidget);
+    await tester.tap(find.text('Jätä tauko'));
+    await tester.pumpAndSettle();
+    expect(settings.activePause, isNull);
+    expect(settings.pauses.single.days, 1);
+  });
+
+  testWidgets('Tänään aloitettu tauko poistuu kokonaan ja kumoa palauttaa sen', (tester) async {
+    settings.startPause('loma', DateTime.now());
+    await home(tester);
+    await tester.tap(find.text('Lomalla – nauti!'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lopeta tauko'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Poista tauko'));
+    await tester.pumpAndSettle();
+    expect(settings.pauses, isEmpty);
+    expect(find.text('Tauko poistettu'), findsOneWidget);
+    await tester.tap(find.text('Kumoa'));
+    await tester.pumpAndSettle();
+    expect(settings.activePause, isNotNull);
+  });
+
+  testWidgets('Vahingossa aloitetun tauon voi poistaa tauon tiedoista', (tester) async {
+    settings.startPause('sairas', DateTime(2026, 11, 7));
+    await home(tester);
+    await tester.tap(find.text('Sairastat – parane pian!'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Poista tauko'));
+    await tester.pumpAndSettle();
+    expect(settings.pauses, isEmpty);
+    expect(find.textContaining('Sairastat'), findsNothing);
+  });
+
+  test('Tauko, joka päättyisi ennen alkuaan, poistetaan (treeni alkupäivänä)', () {
+    settings.startPause('sairas', DateTime(2026, 11, 7));
+    settings.endPause(DateTime(2026, 11, 6));
+    expect(settings.pauses, isEmpty);
+    settings.startPause('sairas', DateTime(2026, 11, 7));
+    settings.endPause(DateTime(2026, 11, 9));
+    expect(settings.pauses.single.days, 3);
+  });
 }

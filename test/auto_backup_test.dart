@@ -87,6 +87,27 @@ void main() {
     expect(Directory('${dir.path}/backup').listSync().whereType<File>().where((f) => f.path.endsWith('.zip')), isEmpty);
   });
 
+  test('Kansiota ei voitu lukea: ei merkitä tehdyksi, kopio seuraavalla käynnistyksellä', () async {
+    // Esim. kansion lupa puuttui käynnistyksessä: treenit näyttivät tyhjiltä, ja ennen versio merkittiin
+    // varmuuskopioiduksi, joten kopiota ei tehty koskaan.
+    store.workouts = [];
+    store.error = 'lupa puuttuu';
+    await autoBackup.runIfUpdated('0.6', '0.6+100');
+    expect(backups(), isEmpty);
+    store.error = null;
+    await store.reload();
+    await autoBackup.runIfUpdated('0.6', '0.6+100');
+    expect(backups(), hasLength(1));
+  });
+
+  test('Vain lukukelvottomia treenejä: kopio silti tehdään', () async {
+    store.workouts = [];
+    store.unreadable = {'2026/2026-11-06.md': 'Tiedosto on tyhjä'};
+    await autoBackup.runIfUpdated('0.6', '0.6+100');
+    expect(backups(), hasLength(1));
+    store.unreadable = {};
+  });
+
   test('Ongelmaraportti: tiedostot yhtenä zipinä, kuvakaappaus erikseen', () async {
     final out = Directory('${dir.path}/out')..createSync();
     final shot = File('${dir.path}/kuva.png')..writeAsBytesSync([137, 80, 78, 71]);

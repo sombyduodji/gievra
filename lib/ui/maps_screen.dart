@@ -190,7 +190,7 @@ class _MapsScreenState extends State<MapsScreen> {
 
   /// Sijainnin ympäristön karttojen latauspainike (koko sisältää korkeustiedot, jos ne ladataan mukana).
   Widget _mapButton(List<MapPack> within, bool busy, MapCatalog c) {
-    final size = _sizeOf(within);
+    final size = _sizeText(within);
     final missing = within.where((x) => !store.isInstalled(x)).length;
     final kunnat = within.every((x) => _unit(store.catalogs[x.country] ?? c) == 'kunta');
     return FilledButton(
@@ -200,8 +200,8 @@ class _MapsScreenState extends State<MapsScreen> {
         missing == 0
             ? t('Alueen kartat on ladattu ✓')
             : kunnat
-            ? t('Lataa {0} kuntaa · {1}', [missing, fmtBytes(size)])
-            : t('Lataa {0} karttaa · {1}', [missing, fmtBytes(size)]),
+            ? t('Lataa {0} kuntaa · {1}', [missing, size])
+            : t('Lataa {0} karttaa · {1}', [missing, size]),
       ),
     );
   }
@@ -387,8 +387,17 @@ class _MapsScreenState extends State<MapsScreen> {
     label: Text(_importing ? t('Tuodaan…') : t('Tuo karttapaketti tiedostosta')),
   );
 
+  /// Ladattava koko tekstinä; ensimmäisen latauksen mukana tuleva yleiskartta erikseen, ettei pienen kunnan
+  /// latauksen koko (yleiskartan takia satakertainen) hämmennä.
+  String _sizeText(Iterable<MapPack> packs) {
+    final size = _sizeOf(packs);
+    final over = _sizeOf(packs, overviewOnly: true);
+    return over == 0 ? fmtBytes(size) : t('{0}, josta yleiskartta {1}', [fmtBytes(size), fmtBytes(over)]);
+  }
+
   /// Ladattava koko: puuttuvat paketit ja niiden maiden yleiskartat, joita ei vielä ole.
-  int _sizeOf(Iterable<MapPack> packs) {
+  /// [overviewOnly]: vain yleiskarttojen osuus.
+  int _sizeOf(Iterable<MapPack> packs, {bool overviewOnly = false}) {
     final todo = _withElev(packs).where((x) => !store.isInstalled(x)).toList();
     var over = 0;
     for (final cc in {
@@ -400,7 +409,7 @@ class _MapsScreenState extends State<MapsScreen> {
         over += c.overview.size;
       }
     }
-    return todo.fold<int>(0, (a, x) => a + x.size) + over;
+    return overviewOnly ? over : todo.fold<int>(0, (a, x) => a + x.size) + over;
   }
 
   @override
@@ -601,7 +610,7 @@ class _MapsScreenState extends State<MapsScreen> {
                           child: Text(
                             t('Lataa valitut ({0}) · {1}', [
                               _selected.length,
-                              fmtBytes(_sizeOf(store.allPacks.where((x) => _selected.contains(x.file)))),
+                              _sizeText(store.allPacks.where((x) => _selected.contains(x.file))),
                             ]),
                           ),
                         ),

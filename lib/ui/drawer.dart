@@ -153,8 +153,10 @@ class AppDrawer extends StatelessWidget {
                     ? null
                     : _withBadge(Text(settings.activePause!.sick ? t('Sairauslomalla') : t('Lomalla'), style: sub)),
                 onTap: () {
-                  Navigator.pop(context);
-                  settings.activePause == null ? showPauseDialog(context) : settings.endPause();
+                  // Valikon konteksti poistuu valikon mukana: dialogit navigaattorin kontekstilla.
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  settings.activePause == null ? showPauseDialog(nav.context) : stopPause(nav.context);
                 },
               ),
               // Kartat, synkronointi ja tiedostot (ei selainversiossa).
@@ -505,7 +507,12 @@ class _AutoBackupsState extends State<_AutoBackups> {
           ListTile(
             leading: const Icon(Icons.folder_zip_outlined),
             // Päivä ja kellonaika otsikkona, versio ja koko alarivillä (koko koontinimi rivittyi kolmelle riville).
-            title: Text(_title(f)),
+            // Yhdelle riville (saameksi rivittyi kolmen painikkeen vieressä): pienennetään tarvittaessa.
+            title: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(_title(f), maxLines: 1),
+            ),
             subtitle: Text(() {
               final parsed = AutoBackup.parseName(p.basename(f.path));
               return parsed == null
@@ -515,9 +522,24 @@ class _AutoBackupsState extends State<_AutoBackups> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(tooltip: t('Tallenna'), icon: const Icon(Icons.save_alt), onPressed: () => _save(f)),
-                IconButton(tooltip: t('Jaa'), icon: const Icon(Icons.share_outlined), onPressed: () => _share(f)),
-                IconButton(tooltip: t('Poista'), icon: const Icon(Icons.delete_outline), onPressed: () => _delete(f)),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: t('Tallenna'),
+                  icon: const Icon(Icons.save_alt),
+                  onPressed: () => _save(f),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: t('Jaa'),
+                  icon: const Icon(Icons.share_outlined),
+                  onPressed: () => _share(f),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: t('Poista'),
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _delete(f),
+                ),
               ],
             ),
           ),
@@ -1222,6 +1244,52 @@ Future<void> showSupport(BuildContext context) => showDialog(
   ),
 );
 
+/// Tauon lopetus käsin. Tänään alkanut tauko kestäisi koko päivän (myös tämän päivän treenit näkyisivät tauon
+/// aikana tehtyinä), joten kysytään, jätetäänkö se vai poistetaanko.
+Future<void> stopPause(BuildContext context) async {
+  final pause = settings.activePause;
+  if (pause == null) return;
+  final today = dateOnly(DateTime.now());
+  if (pause.start.isBefore(today)) {
+    settings.endPause();
+    return;
+  }
+  final choice = await showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(t('Tauko kesti vain päivän')),
+      content: Text(
+        t(
+          'Tauko alkoi tänään. Jos jätät sen, koko päivä merkitään tauoksi, myös tämän päivän treenit. '
+          'Poista tauko, jos lisäsit sen vahingossa.',
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
+        TextButton(onPressed: () => Navigator.pop(ctx, 'remove'), child: Text(t('Poista tauko'))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, 'keep'), child: Text(t('Jätä tauko'))),
+      ],
+    ),
+  );
+  if (settings.activePause != pause) return;
+  if (choice == 'keep') settings.endPause(today);
+  if (choice == 'remove' && context.mounted) removePauseUndo(context, pause);
+}
+
+/// Poistaa tauon ja näyttää kumoamismahdollisuuden.
+void removePauseUndo(BuildContext context, Pause pause) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  settings.removePause(pause);
+  messenger
+    ?..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(t('Tauko poistettu')),
+        action: SnackBarAction(label: t('Kumoa'), onPressed: () => settings.restorePause(pause)),
+      ),
+    );
+}
+
 Future<void> showPauseDialog(BuildContext context) async {
   var reason = 'sairas';
   var start = dateOnly(DateTime.now());
@@ -1266,6 +1334,27 @@ Future<void> showPauseDialog(BuildContext context) async {
                     ),
               style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
             ),
+            // Aiemmat tauot: vahingossa lisätyn voi poistaa (uusimmat ensin).
+            if (settings.pauses.any((pause) => pause.end != null)) ...[
+              const SizedBox(height: 12),
+              Text(t('Aiemmat tauot'), style: const TextStyle(fontWeight: FontWeight.w600)),
+              for (final pause in settings.pauses.where((pause) => pause.end != null).toList().reversed.take(3))
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('${pause.sick ? '🤒' : '🏖'} ${shortDate(pause.start)}–${shortDate(pause.end!)}'),
+                    ),
+                    IconButton(
+                      tooltip: t('Poista tauko'),
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        removePauseUndo(context, pause);
+                        set(() {});
+                      },
+                    ),
+                  ],
+                ),
+            ],
           ],
         ),
         actions: [

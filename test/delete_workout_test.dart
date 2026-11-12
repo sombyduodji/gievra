@@ -65,4 +65,44 @@ void main() {
     expect(store.onDay(w.date), isEmpty, reason: 'ei treeniä muistissa');
     expect(file.existsSync(), isFalse, reason: 'dispose ei saa tallentaa poistettua treeniä');
   });
+
+  testWidgets('Päivän toisen treenin poisto: kysymys nimeää oikean tiedoston, ensimmäinen säilyy', (tester) async {
+    final d = dateOnly(DateTime.now());
+    final first = Workout(
+      date: d,
+      title: 'Koko keho A',
+      exercises: [
+        ExerciseEntry('Takakyykky', [SetEntry(60, 8)]),
+      ],
+    );
+    final second = Workout(
+      date: d,
+      session: 2,
+      title: 'Koko keho B',
+      exercises: [
+        ExerciseEntry('Maastaveto', [SetEntry(20, 10, warmup: true)]),
+      ],
+    );
+    await tester.runAsync(() async {
+      await store.save(first);
+      await store.save(second);
+    });
+    final f1 = File('${dir.path}/${store.fileName(d)}'), f2 = File('${dir.path}/${store.fileName(d, 2)}');
+    expect(f2.existsSync(), isTrue);
+    await tester.pumpWidget(MaterialApp(home: WorkoutScreen(workout: second)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Poista treeni'));
+    await tester.pumpAndSettle();
+    // Ennen kysymys nimesi aina päivän ensimmäisen tiedoston (vvvv-kk-pp.md).
+    expect(find.text('Tiedosto ${isoDate(d)}-2.md poistetaan.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Poista'));
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(f2.existsSync(), isFalse);
+    expect(f1.existsSync(), isTrue);
+  });
 }
