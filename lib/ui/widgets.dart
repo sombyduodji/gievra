@@ -1,12 +1,15 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import 'sport_picker.dart';
+
 import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../exercises.dart';
 import '../models.dart';
-import '../sports.dart';
+import '../sports.dart' show intensities;
 import '../theme.dart';
 import '../l10n.dart';
 
@@ -263,6 +266,54 @@ Future<double?> askNumber(BuildContext context, String title, double current, {b
 }
 
 /// Viisi fiilisnappia (😫 … 🤩). Uusi napautus samaan poistaa valinnan.
+/// Treenin lopussa: "Miltä tuntui?" ponnahdusikkunana. Kasvon napautus valitsee ja sulkee.
+/// Palauttaa 1–5, [feelingSkipped] (Ohita) tai null (takaisin tai napautus ohi: lopetus peruttiin).
+/// [askFeeling]: Ohita (ei fiilistä, jatketaan).
+const feelingSkipped = 0;
+
+/// Viimeisin [askFeeling]-kyselyssä valittu rasitus (kun kysyttiin).
+String? askedIntensity;
+
+Future<int?> askFeeling(BuildContext context, {bool askIntensity = false, String? intensity}) {
+  askedIntensity = intensity;
+  return showModalBottomSheet<int>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (askIntensity) ...[
+                Text(t('Rasitus'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 10),
+                SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: [for (final (k, l, e) in intensities) ButtonSegment(value: k, label: Text('$e ${t(l)}'))],
+                  emptySelectionAllowed: true,
+                  selected: {?askedIntensity},
+                  onSelectionChanged: (v) => setSheet(() => askedIntensity = v.firstOrNull),
+                ),
+                const SizedBox(height: 18),
+              ],
+              Text(t('Miltä tuntui?'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 14),
+              FeelingPicker(value: null, onChanged: (v) => Navigator.pop(ctx, v)),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(onPressed: () => Navigator.pop(ctx, feelingSkipped), child: Text(t('Ohita'))),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class FeelingPicker extends StatelessWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
@@ -699,40 +750,47 @@ String setsLabel(int n) => n == 1 ? t('1 sarja') : t('{0} sarjaa', [n]);
 
 /// Lajivalinta toisen sovelluksen lajille: [message] kertoo, mistä on kyse. null = ohita (ei tuoda).
 Future<String?> pickSport(BuildContext context, String message) async {
-  final cs = Theme.of(context).colorScheme;
-  final v = await showDialog<String>(
+  final v = await showModalBottomSheet<String>(
     context: context,
-    barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
-      title: Text(t('Mikä laji tämä on?')),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message),
-            for (final g in sportGroups) ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 4),
-                child: Text(t(g), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-              ),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final s in sports.where((s) => s.group == g && !s.retired))
-                    ActionChip(
-                      avatar: Text(s.icon),
-                      label: Text(sportName(s.name)),
-                      onPressed: () => Navigator.pop(ctx, s.name),
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
+    isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
+    showDragHandle: true,
+    builder: (ctx) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: .9,
+      maxChildSize: .95,
+      builder: (_, scroll) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t('Mikä laji tämä on?'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(message, style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          // Sama lajivalinta kuin uudessa liikunnassa: haku, viimeksi tehdyt ja ruudukko.
+          Expanded(
+            child: ListView(
+              controller: scroll,
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+              children: [SportPicker(onPick: (s) => Navigator.pop(ctx, s))],
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(18, 0, 18, 8 + MediaQuery.viewInsetsOf(ctx).bottom),
+              child: OutlinedButton(onPressed: () => Navigator.pop(ctx, ''), child: Text(t('Ohita, älä tuo'))),
+            ),
+          ),
+        ],
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx, ''), child: Text(t('Ohita, älä tuo')))],
     ),
   );
   return v == null || v.isEmpty ? null : v;

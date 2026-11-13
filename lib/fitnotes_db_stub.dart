@@ -5,5 +5,5 @@ import 'models.dart';
 ImportResult readFitnotes(String dbPath, {bool translate = true}) =>
     throw UnsupportedError('FitNotes-tuonti toimii vain sovelluksessa');
 
-int writeFitnotes(String path, List<Workout> workouts) =>
+int writeFitnotes(String path, List<Workout> workouts, {Map<DateTime, double> weighIns = const {}}) =>
     throw UnsupportedError('FitNotes-vienti toimii vain sovelluksessa');

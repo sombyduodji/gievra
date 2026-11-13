@@ -25,6 +25,13 @@ bool get stepsSupported => debugStepsSupported ?? (!kIsWeb && !isDemo && Platfor
 @visibleForTesting
 bool? debugStepsSupported;
 
+/// Päivän askeltavoite: kalenterin täysi rengas ja etusivun kortin ylin viiva (yleinen päivätavoite; terveyshyöty
+/// tasaantuu noin 6 000–10 000:ssa).
+const stepsGoal = 10000;
+
+/// Tavoitteen ylittävän osan ja askelrenkaan väri.
+const stepsGoalColor = Color(0xFF1D9E75);
+
 /// Askeleet-välilehti ja etusivun Askeleet-puoli näkyvät.
 bool get stepsTabAvailable => settings.dailySteps && stepsSupported;
 
@@ -36,7 +43,19 @@ class HomeStatsCard extends StatefulWidget {
   final Widget? progressTrailing;
   final bool running;
   final bool steps;
-  const HomeStatsCard({super.key, this.progress, this.progressTrailing, this.running = false, this.steps = false});
+
+  /// Viikon liikunta (WHO-tavoite) omana puolenaan; napautus avaa laskutavan ([onWeekTap]).
+  final Widget? week;
+  final VoidCallback? onWeekTap;
+  const HomeStatsCard({
+    super.key,
+    this.progress,
+    this.progressTrailing,
+    this.running = false,
+    this.steps = false,
+    this.week,
+    this.onWeekTap,
+  });
 
   @override
   State<HomeStatsCard> createState() => _HomeStatsCardState();
@@ -87,23 +106,27 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
     if (widget.progress != null) 'progress',
     if (widget.running) 'running',
     if (widget.steps) 'steps',
+    if (widget.week != null) 'week',
   ];
 
   static String _label(String side) => switch (side) {
     'running' => t('Juoksu'),
     'steps' => t('Askeleet'),
+    'week' => t('Viikko'),
     _ => t('Edistyminen'),
   };
 
-  void _openFull(BuildContext context, String side) => Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => switch (side) {
-        'running' => const RunningScreen(),
-        'steps' => StatsScreen(tab: 'steps'),
-        _ => StatsScreen(),
-      },
-    ),
-  );
+  void _openFull(BuildContext context, String side) => side == 'week'
+      ? widget.onWeekTap?.call()
+      : Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => switch (side) {
+              'running' => const RunningScreen(),
+              'steps' => StatsScreen(tab: 'steps'),
+              _ => StatsScreen(),
+            },
+          ),
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +154,7 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
                       children: [
                         if (many)
                           Flexible(
+                            flex: 3,
                             child: _SideSwitch(
                               values: sides,
                               labels: [for (final x in sides) _label(x)],
@@ -145,10 +169,21 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
                               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                           ),
-                        if (many) const Spacer(),
+                        // Edistymisen lisätieto (esim. ennätykset) pienenee ennemmin kuin puolten valitsin.
                         if (side == 'progress' && widget.progressTrailing != null)
-                          widget.progressTrailing!
-                        else if (side != 'progress') ...[
+                          Expanded(
+                            flex: 2,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: FittedBox(fit: BoxFit.scaleDown, child: widget.progressTrailing!),
+                              ),
+                            ),
+                          )
+                        else if (many)
+                          const Spacer(),
+                        if (side != 'progress') ...[
                           // Askeleet: päivitys heti Health Connectista (esim. kun Oura tai kävelymatto on
                           // synkronoinut).
                           if (side == 'steps')
@@ -167,7 +202,11 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
                                     : const Icon(Icons.refresh),
                               ),
                             ),
-                          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                          Icon(
+                            side == 'week' ? Icons.info_outline : Icons.chevron_right,
+                            size: side == 'week' ? 20 : null,
+                            color: cs.onSurfaceVariant,
+                          ),
                         ],
                       ],
                     ),
@@ -225,6 +264,7 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
   Widget _body(String x) => switch (x) {
     'steps' => const StepsCardBody(),
     'running' => RunningCardBody(),
+    'week' => widget.week!,
     _ => widget.progress!,
   };
 }
@@ -367,7 +407,6 @@ class StepsCardBody extends StatelessWidget {
         }
         final today = dateOnly(DateTime.now());
         final week = [for (var i = 6; i >= 0; i--) addDays(today, -i)];
-        final top = week.map((d) => dailySteps.at(d) ?? 0).fold<int>(1, (a, b) => b > a ? b : a);
         final n = dailySteps.today;
         final y = dailySteps.yesterday;
         final avg = dailySteps.average(7);
@@ -393,53 +432,162 @@ class StepsCardBody extends StatelessWidget {
               ].join(' · '),
               style: sub,
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 44,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  for (final d in week)
-                    Expanded(
-                      // Pylvään napautus: päivän erittely (esim. eilisen askeleet sovelluksittain).
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => showStepsDay(context, d),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: FractionallySizedBox(
-                            heightFactor: ((dailySteps.at(d) ?? 0) / top).clamp(.04, 1),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: d == today ? cs.primary.withValues(alpha: .6) : cs.outlineVariant,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                for (final d in week)
-                  Expanded(
-                    child: Text(
-                      uiWeekdaysShort[d.weekday - 1],
-                      textAlign: TextAlign.center,
-                      style: sub.copyWith(fontSize: 11, color: d == today ? cs.onSurface : null),
-                    ),
-                  ),
-              ],
-            ),
+            const SizedBox(height: 10),
+            StepsWeekChart(week: week, today: today),
           ],
         );
       },
     );
   }
+}
+
+/// Etusivun kortin viikon pylväät: viivat 0, 5k ja 10k (tavoite). Asteikon yläraja on tavoite tai viikon paras päivä,
+/// joten viivat ovat oikeilla korkeuksilla; tavoitteen ylittävä osa pylväästä vihreä ja päivän alla ✓.
+/// Pylvään napautus: päivän erittely.
+class StepsWeekChart extends StatelessWidget {
+  final List<DateTime> week;
+  final DateTime today;
+  const StepsWeekChart({super.key, required this.week, required this.today});
+
+  static const height = 60.0, gutter = 26.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 11, color: cs.onSurfaceVariant);
+    final values = [for (final d in week) dailySteps.at(d) ?? 0];
+    final best = values.fold<int>(0, (a, b) => b > a ? b : a);
+    final top = best > stepsGoal ? ((best + 999) ~/ 1000) * 1000 : stepsGoal;
+    double y(int n) => height * n / top;
+    return Column(
+      children: [
+        SizedBox(
+          height: height,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final (n, label) in [(0, '0'), (stepsGoal ~/ 2, '5k'), (stepsGoal, '10k')])
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: y(n) - .5,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomPaint(
+                          size: const Size.fromHeight(1),
+                          painter: _DashedLine(
+                            n == stepsGoal ? stepsGoalColor.withValues(alpha: .7) : cs.outlineVariant,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: gutter,
+                        child: Transform.translate(
+                          offset: const Offset(0, -.5),
+                          child: Text(label, textAlign: TextAlign.right, style: sub, textHeightBehavior: _tight),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Positioned.fill(
+                right: gutter,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final (i, d) in week.indexed)
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => showStepsDay(context, d),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                if (values[i] > stepsGoal)
+                                  Container(
+                                    key: ValueKey('stepsOver$i'),
+                                    height: y(values[i] - stepsGoal),
+                                    decoration: const BoxDecoration(
+                                      color: stepsGoalColor,
+                                      borderRadius: BorderRadius.vertical(top: Radius.circular(3)),
+                                    ),
+                                  ),
+                                Container(
+                                  height: y(values[i].clamp(0, stepsGoal)).clamp(2.0, height),
+                                  decoration: BoxDecoration(
+                                    color: values[i] == stepsGoal
+                                        ? stepsGoalColor
+                                        : d == today
+                                        ? cs.primary.withValues(alpha: .6)
+                                        : cs.outlineVariant,
+                                    borderRadius: values[i] > stepsGoal
+                                        ? const BorderRadius.vertical(bottom: Radius.circular(3))
+                                        : BorderRadius.circular(3),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.only(right: gutter),
+          child: Row(
+            children: [
+              for (final (i, d) in week.indexed)
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: uiWeekdaysShort[d.weekday - 1]),
+                        if (values[i] >= stepsGoal)
+                          const TextSpan(
+                            text: ' ✓',
+                            style: TextStyle(color: stepsGoalColor, fontWeight: FontWeight.w700),
+                          ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    style: sub.copyWith(color: d == today ? cs.onSurface : null),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+const _tight = TextHeightBehavior(applyHeightToFirstAscent: false, applyHeightToLastDescent: false);
+
+class _DashedLine extends CustomPainter {
+  final Color color;
+  const _DashedLine(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    for (var x = 0.0; x < size.width; x += 6) {
+      canvas.drawLine(Offset(x, .5), Offset((x + 3).clamp(0, size.width), .5), p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLine old) => old.color != color;
 }
 
 /// Tilastojen Askeleet-välilehti valitulle jaksolle [from]..[to) (vertailu [prevFrom]..[prevTo)).

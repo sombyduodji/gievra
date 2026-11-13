@@ -11,6 +11,7 @@ import 'body.dart';
 import 'custom_merge.dart' show builtinExercises;
 import 'l10n.dart';
 import 'plates.dart';
+import 'durable_write.dart';
 import 'models.dart';
 import 'program.dart';
 import 'exercises.dart';
@@ -1130,7 +1131,7 @@ class IoTrainingFiles implements TrainingFiles {
   Future<String> write(String rel, String text) async {
     final f = await _f(rel);
     await f.parent.create(recursive: true);
-    await f.writeAsString(text);
+    await writeDurable(f, text);
     return f.path;
   }
 

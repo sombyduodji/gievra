@@ -334,7 +334,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     );
     if (ok != true) return;
     final tmp = p.join((await getTemporaryDirectory()).path, 'FitNotes_Backup.fitnotes');
-    final sets = writeFitnotes(tmp, store.workouts);
+    final sets = writeFitnotes(tmp, store.workouts, weighIns: settings.body.weights);
     final file = File(tmp);
     final uri = await FilePicker.saveFile(
       fileName: 'FitNotes_Backup_${isoDate(DateTime.now())}.fitnotes',

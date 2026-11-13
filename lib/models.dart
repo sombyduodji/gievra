@@ -96,6 +96,9 @@ class Workout {
   /// Liikkeet, jotka on merkitty valmiiksi (Merkitse liike valmiiksi).
   Set<String> doneMoves = {};
 
+  /// Ohjelman liikkeet, jotka on poistettu tästä treenistä (pitkä painallus → Poista tästä treenistä).
+  Set<String> skipMoves = {};
+
   /// Supersarjat ja kiertoharjoittelu: liikkeet tehdään ryhmän järjestyksessä vuorotellen, tauko kierroksen jälkeen.
   /// Tiedostossa "superset: Leuanveto + Pystypunnerrus; ...".
   List<List<String>> supersets = [];
@@ -108,6 +111,10 @@ class Workout {
   int? seconds; // tarkka kesto sekunteina (kestävyyslajit; minutes on pyöristetty)
   int? kcal, hrAvg, hrMax; // sykemittarin tai älykellon tiedot (valinnainen)
   int? steps; // askeleet (kävely ja muut kävelylajit, valinnainen)
+
+  /// Kirjoitetaanko laskettu askelpituus tiedostoon: uusiin treeneihin kyllä, vanhoihin vain jos rivi oli jo
+  /// (vanhat tiedostot eivät muutu pelkästä avaamisesta ja tallentamisesta).
+  bool strideLine = true;
   bool watchTime; // kesto tuli kellosta (ei sovelluksen ajastimesta)
 
   /// Kesto asetettu käsin (Muokkaa kestoa): ajastin ei korvaa sitä. Tiedostossa "duration: 50 min (käsin)".
@@ -178,6 +185,15 @@ class Workout {
   /// Vauhti min/km (kestävyyslajit).
   /// Näytöllä "5:06 min/km"; tiedostoon kirjoitetaan ennallaan "5:06 /km" (vanhat tiedostot eivät muutu).
   String? get pace => paceSecPerKm == null ? null : '${fmtPace(paceSecPerKm!)} min/km';
+
+  /// Keskimääräinen askelpituus metreinä: matka / askeleet (esim. GPS-kävely ja Health Connectin askeleet).
+  /// Vain uskottavat arvot (0,3–2,5 m): koko päivän askeleet lyhyelle lenkille eivät kelpaa.
+  double? get strideM {
+    final d = distanceKm, s = steps;
+    if (d == null || d < 0.1 || s == null || s < 100) return null;
+    final m = d * 1000 / s;
+    return m < 0.3 || m > 2.5 ? null : m;
+  }
 
   /// Keskinopeus km/h.
   double? get speedKmh {
@@ -288,6 +304,8 @@ String workoutToMarkdown(Workout w) {
   if (w.seconds != null) b.writeln('time: ${fmtDurationSec(w.seconds!)}');
   if (w.runType != null) b.writeln('run_type: ${w.runType}');
   if (w.steps != null) b.writeln('steps: ${w.steps}');
+  // Laskettu tieto (matka / askeleet) luettavuuden vuoksi; luettaessa lasketaan aina uudelleen.
+  if (w.strideM case final m? when w.strideLine) b.writeln('stride: ${fileNum((m * 100).round() / 100)} m');
   if (w.route != null) b.writeln('route: ${w.route}');
   if (w.kcal != null) b.writeln('kcal: ${w.kcal}');
   if (w.hrAvg != null) b.writeln('hr_avg: ${w.hrAvg}');
@@ -304,6 +322,7 @@ String workoutToMarkdown(Workout w) {
   }
   if (w.dayReasons.isNotEmpty) b.writeln('day_feeling: ${w.dayReasons.join(', ')}');
   if (w.doneMoves.isNotEmpty) b.writeln('done: ${w.doneMoves.join('; ')}');
+  if (w.skipMoves.isNotEmpty) b.writeln('skip: ${w.skipMoves.join('; ')}');
   if (w.supersets.isNotEmpty) b.writeln('superset: ${w.supersets.map((g) => g.join(' + ')).join('; ')}');
   b
     ..writeln('tags: [treeni]')
@@ -430,6 +449,8 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   int? num(String k) => neg(k) ? null : int.tryParse(RegExp(r'\d+').firstMatch(meta[k] ?? '')?[0] ?? '');
   w.kcal = num('kcal');
   w.steps = num('steps');
+  // Vanha tiedosto, jossa matka ja askeleet jo ovat: ei muuteta. Askeleet myöhemmin (esim. Health Connect): kirjoitetaan.
+  w.strideLine = meta.containsKey('stride') || w.strideM == null;
   // Reitti: vain tiedostonimi samasta kansiosta (ei polkuja).
   final route = meta['route']?.trim();
   if (route != null && RegExp(r'^[\w.-]+\.gpx$').hasMatch(route)) w.route = route;
@@ -458,6 +479,10 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   ];
   w.doneMoves = {
     for (final r in (meta['done'] ?? '').split(';'))
+      if (r.trim().isNotEmpty) exerciseRenames[r.trim()] ?? r.trim(),
+  };
+  w.skipMoves = {
+    for (final r in (meta['skip'] ?? '').split(';'))
       if (r.trim().isNotEmpty) exerciseRenames[r.trim()] ?? r.trim(),
   };
   w.supersets = [

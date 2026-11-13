@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
+import '../durable_write.dart';
+
 // Kaksisuuntainen synkronointi treenikansion ja etäkansion (Google Drive) välillä.
 //
 // Polut ovat suhteessa treenikansioon: "asetukset.md", "ohjelma.md", "2026/2026-11-06.md".
@@ -190,7 +192,7 @@ class SyncEngine {
     final text = await remote.read(rf);
     final f = _file(path);
     await f.parent.create(recursive: true);
-    await f.writeAsString(text);
+    await writeDurable(f, text);
     manifest[path] = SyncEntry(md5Of(text), rf.id);
   }
 

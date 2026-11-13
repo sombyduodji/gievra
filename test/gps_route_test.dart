@@ -268,7 +268,23 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.text('GPS valmis'), findsOneWidget);
+    // Aloita: ensin 5 s laskenta (puhelin taskuun), sitten tallennus alkaa itsestään.
     await tester.tap(find.text('Aloita'));
+    await tester.pump();
+    expect(find.text('Laita puhelin taskuun'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(rec.state, RecState.searching);
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('3'), findsOneWidget);
+    // Peruuta palaa signaalinäkymään; uusi yritys ja laskennan loppuun odotus.
+    await tester.tap(find.text('Peruuta'));
+    await tester.pump();
+    expect(find.text('GPS valmis'), findsOneWidget);
+    await tester.tap(find.text('Aloita'));
+    await tester.pump();
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
     expect(rec.state, RecState.recording);
@@ -278,6 +294,30 @@ void main() {
     await tester.pump();
     expect(rec.state, RecState.paused);
     expect(find.text('Jatka'), findsOneWidget);
+    await tester.runAsync(rec.discard);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('GPS-laskennan voi ohittaa: tallennus alkaa heti', (tester) async {
+    final clock = DateTime.utc(2026, 11, 8, 10);
+    final gps = FakeGps();
+    final rec = GpsRecorder(source: gps, now: () => clock);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RecordScreen(sport: 'Kävely', recorder: rec),
+      ),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    await tester.tap(find.textContaining('Aloita silti'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('countdown')), findsOneWidget);
+    await tester.tap(find.text('Ohita laskenta'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    expect(rec.state, RecState.recording);
+    expect(find.text('Laita puhelin taskuun'), findsNothing);
     await tester.runAsync(rec.discard);
     await tester.pumpWidget(const SizedBox());
   });

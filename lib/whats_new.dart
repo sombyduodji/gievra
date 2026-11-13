@@ -13,6 +13,48 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.5',
+    Icons.donut_large,
+    'Askeleet kalenterissa',
+    'Vihreä rengas kalenterin päivämäärän ympärillä on sen päivän askeleet: täysi rengas on 10 000 askelta. Napauta päivää, niin näet tarkan määrän.',
+  ),
+  NewFeature(
+    '0.6.5',
+    Icons.favorite_border,
+    'Viikon liikunta',
+    'Etusivun kortin Viikko-puoli: reipasta liikuntaa 150 minuutin tavoitetta vasten (kova minuutti lasketaan kahdesti) ja lihaskuntopäivät, kuten WHO suosittelee.',
+  ),
+  NewFeature(
+    '0.6.5',
+    Icons.flag_outlined,
+    'Treeni valmis ja fiilis',
+    'Treenin ja liikunnan lopussa yksi painike, ja fiilis (liikunnassa myös rasitus) kysytään samassa ikkunassa. Uusi yhteenveto näyttää vain täytetyt tiedot.',
+  ),
+  NewFeature(
+    '0.6.5',
+    Icons.touch_app_outlined,
+    'Liikkeen pitkä painallus',
+    'Paina liikettä pitkään: lisää supersarjaan, pura supersarja tai poista liike tästä treenistä.',
+  ),
+  NewFeature(
+    '0.6.5',
+    Icons.timer_outlined,
+    'Seuraava sarja palautuksessa',
+    'Palautusajastin näyttää seuraavan sarjan painon ja toistot, joten voit vaihtaa painot tauon aikana.',
+  ),
+  NewFeature(
+    '0.6.5',
+    Icons.sports,
+    'Uusi lajivalinta ja ajanotto',
+    'Lajit hakuna ja ryhminä, viimeisimmät ensin. Ilman GPS:ää valitse Ajanotto (aloita, tauko, lopeta) tai Syötä itse.',
+  ),
+  NewFeature(
+    '0.6.5',
+    Icons.location_on_outlined,
+    'GPS: 5 sekunnin laskenta',
+    'Tallennus alkaa 5 sekunnin laskennan jälkeen, joten ehdit laittaa puhelimen taskuun. Ohita laskenta aloittaa heti.',
+  ),
+  NewFeature(
     '0.6.4',
     Icons.directions_walk,
     'Päivän askeleet',

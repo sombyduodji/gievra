@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../gps_filter.dart';
@@ -32,6 +34,42 @@ class _RecordScreenState extends State<RecordScreen> {
   late final GpsRecorder rec = widget.recorder ?? GpsRecorder();
   String? _error;
   bool _busy = true;
+
+  /// Aloituslaskenta: sekunteja jäljellä (null = ei käynnissä). Aikaa laittaa puhelin taskuun ennen kuin aika
+  /// ja matka alkavat; Aloita heti ohittaa laskennan.
+  static const countdownSeconds = 5;
+  int? _count;
+  Timer? _countTimer;
+
+  void _beginCountdown() {
+    _countTimer?.cancel();
+    HapticFeedback.selectionClick();
+    setState(() => _count = countdownSeconds);
+    _countTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final left = (_count ?? 1) - 1;
+      if (left <= 0) {
+        _startNow();
+      } else {
+        HapticFeedback.selectionClick();
+        setState(() => _count = left);
+      }
+    });
+  }
+
+  void _cancelCountdown() {
+    _countTimer?.cancel();
+    _countTimer = null;
+    if (mounted) setState(() => _count = null);
+  }
+
+  Future<void> _startNow() async {
+    _countTimer?.cancel();
+    _countTimer = null;
+    HapticFeedback.heavyImpact();
+    setState(() => _count = null);
+    await rec.start();
+  }
 
   @override
   void initState() {
@@ -77,6 +115,7 @@ class _RecordScreenState extends State<RecordScreen> {
 
   @override
   void dispose() {
+    _countTimer?.cancel();
     rec.removeListener(_changed);
     if (widget.recorder == null) rec.dispose();
     super.dispose();
@@ -92,6 +131,8 @@ class _RecordScreenState extends State<RecordScreen> {
 
   /// Takaisin-painike tai Lopeta: tallennetaanko, hylätäänkö vai jatketaanko.
   Future<void> _askStop() async {
+    // Takaisin laskennan aikana: vain laskenta perutaan, GPS jää etsimään.
+    if (_count != null) return _cancelCountdown();
     if (rec.state == RecState.idle || rec.state == RecState.searching) {
       await rec.discard();
       if (mounted) Navigator.of(context).pop();
@@ -153,6 +194,8 @@ class _RecordScreenState extends State<RecordScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                 ? Center(child: Text(_error!, textAlign: TextAlign.center))
+                : rec.state == RecState.searching && _count != null
+                ? _countdown(cs)
                 : rec.state == RecState.searching
                 ? _searching(cs)
                 : _recording(cs),
@@ -228,13 +271,75 @@ class _RecordScreenState extends State<RecordScreen> {
         const Spacer(),
         FilledButton.icon(
           style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
-          onPressed: rec.goodSignal ? rec.start : null,
+          onPressed: rec.goodSignal ? _beginCountdown : null,
           icon: const Icon(Icons.play_arrow),
           label: Text(t('Aloita'), style: const TextStyle(fontSize: 18)),
         ),
         const SizedBox(height: 8),
         if (!rec.goodSignal)
-          TextButton(onPressed: rec.start, child: Text(t('Aloita silti (matka alkaa, kun signaali löytyy)'))),
+          TextButton(onPressed: _beginCountdown, child: Text(t('Aloita silti (matka alkaa, kun signaali löytyy)'))),
+      ],
+    );
+  }
+
+  Widget _countdown(ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SamiBand(height: 4, pattern: false),
+        const Spacer(),
+        Text(
+          t('Laita puhelin taskuun'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          t('Aika ja matka alkavat, kun laskenta loppuu.'),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: SizedBox(
+            width: 180,
+            height: 180,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                TweenAnimationBuilder<double>(
+                  key: ValueKey(_count),
+                  tween: Tween(begin: (_count! / countdownSeconds), end: (_count! - 1) / countdownSeconds),
+                  duration: const Duration(seconds: 1),
+                  builder: (_, v, _) => CircularProgressIndicator(
+                    value: v,
+                    strokeWidth: 10,
+                    color: cs.primary,
+                    backgroundColor: cs.surfaceContainerHighest,
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    '$_count',
+                    key: const ValueKey('countdown'),
+                    style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(child: _signal(cs)),
+        const Spacer(),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
+          onPressed: _startNow,
+          icon: const Icon(Icons.fast_forward),
+          label: Text(t('Ohita laskenta'), style: const TextStyle(fontSize: 18)),
+        ),
+        const SizedBox(height: 8),
+        TextButton(onPressed: _cancelCountdown, child: Text(t('Peruuta'))),
       ],
     );
   }

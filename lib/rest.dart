@@ -136,9 +136,17 @@ class RestTimer extends ChangeNotifier {
     return s <= 0 ? 0 : (s / 1000).ceil();
   }
 
+  /// Seuraavan sarjan kuvaus palautuspalkkiin. Sarjanäkymä antaa funktion, jolloin painon muutos tauon aikana näkyy
+  /// heti; näkymästä poistuttaessa viimeisin arvo jää tekstiksi.
+  String? Function()? nextFn;
+  String? nextText;
+  String? get next => nextFn?.call() ?? nextText;
+
   void start(int seconds, String exercise) {
     total = seconds;
     this.exercise = exercise;
+    nextFn = null;
+    nextText = null;
     _end = DateTime.now().add(Duration(seconds: seconds));
     _schedule();
     _tick?.cancel();
