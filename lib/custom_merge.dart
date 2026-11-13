@@ -130,4 +130,5 @@ void _renameIn(Workout w, String from, String to) {
   if (f != null) w.moveFeeling.putIfAbsent(to, () => f);
   if (w.tooHeavy.remove(from)) w.tooHeavy.add(to);
   if (w.doneMoves.remove(from)) w.doneMoves.add(to);
+  if (w.skipMoves.remove(from)) w.skipMoves.add(to);
 }

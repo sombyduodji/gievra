@@ -56,7 +56,45 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       : suggestNext(e.name, widget.date);
   late final InjuryStatus _inj = injuryStatus(e.name, settings.injuries);
   late final double _bestE1rm = bestE1rmBefore(e.name, widget.date);
-  bool _showSugg = true;
+
+  /// Painoa tai toistoja muutettu viimeisen tallennuksen jälkeen (sarja on vielä tallentamatta).
+  bool _edited = false;
+
+  void _setKg(num v) => setState(() {
+    _kg = v.toDouble();
+    _edited = true;
+  });
+
+  void _setReps(num v) => setState(() {
+    _reps = v.toInt();
+    _edited = true;
+  });
+
+  /// Liike valmis. Jos viimeinen sarja on vielä tallentamatta (tai sarjoja ei ole), ilmoitus ja takaisin
+  /// kirjaukseen: sarja tallennetaan vastaamalla, jäikö varaa.
+  Future<void> _markDone() async {
+    if (_edited || e.sets.isEmpty) {
+      // OK palaa kirjaukseen; "Merkitse silti" ei jätä umpikujaa (esim. vahingossa painettu + ja −).
+      final anyway = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(t('Viimeistä sarjaa ei ole tallennettu')),
+          content: Text(t('Tallenna sarja ensin valitsemalla, jäikö varaa. Merkitse sitten liike valmiiksi.')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Merkitse silti'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('OK'))),
+          ],
+        ),
+      );
+      if (anyway != true || !mounted) return;
+    }
+    // Liike valmis: tämän liikkeen palautusta ei enää tarvita (ei muistutusta sarjojen väliin).
+    if (rest.running && rest.exercise == e.name) rest.stop();
+    if (mounted) Navigator.pop(context, true);
+  }
+
+  /// Tietokortin lisätiedot (ehdotuksen peruste, koko edellinen kerta, jakso ja tauko).
+  bool _infoOpen = false;
   double _kg = 20;
   int _reps = 8;
 
@@ -88,6 +126,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         setState(() {
           _cdLeft = null;
           _reps = _cdTotal;
+          _edited = true; // ajastettu sarja odottaa tallennusta
         });
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(t('Aika täynnä: {0} s. Tallenna sarja.', [_cdTotal]))));
@@ -105,7 +144,10 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   void _stopCountdown({bool keep = true}) {
     _cd?.cancel();
     setState(() {
-      if (keep && _cdLeft != null) _reps = (_cdTotal - _cdLeft!).clamp(1, 9999);
+      if (keep && _cdLeft != null) {
+        _reps = (_cdTotal - _cdLeft!).clamp(1, 9999);
+        _edited = true;
+      }
       _cdLeft = null;
     });
   }
@@ -113,16 +155,46 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   @override
   void dispose() {
     _cd?.cancel();
+    if (rest.nextFn == _restNext) {
+      rest.nextText = _restNext();
+      rest.nextFn = null;
+    }
     super.dispose();
   }
 
-  /// Pudotussarja: edellisen sarjan paino −20 % valmiiksi.
+  /// Palautuspalkin rivi: mitä tauon jälkeen tehdään (seuraava liike supersarjassa, lämmittely- tai työsarja).
+  String? _restNext() {
+    final line = _restNextLine();
+    // Palautus on toisen liikkeen: kerrotaan, minkä liikkeen sarja on tulossa.
+    return line != null && rest.exercise != e.name ? '${exerciseLabel(e.name)} · $line' : line;
+  }
+
+  String? _restNextLine() {
+    if (_next != null && _nextAfterRest) return t('Seuraavaksi: {0}', [exerciseLabel(_next!)]);
+    final set = fmtSet(e.name, SetEntry(_kg, _reps, kind: _kind));
+    if (_warming) return t('Seuraava lämmittelysarja: {0}', [set]);
+    final done = e.sets.where((s) => !s.warmup).length;
+    final target = widget.target;
+    if (target != null && target.sets > 0) {
+      if (done >= target.sets) return t('Tavoitteen sarjat tehty ✓');
+      return t('Seuraava sarja {0}/{1}: {2}', [done + 1, target.sets, set]);
+    }
+    return t('Seuraava sarja: {0}', [set]);
+  }
+
+  /// Pudotussarja: edellisen sarjan paino −20 % valmiiksi. Pudotuksista takaisin tavalliseen tai AMRAP-sarjaan:
+  /// viimeisimmän muun kuin pudotussarjan paino (ei pudotusten jälkeistä kevyttä painoa).
   void _setKind(String? k) => setState(() {
+    final wasDrop = _kind == dropSet;
     _kind = k;
-    final prev = e.sets.where((s) => !s.warmup).lastOrNull;
+    final work = e.sets.where((s) => !s.warmup).toList();
+    final prev = work.lastOrNull;
     if (k == dropSet && prev != null && prev.kg > 0) {
       final step = settings.weightStep;
       _kg = ((prev.kg * .8 / step).round() * step).clamp(0, prev.kg - step).toDouble();
+    } else if (wasDrop && k != dropSet) {
+      final main = work.lastWhere((s) => s.kind != dropSet, orElse: () => SetEntry(_kg, _reps));
+      _kg = main.kg;
     }
   });
 
@@ -163,29 +235,200 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         _reps = _warm.first.reps;
       }
     }
+    // Toisen liikkeen palautus käynnissä: palkki näyttää tämän liikkeen ensimmäisen sarjan (tauon jälkeen tämä).
+    if (rest.running && rest.exercise != e.name) rest.nextFn = _restNext;
   }
 
   Measure get _m => measureOf(e.name);
 
-  Future<void> _chooseMeasure() async {
-    final m = await showDialog<Measure>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(t('Miten {0} mitataan?', [exerciseLabel(e.name)])),
-        children: [
-          for (final m in Measure.values)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, m),
-              child: Text('${m == _m ? '● ' : ''}${_cap(t(m.label))}'),
-            ),
-        ],
+  /// Ohje (oikea yläkulma): liikkeen animaatio ja vinkit sekä mittaustapa samassa paneelissa.
+  Future<void> _showHelp() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSheet) {
+        final cs = Theme.of(ctx).colorScheme;
+        final sub = TextStyle(fontSize: 11, color: cs.onSurfaceVariant);
+        final motion = exerciseMotions[e.name];
+        final cues = cuesFor(e.name);
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: motion != null || cues.isNotEmpty ? .75 : .35,
+          maxChildSize: .95,
+          builder: (_, scroll) => ListView(
+            controller: scroll,
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+            children: [
+              if (motion != null || cues.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(t('Näin teet'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    ),
+                    Text(t('Kokeellinen ohje'), style: sub),
+                  ],
+                ),
+                if (motion != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Center(child: FigureAnimation(motion: motion, size: 200)),
+                  ),
+                if (cues.isNotEmpty)
+                  LangNotice(
+                    healthTextLang == 'en'
+                        ? t('Ei saatavilla saameksi: liikevinkit näkyvät englanniksi.')
+                        : t('Ei saatavilla saameksi: liikevinkit näkyvät suomeksi.'),
+                    show: isSami,
+                  ),
+                for (final c in cues)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('•  ', style: TextStyle(color: yellowText(ctx))),
+                        Expanded(child: Text(c, style: const TextStyle(fontSize: 13))),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 10),
+                Text(
+                  t(
+                    '⚠️ Kokeellinen: animaatio ja vinkit ovat suuntaa antavia eikä niitä ole vielä tarkistanut '
+                    'ammattilainen. Varmista oikea tekniikka valmentajalta tai fysioterapeutilta ennen kuin '
+                    'nostat raskaita painoja. Jos ohje näyttää oudolta, kerro siitä: ☰ → Ilmoita ongelmasta.',
+                  ),
+                  style: sub,
+                ),
+                const Divider(height: 28),
+              ],
+              Text(
+                t('Miten {0} mitataan?', [exerciseLabel(e.name)]),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final m in Measure.values)
+                    ChoiceChip(
+                      label: Text(_cap(t(m.label))),
+                      selected: m == _m,
+                      onSelected: (_) async {
+                        if (m == _m) return;
+                        settings.setMeasure(e.name, m);
+                        setState(() {});
+                        setSheet(() {});
+                        await widget.onChanged();
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+
+  /// Yksi tietokortti: tavoite, ehdotus ja edellinen kerta. Napautus näyttää lisätiedot.
+  Widget _infoCard(ColorScheme cs) {
+    final target = widget.target;
+    final sugg = settings.tips ? _sugg : null;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final strong = TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600);
+    final last = _last == null
+        ? t('ei aiempaa')
+        : '${shortDate(_last.$1)} – ${_last.$2.sets.map((s) => '${fmtNum(s.kg)}×${s.reps}').join(', ')}';
+    return Material(
+      color: cs.surfaceContainer,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => setState(() => _infoOpen = !_infoOpen),
+        child: Container(
+          decoration: sugg == null
+              ? null
+              : const BoxDecoration(
+                  border: Border(left: BorderSide(color: Sami.green, width: 4)),
+                ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 8, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (target != null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${t('Tavoite')}: ${target.sets} × ${target.reps}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'} · '
+                        '${reserveTarget(_m, target.rir)}',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Text('${e.workSets.length}/${target.sets}', style: sub),
+                  ],
+                ),
+              if (sugg != null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t('Ehdotus: {0}', [fmtSet(e.name, SetEntry(sugg.kg, sugg.reps))]),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      onPressed: () => setState(() {
+                        _kg = sugg.kg;
+                        _reps = sugg.reps;
+                        _edited = true;
+                      }),
+                      child: Text(t('Käytä')),
+                    ),
+                  ],
+                ),
+              if (_infoOpen) ...[
+                if (sugg != null) Text(sugg.reason, style: sub),
+                if (target != null)
+                  Text(
+                    '${t('{0} · tehty {1}/{2}', [target.label, e.workSets.length, target.sets])} · '
+                    '${t('tauko {0} min', [fmtNum(target.restSec / 60)])}',
+                    style: sub,
+                  ),
+                const SizedBox(height: 4),
+              ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: t('Edellinen kerta: ')),
+                          TextSpan(text: last, style: strong),
+                          if (_bestBefore > 0) ...[
+                            TextSpan(text: _infoOpen ? '\n${t('Paras: ')}' : ' · ${t('Paras: ')}'),
+                            TextSpan(text: '${fmtNum(_bestBefore)} kg', style: strong),
+                          ],
+                        ],
+                      ),
+                      maxLines: _infoOpen ? null : 1,
+                      overflow: _infoOpen ? null : TextOverflow.ellipsis,
+                      style: sub,
+                    ),
+                  ),
+                  Icon(_infoOpen ? Icons.expand_less : Icons.expand_more, size: 18, color: cs.onSurfaceVariant),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
-    if (m != null) {
-      settings.setMeasure(e.name, m);
-      setState(() {});
-      await widget.onChanged();
-    }
   }
 
   /// Ennätys = raskaampi kuin mikään aiempi sarja tässä liikkeessä (myös tämän päivän aiemmat).
@@ -218,6 +461,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   /// Yksi napautus tallentaa sarjan ja vastauksen "jäikö varaa" (null = ei merkitty).
   Future<void> _saveSet([int? rir]) async {
     setState(() {
+      _edited = false;
       if (_warming) {
         e.sets.add(SetEntry(_kg, _reps, warmup: true));
         _warmIdx++;
@@ -262,6 +506,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         ),
         e.name,
       );
+      rest.nextFn = _restNext;
     }
     await widget.onChanged();
     if (mounted && e.sets.last.pr) {
@@ -367,17 +612,12 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             IconButton(
               tooltip: t('Prosenttia maksimista'),
               icon: const Icon(Icons.percent),
-              onPressed: () => showPercentSheet(
-                context,
-                exercise: e.name,
-                date: widget.date,
-                onPick: (v) => setState(() => _kg = v),
-              ),
+              onPressed: () => showPercentSheet(context, exercise: e.name, date: widget.date, onPick: (v) => _setKg(v)),
             ),
-          TextButton.icon(
-            onPressed: _chooseMeasure,
-            icon: const Icon(Icons.straighten, size: 18),
-            label: Text(t(_m.label)),
+          IconButton(
+            tooltip: t('Ohje ja mittaustapa'),
+            icon: Icon(Icons.help_outline, color: yellowText(context)),
+            onPressed: _showHelp,
           ),
         ],
       ),
@@ -386,52 +626,6 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         children: [
           const SamiBand(height: 4, pattern: false),
           const SizedBox(height: 12),
-          if (exerciseMotions[e.name] != null || cuesFor(e.name).isNotEmpty)
-            Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ExpansionTile(
-                shape: const Border(),
-                initiallyExpanded: _last == null,
-                leading: const Icon(Icons.play_circle_outline),
-                title: Text(t('Näin teet')),
-                subtitle: Text(
-                  t('Kokeellinen ohje'),
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                children: [
-                  if (exerciseMotions[e.name] != null)
-                    Center(child: FigureAnimation(motion: exerciseMotions[e.name]!, size: 200)),
-                  if (cuesFor(e.name).isNotEmpty)
-                    LangNotice(
-                      healthTextLang == 'en'
-                          ? t('Ei saatavilla saameksi: liikevinkit näkyvät englanniksi.')
-                          : t('Ei saatavilla saameksi: liikevinkit näkyvät suomeksi.'),
-                      show: isSami,
-                    ),
-                  for (final c in cuesFor(e.name))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('•  ', style: TextStyle(color: yellowText(context))),
-                          Expanded(child: Text(c, style: const TextStyle(fontSize: 13))),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 10),
-                  Text(
-                    t(
-                      '⚠️ Kokeellinen: animaatio ja vinkit ovat suuntaa antavia eikä niitä ole vielä tarkistanut '
-                      'ammattilainen. Varmista oikea tekniikka valmentajalta tai fysioterapeutilta ennen kuin '
-                      'nostat raskaita painoja. Jos ohje näyttää oudolta, kerro siitä: ☰ → Ilmoita ongelmasta.',
-                    ),
-                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
           if (widget.superset case final g?)
             Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -463,29 +657,6 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-          if (widget.target != null)
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Sami.blue.withValues(alpha: .15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${t('Tavoite')}: ${widget.target!.sets} × ${widget.target!.reps}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'} · '
-                    '${reserveTarget(_m, widget.target!.rir)} · ${t('tauko {0} min', [fmtNum(widget.target!.restSec / 60)])}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    t('{0} · tehty {1}/{2}', [widget.target!.label, e.workSets.length, widget.target!.sets]),
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
           if (_inj.flagged || widget.note != null)
             Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -506,75 +677,39 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: t('Edellinen kerta: ')),
-                  TextSpan(
-                    text: _last == null
-                        ? t('ei aiempaa')
-                        : '${shortDate(_last.$1)} – ${_last.$2.sets.map((s) => '${fmtNum(s.kg)}×${s.reps}').join(', ')}',
-                    style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
-                  ),
-                  if (_bestBefore > 0) ...[
-                    TextSpan(text: '\n${t('Paras: ')}'),
-                    TextSpan(
-                      text: '${fmtNum(_bestBefore)} kg',
-                      style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ],
+          _infoCard(cs),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _CompactStepper(
+                  label: weightTitle(e.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)')),
+                  value: fmtNum(_kg),
+                  unit: 'kg',
+                  onMinus: () => _setKg((_kg - step).clamp(0, 1000)),
+                  onPlus: () => _setKg((_kg + step).clamp(0, 1000)),
+                  onTap: () async {
+                    final v = await askNumber(context, t('Paino (kg)'), _kg);
+                    if (v != null && v >= 0 && v <= 1000) _setKg(v);
+                  },
+                ),
               ),
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-            ),
-          ),
-          if (_sugg != null && _showSugg && settings.tips)
-            Container(
-              margin: const EdgeInsets.only(top: 10),
-              padding: const EdgeInsets.fromLTRB(12, 10, 4, 6),
-              decoration: BoxDecoration(
-                color: Sami.green.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(14),
-                border: const Border(left: BorderSide(color: Sami.green, width: 4)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _CompactStepper(
+                  label: _cap(t(_m.label)) + (perSideExercises.contains(e.name) ? t(' (per puoli)') : ''),
+                  value: '$_reps',
+                  unit: _m == Measure.reps ? '' : _m.unit,
+                  onMinus: () => _setReps((_reps - _m.step).clamp(1, 9999)),
+                  onPlus: () => _setReps((_reps + _m.step).clamp(1, 9999)),
+                  onTap: () async {
+                    final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false);
+                    if (v != null && v >= 1 && v <= 9999) _setReps(v.round());
+                  },
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t('Ehdotus: {0}', [fmtSet(e.name, SetEntry(_sugg.kg, _sugg.reps))]),
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(_sugg.reason, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(onPressed: () => setState(() => _showSugg = false), child: Text(t('Ohita'))),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          _kg = _sugg.kg;
-                          _reps = _sugg.reps;
-                        }),
-                        child: Text(t('Käytä')),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          SectionLabel(weightTitle(e.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)'))),
-          ValueStepper(
-            value: fmtNum(_kg),
-            unit: 'kg',
-            onMinus: () => setState(() => _kg = (_kg - step).clamp(0, 1000)),
-            onPlus: () => setState(() => _kg = (_kg + step).clamp(0, 1000)),
-            onTap: () async {
-              final v = await askNumber(context, t('Paino (kg)'), _kg);
-              if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
-            },
+            ],
           ),
           if (weightTotal(e.name, _kg) != null)
             Padding(
@@ -582,25 +717,10 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               child: Text(
                 weightTotal(e.name, _kg)!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
-          if (isBarbell(e.name) && _kg > 0) PlateLine(kg: _kg, onPick: (v) => setState(() => _kg = v)),
-          SectionLabel(
-            t(_m.label)[0].toUpperCase() +
-                t(_m.label).substring(1) +
-                (perSideExercises.contains(e.name) ? t(' (per puoli)') : ''),
-          ),
-          ValueStepper(
-            value: '$_reps',
-            unit: _m.unit,
-            onMinus: () => setState(() => _reps = (_reps - _m.step).clamp(1, 9999)),
-            onPlus: () => setState(() => _reps = (_reps + _m.step).clamp(1, 9999)),
-            onTap: () async {
-              final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false);
-              if (v != null && v >= 1 && v <= 9999) setState(() => _reps = v.round());
-            },
-          ),
+          if (isBarbell(e.name) && _kg > 0) PlateLine(kg: _kg, onPick: (v) => _setKg(v)),
           const SizedBox(height: 18),
           if (_warming) ...[
             Container(
@@ -714,19 +834,6 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 ],
               ),
             ],
-            // Yhtä leveä kuin vastausnapit: tallennus ilman vastausta on oma selkeä painike. AMRAP-sarjassa ei:
-            // siinä ei kysytä varaa (tallentuu aina "ei yhtään"), joten kaksi painiketta tekisi saman.
-            if (_kind != amrapSet) ...[
-              const SizedBox(height: 10),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: cs.primary),
-                ),
-                onPressed: () => _saveSet(),
-                child: Text(t('Tallenna vastaamatta'), style: const TextStyle(fontSize: 15)),
-              ),
-            ],
             const SizedBox(height: 8),
             // Erotinviiva: sarjan tallennus yllä, liikkeen lopetus alla.
             const Divider(height: 24),
@@ -737,11 +844,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 backgroundColor: Sami.green,
                 foregroundColor: Colors.white,
               ),
-              onPressed: () {
-                // Liike valmis: tämän liikkeen palautusta ei enää tarvita (ei muistutusta sarjojen väliin).
-                if (rest.running && rest.exercise == e.name) rest.stop();
-                Navigator.pop(context, true);
-              },
+              onPressed: _markDone,
               icon: const Icon(Icons.check),
               label: Text(t('Merkitse liike valmiiksi'), style: const TextStyle(fontSize: 15)),
             ),
@@ -943,6 +1046,84 @@ String? weightTotal(String exercise, double kg) =>
     : null;
 
 /// Ensimmäinen kirjain isoksi (mittaustavan nimi otsikkona).
+/// Paino- tai toistosäädin puolen leveydellä: otsikko, arvo (napautus = kirjoita) ja −/+.
+class _CompactStepper extends StatelessWidget {
+  final String label, value, unit;
+  final VoidCallback onMinus, onPlus, onTap;
+  const _CompactStepper({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.onMinus,
+    required this.onPlus,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    Widget btn(IconData i, VoidCallback f) => SizedBox.square(
+      dimension: 48,
+      child: IconButton.filledTonal(
+        onPressed: f,
+        icon: Icon(i),
+        style: IconButton.styleFrom(
+          backgroundColor: cs.surfaceContainerHigh,
+          foregroundColor: yellowText(context),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+      decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        children: [
+          Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, letterSpacing: .6, color: cs.onSurfaceVariant),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: value,
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                        ),
+                        if (unit.isNotEmpty)
+                          TextSpan(
+                            text: ' ${t(unit)}',
+                            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [btn(Icons.remove, onMinus), btn(Icons.add, onPlus)],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _cap(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
 /// Sarjan tyyppi: tavallinen, pudotus tai AMRAP.

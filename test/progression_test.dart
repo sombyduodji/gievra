@@ -154,6 +154,24 @@ void main() {
     expect(returnFor(DateTime(2026, 11, 20)), isNull);
   });
 
+  test('Tauon jälkeen ohjelman ehdotus ei nouse: kevennys edellisestä painosta alaspäin pyöristäen', () {
+    // Edellinen kerta toistoalueen ylärajalla (20 × 10): ilman taukoa paino nousisi, tauon jälkeen ei.
+    store.workouts = [
+      Workout(
+        date: DateTime(2026, 11, 9),
+        exercises: [
+          ExerciseEntry('Takakyykky', [SetEntry(20, 10, rir: 2), SetEntry(20, 10, rir: 2)]),
+        ],
+      ),
+    ];
+    settings.pauses = [Pause(DateTime(2026, 11, 10), 'sairas', DateTime(2026, 11, 10))];
+    final t = Target(4, 6, 10, '1–3', 150, 'Viikko 4');
+    final s = suggestForTarget('Takakyykky', DateTime(2026, 11, 12), t)!;
+    expect(s.kg, lessThanOrEqualTo(20));
+    expect(s.reason, contains('sairauden'));
+    settings.pauses = [];
+  });
+
   test('Lyhyt loma ei kevennä', () {
     store.workouts = [bench(DateTime(2026, 10, 20), 100, 5, 1)];
     settings.pauses = [Pause(DateTime(2026, 10, 25), 'loma', DateTime(2026, 10, 30))];

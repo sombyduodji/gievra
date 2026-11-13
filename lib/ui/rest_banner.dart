@@ -38,9 +38,15 @@ class RestBanner extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          t('Palautus {0}', [_mmss(left)]),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                        // Yhdellä rivillä myös saameksi (Vuoiŋŋasteapmi): pienennetään tarvittaessa.
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            t('Palautus {0}', [_mmss(left)]),
+                            maxLines: 1,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                          ),
                         ),
                         Text(
                           t('suositus {0} · {1}', [_mmss(rest.total), exerciseLabel(rest.exercise)]),
@@ -56,6 +62,17 @@ class RestBanner extends StatelessWidget {
                   IconButton(tooltip: t('Ohita palautus'), onPressed: rest.stop, icon: const Icon(Icons.close)),
                 ],
               ),
+              // Seuraava sarja omalla rivillään koko leveydeltä (painikkeiden vieressä teksti katkeaisi).
+              if (rest.next case final next?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, right: 8),
+                  child: Text(
+                    next,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
               const SizedBox(height: 6),
               Padding(
                 padding: const EdgeInsets.only(right: 8),

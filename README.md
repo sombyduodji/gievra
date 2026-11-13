@@ -87,6 +87,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - 148 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula (myös kahdella kuulalla) ja kehonpaino
 - *Näin teet*: liikeanimaatio ja tekniikkavinkit jokaiselle liikkeelle
 - oikea mittaustapa: lankku sekunteina, askelkyykkykävely askelina, kannot edestakaisina
+- sarjan kirjaus tiiviisti: paino ja toistot vierekkäin, ohje ja mittaustapa ?-painikkeesta; palautusajastin
+  näyttää seuraavan sarjan; liikkeen pitkä painallus: lisää supersarjaan, pura supersarja tai poista tästä treenistä
 
 **Seuranta ja ehdotukset, jotka voi ohittaa**
 - yhteenveto 1, 3 tai 6 kuukaudelta tai omalta aikaväliltä (esim. ensimmäisestä treenistä tähän päivään): kaikki
@@ -118,6 +120,13 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   ym.), kävelymaton puuttuvat askeleet lisättyinä; etusivun kortissa, kalenterissa renkaana ja tilastojen
   Askeleet-välilehdellä, `askeleet.md`-tiedostossa ja varmuuskopioissa. Kalenterin päivän napautus avaa päivän
   yhteenvedon (treenit, aika, matka, askeleet), jossa pyyhkäisy vaihtaa päivää
+- *Viikon liikunta* etusivun kortin Viikko-puolella: reipas liikunta 150 minuutin viikkotavoitetta vasten (kova
+  minuutti lasketaan kahdesti) ja lihaskuntopäivät (tavoite 2) WHO:n liikuntasuosituksen mukaan
+- treenin lopussa yksi *Treeni valmis!* -painike: fiilis (liikunnassa myös rasitus) kysytään samassa ikkunassa, ja
+  yhteenveto näyttää vain täytetyt tiedot; lajivalinta haulla ja ryhminä, ilman GPS:ää *Ajanotto* (aloita, tauko,
+  lopeta, korjattava alku ja loppu) tai *Syötä itse*
+- GPS-tallennus alkaa 5 sekunnin laskennan jälkeen (ehdit laittaa puhelimen taskuun); askelpituus (matka /
+  askeleet) liikunnan tiedoissa, kun askeleet ovat mukana
 - yksi ilmoitus käynnissä olevasta treenistä (laji ja kulunut aika; salitreeni, ajanotto tai GPS-lenkki)
 - juoksulle oma kehitysnäkymä, erillään salista: tarkka aika, vauhti min/km ja keskinopeus, kilometrit
   viikoittain, kevyiden lenkkien (rasitus Kevyt) vauhti ja syke neljän viikon välein sekä ennätykset (5 km, 10 km,

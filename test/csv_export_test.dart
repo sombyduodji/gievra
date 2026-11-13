@@ -54,7 +54,7 @@ void main() {
     expect(gym, contains('"Hyvä päivä; jalat ""raskaat"""'), reason: 'lainausmerkit kahdennetaan');
     expect(gym, isNot(contains('Bench Press')), reason: 'aikavälin ulkopuolella');
     expect(files[0].rows, 3);
-    expect(files[1].text, contains('2026-11-03,Running,26:00,5.2,5:00,150,,,,Good'));
+    expect(files[1].text, contains('2026-11-03,Running,26:00,5.2,5:00,150,,,,,Good'));
     expect(files[2].text, contains('2026-11-03,82.4,180'));
   });
 

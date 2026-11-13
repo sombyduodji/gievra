@@ -69,6 +69,9 @@ double returnLoadFactor(int days, {required bool sick}) {
 
 double _round(double kg, double step) => (kg / step).round() * step;
 
+/// Alaspäin lähimpään askeleeseen (tauon jälkeinen kevennys ei saa pyöristyä takaisin ylös), vähintään yksi askel.
+double _roundDown(double kg, double step) => math.max(step, (kg / step + 1e-9).floor() * step);
+
 /// Moninivelliike (kyykky, maastaveto, punnerrukset, vedot): isompi lisäys ja alempi toistoyläraja.
 bool _compound(String exercise) => slots[slotOf(exercise)]?.compound ?? false;
 
@@ -235,8 +238,11 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
   final ret = returnFor(date);
   if (ret != null) {
     final (p, load, sets) = ret;
+    // Tauon jälkeen ei nosteta: kevennys edellisen kerran painosta (tai ehdotuksesta, jos se on kevyempi).
+    final prev = store.lastBefore(exercise, date)?.$2.sets.where((x) => !x.warmup).map((x) => x.kg);
+    final base = prev == null || prev.isEmpty ? s.kg : math.min(s.kg, prev.reduce(math.max));
     return Suggestion(
-      _round(s.kg * load, settings.weightStep),
+      _roundDown(base * load, settings.weightStep),
       s.reps,
       p.sick
           ? l10n.t('Paluu sairauden jälkeen ({0} pv): kuormat −{1} %, noin {2} % sarjoista.', [
@@ -364,7 +370,7 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
   final ret = returnFor(date);
   if (ret != null) {
     final (p, load, sets) = ret;
-    kg = _round(top * load, settings.weightStep);
+    kg = load < 1 ? _roundDown(top * load, settings.weightStep) : top;
     r = reps;
     final pct = ((1 - load) * 100).round();
     why = [

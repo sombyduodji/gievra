@@ -114,6 +114,8 @@ case "$cmd" in
     adb) [ $# -ge 1 ] || usage; adb "$@" ;;
     pysayta)
         if running; then
+            # Levyn välimuisti talteen ensin: muuten viimeisimmät tallennukset voivat jäädä tyhjiksi tiedostoiksi.
+            adb shell sync >/dev/null 2>&1 || true
             docker exec "$NAME" "$ADB" emu kill >/dev/null 2>&1
             sleep 3
             docker rm -f "$NAME" >/dev/null && echo "Pysäytetty"

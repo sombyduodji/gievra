@@ -86,6 +86,17 @@ void main() {
     expect(r.equipment.single.name, 'Soutulaite');
   });
 
+  test('FitNotes-vienti: punnitukset kehonpaino.md:stä mittauksiksi ja takaisin', () {
+    final r = readFitnotes(makeFitnotesDb(tmp));
+    final out = '${tmp.path}/bw.fitnotes';
+    writeFitnotes(out, r.workouts, weighIns: {DateTime(2026, 3, 1): 81.4, DateTime(2026, 3, 8): 80.9});
+    final db = sqlite3.open(out, mode: OpenMode.readOnly);
+    expect(db.select('SELECT value FROM MeasurementRecord').map((x) => x['value']), containsAll([81.4, 80.9]));
+    db.close();
+    final back = readFitnotes(out);
+    expect(parseBody(back.bodyMd!).weights[DateTime(2026, 3, 8)], 80.9);
+  });
+
   test('FitNotes-vienti lukeutuu takaisin samana', () {
     final r = readFitnotes(makeFitnotesDb(tmp));
     r.workouts.first.warmup = Warmup('Kuntopyörä', 10);

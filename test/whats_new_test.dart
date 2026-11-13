@@ -67,8 +67,16 @@ void main() {
     expect(find.text('Levylaskuri'), findsNothing);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    // 0.6.5: kalenterin askelrengas selitetään (muuten rengas ei aukea käyttäjälle).
     await run(tester, '0.6.5');
+    expect(find.text('Uutta versiossa 0.6.5'), findsOneWidget);
+    expect(find.text('Askeleet kalenterissa'), findsOneWidget);
+    expect(find.textContaining('Vihreä rengas'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    await run(tester, '0.6.6');
     expect(find.byType(AlertDialog), findsNothing);
   });
 

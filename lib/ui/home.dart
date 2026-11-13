@@ -41,6 +41,7 @@ import 'widgets.dart';
 import 'workout.dart';
 import '../l10n.dart';
 import '../share_text.dart' show thousands;
+import '../weekly_activity.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -166,7 +167,15 @@ class _DayScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge([store, dailySteps]),
       builder: (context, _) {
-        final ws = store.onDay(day);
+        // Aikajärjestyksessä (aloitusaika); ilman aikaa olevat tallennusjärjestyksessä loppuun.
+        final ws = [...store.onDay(day)]
+          ..sort((a, b) {
+            final x = a.started, y = b.started;
+            if (x != null && y != null) return x.compareTo(y);
+            if (x != null) return -1;
+            if (y != null) return 1;
+            return a.session.compareTo(b.session);
+          });
         final steps = stepsTabAvailable ? dailySteps.at(day) : null;
         final minutes = ws.fold<int>(0, (a, w) => a + ((w.durationSec ?? (w.minutes ?? 0) * 60) ~/ 60));
         final km = ws.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0));
@@ -1135,11 +1144,9 @@ class _DayCell extends StatelessWidget {
   final int? steps;
   const _DayCell({required this.day, required this.isToday, this.workout, required this.dots, this.onTap, this.steps});
 
-  /// Askelrenkaan väri (kalenteri ja selite).
-  static const stepsColor = Color(0xFF1D9E75);
-
-  /// Täysi rengas: 10 000 askelta (yleinen päivätavoite; terveyshyöty tasaantuu noin 6 000–10 000:ssa).
-  static const stepsFull = 10000;
+  /// Askelrenkaan väri (kalenteri ja selite) ja täysi rengas: sama kuin etusivun kortin tavoiteviiva.
+  static const stepsColor = stepsGoalColor;
+  static const stepsFull = stepsGoal;
 
   @override
   Widget build(BuildContext context) {
@@ -1198,6 +1205,131 @@ class _DayCell extends StatelessWidget {
   }
 }
 
+/// Viikon liikunta WHO:n suositusta vasten (kortin Viikko-puoli): rengas reippaille minuuteille (kova × 2) ja
+/// lihaskuntopäivät. Kortin napautus avaa laskutavan ja lähteen ([explain]).
+class _WeekGoalBody extends StatelessWidget {
+  final WeekActivity a;
+  const _WeekGoalBody(this.a);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final frac = (a.moderateEq / whoMinutes).clamp(0.0, 1.0);
+    final ringColor = a.minutesMet ? Sami.green : Sami.blue;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 64,
+            height: 64,
+            child: CustomPaint(
+              painter: _StepsRing(frac, ringColor, width: 7),
+              child: Center(
+                child: a.minutesMet
+                    ? Icon(Icons.check_rounded, color: Sami.green, size: 30)
+                    : Text(
+                        '${(frac * 100).round()} %',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t('{0} / {1} min reipasta', [a.moderateEq, whoMinutes]),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(t('Lihaskunto')),
+                    const SizedBox(width: 6),
+                    for (var i = 0; i < whoStrengthDays; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 3),
+                        child: Icon(
+                          i < a.strengthDays ? Icons.check_circle_rounded : Icons.circle_outlined,
+                          size: 16,
+                          color: i < a.strengthDays ? Sami.green : cs.outline,
+                        ),
+                      ),
+                    const SizedBox(width: 3),
+                    Text(
+                      a.strengthMet
+                          ? t('{0} päivää', [a.strengthDays])
+                          : t('{0}/{1} päivää', [a.strengthDays, whoStrengthDays]),
+                      style: sub,
+                    ),
+                  ],
+                ),
+                if (a.light > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(t('+ {0} min kevyttä', [a.light]), style: sub),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void explain(BuildContext context, WeekActivity a) => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (ctx) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t('Viikon liikunta'), style: Theme.of(ctx).textTheme.titleLarge),
+            const SizedBox(height: 10),
+            Text(
+              t(
+                'Maailman terveysjärjestö WHO suosittelee aikuisille viikossa vähintään 150 minuuttia reipasta '
+                'liikuntaa ja lihaskuntoharjoittelua vähintään kahtena päivänä. Kova minuutti vastaa kahta reipasta.',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              t('Tällä viikolla (ma–su): kova {0} min, reipas {1} min, kevyt {2} min. Lihaskuntopäiviä {3}.', [
+                a.vigorous,
+                a.moderate,
+                a.light,
+                a.strengthDays,
+              ]),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              t(
+                'Näin lasketaan: liikunnan rasitus (Kevyt, Reipas, Kova) ratkaisee. Jos rasitusta ei ole valittu, '
+                'kävely on reipasta vähintään 4 km/h:n vauhdissa tai 100 askeleella minuutissa, venyttely, jooga ja '
+                'pilates ovat kevyitä ja muut lajit reippaita. Lihaskuntopäivä on päivä, jona on tehty salitreeni.',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              t('Lähde: WHO:n liikuntasuositukset 2020; askeltiheys: Tudor-Locke ym. 2018.'),
+              style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// Askelrengas: vaalea kehä ja sen päällä täytetty osuus ylhäältä myötäpäivään.
 class _StepsRing extends CustomPainter {
   final double fraction;
@@ -1220,6 +1352,20 @@ class _StepsRing extends CustomPainter {
   bool shouldRepaint(_StepsRing o) => o.fraction != fraction || o.color != color || o.width != width;
 }
 
+/// Uusimmat treenit: päivä, sitten aloitusaika (ilman aikaa tallennusjärjestys). Saman päivän aamukävely ei
+/// ole uusin, vaikka se olisi lisätty viimeisenä.
+List<Workout> latestWorkouts(List<Workout> ws, int n) {
+  int key(Workout w) => w.started == null ? -1 : w.started!.hour * 60 + w.started!.minute;
+  final sorted = [...ws]
+    ..sort((a, b) {
+      final d = b.date.compareTo(a.date);
+      if (d != 0) return d;
+      final k = key(b).compareTo(key(a));
+      return k != 0 ? k : b.session.compareTo(a.session);
+    });
+  return sorted.take(n).toList();
+}
+
 class _Recent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1231,7 +1377,7 @@ class _Recent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(t('Viimeksi'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-            for (final w in store.workouts.take(3))
+            for (final w in latestWorkouts(store.workouts, 3))
               InkWell(
                 onTap: () => _open(context, w.date, w),
                 child: Padding(
@@ -1282,7 +1428,9 @@ class _InsightsCard extends StatelessWidget {
     final showDeload = tips && ins.suggestDeload && settings.deloadDismissed != week && settings.program == null;
     final hasProgress = tips && (ins.improving.isNotEmpty || ins.stalled.isNotEmpty || ins.prs30d > 0);
     final hasRuns = runsOf(store.workouts).isNotEmpty;
-    if (!hasProgress && !showDeload && !stepsTabAvailable && !hasRuns) {
+    // Viikon liikunta (WHO) kortin ensimmäisenä puolena, kun vinkit ovat päällä.
+    final weekAct = tips ? weekActivity(store.workouts, DateTime.now()) : null;
+    if (!hasProgress && !showDeload && !stepsTabAvailable && !hasRuns && weekAct == null) {
       return const SizedBox.shrink();
     }
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
@@ -1360,10 +1508,12 @@ class _InsightsCard extends StatelessWidget {
               ),
             ),
           // Päivän askeleet päällä: sama kortti kahtena puolena (Edistyminen | Askeleet).
-          if (stepsTabAvailable || hasRuns)
+          if (stepsTabAvailable || hasRuns || weekAct != null)
             HomeStatsCard(
               running: hasRuns,
               steps: stepsTabAvailable,
+              week: weekAct == null ? null : _WeekGoalBody(weekAct),
+              onWeekTap: weekAct == null ? null : () => _WeekGoalBody.explain(context, weekAct),
               progress: !hasProgress
                   ? null
                   : Column(
@@ -1375,7 +1525,12 @@ class _InsightsCard extends StatelessWidget {
                         for (final p in ins.stalled) row(p, false),
                       ],
                     ),
-              progressTrailing: ins.prs30d > 0 ? Text(t('🏆 {0} ennätystä / 30 pv', [ins.prs30d]), style: sub) : null,
+              progressTrailing: ins.prs30d > 0
+                  ? Text(
+                      ins.prs30d == 1 ? t('🏆 1 ennätys / 30 pv') : t('🏆 {0} ennätystä / 30 pv', [ins.prs30d]),
+                      style: sub,
+                    )
+                  : null,
             )
           else if (hasProgress)
             Card(
@@ -1389,7 +1544,11 @@ class _InsightsCard extends StatelessWidget {
                         Expanded(
                           child: Text(t('Edistyminen'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                         ),
-                        if (ins.prs30d > 0) Text(t('🏆 {0} ennätystä / 30 pv', [ins.prs30d]), style: sub),
+                        if (ins.prs30d > 0)
+                          Text(
+                            ins.prs30d == 1 ? t('🏆 1 ennätys / 30 pv') : t('🏆 {0} ennätystä / 30 pv', [ins.prs30d]),
+                            style: sub,
+                          ),
                       ],
                     ),
                     Text(t('Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen'), style: sub),

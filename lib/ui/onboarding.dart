@@ -119,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(switch (_mode) {
                 'cardio' => t('Juoksu, pyöräily, hiihto ja muut lajit: aika, matka, vauhti ja kehitys.'),
-                'both' => t('Etusivulla valitset Sali tai Kestävyys. Kalenterissa näkyy kaikki.'),
+                'both' => t('Etusivulla Sali ja Liikunta vierekkäin. Kalenterissa näkyy kaikki.'),
                 _ => t('Salitreenit, treeniohjelma ja voiman kehitys.'),
               }, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             ),

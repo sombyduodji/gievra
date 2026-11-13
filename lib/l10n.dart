@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'exercises.dart' show exerciseLabel;
 import 'injury_data.dart' show injuryRegions;
 import 'models.dart' show decimalComma;
+import 'injuries.dart' show mergeInjuryNotes;
 
 /// Käyttöliittymän kieli. Suomi on lähdekieli: koodissa teksti kirjoitetaan suomeksi `t('…')`-kutsuun,
 /// ja käännökset ovat gettext-tiedostossa assets/l10n/KIELI.po (msgid = suomenkielinen teksti).
@@ -106,7 +107,9 @@ String errorText(Object e) {
 }
 
 /// Tallennettu huomio, jossa osat on erotettu " · ":llä (esim. vammatilan muutosohjeet): kukin osa käännetään.
-String trNote(String stored) => stored.split(' · ').map(tr).join(' · ');
+/// Ohjelmaan tallennettu ohje (osat " · "-erottimella): toistot yhdistetään (myös vanhoissa ohjelmissa) ja osat
+/// käännetään.
+String trNote(String stored) => mergeInjuryNotes(stored.split(' · ')).map(tr).join(' · ');
 
 /// Kääntää tallennetun suomenkielisen tekstin: suora osuma tai fi()-mallin mukainen teksti, jonka
 /// muuttujat poimitaan ja sijoitetaan käännökseen (muuttujat käännetään, jos niille on käännös).
@@ -168,6 +171,19 @@ String sportName(String name) {
     'en' => en,
     'both' => '$local ($en)',
     _ => local,
+  };
+}
+
+/// Lajin nimi kahtena rivinä (lajivalinnan ruudut): pääkieli ja nimiasetuksella "molemmat" englanti toisena.
+(String, String?) sportNameParts(String name) {
+  final local = trName(name);
+  if (_lang == 'en') return (local, null);
+  final en = _en[name];
+  if (en == null || en.isEmpty || en == local) return (local, null);
+  return switch (nameMode) {
+    'en' => (en, null),
+    'both' => (local, en),
+    _ => (local, null),
   };
 }
 

@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, MethodChannel, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:treenipaivakirja/anim/cue_lang.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/custom_merge.dart';
 import 'package:treenipaivakirja/exercise_names_en.dart';
@@ -152,9 +153,10 @@ void main() {
   for (final lang in ['fi', 'en', 'se']) {
     group(lang, () {
       final found = <String, List<String>>{};
-      Future<void> check(WidgetTester tester, String where) async {
+      // [allow]: tekstit, jotka saavat näkyä suomeksi (saameksi liikevinkit, joista näkyy erillinen ilmoitus).
+      Future<void> check(WidgetTester tester, String where, {List<String> allow = const []}) async {
         if (_shots != null) await _capture(tester, '$lang-$where');
-        final b = lang == 'fi' ? const <String>[] : _finnish(tester, lang);
+        final b = lang == 'fi' ? const <String>[] : [..._finnish(tester, lang).where((x) => !allow.contains(x))];
         if (b.isNotEmpty) found[where] = b;
         expect(b, isEmpty, reason: 'suomenkielistä tekstiä näkymässä "$where" ($lang)');
       }
@@ -371,10 +373,12 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 300));
         // Liikevinkit saameksi tarkoituksella suomeksi (vammatilan ohjeiden kieli): suljetaan, tarkistetaan varoitus.
-        await tester.tap(find.byIcon(Icons.play_circle_outline).first);
-        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.help_outline).first);
+        for (var k = 0; k < 6; k++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         expect(find.textContaining('⚠️'), findsWidgets);
-        await check(tester, 'sarjan kirjaus, vältettävä liike');
+        await check(tester, 'sarjan kirjaus, vältettävä liike', allow: cuesFor('Sumomaastaveto'));
         settings.injuries = [];
       });
 
@@ -394,15 +398,17 @@ void main() {
             ),
           );
           await tester.pump(const Duration(milliseconds: 300));
-          final tips = find.byIcon(Icons.play_circle_outline);
-          if (tips.evaluate().isNotEmpty && find.text(t('Kokeellinen ohje')).evaluate().isNotEmpty) {
-            await tester.tap(tips.first);
-            await tester.pumpAndSettle();
-          }
           await check(tester, 'sarjan kirjaus: $ex');
-          await tester.tap(find.byIcon(Icons.straighten));
-          await tester.pumpAndSettle();
-          await check(tester, 'mittaustapa: $ex');
+          // Ohje ja mittaustapa oikean yläkulman painikkeesta.
+          await tester.tap(find.byIcon(Icons.help_outline));
+          for (var k = 0; k < 6; k++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          await check(tester, 'ohje ja mittaustapa: $ex', allow: cuesFor(ex));
+          Navigator.of(tester.element(find.byType(SetLoggerScreen))).pop();
+          for (var k = 0; k < 6; k++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
         }
         settings.injuries = [];
         settings.program = generateProgram(
@@ -471,6 +477,21 @@ void main() {
         'liikunta: jooga': () => ActivityScreen(
           workout: Workout(date: day, title: 'Jooga', activity: 'Jooga'),
         ),
+        'liikunta: lajivalinta': () => ActivityScreen(
+          workout: Workout(date: day, title: 'Liikunta'),
+        ),
+        'liikunta: aloitus (tänään)': () {
+          ActivityScreen.debugGps = true;
+          return ActivityScreen(
+            workout: Workout(date: dateOnly(DateTime.now()), title: 'Kävely', activity: 'Kävely', session: 7),
+          );
+        },
+        'liikunta: ajanotto (tänään)': () {
+          ActivityScreen.debugGps = null;
+          return ActivityScreen(
+            workout: Workout(date: dateOnly(DateTime.now()), title: 'Koripallo', activity: 'Koripallo', session: 7),
+          );
+        },
         'juoksun kehitys': () => const RunningScreen(),
         'kehonpaino': () => const BodyScreen(),
         'tuonti ja varmuuskopio': () => const ImportExportScreen(),

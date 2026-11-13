@@ -15,6 +15,7 @@ import '../maps/map_view.dart';
 import '../maps/path_snap.dart';
 import '../models.dart';
 import '../ongoing.dart';
+import '../session_compare.dart' show fmtDuration;
 import '../sports.dart';
 import '../theme.dart';
 import 'elevation_chart.dart';
@@ -22,6 +23,7 @@ import 'maps_screen.dart';
 import 'record_screen.dart';
 import 'share.dart';
 import 'watch.dart';
+import 'sport_picker.dart';
 import 'widgets.dart';
 import 'workout.dart';
 import '../l10n.dart';
@@ -39,6 +41,15 @@ class ActivityScreen extends StatefulWidget {
   /// Valmiiksi täytetty liikunta (esim. Health Connectista): ei GPS-valintaa, arvot suoraan säätimiin.
   final bool manual;
   const ActivityScreen({super.key, required this.workout, this.recoverGps = false, this.draft, this.manual = false});
+
+  /// Testeissä: kellotaulun valinta ilman dialogia.
+  @visibleForTesting
+  static TimeOfDay? Function()? debugPickTime;
+  static TimeOfDay? Function()? get _debugPick => debugPickTime;
+
+  /// Testeissä: GPS-tila tarjolla myös muualla kuin Androidissa.
+  @visibleForTesting
+  static bool? debugGps;
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
@@ -60,6 +71,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Duration _swAcc = Duration.zero;
   bool _swUsed = false;
   Timer? _swTick;
+
+  /// Ajanotto pysäytetty (Lopeta): alku ja loppu näkyvät muokattavina, Jatka ajanottoa jatkaa.
+  bool _swDone = false;
+  DateTime? _swEnd;
+
+  /// Ajan kirjaus: true = ajanotto, false = Syötä aika (kesto ja aloitusaika käsin).
+  late bool _useWatch = _canStopwatch;
 
   Duration get _swElapsed => _swAcc + (_swStart == null ? Duration.zero : DateTime.now().difference(_swStart!));
 
@@ -115,8 +133,85 @@ class _ActivityScreenState extends State<ActivityScreen> {
         w.minutes = (secs / 60).round().clamp(1, 600);
       }
       _swAcc = Duration.zero;
+      _swDone = true;
+      _swEnd = DateTime.now();
     });
     _syncOngoing();
+  }
+
+  /// Ajanotto pois (lajin vaihto tai GPS-tallennus): piilossa jäänyt ajanotto ei saa korvata aikaa.
+  void _swReset() {
+    _swTick?.cancel();
+    _swStart = null;
+    _swAcc = Duration.zero;
+    _swUsed = false;
+    _swDone = false;
+    _swEnd = null;
+    _syncOngoing();
+  }
+
+  /// Pysäytetyn ajanoton jatkaminen näkyvästä kestosta (myös korjatusta).
+  void _swResume() {
+    setState(() {
+      _swAcc = Duration(seconds: _durSec);
+      _swDone = false;
+      _swEnd = null;
+    });
+    _swStartPause();
+  }
+
+  /// Kesto sekunteina lajista riippumatta (kestävyyslajeissa tarkka aika, muissa minuutit).
+  int get _durSec => _timed ? _sec : (w.minutes ?? 45) * 60;
+  void _setDurSec(int s) {
+    if (_timed) {
+      _setSec(s);
+    } else {
+      w.minutes = (s / 60).round().clamp(1, 600);
+    }
+  }
+
+  DateTime _onDay(TimeOfDay v) => DateTime(w.date.year, w.date.month, w.date.day, v.hour, v.minute);
+
+  Future<TimeOfDay?> _askClock(TimeOfDay init, String title) async =>
+      ActivityScreen._debugPick?.call() ?? await pickTime(context, init, title: title);
+
+  /// Loppuaika: pysäytetyn ajanoton loppu, muuten alku + kesto.
+  DateTime? get _end => _swDone && _swEnd != null ? _swEnd : w.started?.add(Duration(seconds: _durSec));
+
+  Future<void> _pickStart() async {
+    final v = await _askClock(
+      w.started == null ? TimeOfDay.now() : TimeOfDay.fromDateTime(w.started!),
+      t('Aloitusaika'),
+    );
+    if (v == null || !mounted) return;
+    setState(() {
+      var start = _onDay(v);
+      // Ajanoton jälkeen loppu pysyy: kesto = loppu − alku. Alku loppua myöhemmin = edellinen päivä (yön yli).
+      if (_swDone && _swEnd != null) {
+        if (!start.isBefore(_swEnd!)) start = start.subtract(const Duration(days: 1));
+        _setDurSec(_swEnd!.difference(start).inSeconds);
+      }
+      w.started = start;
+    });
+    Future.microtask(_saveDraft);
+  }
+
+  Future<void> _pickEnd() async {
+    final v = await _askClock(TimeOfDay.fromDateTime(_end ?? DateTime.now()), t('Loppui'));
+    if (v == null || !mounted) return;
+    setState(() {
+      var end = _onDay(v);
+      // Loppu ennen alkua = seuraava päivä (yön yli).
+      if (w.started != null && !end.isAfter(w.started!)) end = end.add(const Duration(days: 1));
+      if (w.started == null) {
+        // Ei alkua: alku lasketaan kestosta.
+        w.started = end.subtract(Duration(seconds: _durSec));
+      } else if (end.isAfter(w.started!)) {
+        _setDurSec(end.difference(w.started!).inSeconds);
+      }
+      if (_swDone) _swEnd = end;
+    });
+    Future.microtask(_saveDraft);
   }
 
   /// Treenin reitti piirtoa varten (tallennettu .gpx tai juuri tallennettu).
@@ -133,6 +228,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _loadRoute();
     // Keskeneräinen kirjaus talteen muutaman sekunnin välein (vain muuttuessa).
     _draftTick = Timer.periodic(const Duration(seconds: 3), (_) => _saveDraft());
+    // Vertailukohta poistuttaessa: palautettu luonnos tai GPS-tallennus = aina muutoksia.
+    _baseline = widget.draft != null || widget.recoverGps || w.activity == null ? null : _snapshot();
   }
 
   /// Näkymän oma tila luonnokseen: valinta (GPS / manuaalinen), ajanotto ja tallentamaton GPS-reitti.
@@ -141,6 +238,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (_swStart != null) 'swStart': _swStart!.toIso8601String(),
     'swAccMs': _swAcc.inMilliseconds,
     'swUsed': _swUsed,
+    'useWatch': _useWatch,
+    'swDone': _swDone,
+    if (_swEnd != null) 'swEnd': _swEnd!.toIso8601String(),
     if (w.routeGpx != null) 'routeGpx': w.routeGpx,
   };
 
@@ -150,6 +250,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _swUsed = d['swUsed'] == true;
     _swAcc = Duration(milliseconds: (d['swAccMs'] as int?) ?? 0);
     _swStart = DateTime.tryParse(d['swStart'] as String? ?? '');
+    _useWatch = (d['useWatch'] as bool?) ?? _useWatch;
+    _swDone = d['swDone'] == true;
+    _swEnd = DateTime.tryParse(d['swEnd'] as String? ?? '');
     if (_swStart != null) {
       // Ajanotto jatkuu: Android sulki sovelluksen, mutta aika kului.
       _swTick = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
@@ -170,14 +273,21 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   /// GPS tarjotaan uudelle, tänään tehtävälle matkalajille Androidissa (ei verkkodemossa).
   bool get _canGps =>
-      !kIsWeb &&
-      !isDemo &&
-      Platform.isAndroid &&
+      (ActivityScreen.debugGps ?? (!kIsWeb && !isDemo && Platform.isAndroid)) &&
       (sportOf(w.activity)?.distance ?? false) &&
       w.date == dateOnly(DateTime.now()) &&
       w.route == null &&
       w.routeGpx == null &&
       !store.onDay(w.date).any((x) => x.session == w.session);
+
+  /// Saman lajin edellinen kirjaus (aloitusnäkymän vertailukohta).
+  Workout? get _lastOfSport {
+    final xs = store.workouts.where(
+      (x) => x.activity == w.activity && !(x.date == w.date && x.session == w.session) && !x.date.isAfter(w.date),
+    );
+    if (xs.isEmpty) return null;
+    return xs.reduce((a, b) => b.date.isAfter(a.date) || (b.date == a.date && b.session > a.session) ? b : a);
+  }
 
   bool get _hasRoute => w.route != null || w.routeGpx != null;
 
@@ -217,6 +327,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
               _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
               const SizedBox(width: 8),
               _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
+            ],
+          ),
+        ),
+      if (w.strideM case final m?)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            children: [
+              // Askeleet näkyvät kellon tiedoissa; tässä niistä laskettu askelpituus.
+              _Metric(value: fmtNum((m * 100).round() / 100), unit: 'm', label: t('askelpituus')),
             ],
           ),
         ),
@@ -449,6 +569,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       ),
     );
     if (r == null || !mounted) return;
+    _swReset();
     setState(() {
       w.activity = sport;
       w.started = r.started;
@@ -457,6 +578,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       w.routeGpx = r.segments.isEmpty ? null : r.gpx;
       _route = r.segments.isEmpty ? null : r.segments;
       _manual = true;
+      _useWatch = false; // GPS:n aika näkyy Syötä aika -säätimessä (myös ilman reittiä)
       w.distanceManual = false;
       w.snapM = null;
       _raw = r.segments.isEmpty ? null : r.segments;
@@ -503,7 +625,79 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (s != null && s > 0) setState(() => _setSec(s));
   }
 
+  bool _finishing = false;
+
+  /// Kirjaus sellaisena kuin se avattiin (tai laji valittiin); null = muutoksia joka tapauksessa.
+  String? _baseline;
+  String _snapshot() {
+    w.notes = _notes.text;
+    return workoutToMarkdown(w);
+  }
+
+  bool get _dirty =>
+      _swStart != null || _swAcc > Duration.zero || _swDone || _baseline == null || _snapshot() != _baseline;
+
+  /// Takaisin tallentamattomin muutoksin: kysytään (Tallenna, Hylkää tai jatka muokkausta).
+  Future<void> _confirmLeave() async {
+    if (!_dirty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final v = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(_isSaved ? t('Tallennetaanko muutokset?') : t('Tallennetaanko liikunta?')),
+        content: Text(t('Muuten muutokset hylätään.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'discard'), child: Text(t('Hylkää'))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'save'), child: Text(t('Tallenna'))),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (v == 'discard') {
+      Navigator.of(context).pop();
+    } else if (v == 'save') {
+      await _save();
+    }
+  }
+
   Future<void> _save() async {
+    if (_finishing) return;
+    _finishing = true;
+    try {
+      await _saveInner();
+    } finally {
+      _finishing = false;
+    }
+  }
+
+  Future<void> _saveInner() async {
+    // Ajanotto valittu mutta ei aloitettu: muuten tallentuisi oletuskesto huomaamatta.
+    if (_canStopwatch && _useWatch && !_swUsed && !_swDone && _swStart == null && _swAcc == Duration.zero) {
+      final manual = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(t('Ajanottoa ei ole aloitettu')),
+          content: Text(t('Aloita ajanotto tai syötä aika itse.')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Syötä aika'))),
+          ],
+        ),
+      );
+      if (manual == true && mounted) setState(() => _useWatch = false);
+      return;
+    }
+    // Fiilis ponnahdusikkunassa ensin (Ohita jatkaa; takaisin peruu lopetuksen ja ajanotto jatkuu).
+    if (w.feeling == null && !_isSaved) {
+      // Uudessa liikunnassa rasitus samassa kyselyssä (valinnainen); fiiliksen napautus päättää kyselyn.
+      final r = await askFeeling(context, intensity: _live ? w.intensity : null, askIntensity: _live);
+      if (r == null || !mounted) return;
+      if (_live) w.intensity = askedIntensity;
+      if (r != feelingSkipped) w.feeling = r;
+    }
     if (_swStart != null || _swAcc > Duration.zero) _swStop();
     w.notes = _notes.text;
     if (!isRun(w.activity)) w.runType = null;
@@ -528,40 +722,155 @@ class _ActivityScreenState extends State<ActivityScreen> {
     super.dispose();
   }
 
-  Widget _stopwatch() {
-    final cs = Theme.of(context).colorScheme;
+  /// Ajan kirjaus: valinta Ajanotto / Syötä aika (vain uudelle, tänään tehtävälle), sitten valitun tilan kortti.
+  Widget _timeSection(ColorScheme cs) {
+    final active = _swStart != null || _swAcc > Duration.zero;
+    // Käynnissä tai pysäytetty ajanotto näkyy aina (myös keskiyön jälkeen, kun tämä ei ole enää "tänään").
+    final choice = _canStopwatch || active || _swDone;
+    final watch = active || (_useWatch && choice);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (choice)
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: SegmentedButton<bool>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(value: true, icon: const Icon(Icons.timer_outlined), label: Text(t('Ajanotto'))),
+                ButtonSegment(value: false, icon: const Icon(Icons.edit_outlined), label: Text(t('Syötä aika'))),
+              ],
+              selected: {watch},
+              // Käynnissä olevaa ajanottoa ei vaihdeta piiloon: valinta näkyy, mutta Syötä aika ei ole valittavissa.
+              onSelectionChanged: (v) {
+                if (active && !v.first) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(SnackBar(content: Text(t('Lopeta ajanotto ensin.'))));
+                  return;
+                }
+                setState(() => _useWatch = v.first);
+              },
+            ),
+          ),
+        if (watch) _watchCard(cs) else _manualCard(cs),
+      ],
+    );
+  }
+
+  Widget _clockPill(String label, DateTime? v, VoidCallback onTap, {bool end = false}) => Column(
+    crossAxisAlignment: end ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+    children: [
+      Text(
+        label.toUpperCase(),
+        style: TextStyle(fontSize: 11, letterSpacing: .6, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+      const SizedBox(height: 4),
+      OutlinedButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.schedule, size: 18),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(v == null ? t('ei tiedossa') : fmtClock(TimeOfDay.fromDateTime(v))),
+        ),
+      ),
+    ],
+  );
+
+  Widget _startEndRow() => Row(
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      Expanded(child: _clockPill(t('Alkoi'), w.started, _pickStart)),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(6, 0, 6, 12),
+        child: Icon(Icons.arrow_forward, size: 18, color: Theme.of(context).colorScheme.outline),
+      ),
+      Expanded(child: _clockPill(t('Loppui'), _end, _pickEnd, end: true)),
+    ],
+  );
+
+  Widget _bigTime(String v, {Color? color}) => Text(
+    v,
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontSize: 34,
+      fontWeight: FontWeight.w800,
+      color: color,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    ),
+  );
+
+  String get _durText => _timed ? fmtDurationSec(_sec) : t('{0} min', [w.minutes]);
+
+  Widget _watchCard(ColorScheme cs) {
     final running = _swStart != null;
     final active = running || _swAcc > Duration.zero;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     return Padding(
-      padding: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.only(top: 10),
       child: Card(
+        key: const ValueKey('stopwatch'),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
-          child: Row(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('⏱', style: TextStyle(fontSize: 22)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: active
-                    ? Text(
-                        fmtDurationSec(_swElapsed.inSeconds),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      )
-                    : Text(t('Ajanotto'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              ),
-              if (active)
-                IconButton.filledTonal(tooltip: t('Lopeta ajanotto'), onPressed: _swStop, icon: const Icon(Icons.stop)),
-              const SizedBox(width: 6),
-              FilledButton.icon(
-                onPressed: _swStartPause,
-                icon: Icon(running ? Icons.pause : Icons.play_arrow),
-                label: Text(running ? t('Tauko') : (active ? t('Jatka') : t('Aloita'))),
-                style: FilledButton.styleFrom(backgroundColor: running ? cs.secondary : null),
-              ),
+              if (_swDone) ...[
+                _startEndRow(),
+                const SizedBox(height: 10),
+                _bigTime(_durText),
+                Text(t('Napauta aikaa muuttaaksesi.'), textAlign: TextAlign.center, style: sub),
+                TextButton.icon(
+                  onPressed: _swResume,
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(t('Jatka ajanottoa')),
+                ),
+              ] else if (active) ...[
+                _bigTime(fmtDurationSec(_swElapsed.inSeconds), color: running ? yellowText(context) : null),
+                if (w.started != null)
+                  Text(
+                    t('alkoi {0}', [fmtClock(TimeOfDay.fromDateTime(w.started!))]),
+                    textAlign: TextAlign.center,
+                    style: sub,
+                  ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                        onPressed: _swStartPause,
+                        icon: Icon(running ? Icons.pause : Icons.play_arrow),
+                        label: Text(running ? t('Tauko') : t('Jatka')),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                        onPressed: _swStop,
+                        icon: const Icon(Icons.stop),
+                        label: Text(t('Lopeta')),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(t('Ajanotto jatkuu, vaikka sulkisit sovelluksen.'), textAlign: TextAlign.center, style: sub),
+              ] else ...[
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  onPressed: _swStartPause,
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(t('Aloita'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  t('Aloitus- ja loppuaika tallentuvat; voit korjata ne lopuksi.'),
+                  textAlign: TextAlign.center,
+                  style: sub,
+                ),
+              ],
             ],
           ),
         ),
@@ -569,11 +878,52 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
+  Widget _manualCard(ColorScheme cs) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (_timed) ...[
+        SectionLabel(t('Aika')),
+        ValueStepper(
+          value: fmtDurationSec(_sec),
+          unit: '',
+          onMinus: () => setState(() => _setSec(_sec - 60)),
+          onPlus: () => setState(() => _setSec(_sec + 60)),
+          onTap: _askTime,
+        ),
+      ] else ...[
+        SectionLabel(t('Kesto')),
+        ValueStepper(
+          value: '${w.minutes}',
+          unit: 'min',
+          onMinus: () => setState(() => w.minutes = (w.minutes! - 5).clamp(5, 600)),
+          onPlus: () => setState(() => w.minutes = (w.minutes! + 5).clamp(5, 600)),
+          onTap: () async {
+            final v = await askNumber(context, t('Kesto (min)'), w.minutes!.toDouble(), decimals: false);
+            if (v != null && v > 0) setState(() => w.minutes = v.round());
+          },
+        ),
+      ],
+      // Aloitusaika: Health Connect etsii tiedot (kävelyllä ja retkeilyllä myös askeleet) tältä ajalta.
+      const SizedBox(height: 12),
+      _startEndRow(),
+      Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Text(
+          t('Alkuaika on vapaaehtoinen; loppu lasketaan kestosta.'),
+          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+        ),
+      ),
+    ],
+  );
+
   /// Tallennettu liikunta avautuu lukutilaan (ei luonnos eikä palautettu GPS-tallennus); muokkaus kysyy ensin.
   late bool _locked =
       widget.draft == null &&
       !widget.recoverGps &&
       store.onDay(w.date).any((x) => x.session == w.session && x.activity != null);
+
+  /// Uusi, tänään tehtävä liikunta (ei tallennettu eikä Health Connectista): fiilis ja kellon tiedot lopussa.
+  bool get _live => !_isSaved && w.hcId == null && w.healthSource == null && w.date == dateOnly(DateTime.now());
 
   bool get _isSaved => store.onDay(w.date).any((x) => x.session == w.session && x.activity != null);
 
@@ -618,314 +968,392 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sport = sportOf(w.activity);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(w.activity == null ? t('Liikunta') : sportName(w.activity!)),
-        actions: [
-          // Tallennettu liikunta: jakaminen ja poisto (kuten salitreenissä).
-          if (_isSaved)
-            PopupMenuButton<String>(
-              onSelected: (v) => v == 'share' ? shareWorkout(context, w) : _delete(),
-              itemBuilder: (_) => [
-                PopupMenuItem(value: 'share', child: Text(t('Jaa'))),
-                PopupMenuItem(value: 'delete', child: Text(t('Poista liikunta'))),
-              ],
-            ),
-          if (_locked) LockButton(onTap: _unlock),
-          // Tallennus vain sivun lopussa (vihreä Treeni valmis!, kuten salitreenissä), ei yläpalkissa.
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
-        children: _guard([
-          const SamiBand(height: 4, pattern: false),
-          if (w.activity == null) ...[
-            for (final g in sportGroups) ...[
-              SectionLabel(t(g)),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  // Eniten käytetyt ensin.
-                  for (final s in sportsByUse(
-                    store.workouts.map((w) => w.activity),
-                    among: sports.where((s) => s.group == g && !s.retired),
-                  ))
-                    ActionChip(
-                      avatar: Text(s.icon),
-                      label: Text(sportName(s.name)),
-                      onPressed: () => setState(() => w.activity = s.name),
+    final choosing = w.activity == null || (_canGps && !_manual);
+    return PopScope(
+      // Tallentamaton kirjaus: takaisin kysyy ensin (ei hiljaista hukkaa, ei käynnissä olevan ajanoton katoamista).
+      canPop: _locked || _saved || w.activity == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        // Treeni valmis aina alareunassa (kuten salitreenissä); ei lajin tai kirjaustavan valinnassa eikä lukittuna.
+        bottomNavigationBar: _locked || choosing
+            ? null
+            : SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Sami.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
+                    onPressed: _save,
+                    icon: const Icon(Icons.flag_rounded),
+                    label: Text(t('Treeni valmis!'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ),
+        appBar: AppBar(
+          title: Text(w.activity == null ? t('Liikunta') : sportName(w.activity!)),
+          actions: [
+            // Tallennettu liikunta: jakaminen ja poisto (kuten salitreenissä).
+            if (_isSaved)
+              PopupMenuButton<String>(
+                onSelected: (v) => v == 'share' ? shareWorkout(context, w) : _delete(),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'share', child: Text(t('Jaa'))),
+                  PopupMenuItem(value: 'delete', child: Text(t('Poista liikunta'))),
                 ],
               ),
-            ],
-          ] else ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(sport?.icon ?? '✨', style: const TextStyle(fontSize: 34)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    sportName(w.activity!),
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                TextButton(onPressed: () => setState(() => w.activity = null), child: Text(t('Vaihda laji'))),
-              ],
-            ),
-            if (_canGps && !_manual) ...[
-              const SizedBox(height: 14),
-              _GpsChoice(onGps: _record, onManual: () => setState(() => _manual = true)),
-              if (_mapMissing)
-                Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.map_outlined),
-                      title: Text(t('Tämän alueen karttaa ei ole ladattu')),
-                      subtitle: Text(
-                        t('Kartta näyttää reitin ja auttaa korjaamaan sen poluille. GPS toimii ilmankin.'),
-                      ),
-                      isThreeLine: true,
-                      trailing: TextButton(onPressed: _openMaps, child: Text(t('Lataa kartat'))),
+            if (_locked) LockButton(onTap: _unlock),
+            // Tallennus vain sivun lopussa (vihreä Treeni valmis!, kuten salitreenissä), ei yläpalkissa.
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
+          children: _guard([
+            const SamiBand(height: 4, pattern: false),
+            if (w.activity == null) ...[
+              SportPicker(
+                onPick: (s) => setState(() {
+                  w.activity = s;
+                  _baseline = _snapshot();
+                }),
+              ),
+            ] else ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text(sport?.icon ?? '✨', style: const TextStyle(fontSize: 34)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      sportName(w.activity!),
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                     ),
                   ),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _swReset();
+                      w.activity = null;
+                    }),
+                    child: Text(t('Vaihda laji')),
+                  ),
+                ],
+              ),
+              if (_canGps && !_manual) ...[
+                const SizedBox(height: 14),
+                _GpsChoice(
+                  onGps: _record,
+                  onWatch: _canStopwatch
+                      ? () => setState(() {
+                          _manual = true;
+                          _useWatch = true;
+                        })
+                      : null,
+                  onManual: () => setState(() {
+                    _manual = true;
+                    _useWatch = false;
+                  }),
                 ),
-            ] else ...[
-              if (_hasRoute)
-                Padding(
-                  key: _routeKey,
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Card(
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Text('📍', style: TextStyle(fontSize: 22)),
-                          // Poisto vain tallentamattomalle reitille (polulle korjaus asettaa routeGpx:n myös
-                          // tallennetulle treenille, jonka reittitiedosto jää ennalleen).
-                          title: Text(w.routeGpx != null && w.route == null ? t('Reitti tallennettu') : t('Reitti')),
-                          subtitle: Text(t('GPS-reitti tallentuu .gpx-tiedostona treenin viereen.')),
-                          trailing: w.routeGpx != null && w.route == null
-                              ? TextButton(
-                                  onPressed: () => setState(() {
-                                    w.routeGpx = null;
-                                    _route = null;
-                                  }),
-                                  child: Text(t('Poista reitti')),
-                                )
-                              : null,
+                if (_mapMissing)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Material(
+                      color: cs.surfaceContainer,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                        child: Row(
+                          children: [
+                            Icon(Icons.map_outlined, color: cs.onSurfaceVariant),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                t('Tämän alueen karttaa ei ole ladattu. GPS toimii ilmankin.'),
+                                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                              ),
+                            ),
+                            TextButton(onPressed: _openMaps, child: Text(t('Lataa'))),
+                          ],
                         ),
-                        if (_route != null && _route!.any((s) => s.length >= 2))
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                            child: SizedBox(
-                              height: 240,
-                              child: RouteMap(
-                                segments: _route!,
-                                original: (w.snapM ?? 0) > 0 ? _raw : null,
-                                fallback: Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surfaceContainer,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: CustomPaint(
-                                    painter: RoutePainter(_route!, Theme.of(context).colorScheme.primary),
-                                    child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ),
+                if (_lastOfSport case final last?) ...[
+                  SectionLabel(t('Viimeksi: {0}', [sportNameParts(w.activity!).$1])),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+                    child: Text(
+                      [
+                        shortDate(last.date),
+                        if (last.distanceKm != null) '${fmtNum(last.distanceKm!)} km',
+                        if (last.seconds != null)
+                          fmtDurationSec(last.seconds!)
+                        else if (last.minutes != null)
+                          fmtDuration(last.minutes!),
+                        ?last.pace,
+                      ].join(' · '),
+                    ),
+                  ),
+                ],
+              ] else ...[
+                if (_hasRoute)
+                  Padding(
+                    key: _routeKey,
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Card(
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: const Text('📍', style: TextStyle(fontSize: 22)),
+                            // Poisto vain tallentamattomalle reitille (polulle korjaus asettaa routeGpx:n myös
+                            // tallennetulle treenille, jonka reittitiedosto jää ennalleen).
+                            title: Text(w.routeGpx != null && w.route == null ? t('Reitti tallennettu') : t('Reitti')),
+                            subtitle: Text(t('GPS-reitti tallentuu .gpx-tiedostona treenin viereen.')),
+                            trailing: w.routeGpx != null && w.route == null
+                                ? TextButton(
+                                    onPressed: () => setState(() {
+                                      w.routeGpx = null;
+                                      _route = null;
+                                    }),
+                                    child: Text(t('Poista reitti')),
+                                  )
+                                : null,
+                          ),
+                          if (_route != null && _route!.any((s) => s.length >= 2))
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                              child: SizedBox(
+                                height: 240,
+                                child: RouteMap(
+                                  segments: _route!,
+                                  original: (w.snapM ?? 0) > 0 ? _raw : null,
+                                  fallback: Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceContainer,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: CustomPaint(
+                                      painter: RoutePainter(_route!, Theme.of(context).colorScheme.primary),
+                                      child: const SizedBox.expand(),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        if (_profileFor(_route) case final prof?)
-                          ElevationCard(prof, speed: _speedSports.contains(w.activity))
-                        // Ilman korkeustietoja: kilometrien vauhti silti (reitin omista ajoista).
-                        else if (_splitsFor(_route) case final sp? when _profileDone && sp.length > 1)
-                          KmSplitsCard(sp, speed: _speedSports.contains(w.activity)),
-                        if (_canSnap) _snapCard(Theme.of(context).colorScheme),
-                      ],
-                    ),
-                  ),
-                ),
-              if (_canStopwatch) _stopwatch(),
-              // GPS-lenkki: aika ja matka mitattuina arvoina; Korjaa avaa tavalliset säätimet.
-              if (_gpsView)
-                _gpsSummary(cs)
-              else ...[
-                if (_timed) ...[
-                  SectionLabel(t('Aika')),
-                  ValueStepper(
-                    value: fmtDurationSec(_sec),
-                    unit: '',
-                    onMinus: () => setState(() => _setSec(_sec - 60)),
-                    onPlus: () => setState(() => _setSec(_sec + 60)),
-                    onTap: _askTime,
-                  ),
-                ] else ...[
-                  SectionLabel(t('Kesto')),
-                  ValueStepper(
-                    value: '${w.minutes}',
-                    unit: 'min',
-                    onMinus: () => setState(() => w.minutes = (w.minutes! - 5).clamp(5, 600)),
-                    onPlus: () => setState(() => w.minutes = (w.minutes! + 5).clamp(5, 600)),
-                    onTap: () async {
-                      final v = await askNumber(context, t('Kesto (min)'), w.minutes!.toDouble(), decimals: false);
-                      if (v != null && v > 0) setState(() => w.minutes = v.round());
-                    },
-                  ),
-                ],
-                // Aloitusaika: Health Connect etsii tiedot (kävelyllä ja retkeilyllä myös askeleet) tältä ajalta.
-                SectionLabel(t('Aloitusaika')),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.schedule, size: 18),
-                    label: Text(w.started == null ? t('ei tiedossa') : fmtClock(TimeOfDay.fromDateTime(w.started!))),
-                    onPressed: () async {
-                      final init = w.started == null ? TimeOfDay.now() : TimeOfDay.fromDateTime(w.started!);
-                      final v = await pickTime(context, init, title: t('Aloitusaika'));
-                      if (v == null || !mounted) return;
-                      setState(() => w.started = DateTime(w.date.year, w.date.month, w.date.day, v.hour, v.minute));
-                      Future.microtask(_saveDraft);
-                    },
-                  ),
-                ),
-                if (sport?.distance ?? false) ...[
-                  SectionLabel(t('Matka')),
-                  ValueStepper(
-                    value: fmtNum(w.distanceKm ?? 0),
-                    unit: 'km',
-                    onMinus: () => setState(() {
-                      w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500);
-                      w.distanceManual = _hasRoute;
-                    }),
-                    onPlus: () => setState(() {
-                      w.distanceKm = (w.distanceKm ?? 0) + .5;
-                      w.distanceManual = _hasRoute;
-                    }),
-                    onTap: () async {
-                      final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5);
-                      if (v != null && v >= 0) {
-                        setState(() {
-                          w.distanceKm = v == 0 ? null : v;
-                          w.distanceManual = _hasRoute;
-                        });
-                      }
-                    },
-                  ),
-                  if (w.pace != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Row(
-                        children: [
-                          _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
-                          const SizedBox(width: 8),
-                          _Metric(
-                            value: fmtNum((w.speedKmh! * 10).round() / 10),
-                            unit: 'km/h',
-                            label: t('keskinopeus'),
-                          ),
+                          if (_profileFor(_route) case final prof?)
+                            ElevationCard(prof, speed: _speedSports.contains(w.activity))
+                          // Ilman korkeustietoja: kilometrien vauhti silti (reitin omista ajoista).
+                          else if (_splitsFor(_route) case final sp? when _profileDone && sp.length > 1)
+                            KmSplitsCard(sp, speed: _speedSports.contains(w.activity)),
+                          if (_canSnap) _snapCard(Theme.of(context).colorScheme),
                         ],
                       ),
                     ),
-                ],
-              ],
-              // Askeleet Kellon tiedot -kortissa (Health Connect tai käsin), ei omana kohtanaan.
-              SectionLabel(t('Rasitus')),
-              SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: [for (final (k, l, e) in intensities) ButtonSegment(value: k, label: Text('$e ${t(l)}'))],
-                // Ei oletusta: rasitus vain, jos käyttäjä valitsee (uudelleen napautus poistaa valinnan).
-                emptySelectionAllowed: true,
-                selected: {?w.intensity},
-                onSelectionChanged: (v) => setState(() => w.intensity = v.firstOrNull),
-              ),
-              if (settings.watch || w.healthSource != null)
-                WatchCard(
-                  w: w,
-                  onChanged: () async {
-                    setState(() {});
-                    // Jo tallennettu liikunta: kellon tiedot (Health Connect tai käsin) tiedostoon heti, ettei
-                    // takaisin-painike hukkaa niitä. Uusi kirjaus tallentuu Treeni valmis -painikkeella.
-                    if (store.onDay(w.date).any((x) => x.session == w.session && x.activity != null)) {
-                      await store.save(w);
-                    }
-                  },
-                ),
-              SectionLabel(t('Miltä tuntui?')),
-              FeelingPicker(value: w.feeling, onChanged: (v) => setState(() => w.feeling = v)),
-              SectionLabel(t('Muistiinpanot')),
-              TextField(
-                controller: _notes,
-                minLines: 2,
-                maxLines: 6,
-                decoration: InputDecoration(
-                  hintText: t('Reitti, sää, joukkue, tulos… (vapaaehtoinen)'),
-                  filled: true,
-                  fillColor: cs.surfaceContainer,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                ),
-              ),
-              // Lukitussa (tallennetussa) liikunnassa ei Tallenna-painiketta; muokkaus avaa sen.
-              if (!_locked) ...[
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Sami.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: _save,
-                  icon: const Icon(Icons.flag_rounded),
-                  label: Text(t('Treeni valmis!'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                // GPS-lenkki: aika ja matka mitattuina arvoina; Korjaa avaa tavalliset säätimet.
+                if (_gpsView)
+                  _gpsSummary(cs)
+                else ...[
+                  _timeSection(cs),
+                  if (sport?.distance ?? false) ...[
+                    SectionLabel(t('Matka')),
+                    ValueStepper(
+                      value: fmtNum(w.distanceKm ?? 0),
+                      unit: 'km',
+                      onMinus: () => setState(() {
+                        w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500);
+                        w.distanceManual = _hasRoute;
+                      }),
+                      onPlus: () => setState(() {
+                        w.distanceKm = (w.distanceKm ?? 0) + .5;
+                        w.distanceManual = _hasRoute;
+                      }),
+                      onTap: () async {
+                        final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5);
+                        if (v != null && v >= 0) {
+                          setState(() {
+                            w.distanceKm = v == 0 ? null : v;
+                            w.distanceManual = _hasRoute;
+                          });
+                        }
+                      },
+                    ),
+                    if (w.pace != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Row(
+                          children: [
+                            _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
+                            const SizedBox(width: 8),
+                            _Metric(
+                              value: fmtNum((w.speedKmh! * 10).round() / 10),
+                              unit: 'km/h',
+                              label: t('keskinopeus'),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+                // Askeleet Kellon tiedot -kortissa (Health Connect tai käsin), ei omana kohtanaan.
+                // Uudessa liikunnassa rasitus kysytään lopussa fiiliksen kanssa; muuten sivulla.
+                if (!_live) ...[
+                  SectionLabel(t('Rasitus')),
+                  SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    segments: [for (final (k, l, e) in intensities) ButtonSegment(value: k, label: Text('$e ${t(l)}'))],
+                    // Ei oletusta: rasitus vain, jos käyttäjä valitsee (uudelleen napautus poistaa valinnan).
+                    emptySelectionAllowed: true,
+                    selected: {?w.intensity},
+                    onSelectionChanged: (v) => setState(() => w.intensity = v.firstOrNull),
+                  ),
+                ],
+                // Uusi, tänään tehtävä liikunta: kellon tiedot ja fiilis kysytään lopussa (Treeni valmis → ponnahdus ja
+                // yhteenveto). Aiemman päivän, Health Connectista tuodun ja tallennetun kohdalla ne ovat sivulla.
+                if ((settings.watch || w.healthSource != null) && !_live)
+                  WatchCard(
+                    w: w,
+                    onChanged: () async {
+                      setState(() {});
+                      // Jo tallennettu liikunta: kellon tiedot (Health Connect tai käsin) tiedostoon heti, ettei
+                      // takaisin-painike hukkaa niitä. Uusi kirjaus tallentuu Treeni valmis -painikkeella.
+                      if (store.onDay(w.date).any((x) => x.session == w.session && x.activity != null)) {
+                        await store.save(w);
+                      }
+                    },
+                  ),
+                if (_isSaved) ...[
+                  SectionLabel(t('Miltä tuntui?')),
+                  FeelingPicker(value: w.feeling, onChanged: (v) => setState(() => w.feeling = v)),
+                ],
+                SectionLabel(t('Muistiinpanot')),
+                TextField(
+                  controller: _notes,
+                  minLines: 2,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    hintText: t('Reitti, sää, joukkue, tulos… (vapaaehtoinen)'),
+                    filled: true,
+                    fillColor: cs.surfaceContainer,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  ),
                 ),
               ],
             ],
-          ],
-        ]),
+          ]),
+        ),
       ),
     );
   }
 }
 
-/// Matkalajin aloitus: GPS:llä (aika, matka ja reitti mitataan) tai ilman (lomake kuten ennen).
+/// Matkalajin aloitus: iso GPS-kortti (aika, matka ja reitti mitataan), sen alla Ajanotto (ilman GPS:ää, esim.
+/// juoksumatto; vain tänään) ja Syötä itse (jo tehty liikunta).
 class _GpsChoice extends StatelessWidget {
   final VoidCallback onGps, onManual;
-  const _GpsChoice({required this.onGps, required this.onManual});
+  final VoidCallback? onWatch;
+  const _GpsChoice({required this.onGps, required this.onManual, this.onWatch});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const pad = EdgeInsets.symmetric(vertical: 14, horizontal: 16);
-    Widget label(String title, String sub, Color? subColor) => Column(
-      children: [
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+    Widget small(IconData icon, String title, String sub, VoidCallback onTap, Key key) => Expanded(
+      child: Material(
+        key: key,
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 14, 8, 12),
+            child: Column(
+              children: [
+                Icon(icon, size: 26, color: yellowText(context)),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  sub,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          sub,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: subColor),
-        ),
-      ],
+      ),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FilledButton(
-          style: FilledButton.styleFrom(padding: pad),
-          onPressed: onGps,
-          child: label(t('📍 GPS-tila'), t('Mittaa ajan, matkan ja reitin'), null),
+        Material(
+          key: const ValueKey('startGps'),
+          color: cs.primary,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onGps,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 12, 18),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on, size: 30, color: cs.onPrimary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t('Aloita GPS:llä'),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onPrimary),
+                        ),
+                        Text(
+                          t('Aika, matka, reitti ja korkeus'),
+                          style: TextStyle(fontSize: 12.5, color: cs.onPrimary.withValues(alpha: .85)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: cs.onPrimary),
+                ],
+              ),
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
-        // Sama tyyli kuin etusivun "Merkitse aamupaino": ääriviiva ja punainen otsikko.
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(padding: pad),
-          onPressed: onManual,
-          child: label(t('Manuaalinen'), t('Syötä matka ja aika itse'), cs.onSurfaceVariant),
+        const SizedBox(height: 10),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (onWatch != null) ...[
+                small(
+                  Icons.timer_outlined,
+                  t('Ajanotto'),
+                  t('Ilman GPS:ää, esim. juoksumatto'),
+                  onWatch!,
+                  const ValueKey('startWatch'),
+                ),
+                const SizedBox(width: 10),
+              ],
+              small(
+                Icons.edit_outlined,
+                t('Syötä itse'),
+                t('Jo tehty: aika ja matka'),
+                onManual,
+                const ValueKey('startManual'),
+              ),
+            ],
+          ),
         ),
       ],
     );

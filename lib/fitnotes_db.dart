@@ -140,8 +140,9 @@ ImportResult readFitnotes(String dbPath, {bool translate = true}) {
 
 /// Kirjoittaa treenit FitNotes-varmuuskopioksi [path]:iin (tietokantaversio 22).
 /// Suomennetut liikkeet palautetaan FitNotesin englanninkielisiin nimiin.
-/// Kehonpaino -> mittaukset, muistiinpanot ja lämmittely -> treenikommentti. Palauttaa sarjojen määrän.
-int writeFitnotes(String path, List<Workout> workouts) {
+/// Kehonpaino -> mittaukset (punnitukset [weighIns] ja vanhojen treenien kehonpaino, punnitus ensin samana päivänä),
+/// muistiinpanot ja lämmittely -> treenikommentti. Palauttaa sarjojen määrän.
+int writeFitnotes(String path, List<Workout> workouts, {Map<DateTime, double> weighIns = const {}}) {
   final f = File(path);
   if (f.existsSync()) f.deleteSync();
   final db = sqlite3.open(path);
@@ -197,12 +198,18 @@ int writeFitnotes(String path, List<Workout> workouts) {
             sets++;
           }
         }
-        if (w.bodyweight != null) insBw.execute([bwId, date, w.bodyweight]);
+        if (w.bodyweight != null && !weighIns.containsKey(dateOnly(w.date))) {
+          insBw.execute([bwId, date, w.bodyweight]);
+        }
         final comment = [
           if (w.warmup != null) 'Lämmittely: ${w.warmup!.equipment} ${w.warmup!.minutes} min',
           if (w.notes.trim().isNotEmpty) w.notes.trim(),
         ].join('\n');
         if (comment.isNotEmpty) insCom.execute([date, comment]);
+      }
+      // Punnitukset (kehonpaino.md): yksi mittaus päivää kohden.
+      for (final e in weighIns.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
+        insBw.execute([bwId, isoDate(e.key), e.value]);
       }
     } finally {
       insEx.close();

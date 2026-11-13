@@ -60,6 +60,87 @@ void main() {
     expect(settings.barKg, 15);
   });
 
+  testWidgets(
+    'Sarjan kirjaus tiiviisti: yksi tietokortti, paino ja toistot vierekkäin, ohje ja mittaustapa ?-painikkeesta',
+    (tester) async {
+      await tall(tester);
+      store.workouts = [
+        Workout(
+          date: DateTime(2026, 11, 9),
+          exercises: [
+            ExerciseEntry('Penkkipunnerrus', [SetEntry(60, 8), SetEntry(60, 8), SetEntry(62.5, 7)]),
+          ],
+        ),
+      ];
+      await logger(tester, 'Penkkipunnerrus');
+      // Edellinen kerta ja ehdotus samassa kortissa; Näin teet ei vie tilaa ylhäällä.
+      expect(find.textContaining('Edellinen kerta', findRichText: true), findsOneWidget);
+      expect(find.textContaining('Ehdotus'), findsOneWidget);
+      expect(find.text('Näin teet'), findsNothing);
+      // Paino ja toistot samalla rivillä.
+      final w = tester.getCenter(find.text('PAINO'));
+      final r = tester.getCenter(find.text('TOISTOT'));
+      expect((w.dy - r.dy).abs(), lessThan(1));
+      expect(r.dx, greaterThan(w.dx));
+      // Lisätiedot kortin napautuksella.
+      await tester.tap(find.textContaining('Edellinen kerta', findRichText: true));
+      await tester.pump();
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      // Ohje ja mittaustapa.
+      await tester.tap(find.byTooltip('Ohje ja mittaustapa'));
+      for (var k = 0; k < 6; k++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Näin teet'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Sekunnit'));
+      for (var k = 0; k < 6; k++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(measureOf('Penkkipunnerrus'), Measure.seconds);
+      Navigator.of(tester.element(find.byType(SetLoggerScreen))).pop();
+      for (var k = 0; k < 6; k++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('SEKUNNIT'), findsOneWidget);
+      settings.setMeasure('Penkkipunnerrus', Measure.reps);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Ei Tallenna vastaamatta -painiketta; tallentamaton sarja: ilmoitus ennen liikkeen valmistumista', (
+    tester,
+  ) async {
+    await tall(tester);
+    final e = await logger(tester, 'Penkkipunnerrus');
+    expect(find.text('Tallenna vastaamatta'), findsNothing);
+    // Ei sarjoja: ilmoitus, OK palaa kirjaukseen.
+    await tester.tap(find.text('Merkitse liike valmiiksi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Viimeistä sarjaa ei ole tallennettu'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SetLoggerScreen), findsOneWidget);
+    // Tallennus vastaamalla, sitten painon muutos ilman tallennusta: taas ilmoitus.
+    await tester.tap(find.text('Muutama'));
+    await tester.pump();
+    expect(e.sets, hasLength(1));
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pump();
+    await tester.tap(find.text('Merkitse liike valmiiksi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Viimeistä sarjaa ei ole tallennettu'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(e.sets, hasLength(1), reason: 'ei tallennettu ilman vastausta');
+    // Umpikujaton: Merkitse silti sulkee kirjauksen ilman ylimääräistä sarjaa.
+    await tester.tap(find.text('Merkitse liike valmiiksi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Merkitse silti'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SetLoggerScreen), findsNothing);
+    expect(e.sets, hasLength(1));
+  });
+
   testWidgets('Levylaskuri: levyt näkyvät ja omien levyjen muutos päivittää', (tester) async {
     await tall(tester);
     store.workouts = [
@@ -128,6 +209,8 @@ void main() {
     expect(e.sets.last.kg, 80);
     await tester.tap(find.text('AMRAP'));
     await tester.pump();
+    // Pudotuksista takaisin: työsarjan paino (100), ei pudotuksen jälkeistä 64 kg.
+    expect(find.text('Levyt / puoli: 25 + 15'), findsOneWidget, reason: '100 kg');
     expect(find.text('Ei yhtään'), findsNothing);
     expect(find.text('Tallenna vastaamatta'), findsNothing, reason: 'AMRAP: vain yksi tallennuspainike');
     await tester.tap(find.text('Tallenna AMRAP-sarja'));
