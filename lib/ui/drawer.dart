@@ -948,6 +948,15 @@ class _SettingsSection extends StatelessWidget {
               value: settings.watch,
               onChanged: settings.setWatch,
             ),
+            // Omat tiedot sykkeeseen: myös ilman sykevyötä (kellon syke Health Connectista, käyttäjä 15.11.).
+            ListTile(
+              key: const ValueKey('hrProfileSettings'),
+              leading: const Icon(Icons.favorite_border),
+              title: Text(t('Sykealueet ja kalorit')),
+              subtitle: Text(hrProfileSummary(), style: sub),
+              trailing: const Icon(Icons.edit_outlined),
+              onTap: () => askHrProfile(context), // osio kuuntelee asetuksia: rivi päivittyy tallennuksesta
+            ),
             // Sykevyö Bluetoothilla (Android): syke treenin aikana, keskisyke ja maksimi treeniin.
             if (hr.available)
               ListenableBuilder(

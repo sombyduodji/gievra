@@ -189,6 +189,9 @@ class Settings extends ChangeNotifier {
   /// Päivä, jolta etusivun painokortti on ohitettu (laitekohtainen).
   String? bodySkipped;
 
+  /// Omat tiedot (syntymävuosi ym.) kysytty kerran kellon sykkeen haun jälkeen (laitekohtainen, ei asetukset.md:ssä).
+  bool hrProfileAsked = false;
+
   /// Mitä treenataan: 'gym' sali, 'cardio' kestävyys (juoksu, pyöräily …), 'both' molemmat (etusivulla
   /// Sali / Kestävyys -valinta). Kestävyyslajit näkyvät, kun tila ei ole pelkkä sali.
   String trainMode = 'gym';
@@ -307,6 +310,7 @@ class Settings extends ChangeNotifier {
     folder = sp.getString('folder');
     deloadDismissed = sp.getString('deloadDismissed');
     bodySkipped = sp.getString('bodySkipped');
+    hrProfileAsked = sp.getBool('hrProfileAsked') ?? false;
     homeView = sp.getString('homeView') == 'cardio' ? 'cardio' : 'gym';
     await setUiLang(sp.getString('lang') ?? 'fi');
     final cached = sp.getString('settingsMd');
@@ -402,19 +406,22 @@ class Settings extends ChangeNotifier {
     if (before != (birthYear, sex, maxHr, hrRecoveryPct, kcalAdjustPct)) _persist();
   }
 
-  /// Kalorilaskennan perustiedot: syntymävuosi, sukupuoli, pituus ja nykyinen paino (punnitus tälle päivälle).
-  Future<void> setProfile({
-    required int birthYear,
-    required String sex,
-    required int heightCm,
-    double? weightKg,
-  }) async {
+  /// Sykkeen perustiedot: syntymävuosi (sykealueet), sukupuoli, pituus ja nykyinen paino (punnitus tälle päivälle,
+  /// kalorit). Vain syntymävuosi on pakollinen; puuttuvat jäävät ennalleen. [maxHr]: oma mitattu maksimisyke.
+  Future<void> setProfile({required int birthYear, String? sex, int? heightCm, double? weightKg, int? maxHr}) async {
     this.birthYear = birthYear;
-    this.sex = sex;
-    final b = body.copy()..heightCm = heightCm;
+    if (sex != null) this.sex = sex;
+    if (maxHr != null) this.maxHr = maxHr.clamp(120, 230);
+    final b = body.copy();
+    if (heightCm != null) b.heightCm = heightCm;
     if (weightKg != null && b.sorted.lastOrNull?.$2 != weightKg) b.weights[dateOnly(DateTime.now())] = weightKg;
     await setBody(b);
     _persist();
+  }
+
+  void markHrProfileAsked() {
+    hrProfileAsked = true;
+    _p?.setBool('hrProfileAsked', true);
   }
 
   void skipBodyToday(String day) {

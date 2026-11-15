@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../app_state.dart';
 import '../models.dart';
 import '../sports.dart';
 import '../theme.dart';
 import 'health_sheet.dart';
+import 'hr_ui.dart' show askHrProfile;
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -68,6 +70,11 @@ class WatchCard extends StatelessWidget {
                     if (await showHealthSheet(context, w) != true) return;
                     onChanged();
                     messenger.showSnackBar(SnackBar(content: Text(t('Tiedot haettu Health Connectista'))));
+                    // Ensimmäinen sykekäyrä ilman omia tietoja: kysytään kerran syntymävuosi ym. (alueet, kalorit).
+                    if (shouldAskHrProfile(w) && context.mounted) {
+                      settings.markHrProfileAsked();
+                      await askHrProfile(context);
+                    }
                   },
                   icon: const Icon(Icons.favorite_outline, size: 18),
                   label: Text(t('Health Connect')),
@@ -174,3 +181,8 @@ String? watchLine(Workout w) {
   ];
   return parts.isEmpty ? null : parts.join(' · ');
 }
+
+/// Kysytäänkö omat tiedot kellon sykkeen haun jälkeen: käyrä tuli, mutta syntymävuotta tai omaa maksimia ei ole,
+/// eikä tällä laitteella ole kysytty ennen (Ei nyt -valinta muistetaan; kortin Lisää tiedot -painike jää).
+bool shouldAskHrProfile(Workout w) =>
+    w.hrSeries != null && settings.birthYear == null && settings.maxHr == null && !settings.hrProfileAsked;

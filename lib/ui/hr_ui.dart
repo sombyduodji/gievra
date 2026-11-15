@@ -84,18 +84,7 @@ class _HrScreenState extends State<HrScreen> {
     super.dispose();
   }
 
-  String _profileText() {
-    final p = hrProfile();
-    if (p == null) return t('Lisää syntymävuosi, sukupuoli, pituus ja paino');
-    final now = DateTime.now();
-    return [
-      t('{0} v', [p.ageAt(now)]),
-      p.male ? t('mies') : t('nainen'),
-      '${p.heightCm} cm',
-      '${fmtNum(p.weightKg)} kg',
-      t('maksimisyke n. {0}', [p.maxHr(now)]),
-    ].join(' · ');
-  }
+  String _profileText() => hrProfileSummary();
 
   String? _errorText() => switch (hr.error) {
     'permission' when hr.locationPermission => t('Sijaintilupa tarvitaan sykevyön hakuun (Android 11 ja vanhemmat).'),
@@ -352,7 +341,10 @@ class HrDetails extends StatelessWidget {
   static const zoneColors = [Color(0xFF9E9E9E), Color(0xFF2E7DD7), Color(0xFF2BA6A6), Color(0xFFE6A23C), Sami.red];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: settings, builder: (context, _) => _card(context)); // tiedot lisätty → alueet
+
+  Widget _card(BuildContext context) {
     final s = w.hrSeries;
     if (s == null || s.readingCount < 2) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
@@ -571,13 +563,25 @@ class HrDetails extends StatelessWidget {
                   style: sub.copyWith(color: cs.error),
                 ),
               ),
-            if (watch && maxHr == null)
-              Text(
-                t('Sykealueisiin tarvitaan syntymävuosi tai oma maksimisyke: Asetukset → Keho ja laitteet.'),
-                style: sub,
-              )
-            else if (!watch && p == null)
-              Text(t('Kaloreihin ja sykealueisiin tarvitaan syntymävuosi, sukupuoli, pituus ja paino.'), style: sub),
+            // Puuttuvat tiedot kysytään suoraan kortista (käyttäjä 15.11.: kellon syke ilman omia tietoja).
+            if ((watch && maxHr == null) || (!watch && p == null))
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      watch
+                          ? t('Sykealueisiin tarvitaan syntymävuosi.')
+                          : t('Kaloreihin ja sykealueisiin tarvitaan syntymävuosi, sukupuoli, pituus ja paino.'),
+                      style: sub,
+                    ),
+                  ),
+                  TextButton(
+                    key: const ValueKey('hrProfileAdd'),
+                    onPressed: () => askHrProfile(context),
+                    child: Text(t('Lisää tiedot')),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -664,6 +668,21 @@ class _HrCurve extends CustomPainter {
       o.s != s || o.maxHr != maxHr || o.label != label || o.offsetSec != offsetSec || o.spanSec != spanSec;
 }
 
+/// Omat tiedot lyhyesti (asetusrivit): mitä on annettu ja maksimisyke (oma tai arvio iästä).
+String hrProfileSummary() {
+  final now = DateTime.now();
+  final y = settings.birthYear, kg = settings.body.sorted.lastOrNull?.$2, h = settings.body.heightCm;
+  if (y == null && settings.maxHr == null) return t('Lisää syntymävuosi, sukupuoli, pituus ja paino');
+  final max = settings.maxHr ?? (208 - 0.7 * (now.year - y!)).round();
+  return [
+    if (y != null) t('{0} v', [now.year - y]),
+    if (settings.sex != null) settings.sex == 'mies' ? t('mies') : t('nainen'),
+    if (h != null) '$h cm',
+    if (kg != null) '${fmtNum(kg)} kg',
+    t('maksimisyke n. {0}', [max]),
+  ].join(' · ');
+}
+
 /// Kalorilaskennan perustiedot sykevyötä varten: syntymävuosi, sukupuoli, pituus ja paino. Olemassa olevat tiedot
 /// (kehonpainon seuranta) ehdotetaan valmiiksi. Palauttaa true, kun tallennettiin.
 Future<bool> askHrProfile(BuildContext context) async =>
@@ -688,9 +707,11 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     text: settings.body.sorted.lastOrNull == null ? '' : fmtNum(settings.body.sorted.last.$2),
   );
   late String? _sex = settings.sex;
+  late final _max = TextEditingController(text: settings.maxHr?.toString() ?? '');
 
   @override
   void dispose() {
+    _max.dispose();
     _year.dispose();
     _height.dispose();
     _weight.dispose();
@@ -704,13 +725,19 @@ class _ProfileSheetState extends State<_ProfileSheet> {
   }
 
   int? get _h => parseHeight(_height.text);
+  int? get _m {
+    final v = int.tryParse(_max.text.trim());
+    return v != null && v >= 120 && v <= 230 ? v : null;
+  }
+
   double? get _w => parseWeight(_weight.text);
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
-    final ok = _y != null && _sex != null && _h != null && _w != null;
+    // Syntymävuosi riittää sykealueisiin; muut kaloreihin (valinnaiset, käyttäjä 15.11.: kellon syke ilman vyötä).
+    final ok = _y != null && (_max.text.trim().isEmpty || _m != null);
     InputDecoration dec(String label, String? suffix) =>
         InputDecoration(labelText: label, suffixText: suffix, border: const OutlineInputBorder());
     return Padding(
@@ -719,12 +746,12 @@ class _ProfileSheetState extends State<_ProfileSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(t('Kalorit sykkeestä'), style: Theme.of(context).textTheme.titleLarge),
+            Text(t('Sykealueet ja kalorit'), style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(
               t(
-                'Kalorit lasketaan sykkeen avulla tutkituilla menetelmillä, joihin tarvitaan ikä, sukupuoli, pituus ja '
-                'paino. Tiedot tallentuvat vain asetuksiisi.',
+                'Sykealueisiin riittää syntymävuosi. Kalorit sykkeestä lasketaan tutkituilla menetelmillä, joihin '
+                'tarvitaan myös sukupuoli, pituus ja paino. Tiedot tallentuvat vain asetuksiisi.',
               ),
               style: sub,
             ),
@@ -775,12 +802,24 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const ValueKey('maxHrField'),
+              controller: _max,
+              keyboardType: TextInputType.number,
+              decoration: dec(t('Oma maksimisyke'), t('lyöntiä/min')).copyWith(
+                helperText: t('Valinnainen: jos et ole mitannut, maksimi arvioidaan iästä.'),
+                helperMaxLines: 3,
+                errorText: _max.text.trim().isNotEmpty && _m == null ? '120–230' : null,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: !ok
                   ? null
                   : () async {
-                      await settings.setProfile(birthYear: _y!, sex: _sex!, heightCm: _h!, weightKg: _w);
+                      await settings.setProfile(birthYear: _y!, sex: _sex, heightCm: _h, weightKg: _w, maxHr: _m);
                       if (context.mounted) Navigator.pop(context, true);
                     },
               child: Text(t('Tallenna')),
