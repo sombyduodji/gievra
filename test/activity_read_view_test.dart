@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/gps_filter.dart' show TrackPoint;
@@ -13,6 +12,8 @@ import 'package:treenipaivakirja/ui/activity.dart';
 import 'package:treenipaivakirja/ui/finish_sheet.dart' show EffortFeelingCard;
 import 'package:treenipaivakirja/ui/widgets.dart' show ValueStepper, fmtClock;
 
+import 'test_fonts.dart';
+
 // Tallennetun liikunnan lukunäkymä (mockup 10): yhteenvetokortti kaikissa lajeissa, muokkaus avaa säätimet
 // ryhmiteltyinä. Keksityt treenit.
 void main() {
@@ -22,12 +23,7 @@ void main() {
   final day = DateTime(2026, 11, 12);
 
   setUpAll(() async {
-    final root = '${Platform.environment['HOME']}/sdk/flutter/bin/cache/artifacts/material_fonts';
-    final l = FontLoader('Roboto');
-    for (final f in ['Roboto-Regular.ttf', 'Roboto-Medium.ttf', 'Roboto-Bold.ttf']) {
-      l.addFont(Future.value(File('$root/$f').readAsBytesSync().buffer.asByteData()));
-    }
-    await l.load();
+    await loadRoboto();
   });
   tearDown(() {
     store.workouts = [];

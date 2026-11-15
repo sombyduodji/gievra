@@ -52,6 +52,8 @@ import 'package:treenipaivakirja/whats_new.dart';
 import 'package:treenipaivakirja/rest.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph, RenderFittedBox;
 
+import 'test_fonts.dart';
+
 // Käännöstarkistus näkymittäin: englanniksi ja saameksi näkyvissä ei saa olla suomenkielistä tekstiä.
 // Tunnistus: (1) teksti on .po-tiedoston suomenkielinen alkuteksti, jolla on eri käännös, (2) siinä on ä tai ö
 // (eivät kuulu englantiin eivätkä pohjoissaameen). Sallittu: sovelluksen nimi, kielivalitsimen kielet, saamessa
@@ -179,7 +181,7 @@ Future<void> _loadShotFonts() async {
     const MethodChannel('plugins.flutter.io/path_provider'),
     (_) async => tmp,
   );
-  final root = '${Platform.environment['HOME']}/sdk/flutter/bin/cache/artifacts/material_fonts';
+  final root = materialFontsDir() ?? '${Platform.environment['HOME']}/sdk/flutter/bin/cache/artifacts/material_fonts';
   for (final (family, files) in [
     ('Roboto', ['$root/Roboto-Regular.ttf', '$root/Roboto-Medium.ttf', '$root/Roboto-Bold.ttf']),
     ('MaterialIcons', ['$root/MaterialIcons-Regular.otf']),

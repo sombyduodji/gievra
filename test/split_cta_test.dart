@@ -11,6 +11,8 @@ import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/program.dart';
 import 'package:treenipaivakirja/ui/home.dart';
 
+import 'test_fonts.dart';
+
 // Etusivun Sali/Liikunta rinnakkain (nuolet lomittain, 14.11.): teksti ei katkea millään kielellä, puhelimen
 // leveydellä tai tekstikoolla. Oikea fontti (Roboto), koska testifontti on leveämpi kuin puhelimen.
 void main() {
@@ -24,12 +26,7 @@ void main() {
       const MethodChannel('plugins.flutter.io/path_provider'),
       (_) async => tmp,
     );
-    final root = '${Platform.environment['HOME']}/sdk/flutter/bin/cache/artifacts/material_fonts';
-    final l = FontLoader('Roboto');
-    for (final f in ['Roboto-Regular.ttf', 'Roboto-Medium.ttf', 'Roboto-Bold.ttf']) {
-      l.addFont(Future.value(File('$root/$f').readAsBytesSync().buffer.asByteData()));
-    }
-    await l.load();
+    await loadRoboto();
   });
   tearDown(() {
     debugSetCatalog('fi', const {});

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/body.dart';
@@ -15,6 +14,8 @@ import 'package:treenipaivakirja/ui/widgets.dart' show feelingSkipped;
 import 'package:treenipaivakirja/ui/workout.dart' show SavedScreen;
 import 'package:treenipaivakirja/ui/activity.dart' show ActivityScreen;
 
+import 'test_fonts.dart';
+
 // Treeni valmis -ikkuna (mockup 8 ja 9): rasituksen arvio, fiilis, salin nostot ja "Mikä tuntui raskaalta?".
 // Keksityt treenit.
 void main() {
@@ -24,12 +25,7 @@ void main() {
   final day = DateTime(2026, 11, 10);
 
   setUpAll(() async {
-    final root = '${Platform.environment['HOME']}/sdk/flutter/bin/cache/artifacts/material_fonts';
-    final l = FontLoader('Roboto');
-    for (final f in ['Roboto-Regular.ttf', 'Roboto-Medium.ttf', 'Roboto-Bold.ttf']) {
-      l.addFont(Future.value(File('$root/$f').readAsBytesSync().buffer.asByteData()));
-    }
-    await l.load();
+    await loadRoboto();
   });
   setUp(() {
     settings
