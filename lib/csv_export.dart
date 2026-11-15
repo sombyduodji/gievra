@@ -110,7 +110,8 @@ List<CsvFile> buildCsvExport(
             trName(w.title),
             _exerciseName(e.name),
             i + 1,
-            _num(s.kg),
+            // Kahden käsipainon tai kuulan liikkeet yhteispainona (kuten historia sovelluksessa ja vanhoissa vienneissä).
+            _num(s.kg * loadMultiplier(e.name)),
             s.reps,
             t(m.label),
             s.rir == null ? '' : rirLabels[s.rir],

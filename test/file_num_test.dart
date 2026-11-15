@@ -15,7 +15,7 @@ void main() {
   });
 
   test('Sarja tallentuu .md-tiedostoon ilman pyöristysvirhettä ja luetaan samana', () {
-    final w = Workout(date: DateTime(2026, 11, 2), title: 'Koko keho A')
+    final w = Workout(date: DateTime(2026, 11, 12), title: 'Koko keho A')
       ..exercises.add(ExerciseEntry('Vipunosto sivulle', [SetEntry(3.3 - 1, 12)]));
     final md = workoutToMarkdown(w);
     expect(md, contains('2,3 kg × 12'));

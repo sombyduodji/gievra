@@ -108,7 +108,7 @@ const _repCap = 20;
 /// eristävät pienin lisäys (alavartalossa kaksi), kahvakuulat seuraava kuula.
 /// [e1]: arvioitu maksimi viime kerrasta; [maxReps]: toistoja enintään (ei enempää kuin viimeksi).
 (double, int) nextLoad(String exercise, double top, {double? e1, int floor = 1, int maxReps = 30}) {
-  final step = settings.weightStep;
+  final step = stepFor(exercise);
   final legs = bodyGroupOf(exercise) == BodyGroup.legs;
   double up;
   if (_bell(exercise, top)) {
@@ -124,6 +124,9 @@ const _repCap = 20;
   final reps = e1 == null ? maxReps : repsAtLoad(e1, up, max: maxReps);
   return (up, reps);
 }
+
+/// Painon askel liikkeelle: kahden käsipainon yhteispainossa askel molempiin käsiin (esim. 2,5 → 5 kg).
+double stepFor(String exercise) => settings.weightStep * (totalDumbbells(exercise) ? 2 : 1);
 
 /// Toistoja varastossa luvuksi: ei yhtään 0, muutama 1,5, reilusti 3, merkitsemätön 2.
 double _rirNum(int? r) => switch (r) {
@@ -165,7 +168,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
     final e1 = workingE1rm(exercise, date);
     if (e1 != null) {
       s = Suggestion(
-        _round(e1 * t.pct!, settings.weightStep),
+        _round(e1 * t.pct!, stepFor(exercise)),
         t.lo,
         l10n.t('{0} arvioidusta maksimista ({1} kg).', [t.label, fmtNum(e1.roundToDouble())]),
       );
@@ -222,7 +225,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
         final raw = e1 / (1 + (t.lo + 2) / 30);
         final kg = kettlebellOnly(exercise)
             ? kettlebellSizes.lastWhere((k) => k <= raw, orElse: () => kettlebellSizes.first)
-            : _round(raw, settings.weightStep);
+            : _round(raw, stepFor(exercise));
         s = Suggestion(
           kg,
           t.lo,
@@ -233,7 +236,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
   }
   if (s == null) return null;
   if (t.loadFactor < 1) {
-    s = Suggestion(_round(s.kg * t.loadFactor, settings.weightStep), s.reps, '${t.label}.');
+    s = Suggestion(_round(s.kg * t.loadFactor, stepFor(exercise)), s.reps, '${t.label}.');
   }
   final ret = returnFor(date);
   if (ret != null) {
@@ -242,7 +245,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
     final prev = store.lastBefore(exercise, date)?.$2.sets.where((x) => !x.warmup).map((x) => x.kg);
     final base = prev == null || prev.isEmpty ? s.kg : math.min(s.kg, prev.reduce(math.max));
     return Suggestion(
-      _roundDown(base * load, settings.weightStep),
+      _roundDown(base * load, stepFor(exercise)),
       s.reps,
       p.sick
           ? l10n.t('Paluu sairauden jälkeen ({0} pv): kuormat −{1} %, noin {2} % sarjoista.', [
@@ -271,11 +274,11 @@ Suggestion? _suggestOther(String exercise, DateTime date, Measure m) {
   if (rir != null && rir >= 3) {
     if (s.kg > 0 || m == Measure.trips) {
       return Suggestion(
-        s.kg + settings.weightStep,
+        s.kg + stepFor(exercise),
         s.reps,
         (sec
-            ? l10n.t('Olisit jaksanut reilusti pidempään: +{0} kg.', [fmtNum(settings.weightStep)])
-            : l10n.t('Olisit jaksanut reilusti pidemmälle: +{0} kg.', [fmtNum(settings.weightStep)])),
+            ? l10n.t('Olisit jaksanut reilusti pidempään: +{0} kg.', [fmtNum(stepFor(exercise))])
+            : l10n.t('Olisit jaksanut reilusti pidemmälle: +{0} kg.', [fmtNum(stepFor(exercise))])),
       );
     }
     return Suggestion(
@@ -336,7 +339,7 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
       // muutama).
       final band = math.min(floor, reps);
       if (r < band && !(isBarbell(exercise) && _compound(exercise)) && reps < _repCap) {
-        final step = settings.weightStep;
+        final step = stepFor(exercise);
         final small = top + step;
         if (!_bell(exercise, top) && kg - top > step && repsAtLoad(e1, small, max: reps) >= band) {
           (kg, r) = (small, repsAtLoad(e1, small, max: reps));
@@ -370,7 +373,7 @@ Suggestion? _suggestNext(String exercise, DateTime date) {
   final ret = returnFor(date);
   if (ret != null) {
     final (p, load, sets) = ret;
-    kg = load < 1 ? _roundDown(top * load, settings.weightStep) : top;
+    kg = load < 1 ? _roundDown(top * load, stepFor(exercise)) : top;
     r = reps;
     final pct = ((1 - load) * 100).round();
     why = [
@@ -417,7 +420,7 @@ List<SetEntry> warmupSets(String exercise, double work) {
   } else {
     final kg = kettlebellOnly(exercise)
         ? kettlebellSizes.lastWhere((s) => s <= work * .55, orElse: () => kettlebellSizes.first)
-        : ((work * .5) / settings.weightStep).round() * settings.weightStep;
+        : ((work * .5) / stepFor(exercise)).round() * stepFor(exercise);
     if (kg > 0 && kg < work - 2) out.add(SetEntry(kg.toDouble(), 8, warmup: true));
   }
   return out;
@@ -439,7 +442,7 @@ Suggestion? _afterFeedback(String exercise, DateTime date, Suggestion? s) {
   if (w.tooHeavy.contains(exercise)) {
     final lighter = kettlebellOnly(exercise)
         ? kettlebellSizes.lastWhere((k) => k < top, orElse: () => top)
-        : _round(top * .92, settings.weightStep);
+        : _round(top * .92, stepFor(exercise));
     if (lighter < s.kg) {
       return Suggestion(
         lighter,

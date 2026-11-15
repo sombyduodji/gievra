@@ -66,6 +66,7 @@ const injuryEquivalent = <String, String>{
   'Tuplakahvakuula-askelkyykky': 'Askelkyykky',
   'Kahvakuulahauiskääntö': 'Hauiskääntö käsipainoilla',
   'Matkalaukkukanto': 'Farmer walk',
+  'Farmer walk hex barilla': 'Farmer walk',
 };
 
 InjuryStatus injuryStatus(String exercise, List<String> injuries) {

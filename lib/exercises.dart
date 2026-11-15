@@ -112,6 +112,7 @@ const Map<String, List<String>> exerciseCatalog = {
     'Kaapelirutistus',
     'Kylkilankku',
     'Farmer walk',
+    'Farmer walk hex barilla',
   ],
   // Lähde: StrengthLog, The Ultimate Guide to Bodyweight Exercises (45+ liikettä liikemalleittain).
   'Kehonpaino': [
@@ -291,6 +292,7 @@ const exerciseEquipment = <String, Set<Equip>>{
   'Kaapelirutistus': {_ta},
   'Kylkilankku': {_bw},
   'Farmer walk': {_k, _kb},
+  'Farmer walk hex barilla': {_t}, // kuusikulmatanko (hex / trap bar): yksi väline, paino yhteensä
   'Kyykky kehonpainolla': {_bw},
   'Hyppykyykky': {_bw},
   'Sissy-kyykky': {_bw},
@@ -478,6 +480,7 @@ const _builtinMeasure = {
   'Lankku': Measure.seconds,
   'Kylkilankku': Measure.seconds,
   'Farmer walk': Measure.trips,
+  'Farmer walk hex barilla': Measure.trips,
   'Matkalaukkukanto': Measure.trips,
   'Veneasento': Measure.seconds,
   'Roikunta': Measure.seconds,
@@ -547,8 +550,20 @@ const singleWeight = {
   'Venäläinen twisti',
 };
 
-/// Kokonaiskuorma volyymiin: kahdella painolla kirjattu paino kahdesti.
-int loadMultiplier(String exercise) => pairedKettlebell.contains(exercise) || pairedDumbbell.contains(exercise) ? 2 : 1;
+/// Kokonaiskuorma volyymiin: kahdella kuulalla kirjattu paino (kuulaa kohden) kahdesti. Kahden käsipainon liikkeet
+/// kirjataan yhteispainona (käyttäjä 15.11.), joten niissä kerroin on 1.
+int loadMultiplier(String exercise) => pairedKettlebell.contains(exercise) ? 2 : 1;
+
+/// Kahden käsipainon liike: paino syötetään ja tallennetaan molempien käsipainojen yhteispainona.
+bool totalDumbbells(String exercise) => pairedDumbbell.contains(exercise);
+
+/// Kahden kuulan liikkeissä paino kirjataan kuulaa kohden 9.11.2026 alkaen; sitä ennen kirjattiin molempien
+/// yhteispaino. Tiedostot pysyvät ennallaan: ennen rajaa päivätyt luetaan ja kirjoitetaan yhteispainona.
+final perWeightSince = DateTime(2026, 11, 9);
+
+/// Onko tämän päivän sarjojen paino tiedostossa yhteispaino (kerroin 2) vai kuulaa kohden (1).
+int fileWeightFactor(String exercise, DateTime date) =>
+    pairedKettlebell.contains(exercise) && date.isBefore(perWeightSince) ? 2 : 1;
 
 /// "Jäikö varaa?" mittaustavan mukaan: toistoliikkeissä toistoja varastossa, aikaliikkeissä
 /// olisiko jaksanut pidempään, matkaliikkeissä pidemmälle. Arvot 0 / 1 / 3 kuten RIR.
@@ -588,18 +603,53 @@ String reserveTarget(Measure m, String rir) => m == Measure.reps
 Measure measureOf(String exercise) => settings.customMeasure[exercise] ?? _builtinMeasure[exercise] ?? Measure.reps;
 
 /// Sarja tekstinä liikkeen mittaustavan mukaan: "100 kg × 5", "45 s", "20 kg × 2 edestakaisin".
-String fmtSet(String exercise, SetEntry s) {
+/// Yksittäinen sarja tavallisena tekstinä: paino kuten tallennettu (kahden käsipainon liikkeissä yhteispaino, sama
+/// luku kuin syötössä). Sarjaluetteloissa käytetään [fmtSetsCompact] ja [kgUnit].
+String fmtSet(String exercise, SetEntry s) => _withKind(s, _plain(exercise, s, s.kg, 'kg'));
+
+String _plain(String exercise, SetEntry s, double kg, String unit) {
   final m = measureOf(exercise);
-  final base = m == Measure.reps
-      ? '${fmtNum(s.kg)} kg × ${s.reps}'
-      : (s.kg == 0 ? '${s.reps} ${m.unit}' : '${fmtNum(s.kg)} kg × ${s.reps} ${m.unit}');
-  // Pudotussarjan jatko nuolella, AMRAP merkittynä.
-  return switch (s.kind) {
-    dropSet => '↘ $base',
-    amrapSet => '$base AMRAP',
-    _ => base,
-  };
+  return m == Measure.reps
+      ? '${fmtNum(kg)} $unit × ${s.reps}'
+      : (s.kg == 0 ? '${s.reps} ${m.unit}' : '${fmtNum(kg)} $unit × ${s.reps} ${m.unit}');
 }
+
+// Pudotussarjan jatko nuolella, AMRAP merkittynä.
+String _withKind(SetEntry s, String base) => switch (s.kind) {
+  dropSet => '↘ $base',
+  amrapSet => '$base AMRAP',
+  _ => base,
+};
+
+/// Näytettävä paino sarjaluetteloissa: kahden käsipainon liikkeissä kummankin käden paino (käyttäjä 15.11.:
+/// "2 × 12 kg × 10" oli vaikea lukea; yksikkö kerran liikkeelle).
+double shownKg(String exercise, double kg) => totalDumbbells(exercise) ? kg / 2 : kg;
+
+/// Sarjaluettelon yksikkö: "kg kummassakin kädessä" kahden käsipainon liikkeissä, muuten "kg". [short]: ahtaisiin
+/// riveihin "kg/käsi".
+String kgUnit(String exercise, {bool short = false}) =>
+    totalDumbbells(exercise) ? (short ? t('kg/käsi') : t('kg kummassakin kädessä')) : 'kg';
+
+/// Yksi sarja luettelon sirussa: "12 kg/käsi × 10" tai "60 kg × 6".
+String fmtSetHand(String exercise, SetEntry s) =>
+    _withKind(s, _plain(exercise, s, shownKg(exercise, s.kg), kgUnit(exercise, short: true)));
+
+/// Sarjat tiiviisti ilman yksikköä: "12 × 12 · 22 × 10" (yksikkö erikseen [kgUnit]). Ennätys 🏆.
+String fmtSetsCompact(String exercise, Iterable<SetEntry> sets) {
+  final m = measureOf(exercise);
+  String one(SetEntry s) {
+    final w = fmtNum(shownKg(exercise, s.kg));
+    final base = m == Measure.reps
+        ? (s.kg == 0 ? '${s.reps}' : '$w × ${s.reps}')
+        : (s.kg == 0 ? '${s.reps} ${m.unit}' : '$w × ${s.reps} ${m.unit}');
+    return '${_withKind(s, base)}${s.pr ? ' 🏆' : ''}';
+  }
+
+  return sets.map(one).join(' · ');
+}
+
+/// Onko sarjoissa painoa (yksikkö näytetään vain silloin).
+bool hasWeight(Iterable<SetEntry> sets) => sets.any((s) => s.kg > 0);
 
 /// Hakusanat: arkikieli ja englanti (FitNotes / netti), jotta "lankutus" tai "plank" löytää Lankun.
 const _aliases = {
@@ -649,6 +699,7 @@ const _aliases = {
   'Ranskalainen punnerrus': ['skullcrusher', 'ojentaja'],
   'Dipit': ['dip', 'dippi'],
   'Farmer walk': ['farmari', 'kanto', 'farmers carry'],
+  'Farmer walk hex barilla': ['farmari', 'kanto', 'hex bar', 'trap bar', 'kuusikulmatanko', 'farmers carry'],
   'Selän ojennus': ['hyperextensio', 'hyperekstensio', 'back extension'],
   'Penkkidipit': ['ojentajadipit', 'bench dip', 'dipit'],
   'Olankohautus': ['shrug', 'trapetsi'],

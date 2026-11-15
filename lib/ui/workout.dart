@@ -318,7 +318,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   /// jäljellä olevat sarjat (näkyy, mihin palata, jos välillä tekee muita liikkeitä). Oma lisäys: sarjat kuten ennen.
   Widget _doneCard(ExerciseEntry e, ColorScheme cs) {
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
-    String chip(SetEntry s) => '${s.warmup ? '🔥 ' : ''}${fmtSet(e.name, s)}${s.pr ? ' 🏆' : ''}';
+    String chip(SetEntry s) => '${s.warmup ? '🔥 ' : ''}${fmtSetHand(e.name, s)}${s.pr ? ' 🏆' : ''}';
     if (_isDone(e)) {
       final work = e.sets.where((s) => !s.warmup);
       return Padding(
@@ -346,7 +346,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       children: [
                         ExName(e.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         Text(
-                          '${setsLabel(e.workSets.length)} · ${work.map(chip).join(', ')}',
+                          // Tiivis luettelo, yksikkö kerran (kahden käsipainon liikkeissä kg/käsi).
+                          '${setsLabel(e.workSets.length)} · ${fmtSetsCompact(e.name, work)}'
+                          '${hasWeight(work) ? ' ${kgUnit(e.name, short: true)}' : ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: sub,
@@ -606,7 +608,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   ExName(n, style: const TextStyle(fontWeight: FontWeight.w600)),
                                   Text(
                                     sets.isNotEmpty
-                                        ? sets.map((s) => fmtSet(n, s)).join(' · ')
+                                        ? '${fmtSetsCompact(n, sets)}${hasWeight(sets) ? ' ${kgUnit(n, short: true)}' : ''}'
                                         : it != null && settings.program != null
                                         ? '${targetFor(settings.program!, it, w.date).sets} × ${targetFor(settings.program!, it, w.date).reps}'
                                         : t('ei vielä sarjoja'),
@@ -869,10 +871,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     top: false,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Sami.green,
-                          foregroundColor: Colors.white,
+                      // Reunapainike kuten Merkitse liike valmiiksi (käyttäjä 15.11.): ei kilpaile sarjan tallennuksen kanssa.
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('finishWorkout'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: greenText(context),
+                          side: BorderSide(color: greenText(context), width: 1.5),
                           // Matala näyttö: tiiviimpi, ettei palautusajastimen kanssa vie puolta näytöstä.
                           padding: EdgeInsets.symmetric(vertical: MediaQuery.sizeOf(context).height < 700 ? 8 : 16),
                         ),
@@ -1048,13 +1052,37 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 /// Valmis-näkymä: yhteenveto, vertailu saman ohjelmapäivän aiempiin kertoihin ja tallennettu tiedosto.
 class SavedScreen extends StatefulWidget {
   final Workout workout;
-  const SavedScreen({super.key, required this.workout});
+
+  /// Aiempi treeni kalenterista tai listasta: otsikkona treenin nimi, alareunassa Muokkaa (ei Valmis / Uusi treeni).
+  final bool history;
+  const SavedScreen({super.key, required this.workout, this.history = false});
   @override
   State<SavedScreen> createState() => _SavedScreenState();
 }
 
 class _SavedScreenState extends State<SavedScreen> {
-  Workout get workout => widget.workout;
+  // Muokkauksen jälkeen tallennettu versio varastosta (muokkausnäkymä käsittelee kopiota).
+  Workout get workout =>
+      store.workouts.where((w) => w.date == widget.workout.date && w.session == widget.workout.session).firstOrNull ??
+      widget.workout;
+
+  /// Liikelista muokattavaksi (lukittu kuten ennen: muokkaus kysyy ensin).
+  Future<void> _edit() async {
+    final p = settings.program;
+    final day = p?.plan.where((x) => x.matches(workout.dayKey)).firstOrNull;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => WorkoutScreen(workout: workout.copy(), planDay: day),
+      ),
+    );
+    if (!mounted) return;
+    // Poistettu tai tyhjennetty: ei jäädä vanhaan yhteenvetoon.
+    if (!store.workouts.any((w) => w.date == widget.workout.date && w.session == widget.workout.session)) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {});
+  }
 
   /// Sivun alun suojaviive: Treeni valmis -ikkunan kasvon pikakaksois- tai kolmoisnapautus ei osu tämän sivun
   /// painikkeisiin (esim. "Uusi treeni" samassa kohdassa), kun ikkuna on jo sulkeutunut (havaittu Samsungilla 15.11.).
@@ -1255,7 +1283,15 @@ class _SavedScreenState extends State<SavedScreen> {
     ].join(' · ');
 
     return Scaffold(
-      appBar: AppBar(title: BarTitle(Text(t('Treeni valmis!')))),
+      appBar: AppBar(
+        title: BarTitle(
+          Text(
+            widget.history
+                ? (workout.activity != null ? sportName(workout.activity!) : trName(workout.title))
+                : t('Treeni valmis!'),
+          ),
+        ),
+      ),
       // Toiminnot alareunassa: pienet linkit ja yksi pääpainike.
       bottomNavigationBar: SafeArea(
         top: false,
@@ -1277,18 +1313,19 @@ class _SavedScreenState extends State<SavedScreen> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: TextButton.icon(
-                        onPressed: () => Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (_) => NewWorkoutScreen(date: workout.date, newSession: true)),
+                  if (!widget.history)
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: TextButton.icon(
+                          onPressed: () => Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (_) => NewWorkoutScreen(date: workout.date, newSession: true)),
+                          ),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(t('Uusi treeni')),
                         ),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(t('Uusi treeni')),
                       ),
                     ),
-                  ),
                   Expanded(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -1301,11 +1338,21 @@ class _SavedScreenState extends State<SavedScreen> {
                   ),
                 ],
               ),
-              FilledButton(
-                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
-                child: Text(t('Valmis'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-              ),
+              if (widget.history)
+                // Aiempi treeni: muokkaus liikelistassa (kuten liikunnan Muokkaa).
+                OutlinedButton.icon(
+                  key: const ValueKey('savedEdit'),
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                  onPressed: _edit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(t('Muokkaa'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                )
+              else
+                FilledButton(
+                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                  child: Text(t('Valmis'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
             ],
           ),
         ),
@@ -1330,9 +1377,11 @@ class _SavedScreenState extends State<SavedScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      t('Giitu! {0} tehty', [
-                        workout.activity != null ? sportName(workout.activity!) : trName(workout.title),
-                      ]),
+                      widget.history
+                          ? (workout.activity != null ? sportName(workout.activity!) : trName(workout.title))
+                          : t('Giitu! {0} tehty', [
+                              workout.activity != null ? sportName(workout.activity!) : trName(workout.title),
+                            ]),
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                     ),
                     Text(when, style: sub),
@@ -1343,6 +1392,36 @@ class _SavedScreenState extends State<SavedScreen> {
           ),
           const SizedBox(height: 14),
           if (stats.isNotEmpty) statRow(stats),
+          // Salitreenin liikkeet sarjoineen (ennen yhteenvedossa vain luvut; kalenterista avattuna tärkein tieto).
+          if (workout.activity == null && workout.exercises.any((e) => e.sets.isNotEmpty)) ...[
+            const SizedBox(height: 10),
+            Container(
+              key: const ValueKey('savedExercises'),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final (i, e) in workout.exercises.where((e) => e.sets.isNotEmpty).indexed) ...[
+                    if (i > 0) Divider(height: 14, color: cs.outlineVariant.withValues(alpha: .5)),
+                    Text(exerciseLabel(e.name), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    // Vaihtoehto B (käyttäjä 15.11.): sarjamäärä ja yksikkö kerran, sarjat tiiviisti alla.
+                    Text(
+                      [
+                        e.workSets.length == 1 ? t('1 sarja') : t('{0} sarjaa', [e.workSets.length]),
+                        if (hasWeight(e.workSets)) kgUnit(e.name),
+                      ].join(' · '),
+                      style: sub,
+                    ),
+                    Text(
+                      fmtSetsCompact(e.name, e.workSets),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           if (watchStats.isNotEmpty) ...[
             const SizedBox(height: 8),
             InkWell(

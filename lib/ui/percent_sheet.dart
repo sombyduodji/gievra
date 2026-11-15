@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../app_state.dart';
 import '../exercises.dart';
 import '../l10n.dart';
 import '../models.dart';
@@ -50,13 +49,13 @@ class _PercentSheet extends StatefulWidget {
 
 class _PercentSheetState extends State<_PercentSheet> {
   late final double? _estimate = estimatedMax(widget.exercise, widget.date);
-  late double _max = _round(_estimate ?? 60, settings.weightStep);
+  late double _max = _round(_estimate ?? 60, stepFor(widget.exercise));
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
-    final step = settings.weightStep;
+    final step = stepFor(widget.exercise);
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: .75,

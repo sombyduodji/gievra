@@ -117,7 +117,7 @@ void main() {
     await tester.pump();
     // Valmis: tiivis rivi, sarjat yhdellä rivillä.
     expect(find.byKey(const ValueKey('done-Takakyykky')), findsOneWidget);
-    expect(find.textContaining('2 sarjaa · 60 kg × 8, 62,5 kg × 8'), findsOneWidget);
+    expect(find.textContaining('2 sarjaa · 60 × 8 · 62,5 × 8 kg'), findsOneWidget);
     // Kesken: 1/3, kesken-merkki ja jäljellä olevat sarjat.
     expect(find.byKey(const ValueKey('progress-Penkkipunnerrus')), findsOneWidget);
     expect(find.text('1/3'), findsOneWidget);

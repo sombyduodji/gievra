@@ -595,7 +595,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   SizedBox(
                     width: 78,
                     child: Text(
-                      '${fmtNum(lt.monthly.last.$2.roundToDouble())} kg'
+                      '${fmtNum((lt.monthly.last.$2 * loadMultiplier(lt.exercise)).roundToDouble())} kg'
                       '${lt.light
                           ? '\n${t('kevyt jakso')}'
                           : lt.change == null

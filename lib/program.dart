@@ -57,7 +57,7 @@ const slots = <String, Slot>{
   'HAU': Slot('Hauis', ['Hauiskääntö tangolla', 'Vasarakääntö', 'Hauiskääntö taljassa']),
   'OJE': Slot('Ojentaja', ['Ojentajapunnerrus taljassa', 'Ranskalainen punnerrus', 'Kapea penkki']),
   'KES': Slot('Keskivartalo', ['Pallof press', 'Jalannosto roikkuen', 'Kaapelirutistus']),
-  'KAN': Slot('Kanto', ['Farmer walk', 'Kylkilankku']),
+  'KAN': Slot('Kanto', ['Farmer walk', 'Kylkilankku', 'Farmer walk hex barilla']),
   'KK': Slot('Kilpakyykky', ['Takakyykky', 'Box-kyykky', 'Jalkaprässi'], compound: true),
   'KP': Slot('Kilpapenkki', ['Penkkipunnerrus', 'Lattiapunnerrus', 'Käsipainopenkki'], compound: true),
   'KM': Slot('Kilpamaastaveto', ['Maastaveto', 'Rack pull', 'Hip thrust'], compound: true),

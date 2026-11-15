@@ -10,7 +10,11 @@ const defaultPlates = <double>[25, 20, 15, 10, 5, 2.5, 1.25];
 const defaultBarKg = 20.0;
 
 /// Tankoliike (levylaskuri näytetään): tanko välineenä eikä paino käsipainoa tai kuulaa kohti.
-bool isBarbell(String exercise) => exerciseEquipment[exercise]?.contains(Equip.tanko) ?? false;
+/// Tanko, jonka paino ei ole tavallisen suoran tangon (asetus): levylaskuri ei koske niitä.
+const specialBars = {'Farmer walk hex barilla'};
+
+bool isBarbell(String exercise) =>
+    !specialBars.contains(exercise) && (exerciseEquipment[exercise]?.contains(Equip.tanko) ?? false);
 
 /// Levyt yhdelle puolelle (suurimmasta pienimpään) ja jäännös kg puolta kohden, jota omilla levyillä ei saa.
 /// Levyjä oletetaan olevan pareittain riittävästi. Pienin jäännös, sitten vähiten levyjä (ei ahne: 15+10 → 20

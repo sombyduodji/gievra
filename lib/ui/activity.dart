@@ -1001,11 +1001,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 // Sykevyö: iso sykerengas, alue, käyrä ja tilanne tähän asti.
                 const HrRing(sessionKey: 'activity'),
                 const SizedBox(height: 12),
+                // Tauko/Jatka pääpainikkeena, Lopeta reunapainikkeena kuten GPS-tallennuksessa (käyttäjä 15.11.): kello
+                // pysähtyy myös Treeni valmis -painikkeesta, joten Lopeta ei ole näkymän tärkein toiminto.
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                      child: FilledButton.icon(
+                        key: const ValueKey('swPause'),
+                        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                         onPressed: _swStartPause,
                         icon: Icon(running ? Icons.pause : Icons.play_arrow),
                         label: Text(running ? t('Tauko') : t('Jatka')),
@@ -1013,8 +1016,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('swStop'),
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                         onPressed: _swStop,
                         icon: const Icon(Icons.stop),
                         label: Text(t('Lopeta')),
@@ -1396,10 +1400,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Sami.green,
-                      foregroundColor: Colors.white,
+                  // Reunapainike kuten salitreenissä (käyttäjä 15.11.): ajanoton Tauko on näkymän pääpainike.
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('finishActivity'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: greenText(context),
+                      side: BorderSide(color: greenText(context), width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     onPressed: _save,

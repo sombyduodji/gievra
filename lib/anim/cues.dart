@@ -423,6 +423,11 @@ const exerciseCues = <String, List<String>>{
     "Lantio ylhäällä, ei notkahdusta",
     "Jalat päällekkäin tai porrastettuina",
   ],
+  "Farmer walk hex barilla": [
+    "Seiso tangon keskellä, kahvat kehon sivuilla",
+    "Nosta kuin maastaveto: lantio taakse, selkä suorana",
+    "Kävele pystyssä lyhyin askelin, tangon kulma tasaisena",
+  ],
   "Farmer walk": [
     "Raskaat painot sivuilla, kädet suorina",
     "Hartiat alas ja taakse, vartalo pystyssä",

@@ -91,6 +91,7 @@ const exerciseEnglish = <String, String>{
   'Kaapelirutistus': 'Cable Crunch',
   'Kylkilankku': 'Side Plank',
   'Farmer walk': 'Farmer Walk',
+  'Farmer walk hex barilla': 'Hex Bar Farmer Walk',
   'Kyykky kehonpainolla': 'Bodyweight Squat',
   'Hyppykyykky': 'Jump Squat',
   'Sissy-kyykky': 'Sissy Squat',

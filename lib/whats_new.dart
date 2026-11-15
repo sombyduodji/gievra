@@ -13,6 +13,30 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.7',
+    Icons.fitness_center,
+    'Käsipainot yhteispainona',
+    'Kahden käsipainon liikkeissä syötät nyt molempien käsipainojen yhteispainon, ja alla näkyy kummankin käden paino. Etusivu pyytää tarkistamaan kerran, olivatko vanhat painot yhteensä vai käsipainoa kohden.',
+  ),
+  NewFeature(
+    '0.6.7',
+    Icons.history,
+    'Aiempi salitreeni yhteenvetona',
+    'Kalenterista avattu salitreeni näyttää yhteenvedon liikkeineen ja sarjoineen. Muokkaa avaa liikelistan.',
+  ),
+  NewFeature(
+    '0.6.7',
+    Icons.view_agenda_outlined,
+    'Selkeämpi sarjan kirjaus',
+    'Paino, toistot ja tallennus ovat omana korttinaan, ja Merkitse liike valmiiksi on tehtyjen sarjojen alla, jottei sitä paina vahingossa.',
+  ),
+  NewFeature(
+    '0.6.7',
+    Icons.hexagon_outlined,
+    'Farmer walk hex barilla',
+    'Oma liike kuusikulmatangolla tehtävälle farmer walkille. Vanhat Farmer walk -kerrat voi siirtää siihen käsipainojen tarkistuksessa.',
+  ),
+  NewFeature(
     '0.6.6',
     Icons.show_chart,
     'Kellon sykekäyrä',

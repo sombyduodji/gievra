@@ -60,6 +60,12 @@ void main() {
     await tester.pump();
     expect(w.started, isNotNull);
     expect(find.text('Lopeta'), findsOneWidget);
+    // Tauko pääpainikkeena, Lopeta reunapainikkeena (kuten GPS-tallennuksessa, käyttäjä 15.11.).
+    expect(find.descendant(of: find.byKey(const ValueKey('swPause')), matching: find.text('Tauko')), findsOneWidget);
+    expect(tester.widget(find.byKey(const ValueKey('swPause'))), isA<FilledButton>());
+    expect(tester.widget(find.byKey(const ValueKey('swStop'))), isA<OutlinedButton>());
+    // Treeni valmis! reunapainikkeena kuten salitreenissä (käyttäjä 15.11.).
+    expect(tester.widget(find.byKey(const ValueKey('finishActivity'))), isA<OutlinedButton>());
     expect(find.textContaining('alkoi'), findsOneWidget);
     await tester.tap(find.text('Lopeta'));
     await tester.pump();

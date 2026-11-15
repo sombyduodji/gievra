@@ -411,6 +411,11 @@ const exerciseCuesEn = <String, List<String>>{
     "Hips still, don't sit back on your heels",
   ],
   "Kylkilankku": ["Elbow under the shoulder, body straight", "Hips up, no sagging", "Feet stacked or staggered"],
+  "Farmer walk hex barilla": [
+    "Stand in the middle of the bar, handles at your sides",
+    "Lift like a deadlift: hips back, back straight",
+    "Walk tall with short steps, keep the bar level",
+  ],
   "Farmer walk": [
     "Heavy weights at your sides, arms straight",
     "Shoulders down and back, torso upright",

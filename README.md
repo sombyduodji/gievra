@@ -70,7 +70,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - tekstin koko: Pieni, Normaali tai Suuri (myös puhelimen oma suuri fontti toimii)
 - treenin ajastin, *Treeni valmis!* ja vertailu edelliseen kertaan, useampi treeni samana päivänä
   (*Lisää uusi treeni*), jakaminen
-- valmis treeni lukittuu 🔒: avautuu lukutilaan, ja muokkaus kysyy ensin; ei palautusajastinta eikä painoehdotuksia;
+- kahden käsipainon liikkeet yhteispainona (alla kummankin käden paino), sarjat luetteloissa muodossa 12 × 10
+  "kg kummassakin kädessä"; Farmer walk myös hex barilla omana liikkeenään
+- valmis treeni lukittuu 🔒: avautuu yhteenvetona (liikkeet sarjoineen), Muokkaa avaa liikelistan ja kysyy ensin; ei palautusajastinta eikä painoehdotuksia;
   tallennettu liikunta avautuu yhteenvetona (aika, matka, vauhti, reitti, syke, rasitus ja fiilis)
 - *Treeni valmis!* -ikkuna: rasitus arvioidaan sykkeestä tai vauhdista, salitreenin ennätykset ja painojen nousut
   näkyvät heti

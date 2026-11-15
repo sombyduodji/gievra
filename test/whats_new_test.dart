@@ -86,8 +86,13 @@ void main() {
     expect(find.text('Tekstin koko'), findsOneWidget);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    // 0.6.7: käsipainot yhteispainona ensimmäisenä.
     await run(tester, '0.6.7');
+    expect(find.text('Käsipainot yhteispainona'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    await run(tester, '0.6.8');
     expect(find.byType(AlertDialog), findsNothing);
   });
 

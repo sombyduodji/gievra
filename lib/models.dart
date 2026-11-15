@@ -29,6 +29,24 @@ const amrapSet = 'amrap';
 
 const rirLabels = {0: '0', 1: '1-2', 3: '3+'};
 
+/// Vaihtaa treenin liikkeen toiseksi (sarjat säilyvät) ja päivittää nimen kaikkialla treenissä: tehdyt, fiilikset,
+/// liian raskaat, ohitetut ja supersarjat (esim. Farmer walk → Farmer walk hex barilla, käyttäjä 15.11.).
+void renameExercise(Workout w, ExerciseEntry e, String to) {
+  final from = e.name;
+  final i = w.exercises.indexOf(e);
+  if (i < 0 || from == to) return;
+  w.exercises[i] = ExerciseEntry(to, e.sets);
+  if (w.moveFeeling.remove(from) case final v?) w.moveFeeling[to] = v;
+  for (final set in [w.tooHeavy, w.doneMoves, w.skipMoves]) {
+    if (set.remove(from)) set.add(to);
+  }
+  for (final g in w.supersets) {
+    for (var j = 0; j < g.length; j++) {
+      if (g[j] == from) g[j] = to;
+    }
+  }
+}
+
 class ExerciseEntry {
   final String name;
   final List<SetEntry> sets;
@@ -146,6 +164,13 @@ class Workout {
 
   /// Matka kirjoitettu käsin (Korjaa): reitin korjaus ei muuta sitä.
   bool distanceManual = false;
+
+  /// Kahden käsipainon liikkeiden painot ennen yhteispainomerkintää (tiedostossa ei `dumbbells: total`): voivat olla
+  /// käsipainoa kohden tai yhteispainoja. Tarkistetaan kerran (DumbbellReviewScreen); siihen asti tallennus ei
+  /// merkitse tiedostoa tarkistetuksi. Uudet treenit kirjataan yhteispainona ja merkitään.
+  bool dumbbellReview = false;
+
+  bool get hasTotalDumbbells => exercises.any((e) => totalDumbbells(e.name) && e.sets.isNotEmpty);
 
   /// GPS-reitin tiedostonimi (.gpx samassa kansiossa kuin .md), esim. 2026-11-08-2.gpx.
   String? route;
@@ -343,6 +368,8 @@ String workoutToMarkdown(Workout w) {
   }
   if (w.dayReasons.isNotEmpty) b.writeln('day_feeling: ${w.dayReasons.join(', ')}');
   if (w.doneMoves.isNotEmpty) b.writeln('done: ${w.doneMoves.join('; ')}');
+  // Kahden käsipainon painot yhteispainoina (tarkistettu tai uudella versiolla kirjattu), ks. Workout.dumbbellReview.
+  if (w.hasTotalDumbbells && !w.dumbbellReview) b.writeln('dumbbells: total');
   if (w.skipMoves.isNotEmpty) b.writeln('skip: ${w.skipMoves.join('; ')}');
   if (w.supersets.isNotEmpty) b.writeln('superset: ${w.supersets.map((g) => g.join(' + ')).join('; ')}');
   b
@@ -377,14 +404,15 @@ String workoutToMarkdown(Workout w) {
       ..writeln()
       ..writeln('## ${e.name}');
     final m = measureOf(e.name);
+    final f = fileWeightFactor(e.name, w.date); // vanhat kahden kuulan sarjat yhteispainona kuten ennen
     for (var i = 0; i < e.sets.length; i++) {
       final s = e.sets[i];
       if (m == Measure.reps) {
-        b.write('${i + 1}. ${fileNum(s.kg)} kg × ${s.reps}');
+        b.write('${i + 1}. ${fileNum(s.kg * f)} kg × ${s.reps}');
       } else if (s.kg == 0) {
         b.write('${i + 1}. ${s.reps} ${m.suffix}');
       } else {
-        b.write('${i + 1}. ${fileNum(s.kg)} kg × ${s.reps} ${m.suffix}');
+        b.write('${i + 1}. ${fileNum(s.kg * f)} kg × ${s.reps} ${m.suffix}');
       }
       if (s.rpe != null) b.write(' @${fileNum(s.rpe!)}');
       if (s.rir != null) b.write(' RIR ${rirLabels[s.rir]}');
@@ -601,5 +629,15 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   }
   w.notes = notes.join('\n').trim();
   if (w.notes == '-') w.notes = '';
+  w.dumbbellReview = w.hasTotalDumbbells && meta['dumbbells'] != 'total';
+  // Vanhat kahden kuulan sarjat yhteispainosta kuulaa kohden (ks. fileWeightFactor).
+  for (final e in w.exercises) {
+    final f = fileWeightFactor(e.name, w.date);
+    if (f != 1) {
+      for (final s in e.sets) {
+        s.kg = s.kg / f;
+      }
+    }
+  }
   return w;
 }

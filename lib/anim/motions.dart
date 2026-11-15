@@ -1040,6 +1040,7 @@ final Map<String, Motion> exerciseMotions = {
   'Askelkyykkykävely': _lungeDb,
   'Bulgarialainen askelkyykky': _bulgarian,
   'Farmer walk': _walk,
+  'Farmer walk hex barilla': _walk,
   'Lankku': _plank,
   'Vatsarutistus': _crunch,
   'Jalannosto roikkuen': _hangingRaise,

@@ -26,6 +26,7 @@ import '../session_compare.dart';
 import '../program.dart';
 import '../theme.dart';
 import 'drawer.dart';
+import 'dumbbell_review.dart';
 import 'steps_ui.dart';
 import '../daily_steps.dart';
 import 'whats_new_dialog.dart';
@@ -86,6 +87,9 @@ void _open(BuildContext context, DateTime d, Workout? w, {bool newSession = fals
     MaterialPageRoute(
       builder: (_) => w != null && w.activity != null
           ? ActivityScreen(workout: w.copy())
+          // Valmis salitreeni: yhteenveto ensin kuten liikunnassa, Muokkaa avaa liikelistan (käyttäjä 15.11.).
+          : w != null && (w.minutes != null || w.feeling != null)
+          ? SavedScreen(workout: w, history: true)
           : w != null
           ? WorkoutScreen(workout: w.copy(), planDay: day)
           : NewWorkoutScreen(date: d, newSession: newSession),
@@ -729,6 +733,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       'Yritetään uudelleen seuraavalla käynnistyksellä. Tee varmuuskopio itse: ☰ → Tuonti, vienti ja varmuuskopio.',
                     ),
                     onTap: () => autoBackup.dismissError(),
+                  ),
+                // Kahden käsipainon vanhat painot: tarkistus kerran (yhteensä vai käsipainoa kohden).
+                if (store.workouts.any((w) => w.dumbbellReview))
+                  _ModeBanner(
+                    key: const ValueKey('dumbbellReviewBanner'),
+                    color: Sami.yellow,
+                    emoji: '🏋️',
+                    title: t('Tarkista käsipainojen painot'),
+                    detail: t(
+                      'Kahden käsipainon liikkeet kirjataan nyt yhteispainona. Tarkista kerran, olivatko vanhat painot '
+                      'yhteensä vai käsipainoa kohden.',
+                    ),
+                    onTap: () =>
+                        Navigator.of(context)
+                            .push(MaterialPageRoute<void>(builder: (_) => const DumbbellReviewScreen())),
                   ),
                 // Kuvakaappauksia varten demo ilman ilmoitusta: --dart-define=SCREENSHOT=true
                 if (isDemo && !const bool.fromEnvironment('SCREENSHOT'))
@@ -1815,7 +1834,11 @@ class _InsightsCard extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(child: Text(exerciseLabel(p.exercise), maxLines: 1, overflow: TextOverflow.ellipsis)),
           Text(
-            up ? '${fmtNum(p.before.roundToDouble())} → ${fmtNum(p.now.roundToDouble())} kg' : t('junnaa'),
+            // Kahden käsipainon tai kuulan liikkeet yhteispainona (sovelluksessa painoa kohden).
+            up
+                ? '${fmtNum((p.before * loadMultiplier(p.exercise)).roundToDouble())} → '
+                      '${fmtNum((p.now * loadMultiplier(p.exercise)).roundToDouble())} kg'
+                : t('junnaa'),
             style: sub,
           ),
           if (up) ...[
@@ -1944,6 +1967,7 @@ class _ModeBanner extends StatelessWidget {
   final String emoji, title, detail;
   final VoidCallback onTap;
   const _ModeBanner({
+    super.key,
     required this.color,
     required this.emoji,
     required this.title,

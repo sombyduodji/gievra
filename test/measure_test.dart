@@ -11,7 +11,7 @@ void main() {
     expect(measureOf('Farmer walk'), Measure.trips);
     expect(measureOf('Takakyykky'), Measure.reps);
     final w = Workout(
-      date: DateTime(2026, 11, 6),
+      date: DateTime(2026, 11, 12),
       exercises: [
         ExerciseEntry('Lankku', [SetEntry(0, 45), SetEntry(10, 30, rir: 1)]),
         ExerciseEntry('Farmer walk', [SetEntry(48, 2)]),

@@ -141,6 +141,32 @@ void main() {
     expect(e.sets, hasLength(1));
   });
 
+  testWidgets(
+    'Sarjakortti: tallennus kortissa, Merkitse liike valmiiksi vasta tehtyjen sarjojen alla (käyttäjä 15.11.)',
+    (tester) async {
+      await tall(tester);
+      await logger(
+        tester,
+        'Taukopenkki',
+        sets: [SetEntry(20, 8, rir: 3), SetEntry(40, 6, rir: 3), SetEntry(60, 6, rir: 1)],
+      );
+      final card = find.byKey(const ValueKey('setCard'));
+      expect(find.descendant(of: card, matching: find.text('Sarja 4')), findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('Muutama')),
+        findsOneWidget,
+        reason: 'tallennus kortissa',
+      );
+      expect(find.descendant(of: card, matching: find.text('Merkitse liike valmiiksi')), findsNothing);
+      expect(find.text('TEHDYT SARJAT · 3'), findsOneWidget);
+      final done = tester.getRect(find.byKey(const ValueKey('markDone')));
+      final lastSet = tester.getRect(find.text('Sarja 3'));
+      final save = tester.getRect(find.text('Muutama'));
+      expect(done.top, greaterThan(lastSet.bottom), reason: 'viimeisen sarjan alla');
+      expect(done.top - save.bottom, greaterThan(150), reason: 'kaukana tallennuspainikkeista');
+    },
+  );
+
   testWidgets('Levylaskuri: levyt näkyvät ja omien levyjen muutos päivittää', (tester) async {
     await tall(tester);
     store.workouts = [

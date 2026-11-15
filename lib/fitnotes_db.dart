@@ -74,7 +74,8 @@ Future<ImportResult> readFitnotes(String dbPath, {bool translate = true}) async 
       }
       var e = w.exercises.where((x) => x.name == name).firstOrNull;
       if (e == null) w.exercises.add(e = ExerciseEntry(name));
-      e.sets.add(SetEntry(kg, reps, pr: (r['pr'] as int? ?? 0) != 0));
+      // FitNotesissa kahden käsipainon tai kuulan paino on yhteispaino; sovelluksessa painoa kohden.
+      e.sets.add(SetEntry(kg / loadMultiplier(name), reps, pr: (r['pr'] as int? ?? 0) != 0));
       sets++;
       if (categoryOf(name) == null && !newEx.containsKey(name)) {
         newEx[name] = fitnotesCategories[r['cat']] ?? ownCategory;
@@ -122,6 +123,8 @@ Future<ImportResult> readFitnotes(String dbPath, {bool translate = true}) async 
 
     for (final w in byDate.values) {
       w.title = autoTitle(w);
+      // Kahden käsipainon painot FitNotesissa joko yhteensä tai käsipainoa kohden: tarkistetaan kerran.
+      w.dumbbellReview = w.hasTotalDumbbells;
     }
     final list = byDate.values.toList()..sort((a, b) => a.date.compareTo(b.date));
     return ImportResult(
@@ -177,7 +180,14 @@ Future<int> writeFitnotes(String path, List<Workout> workouts, {Map<DateTime, do
         );
         for (final s in e.sets) {
           // Aikasarja: toistot 0, kesto sekunteina.
-          logRows.add([id, date, s.kg, timed ? 0 : s.reps, s.pr ? 1 : 0, timed ? s.reps : 0]);
+          logRows.add([
+            id,
+            date,
+            s.kg * (timed ? 1 : loadMultiplier(e.name)),
+            timed ? 0 : s.reps,
+            s.pr ? 1 : 0,
+            timed ? s.reps : 0,
+          ]);
           sets++;
         }
       }
