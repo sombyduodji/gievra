@@ -1,8 +1,9 @@
-// FitNotes-varmuuskopion (SQLite) luku ja kirjoitus. Vain natiivialustoilla (dart:ffi); verkossa fitnotes_db_stub.dart.
+// FitNotes-varmuuskopion (SQLite) luku ja kirjoitus. Vain natiivialustoilla; verkossa fitnotes_db_stub.dart.
+// SQLite: sql_db.dart (Androidissa puhelimen oma).
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:sqlite3/sqlite3.dart';
+import 'sql_db.dart';
 
 import 'app_state.dart';
 import 'exercises.dart';
@@ -12,10 +13,10 @@ import 'import_export.dart';
 import 'models.dart';
 
 /// Lukee FitNotes-varmuuskopion. [translate]: tunnetut liikkeet suomeksi.
-ImportResult readFitnotes(String dbPath, {bool translate = true}) {
-  final db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+Future<ImportResult> readFitnotes(String dbPath, {bool translate = true}) async {
+  final db = await openSqlDb(dbPath, readOnly: true);
   try {
-    final rows = db.select('''
+    final rows = await db.select('''
       SELECT t.date AS date, e.name AS name, c.name AS cat, t.metric_weight AS kg, t.reps AS reps,
              t.distance AS dist, t.duration_seconds AS secs, t.is_personal_record AS pr
       FROM training_log t
@@ -97,27 +98,27 @@ ImportResult readFitnotes(String dbPath, {bool translate = true}) {
     }
 
     try {
-      for (final r in db.select('''
+      for (final r in await db.select('''
           SELECT r.date AS date, r.value AS v FROM MeasurementRecord r
           JOIN Measurement m ON m._id = r.measurement_id
           WHERE lower(m.name) = 'bodyweight' ORDER BY r.date, r.time''')) {
         addBw(r['date'] as String, r['v'] as num);
       }
-    } on SqliteException catch (_) {}
+    } on Exception catch (_) {}
     try {
-      for (final r in db.select('SELECT date, body_weight_metric AS v FROM BodyWeight')) {
+      for (final r in await db.select('SELECT date, body_weight_metric AS v FROM BodyWeight')) {
         addBw(r['date'] as String, r['v'] as num);
       }
-    } on SqliteException catch (_) {}
+    } on Exception catch (_) {}
 
     // Treenikommentit.
     try {
-      for (final r in db.select('SELECT date, comment FROM WorkoutComment ORDER BY _id')) {
+      for (final r in await db.select('SELECT date, comment FROM WorkoutComment ORDER BY _id')) {
         final w = byDate[(r['date'] as String).substring(0, 10)];
         final c = (r['comment'] as String).trim();
         if (w != null && c.isNotEmpty) w.notes = w.notes.isEmpty ? c : '$c\n${w.notes}';
       }
-    } on SqliteException catch (_) {}
+    } on Exception catch (_) {}
 
     for (final w in byDate.values) {
       w.title = autoTitle(w);
@@ -134,7 +135,7 @@ ImportResult readFitnotes(String dbPath, {bool translate = true}) {
       bodyMd: weighIns.isEmpty ? null : bodyToMarkdown(BodyLog(weights: weighIns)),
     );
   } finally {
-    db.close();
+    await db.close();
   }
 }
 
@@ -142,85 +143,70 @@ ImportResult readFitnotes(String dbPath, {bool translate = true}) {
 /// Suomennetut liikkeet palautetaan FitNotesin englanninkielisiin nimiin.
 /// Kehonpaino -> mittaukset (punnitukset [weighIns] ja vanhojen treenien kehonpaino, punnitus ensin samana päivänä),
 /// muistiinpanot ja lämmittely -> treenikommentti. Palauttaa sarjojen määrän.
-int writeFitnotes(String path, List<Workout> workouts, {Map<DateTime, double> weighIns = const {}}) {
+Future<int> writeFitnotes(String path, List<Workout> workouts, {Map<DateTime, double> weighIns = const {}}) async {
   final f = File(path);
   if (f.existsSync()) f.deleteSync();
-  final db = sqlite3.open(path);
+  final db = await openSqlDb(path);
   var sets = 0;
   try {
-    db.execute('BEGIN');
+    await db.begin();
     for (final sql in fitnotesSchema) {
-      db.execute(sql);
+      await db.execute(sql);
     }
-    db.execute('PRAGMA user_version = $fitnotesUserVersion');
-    final cats = {for (final r in db.select('SELECT _id, name FROM Category')) r['name'] as String: r['_id'] as int};
-    final bwId = db.select("SELECT _id FROM Measurement WHERE name = 'Bodyweight'").first['_id'] as int;
+    await db.execute('PRAGMA user_version = $fitnotesUserVersion');
+    final cats = {
+      for (final r in await db.select('SELECT _id, name FROM Category')) r['name'] as String: r['_id'] as int,
+    };
+    final bwId = (await db.select("SELECT _id FROM Measurement WHERE name = 'Bodyweight'")).first['_id'] as int;
     final english = <String, String>{};
     for (final e in fitnotesNames.entries) {
       english.putIfAbsent(e.value, () => e.key);
     }
+    // Liikkeet yksi kerrallaan (id tarvitaan heti); sarjat, punnitukset ja kommentit erissä lopuksi.
     final exIds = <String, int>{};
-    final insEx = db.prepare(
-      'INSERT INTO exercise (name, category_id, exercise_type_id, weight_unit_id) VALUES (?, ?, 0, 0)',
-    );
-    final insLog = db.prepare(
-      'INSERT INTO training_log (exercise_id, date, metric_weight, reps, unit, '
-      'is_personal_record, is_complete) VALUES (?, ?, ?, ?, 0, ?, 1)',
-    );
-    final insTime = db.prepare(
-      'INSERT INTO training_log (exercise_id, date, metric_weight, reps, unit, '
-      'is_personal_record, is_complete, duration_seconds) VALUES (?, ?, ?, 0, 0, ?, 1, ?)',
-    );
-    final insBw = db.prepare(
-      "INSERT INTO MeasurementRecord (measurement_id, date, time, value, comment) VALUES (?, ?, '12:00:00', ?, NULL)",
-    );
-    final insCom = db.prepare('INSERT INTO WorkoutComment (date, comment) VALUES (?, ?)');
-    try {
-      for (final w in [...workouts]..sort((a, b) => a.date.compareTo(b.date))) {
-        final date = isoDate(w.date);
-        for (final e in w.exercises) {
-          if (e.sets.isEmpty) continue;
-          final name = english[e.name] ?? e.name;
-          final id = exIds[name] ??= () {
-            insEx.execute([name, cats[fitnotesCategoryFor(e.name)] ?? cats['Full']]);
-            if (measureOf(e.name) == Measure.seconds) {
-              db.execute('UPDATE exercise SET exercise_type_id = 3 WHERE _id = ?', [db.lastInsertRowId]);
-            }
-            return db.lastInsertRowId;
-          }();
-          final timed = measureOf(e.name) == Measure.seconds;
-          for (final s in e.sets) {
-            if (timed) {
-              insTime.execute([id, date, s.kg, s.pr ? 1 : 0, s.reps]);
-            } else {
-              insLog.execute([id, date, s.kg, s.reps, s.pr ? 1 : 0]);
-            }
-            sets++;
-          }
+    final logRows = <List<Object?>>[], bwRows = <List<Object?>>[], comRows = <List<Object?>>[];
+    for (final w in [...workouts]..sort((a, b) => a.date.compareTo(b.date))) {
+      final date = isoDate(w.date);
+      for (final e in w.exercises) {
+        if (e.sets.isEmpty) continue;
+        final name = english[e.name] ?? e.name;
+        final timed = measureOf(e.name) == Measure.seconds;
+        final id = exIds[name] ??= await db.execute(
+          'INSERT INTO exercise (name, category_id, exercise_type_id, weight_unit_id) VALUES (?, ?, ?, 0)',
+          [name, cats[fitnotesCategoryFor(e.name)] ?? cats['Full'], timed ? 3 : 0],
+        );
+        for (final s in e.sets) {
+          // Aikasarja: toistot 0, kesto sekunteina.
+          logRows.add([id, date, s.kg, timed ? 0 : s.reps, s.pr ? 1 : 0, timed ? s.reps : 0]);
+          sets++;
         }
-        if (w.bodyweight != null && !weighIns.containsKey(dateOnly(w.date))) {
-          insBw.execute([bwId, date, w.bodyweight]);
-        }
-        final comment = [
-          if (w.warmup != null) 'Lämmittely: ${w.warmup!.equipment} ${w.warmup!.minutes} min',
-          if (w.notes.trim().isNotEmpty) w.notes.trim(),
-        ].join('\n');
-        if (comment.isNotEmpty) insCom.execute([date, comment]);
       }
-      // Punnitukset (kehonpaino.md): yksi mittaus päivää kohden.
-      for (final e in weighIns.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
-        insBw.execute([bwId, isoDate(e.key), e.value]);
+      if (w.bodyweight != null && !weighIns.containsKey(dateOnly(w.date))) {
+        bwRows.add([bwId, date, w.bodyweight]);
       }
-    } finally {
-      insEx.close();
-      insLog.close();
-      insTime.close();
-      insBw.close();
-      insCom.close();
+      final comment = [
+        if (w.warmup != null) 'Lämmittely: ${w.warmup!.equipment} ${w.warmup!.minutes} min',
+        if (w.notes.trim().isNotEmpty) w.notes.trim(),
+      ].join('\n');
+      if (comment.isNotEmpty) comRows.add([date, comment]);
     }
-    db.execute('COMMIT');
+    // Punnitukset (kehonpaino.md): yksi mittaus päivää kohden.
+    for (final e in weighIns.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
+      bwRows.add([bwId, isoDate(e.key), e.value]);
+    }
+    await db.executeMany(
+      'INSERT INTO training_log (exercise_id, date, metric_weight, reps, unit, '
+      'is_personal_record, is_complete, duration_seconds) VALUES (?, ?, ?, ?, 0, ?, 1, ?)',
+      logRows,
+    );
+    await db.executeMany(
+      "INSERT INTO MeasurementRecord (measurement_id, date, time, value, comment) VALUES (?, ?, '12:00:00', ?, NULL)",
+      bwRows,
+    );
+    await db.executeMany('INSERT INTO WorkoutComment (date, comment) VALUES (?, ?)', comRows);
+    await db.commit();
   } finally {
-    db.close();
+    await db.close();
   }
   return sets;
 }

@@ -485,4 +485,20 @@ void main() {
     final old = Workout(date: addDays(today, -1), title: 'Eilen');
     expect(latestWorkouts([old, a, b, c], 3).map((w) => w.title), ['Juoksu', 'Sali', 'Kävely']);
   });
+
+  test('Viimeksi: itse syötetty liikunta ilman alkuaikaa näkyy aiemmin tallennettujen jälkeen (ei viimeisenä)', () {
+    DateTime at(int h) => DateTime(today.year, today.month, today.day, h);
+    final gym1 = Workout(date: today, title: 'Sali 1', session: 1)..started = at(9);
+    final gym2 = Workout(date: today, title: 'Sali 2', session: 2)..started = at(12);
+    final ball = Workout(date: today, title: 'Koripallo', session: 3)..started = at(2);
+    final gym3 = Workout(date: today, title: 'Sali 3', session: 4)..started = at(18);
+    final walk = Workout(date: today, title: 'Kävely', activity: 'Kävely', session: 5); // ei alkuaikaa
+    final ws = [gym1, gym2, ball, gym3, walk];
+    expect(latestWorkouts(ws, 3).map((w) => w.title), ['Kävely', 'Sali 3', 'Sali 2']);
+    // Ennen salia tallennettu alkuajaton jää salin alle.
+    final early = Workout(date: today, title: 'Aamukävely', activity: 'Kävely', session: 2);
+    final later = Workout(date: today, title: 'Ilta', session: 3)..started = at(19);
+    final first = Workout(date: today, title: 'Aamu', session: 1)..started = at(7);
+    expect(latestWorkouts([first, early, later], 3).map((w) => w.title), ['Ilta', 'Aamukävely', 'Aamu']);
+  });
 }

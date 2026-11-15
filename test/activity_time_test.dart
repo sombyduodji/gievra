@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:treenipaivakirja/app_state.dart';
+import 'package:treenipaivakirja/drafts.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/ui/activity.dart';
 import 'package:treenipaivakirja/ui/sport_picker.dart';
@@ -65,7 +66,15 @@ void main() {
     expect(find.text('ALKOI'), findsOneWidget);
     expect(find.text('LOPPUI'), findsOneWidget);
     expect(find.text('Jatka ajanottoa'), findsOneWidget);
-    expect(w.minutes, 1, reason: 'alle minuutti → 1 min');
+    // Jokainen sekunti talteen kaikissa lajeissa (koripallokin): ei pyöristystä minuutiksi.
+    expect(w.seconds, isNotNull);
+    expect(w.seconds, lessThan(60), reason: 'testin ajanotto kesti hetken: tarkka aika, ei 1 min');
+    // Lopetettu alle minuutin ajanotto: Treeni valmis kysyy ennen tallennusta (tarkka aika tallentuisi).
+    await tester.tap(find.text('Treeni valmis!'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alle minuutin liikunta'), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5)); // ikkunan ulkopuolelle: ei tallenneta, jatketaan
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Syötä aika'));
     await tester.pump();
     expect(find.text('KESTO'), findsOneWidget);
@@ -128,6 +137,69 @@ void main() {
     expect(find.text('KELLON TIEDOT'), findsNothing);
   });
 
+  testWidgets('Alle minuutin kysymys: tallennettu aika on Valmis-napautuksen hetki, ei vastaamisen jälkeinen',
+      (tester) async {
+    final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
+    settings.folder = dir.path;
+    addTearDown(() {
+      settings.folder = null;
+      store.workouts = [];
+      dir.deleteSync(recursive: true);
+    });
+    final w = await open(tester, sport: 'Jooga');
+    await tester.tap(find.text('Aloita'));
+    await tester.pump();
+    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 1100)));
+    await tester.tap(find.text('Treeni valmis!'));
+    await tester.pumpAndSettle();
+    final shown = find.textContaining('Ajanotto kesti vain');
+    expect(shown, findsOneWidget);
+    final text = (tester.widget(shown) as Text).data!;
+    // Käyttäjä miettii vastausta 2 s: kello ei saa kasvaa sen aikana.
+    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 2000)));
+    await tester.tap(find.widgetWithText(FilledButton, 'Tallenna'));
+    for (var k = 0; k < 20 && find.text('Ohita').evaluate().isEmpty; k++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ohita'));
+    for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(SavedScreen), findsOneWidget);
+    expect(text, contains('0:01'));
+    expect(w.seconds, 1, reason: 'kysymyksiin kulunut aika ei lisäänny treeniin');
+  });
+
+  testWidgets('Treeni valmis -ikkunan kesto on käynnissä olevan ajanoton aika, ei oletus 45:00 (Android 11 -emulaattori 15.11.)',
+      (tester) async {
+    final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
+    settings.folder = dir.path;
+    addTearDown(() {
+      settings.folder = null;
+      store.workouts = [];
+      dir.deleteSync(recursive: true);
+    });
+    await open(tester, sport: 'Jooga');
+    await tester.tap(find.text('Aloita'));
+    await tester.pump();
+    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 1100)));
+    await tester.tap(find.text('Treeni valmis!'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Tallenna'));
+    for (var k = 0; k < 20 && find.text('Ohita').evaluate().isEmpty; k++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pumpAndSettle();
+    final sheet = find.byKey(const ValueKey('finishSheet'));
+    expect(sheet, findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.text('45:00')), findsNothing);
+    expect(find.descendant(of: sheet, matching: find.textContaining('0:0')), findsWidgets);
+  });
+
   testWidgets('Treeni valmis alareunassa; fiilis ponnahdusikkunassa ennen yhteenvetoa', (tester) async {
     final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
     settings.folder = dir.path;
@@ -176,7 +248,7 @@ void main() {
       ..feeling = 5
       ..started = DateTime(2026, 11, 7, 18, 2);
     await tester.pumpWidget(MaterialApp(home: SavedScreen(workout: w)));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500)); // SavedScreenin suojaviive
     expect(find.text('Giitu! Koripallo tehty'), findsOneWidget);
     expect(find.textContaining('18.02–18.47'), findsOneWidget);
     expect(find.text('45 min'), findsOneWidget);
@@ -193,7 +265,7 @@ void main() {
         home: SavedScreen(workout: w, key: UniqueKey()),
       ),
     );
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('🔥 410'), findsOneWidget);
     expect(find.text('❤️ 131'), findsOneWidget);
     expect(find.byKey(const ValueKey('fetchWatch')), findsNothing);
@@ -365,5 +437,48 @@ void main() {
     }
     expect((w.intensity, w.feeling), ('reipas', 4));
     expect(find.byType(SavedScreen), findsOneWidget);
+  });
+
+  testWidgets('Koskematon kirjaus ei jää luonnokseksi: Androidin sulkema sovellus ei palaa lajiin kysymään tallennusta',
+      (tester) async {
+    final tmp = Directory.systemTemp.createTempSync('gievra-luonnos');
+    ActivityDraft.dirOverride = tmp;
+    addTearDown(() {
+      ActivityDraft.dirOverride = null;
+      tmp.deleteSync(recursive: true);
+    });
+    await open(tester);
+    await tester.tap(find.text('Kävely').first);
+    await tester.pump();
+    final before = ActivityDraft.debugSaves;
+    // Laji valittu, ei muuta: luonnosta ei tallenneta (3 s välein tarkistus).
+    await tester.pump(const Duration(seconds: 7));
+    expect(ActivityDraft.debugSaves, before);
+    // Ajanotto käyntiin: nyt luonnos tallentuu.
+    await tester.tap(find.text('Ajanotto'));
+    await tester.pump();
+    await tester.tap(find.text('Aloita'));
+    await tester.pump(const Duration(seconds: 4));
+    expect(ActivityDraft.debugSaves, greaterThan(before));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  savedScreenGuardTest();
+}
+
+// Suojaviive: Treeni valmis -ikkunan pikanapautukset eivät osu Yhteenveto-sivun painikkeisiin (Samsung 15.11.).
+void savedScreenGuardTest() {
+  testWidgets('Yhteenveto: ensimmäinen 0,45 s ei ota napautuksia (Uusi treeni -läpilyönti)', (tester) async {
+    final w = Workout(date: DateTime(2026, 11, 10), title: 'Koko keho A')..minutes = 30;
+    bool ignoring() => tester
+        .widget<IgnorePointer>(
+          find.descendant(of: find.byType(SavedScreen), matching: find.byType(IgnorePointer)).first,
+        )
+        .ignoring;
+    await tester.pumpWidget(MaterialApp(home: SavedScreen(workout: w)));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(ignoring(), isTrue);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(ignoring(), isFalse);
   });
 }

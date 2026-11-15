@@ -37,8 +37,8 @@ void main() {
   setUp(() => tmp = Directory.systemTemp.createTempSync('treeni'));
   tearDown(() => tmp.deleteSync(recursive: true));
 
-  test('FitNotes: liikkeet suomeksi, ennätykset, kehonpaino, kardio muistiinpanoihin', () {
-    final r = readFitnotes(makeFitnotesDb(tmp));
+  test('FitNotes: liikkeet suomeksi, ennätykset, kehonpaino, kardio muistiinpanoihin', () async {
+    final r = await readFitnotes(makeFitnotesDb(tmp));
     expect(r.workouts.length, 2);
     expect(r.sets, 4);
     final w = r.workouts.first;
@@ -59,8 +59,8 @@ void main() {
     expect(back.exercises.first.sets[1].pr, isTrue);
   });
 
-  test('FitNotes ilman suomennosta säilyttää nimet', () {
-    final r = readFitnotes(makeFitnotesDb(tmp), translate: false);
+  test('FitNotes ilman suomennosta säilyttää nimet', () async {
+    final r = await readFitnotes(makeFitnotesDb(tmp), translate: false);
     expect(r.workouts.first.exercises.first.name, 'Barbell Squat');
   });
 
@@ -86,22 +86,22 @@ void main() {
     expect(r.equipment.single.name, 'Soutulaite');
   });
 
-  test('FitNotes-vienti: punnitukset kehonpaino.md:stä mittauksiksi ja takaisin', () {
-    final r = readFitnotes(makeFitnotesDb(tmp));
+  test('FitNotes-vienti: punnitukset kehonpaino.md:stä mittauksiksi ja takaisin', () async {
+    final r = await readFitnotes(makeFitnotesDb(tmp));
     final out = '${tmp.path}/bw.fitnotes';
-    writeFitnotes(out, r.workouts, weighIns: {DateTime(2026, 3, 1): 81.4, DateTime(2026, 3, 8): 80.9});
+    await writeFitnotes(out, r.workouts, weighIns: {DateTime(2026, 3, 1): 81.4, DateTime(2026, 3, 8): 80.9});
     final db = sqlite3.open(out, mode: OpenMode.readOnly);
     expect(db.select('SELECT value FROM MeasurementRecord').map((x) => x['value']), containsAll([81.4, 80.9]));
     db.close();
-    final back = readFitnotes(out);
+    final back = await readFitnotes(out);
     expect(parseBody(back.bodyMd!).weights[DateTime(2026, 3, 8)], 80.9);
   });
 
-  test('FitNotes-vienti lukeutuu takaisin samana', () {
-    final r = readFitnotes(makeFitnotesDb(tmp));
+  test('FitNotes-vienti lukeutuu takaisin samana', () async {
+    final r = await readFitnotes(makeFitnotesDb(tmp));
     r.workouts.first.warmup = Warmup('Kuntopyörä', 10);
     final out = '${tmp.path}/out.fitnotes';
-    expect(writeFitnotes(out, r.workouts), 4);
+    expect(await writeFitnotes(out, r.workouts), 4);
     final db = sqlite3.open(out, mode: OpenMode.readOnly);
     expect(db.userVersion, 22);
     expect(db.select("SELECT name FROM exercise ORDER BY _id").map((x) => x['name']), [
@@ -109,7 +109,7 @@ void main() {
       'Techogym Pull Down',
     ]);
     db.close();
-    final back = readFitnotes(out);
+    final back = await readFitnotes(out);
     expect(back.sets, 4);
     expect(back.workouts.first.exercises.first.name, 'Takakyykky');
     expect(back.workouts.first.bodyweight, 96.5);
@@ -119,8 +119,8 @@ void main() {
 
   // Oikea varmuuskopio: FITNOTES=/polku/backup.fitnotes flutter test
   final real = Platform.environment['FITNOTES'];
-  test('Oikea FitNotes-varmuuskopio', () {
-    final r = readFitnotes(real!);
+  test('Oikea FitNotes-varmuuskopio', () async {
+    final r = await readFitnotes(real!);
     final out = Directory('${tmp.path}/out')..createSync();
     for (final w in r.workouts) {
       File('${out.path}/${isoDate(w.date)}.md').writeAsStringSync(workoutToMarkdown(w));
@@ -134,8 +134,8 @@ void main() {
     }
     expect(sets, r.sets);
     // FitNotes -> .md -> FitNotes -> .md: identtinen.
-    writeFitnotes('${tmp.path}/rt.fitnotes', r.workouts);
-    final rt = readFitnotes('${tmp.path}/rt.fitnotes');
+    await writeFitnotes('${tmp.path}/rt.fitnotes', r.workouts);
+    final rt = await readFitnotes('${tmp.path}/rt.fitnotes');
     expect([for (final w in rt.workouts) workoutToMarkdown(w)], [for (final w in r.workouts) workoutToMarkdown(w)]);
     // ignore: avoid_print
     print(
@@ -153,10 +153,10 @@ void main() {
     store.workouts = [];
     settings.body = BodyLog();
     final db = makeFitnotesDb(tmp);
-    expect(await applyImport(readFitnotes(db)), 2);
+    expect(await applyImport(await readFitnotes(db)), 2);
     // Punnitus, joka on jo kirjattu Gievraan, ei muutu.
     await settings.setWeight(DateTime(2026, 10, 2), 95.5);
-    expect(await applyImport(readFitnotes(db)), 0);
+    expect(await applyImport(await readFitnotes(db)), 0);
     await store.reload();
     expect(store.workouts.length, 2);
     final files = tmp.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.md'));

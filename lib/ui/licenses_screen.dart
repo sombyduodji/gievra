@@ -35,7 +35,7 @@ class LicensesScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     return Scaffold(
-      appBar: AppBar(title: Text(t('Avoin lähdekoodi'))),
+      appBar: AppBar(title: BarTitle(Text(t('Avoin lähdekoodi')))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
         children: [

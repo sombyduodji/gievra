@@ -12,7 +12,7 @@ String shareText(Workout w) {
   if (w.activity != null) {
     b.writeln('🏃 ${l10n.sportName(w.activity!)} $when');
     final parts = [
-      if (w.minutes != null) fmtDuration(w.minutes!),
+      ?durationText(w),
       if (w.distanceKm != null) '${fmtNum(w.distanceKm!)} km',
       ?w.pace,
       if (w.steps != null) l10n.t('{0} askelta', [thousands(w.steps!)]),

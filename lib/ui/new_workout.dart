@@ -80,7 +80,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
     final isToday = _date == dateOnly(DateTime.now());
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.gymOnly && settings.trainMode == 'both' ? t('Uusi salitreeni') : t('Uusi treeni')),
+        title: BarTitle(Text(widget.gymOnly && settings.trainMode == 'both' ? t('Uusi salitreeni') : t('Uusi treeni'))),
       ),
       body: ListenableBuilder(
         listenable: settings,
@@ -154,8 +154,21 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                           d.matches(w.dayKey),
                     ),
                     // Samana päivänä jo tehty (sarjoja kirjattu): ehdotus on silloin ohjelman seuraava päivä.
+                    // Keskeneräinen (ei kestoa eikä fiilistä) ei ole tehty: "kesken" (ennen "tehty tänään ✓", yötesti 15.11.).
                     doneToday: store.workouts.any(
-                      (w) => w.date == _date && d.matches(w.dayKey) && w.exercises.any((e) => e.sets.isNotEmpty),
+                      (w) =>
+                          w.date == _date &&
+                          d.matches(w.dayKey) &&
+                          w.exercises.any((e) => e.sets.isNotEmpty) &&
+                          (w.minutes != null || w.feeling != null),
+                    ),
+                    openToday: store.workouts.any(
+                      (w) =>
+                          w.date == _date &&
+                          d.matches(w.dayKey) &&
+                          w.activity == null &&
+                          w.minutes == null &&
+                          w.feeling == null,
                     ),
                     onTap: () => setState(() => _day = d),
                     onRename: () async {
@@ -206,12 +219,15 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                       child: FilledButton(
                         style: FilledButton.styleFrom(backgroundColor: Sami.green, foregroundColor: Colors.white),
                         onPressed: () => setState(() => _warmup = true),
-                        child: Text(t('Lisää lämmittely')),
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Lisää lämmittely'), maxLines: 1)),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: OutlinedButton(onPressed: () => _start(false), child: Text(t('Ohita →'))),
+                      child: OutlinedButton(
+                        onPressed: () => _start(false),
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ohita →'), maxLines: 1)),
+                      ),
                     ),
                   ],
                 )
@@ -274,7 +290,14 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                   onMinus: () => setState(() => _minutes = (_minutes - 1).clamp(1, 600)),
                   onPlus: () => setState(() => _minutes = (_minutes + 1).clamp(1, 600)),
                   onTap: () async {
-                    final v = await askNumber(context, t('Kesto (min)'), _minutes.toDouble(), decimals: false);
+                    final v = await askNumber(
+                      context,
+                      t('Kesto (min)'),
+                      _minutes.toDouble(),
+                      decimals: false,
+                      min: 1,
+                      max: 600,
+                    );
                     if (v != null && v >= 1) setState(() => _minutes = v.round());
                   },
                 ),

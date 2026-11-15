@@ -244,13 +244,16 @@ class WeeklyLoadCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final load = weeklyLoad(program);
     final small = TextStyle(fontSize: 11, color: cs.onSurfaceVariant);
-    Widget bar(double value, Color color, double height) => ClipRRect(
-      borderRadius: BorderRadius.circular(5),
-      child: LinearProgressIndicator(
-        value: value.clamp(0.0, 1.0),
-        minHeight: height,
-        color: color,
-        backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+    // Palkit kuvina: sarjamäärät ovat tekstinä vieressä (ruudunlukija luki nimettömän arvon).
+    Widget bar(double value, Color color, double height) => ExcludeSemantics(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: LinearProgressIndicator(
+          value: value.clamp(0.0, 1.0),
+          minHeight: height,
+          color: color,
+          backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+        ),
       ),
     );
     Color levelColor(MuscleLoad m) => switch (m.level) {
@@ -296,7 +299,20 @@ class WeeklyLoadCard extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: done == null ? 4 : 5),
               child: Row(
                 children: [
-                  SizedBox(width: 78, child: Text(t(m.muscle), style: const TextStyle(fontSize: 13))),
+                  // Lihasryhmän nimi yhdellä rivillä, tarvittaessa pienempänä (saameksi "maŋŋeruoida" katkesi
+                  // sanan keskeltä; suurella fontilla vielä useampi).
+                  SizedBox(
+                    width: 90,
+                    child: Padding(
+                      // Väli palkkiin: pisin nimi (saameksi "maŋŋeruoida") ei kosketa palkkia.
+                      padding: const EdgeInsetsDirectional.only(end: 6),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(t(m.muscle), maxLines: 1, softWrap: false, style: const TextStyle(fontSize: 13)),
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: Column(
                       children: [
@@ -304,7 +320,7 @@ class WeeklyLoadCard extends StatelessWidget {
                         bar(m.hi <= 0 ? 0 : m.sets / m.hi, levelColor(m), done == null ? 10 : 8),
                         if (done != null) ...[
                           const SizedBox(height: 3),
-                          bar(m.hi <= 0 ? 0 : (done![m.muscle] ?? 0) / m.hi, Sami.blue, 8),
+                          bar(m.hi <= 0 ? 0 : (done![m.muscle] ?? 0) / m.hi, blueText(context), 8),
                         ],
                       ],
                     ),
@@ -653,7 +669,7 @@ Future<String?> askDayLabel(BuildContext context, PlanDay d) {
 /// Ohjelmapäivän kortti treenin valintaan: nimi, liikkeet, kesto, suositus- ja tehty-merkit.
 class DayCard extends StatelessWidget {
   final PlanDay day;
-  final bool selected, suggested, doneThisWeek, doneToday;
+  final bool selected, suggested, doneThisWeek, doneToday, openToday;
   final VoidCallback onTap;
   final VoidCallback? onRename;
   final String? subtitle;
@@ -665,6 +681,7 @@ class DayCard extends StatelessWidget {
     this.suggested = false,
     this.doneThisWeek = false,
     this.doneToday = false,
+    this.openToday = false,
     this.onRename,
     this.subtitle,
   });
@@ -706,7 +723,9 @@ class DayCard extends StatelessWidget {
                           if (day.label != null)
                             Text(trName(day.name), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                           if (suggested) _badge(t('suositus'), const Color(0xFF3FBF7F)),
-                          if (doneToday)
+                          if (openToday)
+                            _badge(t('kesken'), cs.primary)
+                          else if (doneToday)
                             _badge(t('tehty tänään ✓'), greenText(context))
                           else if (doneThisWeek)
                             _badge(t('tehty tällä viikolla ✓'), cs.onSurfaceVariant),
@@ -717,7 +736,8 @@ class DayCard extends StatelessWidget {
                         subtitle ??
                             '${names.take(3).join(', ')}${names.length > 3 ? ' +${names.length - 3}' : ''} · ~${estimateMinutes(day.items).round()} min',
                         style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                        maxLines: 2,
+                        // Suurella tekstillä koko lista ja kesto näkyviin (kuusi liikettä vie neljä riviä).
+                        maxLines: bigText(context) ? 5 : 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

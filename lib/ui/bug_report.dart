@@ -13,6 +13,7 @@ import '../app_info.dart';
 import '../app_state.dart';
 import '../body.dart';
 import '../daily_steps.dart';
+import '../heart_rate.dart' show hr;
 import '../l10n.dart';
 import '../maps/map_store.dart';
 import '../models.dart' show isoDate;
@@ -63,14 +64,69 @@ class _Attachment {
   _Attachment(this.name, this.path, {this.on = true, this.warning});
 }
 
+/// Treenitiedoston terveystiedot: syke (keskisyke, maksimi, käyrä, lähde) ja kalorit.
+const reportHrKeys = {'kcal', 'kcal_source', 'hr_avg', 'hr_max', 'hr_source', 'hr_series'};
+
+/// Asetusten henkilötiedot sykevyön kalorilaskentaan: syntymävuosi, sukupuoli, oma maksimisyke, palautumisraja
+/// (sykkeen mukainen tauko) ja kalorien oma korjaus.
+const reportProfileKeys = {'birth_year', 'sex', 'max_hr', 'hr_recovery', 'kcal_adjust'};
+
+/// Erottaa tiedoston otsakeriveistä [keys]-avaimet: (loput, erotetut rivit). Erotettuja ei ole = tyhjä.
+(String, String) splitReportLines(String text, Set<String> keys) {
+  final keep = <String>[], taken = <String>[];
+  for (final l in text.split('\n')) {
+    final m = RegExp(r'^([a-z_]+):').firstMatch(l);
+    (m != null && keys.contains(m.group(1)) ? taken : keep).add(l);
+  }
+  return (keep.join('\n'), taken.isEmpty ? '' : '${taken.join('\n')}\n');
+}
+
+Directory? _splitDir;
+
+/// Liite ilman terveystietoja (valittuna) ja terveystiedot omana liitteenään (oletuksena pois, varoituksen kera).
+/// Ilman terveystietoja tiedosto liitetään sellaisenaan.
+Future<List<(String, String, bool, String?)>> _splitAttachment(
+  String name,
+  String path,
+  bool on,
+  Set<String> keys,
+  String personalName,
+  String warning,
+) async {
+  final (rest, personal) = splitReportLines(await File(path).readAsString(), keys);
+  if (personal.isEmpty) return [(name, path, on, null)];
+  final dir = _splitDir ??= await Directory.systemTemp.createTemp('gievra-raportti');
+  final a = File(p.join(dir.path, name)), b = File(p.join(dir.path, personalName));
+  await a.writeAsString(rest);
+  await b.writeAsString(personal);
+  return [(name, a.path, on, null), (personalName, b.path, false, warning)];
+}
+
 /// Vikailmoituksen oletusliitteet (nimi, polku, valittuna, varoitus): kolme viimeisintä treeniä, niiden GPS-reitit
-/// (oletuksena pois, varoituksen kera), asetukset ja ohjelma sekä punnitukset (oletuksena pois).
+/// (oletuksena pois, varoituksen kera), asetukset ja ohjelma sekä punnitukset (oletuksena pois). Sykevyön ja
+/// kalorien tiedot sekä syntymävuosi, sukupuoli ja omat syke- ja kaloriasetukset ovat omina liitteinään, oletuksena pois.
 Future<List<(String, String, bool, String?)>> defaultReportAttachments() async {
   final root = (await store.rootDir()).path;
   final out = await workoutAttachments(0, 3, on: true);
   for (final n in ['asetukset.md', 'ohjelma.md']) {
     final f = File(p.join(root, n));
-    if (await f.exists()) out.add((n, f.path, true, null));
+    if (!await f.exists()) continue;
+    if (n == 'asetukset.md') {
+      out.addAll(
+        await _splitAttachment(
+          n,
+          f.path,
+          true,
+          reportProfileKeys,
+          'asetukset-henkilotiedot.md',
+          t(
+            '⚠ Sisältää syntymävuotesi, sukupuolesi sekä omat syke- ja kaloriasetuksesi. Lähetä vain, jos ongelma liittyy sykkeeseen tai kaloreihin.',
+          ),
+        ),
+      );
+    } else {
+      out.add((n, f.path, true, null));
+    }
   }
   // Punnitukset ovat terveystietoa: mukana valittavana, mutta oletuksena pois ja varoituksen kera.
   final body = File(p.join(root, bodyFileName));
@@ -103,7 +159,21 @@ Future<List<(String, String, bool, String?)>> workoutAttachments(int skip, int t
   for (final w in recent.skip(skip).take(take)) {
     final rel = workoutPath(w.date, w.session);
     final f = File(p.join(root, rel));
-    if (await f.exists()) out.add((p.basename(rel), f.path, on, null));
+    if (await f.exists()) {
+      final name = p.basename(rel);
+      out.addAll(
+        await _splitAttachment(
+          name,
+          f.path,
+          on,
+          reportHrKeys,
+          '${p.basenameWithoutExtension(name)}-syke.md',
+          t(
+            '⚠ Sisältää treenin sykkeet ja kalorit (terveystietoa). Lähetä vain, jos ongelma liittyy sykkeeseen tai kaloreihin.',
+          ),
+        ),
+      );
+    }
     // GPS-reitti näyttää, missä liikuit: mukana valittavana, oletuksena pois ja varoituksen kera.
     if (w.route != null) {
       final g = File(p.join(root, routeRel(w)));
@@ -217,7 +287,8 @@ class _BugReportScreenState extends State<BugReportScreen> {
     setState(() {});
   }
 
-  /// Kehittäjälle suomeksi: versio, laite, kieliasetukset, näyttö ja kartat. Ei sijaintia eikä alueiden nimiä.
+  /// Diagnostiikka käyttäjän kielellä (käyttäjä näkee sen sähköpostissaan): versio, laite, kieliasetukset, näyttö ja
+  /// kartat. Ei sijaintia eikä alueiden nimiä. Asetusarvot (liikenimet, tila, teema) ovat koodeja kaikilla kielillä.
   Future<String> _diagnostics(MediaQueryData mq) async {
     final info = await PackageInfo.fromPlatform();
     String device = '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
@@ -226,22 +297,32 @@ class _BugReportScreenState extends State<BugReportScreen> {
         device = await _channel.invokeMethod<String>('device') ?? device;
       } catch (_) {}
     }
+    String yesNo(bool b) => b ? t('kyllä') : t('ei');
     var maps = '';
     try {
       final files = await MapStore.instance.installedFiles();
       final mb = files.fold<int>(0, (a, f) => a + f.$2) / 1e6;
       final elev = files.where((f) => f.$1.endsWith('.elev')).length;
-      maps = 'karttatiedostoja ${files.length - elev}, korkeustiedostoja $elev, yht. ${mb.round()} Mt';
+      maps = t('karttatiedostoja {0}, korkeustiedostoja {1}, yht. {2} Mt', [files.length - elev, elev, mb.round()]);
     } catch (_) {}
     return [
       '${AppInfo.name} ${info.version} (${info.buildNumber})',
       device,
-      'Kieli: $uiLang · liikenimet ${settings.moveNames} · vammaohjeet ${settings.healthLang}',
-      'Näyttö: ${mq.size.width.round()}×${mq.size.height.round()} dp, tekstikoko '
-          '${mq.textScaler.scale(100).round()} % · teema ${settings.themeMode.name}',
-      'Treenejä ${store.workouts.length} · tila ${settings.trainMode} · kansio '
-          '${settings.folder == null ? 'oletus' : 'oma'} · Health Connect ${settings.hcImport ? 'päällä' : 'pois'}',
-      if (maps.isNotEmpty) '$maps · korkeus karttojen kanssa ${settings.elevWithMaps ? 'kyllä' : 'ei'}',
+      t('Kieli: {0} · liikenimet {1} · vammaohjeet {2}', [uiLang, settings.moveNames, settings.healthLang]),
+      t('Näyttö: {0}×{1} dp, tekstikoko {2} % · teema {3}', [
+        mq.size.width.round(),
+        mq.size.height.round(),
+        (mq.textScaler.scale(14) / 14 * 100).round(),
+        settings.themeMode.name,
+      ]),
+      t('Treenejä {0} · tila {1} · kansio {2} · Health Connect {3} · sykevyö {4}', [
+        store.workouts.length,
+        settings.trainMode,
+        settings.folder == null ? t('oletus') : t('oma kansio'),
+        settings.hcImport ? t('päällä') : t('pois'),
+        yesNo(hr.address != null),
+      ]),
+      if (maps.isNotEmpty) t('{0} · korkeus karttojen kanssa {1}', [maps, yesNo(settings.elevWithMaps)]),
     ].join('\n');
   }
 
@@ -259,17 +340,17 @@ class _BugReportScreenState extends State<BugReportScreen> {
         dir,
         zip: _zip && _zippable >= 2,
       );
-      // Viesti suomeksi kehittäjälle (tyyppi myös käyttäjän kielellä).
+      // Viesti käyttäjän kielellä; tyyppikoodi [save] ym. pysyy samana kaikilla kielillä.
       // Versio myös otsikkoon: näkyy postilaatikossa avaamatta viestiä.
       final subject = 'Gievra ${(await PackageInfo.fromPlatform()).version}: ${type.$3}';
       final body = [
-        'Ongelma: ${type.$3} [${type.$1}]',
+        t('Ongelma: {0} [{1}]', [type.$3, type.$1]),
         '',
-        _desc.text.trim().isEmpty ? '(ei kuvausta)' : _desc.text.trim(),
+        _desc.text.trim().isEmpty ? t('(ei kuvausta)') : _desc.text.trim(),
         '',
         '---',
         await _diagnostics(mq),
-        if (paths.isNotEmpty) 'Liitteet: ${paths.map(p.basename).join(', ')}',
+        if (paths.isNotEmpty) t('Liitteet: {0}', [paths.map(p.basename).join(', ')]),
       ].join('\n');
       if (Platform.isAndroid) {
         await _channel.invokeMethod('send', {
@@ -299,7 +380,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     return Scaffold(
-      appBar: AppBar(title: Text(t('Ilmoita ongelmasta'))),
+      appBar: AppBar(title: BarTitle(Text(t('Ilmoita ongelmasta')))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         children: [
@@ -341,6 +422,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
             decoration: InputDecoration(
               hintText: t('Esim. mitä teit, mitä odotit ja mitä tapahtui. Toistuuko ongelma?'),
               helperText: t('Voit kirjoittaa suomeksi, saameksi tai englanniksi.'),
+              helperMaxLines: linesFor(context, 1),
               filled: true,
               fillColor: cs.surfaceContainer,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),

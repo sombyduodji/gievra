@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/ongoing.dart';
+import 'package:treenipaivakirja/rest.dart';
 
 // Käynnissä olevan treenin ilmoitus: mitä näytetään milloinkin. Keksityt treenit.
 void main() {
@@ -65,5 +66,49 @@ void main() {
     expect(Settings().ongoingNote, isTrue);
     final s = Settings()..ongoingNote = false;
     expect((Settings()..applyMarkdown(s.settingsToMarkdown())).ongoingNote, isFalse);
+  });
+
+  test('Elävä ilmoitus: taustakuva lajin mukaan', () {
+    expect(Ongoing.kindOf(null, gym: true), 'gym');
+    expect(Ongoing.kindOf('Juoksu'), 'run');
+    expect(Ongoing.kindOf('Kävely'), 'walk');
+    expect(Ongoing.kindOf('Sauvakävely'), 'walk');
+    expect(Ongoing.kindOf('Uinti'), 'other');
+    expect(Ongoing.kindOf(null), 'other');
+  });
+
+  test('Elävä ilmoitus: sali näyttää liikkeen ja sarjat, GPS matkan ja vauhdin, ilman vyötä ei sykettä', () {
+    var l = Ongoing.live([gym()], now);
+    expect(l['kind'], 'gym');
+    expect(l['line'], 'Takakyykky · 1 sarja');
+    expect(l.containsKey('line2'), isFalse, reason: 'yksi liike: ei toistoa');
+    expect(l.containsKey('hr'), isFalse, reason: 'sykevyötä ei valittu');
+    Ongoing.gps = OngoingActivity('Juoksu', since: now.subtract(const Duration(minutes: 20)));
+    Ongoing.gpsLine = () => '3,24 km · 6:10 /km';
+    l = Ongoing.live([gym()], now);
+    expect(l['kind'], 'run');
+    expect(l['line'], '3,24 km · 6:10 /km');
+    expect(l.containsKey('line2'), isFalse);
+    Ongoing.gpsLine = null;
+  });
+
+  test('Elävä ilmoitus: palautus käynnissä, sitten "tauko ohi" kunnes seuraava sarja alkaa', () {
+    var t0 = DateTime(2026, 11, 9, 12, 0);
+    RestTimer.clock = () => t0;
+    addTearDown(() {
+      rest.stop();
+      RestTimer.clock = DateTime.now;
+    });
+    rest.start(90, 'Takakyykky');
+    var l = Ongoing.live([gym()], now);
+    expect(l['line'], 'Palautus');
+    expect(l['restEnd'], isNotNull);
+    t0 = t0.add(const Duration(seconds: 90));
+    rest.tick();
+    l = Ongoing.live([gym()], now);
+    expect(l['line'], '✓ Tauko ohi');
+    expect(l.containsKey('restEnd'), isFalse);
+    rest.start(90, 'Takakyykky');
+    expect(Ongoing.live([gym()], now)['line'], 'Palautus');
   });
 }

@@ -242,12 +242,16 @@ object HealthBridge {
             "ownSteps" to own?.toInt(),
             "allSteps" to allSteps?.toInt(),
             // Vianetsintään: askeleet sovelluksittain ja Health Connectin kokonaissumma.
-            "stepsBySource" to bySource.map { (k, v) -> "${appLabel(context, k)}: ${v.toLong()}" }.joinToString(", ") +
-                (if (minuteBest > 0) ", minuuteittain paras: ${minuteBest.toLong()}" else "") +
-                (if (total != null) ", Health Connect yhteensä: $total" else ""),
+            // Sanat (minuuteittain paras, yhteensä) lisää Dart käyttöliittymän kielellä.
+            "stepsBySource" to bySource.map { (k, v) -> "${appLabel(context, k)}: ${v.toLong()}" }.joinToString(", "),
+            "stepsMinuteBest" to if (minuteBest > 0) minuteBest.toLong() else null,
+            "stepsHcTotal" to total?.toLong(),
             "hrAvg" to if (hr.isEmpty()) null else hr.map { it.beatsPerMinute }.average().toInt(),
             "hrMax" to hr.maxOfOrNull { it.beatsPerMinute }?.toInt(),
             "hrCount" to hr.size,
+            // Sykekäyrä (kellon tai sormuksen lukemat): ajat millisekunteina ja lyönnit, aikajärjestyksessä.
+            "hrT" to hr.sortedBy { it.time }.map { it.time.toEpochMilli() },
+            "hrV" to hr.sortedBy { it.time }.map { it.beatsPerMinute.toInt() },
             "kcal" to kcal?.toInt(),
         )
     }

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/body.dart';
 import 'package:treenipaivakirja/exercises.dart';
+import 'package:treenipaivakirja/hr_calc.dart';
 import 'package:treenipaivakirja/import_export.dart';
 import 'package:treenipaivakirja/injuries.dart';
 import 'package:treenipaivakirja/models.dart';
@@ -35,6 +36,12 @@ void _fresh(Directory dir) {
   settings.body = BodyLog();
   settings.pauses = [];
   settings.injuries = [];
+  settings.textSize = 'small';
+  settings.birthYear = null;
+  settings.sex = null;
+  settings.maxHr = null;
+  settings.hrRecoveryPct = 60;
+  settings.kcalAdjustPct = 0;
 }
 
 /// Täysi treenikansio: treeni + reitti, asetukset, ohjelma, punnitukset, tallennettu ohjelma.
@@ -46,6 +53,13 @@ Future<void> _fill(Directory dir) async {
   settings.customExercises = ['Oma veto'];
   settings.customCategory = {'Oma veto': 'Selkä'};
   settings.customMeasure = {'Oma veto': Measure.seconds};
+  settings.textSize = 'large';
+  // Sykevyön tiedot (keksityt).
+  settings.birthYear = 1985;
+  settings.sex = 'nainen';
+  settings.maxHr = 188;
+  settings.hrRecoveryPct = 55;
+  settings.kcalAdjustPct = -5;
   await files.write(settingsFileName, settings.settingsToMarkdown());
   final prog = generateProgram(goal: 'voimanosto', experience: 'keski', days: 4, minutes: 60, injuries: const []);
   await files.write(programFileName, programToMarkdown(prog));
@@ -56,8 +70,21 @@ Future<void> _fill(Directory dir) async {
   await store.save(
     Workout(date: DateTime(2026, 11, 2), title: 'Kyykky')
       ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)]))
-      ..exercises.add(ExerciseEntry('Oma veto', [SetEntry(0, 30)])),
+      ..exercises.add(ExerciseEntry('Oma veto', [SetEntry(0, 30)]))
+      ..hrAvg = 121
+      ..hrMax = 158
+      ..kcal = 250
+      ..hrSource = 'syke'
+      ..kcalSource = 'syke'
+      ..hrSeries = HrSeries(DateTime(2026, 11, 2, 17), 5, [110, 0, 130, 158]),
   );
+}
+
+/// Sykevyön tiedot palautuivat treeniin (käyrä, keskisyke, maksimi, kalorit ja lähteet).
+void _expectHr() {
+  final w = store.workouts.firstWhere((w) => w.title == 'Kyykky');
+  expect((w.hrAvg, w.hrMax, w.kcal, w.hrSource, w.kcalSource), (121, 158, 250, 'syke', 'syke'));
+  expect(w.hrSeries?.encode(), '5 17:00:00 110 0 130 158');
 }
 
 List<String> _rel(Directory d) => [
@@ -106,6 +133,29 @@ void main() {
     expect(File(p.join(b.path, 'asetukset.md')).readAsStringSync(), 'oma');
   });
 
+  test('Palautus kirjoittaa tiedostot tavulleen: käsin kirjoitetut ja tuntemattomat rivit säilyvät (päivätesti 14.11.)',
+      () async {
+    await _fill(a);
+    // Käsin kirjoitettu treeni: kehonpainoliike "toistoa"-muodossa, oma rivi, jota jäsennin ei tunne.
+    const hand = '# Treeni\n\n## Leuanveto\n1. 8 toistoa\n2. 7 toistoa\nOma huomio: ote leveä\n\n## Takakyykky\n'
+        '1. 100 kg × 5\n';
+    await files.write('2026/2026-11-03.md', hand);
+    // Punnitukset uusin ensin (käyttäjän oma järjestys).
+    const body = '---\nheight: 180 cm\n---\n- 2026-11-03: 82,0 kg\n- 2026-11-01: 82,4 kg\n';
+    await files.write(bodyFileName, body);
+    await store.reload();
+    final hw = store.workouts.firstWhere((w) => w.date == DateTime(2026, 11, 3));
+    expect(hw.exercises.first.sets.map((s) => (s.kg, s.reps)), [(0.0, 8), (0.0, 7)], reason: '"toistoa" luetaan');
+    final before = {for (final r in _rel(a)) r: File(p.join(a.path, r)).readAsBytesSync()};
+    final zip = await exportZip();
+    _fresh(b);
+    await applyImport(readZip(zip));
+    for (final e in before.entries) {
+      if (e.key == settingsFileName || e.key == programFileName) continue; // ladataan ja kirjoitetaan asetuksina
+      expect(File(p.join(b.path, e.key)).readAsBytesSync(), e.value, reason: '${e.key} muuttui palautuksessa');
+    }
+  });
+
   test('Nykyinen varmuuskopio: kaikki tiedostot mukana ja palautuvat uuteen asennukseen', () async {
     await _fill(a);
     final zip = await exportZip();
@@ -122,12 +172,16 @@ void main() {
     expect(settings.moveNames, 'both');
     expect(settings.healthLang, 'en');
     expect(settings.trainMode, 'both');
+    expect(settings.textSize, 'large', reason: 'tekstin koko palautuu uuteen puhelimeen');
     expect(settings.customExercises, ['Oma veto']);
     expect(settings.customMeasure['Oma veto'], Measure.seconds);
     expect(settings.program?.goal, 'voimanosto');
     expect(settings.program!.plan.map((d) => d.name), contains('Penkki raskas'));
     expect(settings.body.heightCm, 180);
     expect(settings.body.weights.length, 1);
+    expect((settings.birthYear, settings.sex, settings.maxHr), (1985, 'nainen', 188));
+    expect((settings.hrRecoveryPct, settings.kcalAdjustPct), (55, -5));
+    _expectHr();
   });
 
   test('Käytössä olevaan päiväkirjaan yhdistetään: nykyiset asetukset ja ohjelma säilyvät', () async {
@@ -142,9 +196,45 @@ void main() {
     expect(await applyImport(r), 2);
     expect(settings.program, same(own));
     expect(settings.moveNames, 'fi');
+    expect(settings.textSize, 'small', reason: 'tämän puhelimen tekstin koko säilyy');
     expect(settings.customExercises, contains('Oma veto'));
     expect(settings.customMeasure['Oma veto'], Measure.seconds, reason: 'mittaustapa tulee omien liikkeiden mukana');
     expect(File(p.join(b.path, 'ohjelmat/Oma pohja.gmd')).existsSync(), isTrue);
+    expect(
+      (settings.birthYear, settings.sex, settings.maxHr),
+      (1985, 'nainen', 188),
+      reason: 'puuttuvat sykevyön tiedot',
+    );
+    expect((settings.hrRecoveryPct, settings.kcalAdjustPct), (55, -5));
+    _expectHr();
+  });
+
+  test('Yhdistettäessä tämän puhelimen omat sykevyön tiedot säilyvät', () async {
+    await _fill(a);
+    final zip = await exportZip();
+    _fresh(b);
+    settings.birthYear = 1990;
+    settings.sex = 'mies';
+    settings.hrRecoveryPct = 65;
+    await store.save(Workout(date: DateTime(2026, 10, 1), title: 'Oma'));
+    await applyImport(readZip(zip));
+    expect((settings.birthYear, settings.sex, settings.hrRecoveryPct), (1990, 'mies', 65));
+    expect(settings.maxHr, 188, reason: 'puuttui tältä puhelimelta');
+  });
+
+  test('Tarkka aika (sekunnit) säilyy varmuuskopiossa ja palautuksessa kaikissa lajeissa', () async {
+    await _fill(a);
+    await store.save(
+      Workout(date: DateTime(2026, 11, 3), title: 'Koripallo', activity: 'Koripallo')
+        ..seconds = 41
+        ..minutes = minutesFromSeconds(41),
+    );
+    final zip = await exportZip();
+    _fresh(b);
+    await applyImport(readZip(zip));
+    final w = store.workouts.firstWhere((w) => w.activity == 'Koripallo');
+    expect((w.seconds, w.minutes), (41, 1));
+    expect(File(p.join(b.path, '2026/2026-11-03.md')).readAsStringSync(), contains('time: 0:41'));
   });
 
   group('Sairas- ja lomatauot palautuksessa', () {

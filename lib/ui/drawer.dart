@@ -34,8 +34,12 @@ import 'plate_sheet.dart';
 import 'steps_ui.dart' show stepsSupported, StepsHistoryTile;
 import '../daily_steps.dart';
 import 'whats_new_dialog.dart';
+import 'battery_ui.dart';
+import '../battery.dart';
 import '../whats_new.dart';
 import '../l10n.dart';
+import '../heart_rate.dart' show hr;
+import 'hr_ui.dart';
 import '../maps/elevation.dart' show copernicusAttribution;
 
 Future<void> _open(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -94,7 +98,10 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    // Suurella tekstillä leveämpi valikko: pitkät saamen sanat (esim. "Roasmmohuvvan") katkesivat keskeltä.
+    final w = MediaQuery.sizeOf(context).width;
     return Drawer(
+      width: bigText(context) ? (w * 0.92).clamp(304.0, 480.0) : null,
       child: SafeArea(
         child: ListenableBuilder(
           listenable: Listenable.merge([settings, store]),
@@ -137,7 +144,7 @@ class AppDrawer extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.insights),
                 title: Text(t('Edistyminen ja tilastot')),
-                subtitle: Text(t('Viikko- ja kuukausikoosteet, fiilis, voimakehitys'), style: sub),
+                subtitle: Text(t('Sali, juoksu ja askeleet: jaksot, vertailu, fiilis ja voimakehitys'), style: sub),
                 onTap: () => _go(context, builder: (_) => const StatsScreen()),
               ),
               ListTile(
@@ -256,7 +263,7 @@ class SettingsScreen extends StatelessWidget {
       if (!isDemo) (SettingsGroup.storage, Icons.folder_outlined, t('Treenikansio (.md)')),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(t('Asetukset'))),
+      appBar: AppBar(title: BarTitle(Text(t('Asetukset')))),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
@@ -269,7 +276,7 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => Scaffold(
-                    appBar: AppBar(title: Text(title(g))),
+                    appBar: AppBar(title: BarTitle(Text(title(g)))),
                     body: ListView(padding: const EdgeInsets.only(top: 8, bottom: 24), children: [_SettingsSection(g)]),
                   ),
                 ),
@@ -291,7 +298,7 @@ class AboutScreen extends StatelessWidget {
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     void push({required WidgetBuilder builder}) => Navigator.of(context).push(MaterialPageRoute(builder: builder));
     return Scaffold(
-      appBar: AppBar(title: Text(t('Tietoa, palaute ja tuki'))),
+      appBar: AppBar(title: BarTitle(Text(t('Tietoa, palaute ja tuki')))),
       body: FutureBuilder(
         future: _packageInfo,
         builder: (context, snap) {
@@ -497,9 +504,15 @@ class _AutoBackupsState extends State<_AutoBackups> {
         const Divider(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            t('Automaattiset varmuuskopiot'),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          // Yhdellä rivillä myös saameksi suurella tekstillä: pienennetään tarvittaessa (ei rivitystä).
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              t('Automaattiset varmuuskopiot'),
+              maxLines: 1,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
           ),
         ),
         Padding(
@@ -569,7 +582,7 @@ class _SettingsSection extends StatelessWidget {
 
   Future<void> _editName(BuildContext context) async {
     final v = await showDialog<String>(context: context, builder: (_) => const _NameDialog());
-    if (v != null && v.trim().isNotEmpty) settings.setName(v);
+    if (v != null) settings.setName(v); // tyhjä = tervehdys ilman nimeä
   }
 
   Future<void> _pickFolder(BuildContext context) async {
@@ -636,7 +649,7 @@ class _SettingsSection extends StatelessWidget {
           if (group == SettingsGroup.general) ...[
             ListTile(
               title: Text(t('Nimesi')),
-              subtitle: Text(settings.name ?? '', style: sub),
+              subtitle: Text((settings.name ?? '').isEmpty ? t('Ei nimeä') : settings.name!, style: sub),
               trailing: const Icon(Icons.edit, size: 18),
               onTap: () => _editName(context),
             ),
@@ -665,6 +678,12 @@ class _SettingsSection extends StatelessWidget {
                 selected: {settings.themeMode},
                 onSelectionChanged: (s) => settings.setTheme(s.first),
               ),
+            ),
+            const SizedBox(height: 8),
+            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Tekstin koko'))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextSizePicker(value: settings.textSize, onChanged: settings.setTextSize),
             ),
             // Saamenkielisessä käyttöliittymässä vammatilan ohjeet suomeksi tai englanniksi (ei käännetty saameksi).
             if (isSami) ...[
@@ -729,6 +748,8 @@ class _SettingsSection extends StatelessWidget {
                 ),
               ),
             ],
+            // Akunsäästö: saako Gievra toimia taustalla (treeni ei pysähdy näytön sammuessa).
+            if (BatteryHelp.supported) const BatterySettingsTile(),
           ],
           if (group == SettingsGroup.training) ...[
             Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
@@ -927,6 +948,25 @@ class _SettingsSection extends StatelessWidget {
               value: settings.watch,
               onChanged: settings.setWatch,
             ),
+            // Sykevyö Bluetoothilla (Android): syke treenin aikana, keskisyke ja maksimi treeniin.
+            if (hr.available)
+              ListenableBuilder(
+                listenable: hr,
+                // Oma semanttinen solmu: muuten TalkBack luki rivin koko listan alueena (viereiset kytkimet sen sisällä).
+                builder: (context, _) => MergeSemantics(
+                  key: const ValueKey('hrTile'),
+                  child: ListTile(
+                    leading: const Icon(Icons.monitor_heart_outlined),
+                    title: Text(t('Sykevyö')),
+                    subtitle: Text(
+                      hr.name ?? t('Polar H10, Verity Sense, Garmin HRM ym. Bluetoothilla: syke treenin aikana.'),
+                      style: sub,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HrScreen())),
+                  ),
+                ),
+              ),
             // Päivän askeleet Health Connectista (Android; oletus pois): etusivun kortti ja tilastojen välilehti.
             if (stepsSupported)
               SwitchListTile(
@@ -1149,44 +1189,47 @@ Future<void> showFeedback(BuildContext context) => showDialog(
   context: context,
   builder: (ctx) => AlertDialog(
     title: Text(t('Lähetä palautetta')),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(t('Virheet, puuttuvat liikkeet, toiveet ja ideat ovat tervetulleita.')),
-        const SizedBox(height: 8),
-        Text(t('Voit kirjoittaa suomeksi, saameksi tai englanniksi.')),
-        const SizedBox(height: 8),
-        Text(
-          t('Jos jokin ei toimi, käytä mieluummin Ilmoita ongelmasta: se liittää mukaan tarvittavat tiedot.'),
-          style: Theme.of(ctx).textTheme.bodySmall,
-        ),
-        TextButton.icon(
-          style: TextButton.styleFrom(padding: EdgeInsets.zero),
-          onPressed: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen()));
-          },
-          icon: const Icon(Icons.bug_report_outlined, size: 18),
-          label: Text(t('Ilmoita ongelmasta')),
-        ),
-        const SizedBox(height: 6),
-        // Osoite näkyy ja kopioituu, koska sähköpostilinkki ei toimi ilman sähköpostiohjelmaa.
-        Row(
-          children: [
-            const Expanded(
-              child: SelectableText(AppInfo.feedbackEmail, style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-            TextButton(
-              onPressed: () {
-                Clipboard.setData(const ClipboardData(text: AppInfo.feedbackEmail));
-                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(t('Osoite kopioitu'))));
-              },
-              child: Text(t('Kopioi')),
-            ),
-          ],
-        ),
-      ],
+    // Vieritettävä: suurella tekstillä (Asetukset → Tekstin koko) sisältö ei mahdu korkeuteen.
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t('Virheet, puuttuvat liikkeet, toiveet ja ideat ovat tervetulleita.')),
+          const SizedBox(height: 8),
+          Text(t('Voit kirjoittaa suomeksi, saameksi tai englanniksi.')),
+          const SizedBox(height: 8),
+          Text(
+            t('Jos jokin ei toimi, käytä mieluummin Ilmoita ongelmasta: se liittää mukaan tarvittavat tiedot.'),
+            style: Theme.of(ctx).textTheme.bodySmall,
+          ),
+          TextButton.icon(
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen()));
+            },
+            icon: const Icon(Icons.bug_report_outlined, size: 18),
+            label: Text(t('Ilmoita ongelmasta')),
+          ),
+          const SizedBox(height: 6),
+          // Osoite näkyy ja kopioituu, koska sähköpostilinkki ei toimi ilman sähköpostiohjelmaa.
+          Row(
+            children: [
+              const Expanded(
+                child: SelectableText(AppInfo.feedbackEmail, style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Clipboard.setData(const ClipboardData(text: AppInfo.feedbackEmail));
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(t('Osoite kopioitu'))));
+                },
+                child: Text(t('Kopioi')),
+              ),
+            ],
+          ),
+        ],
+      ),
     ),
     actions: [
       TextButton(
@@ -1330,6 +1373,10 @@ void removePauseUndo(BuildContext context, Pause pause) {
     ..showSnackBar(
       SnackBar(
         content: Text(t('Tauko poistettu')),
+        // Toiminnollinen ilmoitus ei katoa itsestään (persist oletuksena true): ilman tätä "Kumoa" jäi ruudulle
+        // kaikille sivuille ja peitti alareunan painikkeet (Samsung 15.11.).
+        persist: false,
+        duration: const Duration(seconds: 6),
         action: SnackBarAction(label: t('Kumoa'), onPressed: () => settings.restorePause(pause)),
       ),
     );

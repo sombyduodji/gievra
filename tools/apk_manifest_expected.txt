@@ -1,0 +1,28 @@
+exported activity fi.somby.gievra.MainActivity
+exported activity-alias fi.somby.gievra.ViewPermissionUsageActivity [android.permission.START_VIEW_PERMISSION_USAGE]
+exported receiver androidx.profileinstaller.ProfileInstallReceiver [android.permission.DUMP]
+exported service androidx.health.platform.client.impl.sdkservice.HealthDataSdkService
+permission android.permission.ACCESS_COARSE_LOCATION
+permission android.permission.ACCESS_FINE_LOCATION
+permission android.permission.BLUETOOTH
+permission android.permission.BLUETOOTH_ADMIN
+permission android.permission.BLUETOOTH_CONNECT
+permission android.permission.BLUETOOTH_SCAN
+permission android.permission.FOREGROUND_SERVICE
+permission android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+permission android.permission.FOREGROUND_SERVICE_LOCATION
+permission android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+permission android.permission.INTERNET
+permission android.permission.MANAGE_EXTERNAL_STORAGE
+permission android.permission.POST_NOTIFICATIONS
+permission android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+permission android.permission.SCHEDULE_EXACT_ALARM
+permission android.permission.USE_EXACT_ALARM
+permission android.permission.VIBRATE
+permission android.permission.health.READ_DISTANCE
+permission android.permission.health.READ_EXERCISE
+permission android.permission.health.READ_HEALTH_DATA_HISTORY
+permission android.permission.health.READ_HEART_RATE
+permission android.permission.health.READ_STEPS
+permission android.permission.health.READ_TOTAL_CALORIES_BURNED
+permission fi.somby.gievra.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION

@@ -419,7 +419,7 @@ class _MapsScreenState extends State<MapsScreen> {
     final c = store.catalog;
     final busy = store.downloads.isNotEmpty;
     return Scaffold(
-      appBar: AppBar(title: Text(t('Kartat'))),
+      appBar: AppBar(title: BarTitle(Text(t('Kartat')))),
       // Valinta näkyy heti; verkosta ladattava luettelo haetaan taustalla (ei odotusta tuontiin).
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -880,7 +880,7 @@ class _MapsScreenState extends State<MapsScreen> {
           store.isInstalled(x)
               ? ListTile(
                   dense: true,
-                  leading: const Icon(Icons.check_circle, color: Sami.green),
+                  leading: Icon(Icons.check_circle, color: greenText(context)),
                   title: Text(x.label(uiLang)),
                   subtitle: Text(fmtBytes(x.size), style: sub),
                   trailing: TextButton(onPressed: busy ? null : () => _delete(x), child: Text(t('Poista'))),

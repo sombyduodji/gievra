@@ -8,10 +8,13 @@ import 'package:permission_handler/permission_handler.dart';
 import '../gps_filter.dart';
 import '../gps_recorder.dart';
 import '../l10n.dart';
+import '../heart_rate.dart' show hr;
+import 'hr_ui.dart';
 import '../maps/map_view.dart';
 import '../models.dart';
 import '../theme.dart';
 import 'maps_screen.dart' show saveLastLocation;
+import 'widgets.dart' show BarTitle;
 
 /// Reitin tallennus GPS:llä: ensin signaalin haku, sitten aika, matka ja vauhti livenä. Palauttaa
 /// [RouteResult]in (tai null, jos tallennus hylättiin).
@@ -33,6 +36,7 @@ class RecordScreen extends StatefulWidget {
 class _RecordScreenState extends State<RecordScreen> {
   late final GpsRecorder rec = widget.recorder ?? GpsRecorder();
   String? _error;
+  bool _permissionError = false;
   bool _busy = true;
 
   /// Aloituslaskenta: sekunteja jäljellä (null = ei käynnissä). Aikaa laittaa puhelin taskuun ennen kuin aika
@@ -41,10 +45,18 @@ class _RecordScreenState extends State<RecordScreen> {
   int? _count;
   Timer? _countTimer;
 
+  /// Laskennan painikkeet ovat samassa kohdassa kuin Aloita silti: tuplanapautus ei saa heti ohittaa tai perua
+  /// juuri alkanutta laskentaa, joten napautukset ohitetaan 0,7 s ajan.
+  bool _countGuard = false;
+  Timer? _guardTimer;
+
   void _beginCountdown() {
     _countTimer?.cancel();
     HapticFeedback.selectionClick();
     setState(() => _count = countdownSeconds);
+    _countGuard = true;
+    _guardTimer?.cancel();
+    _guardTimer = Timer(const Duration(milliseconds: 700), () => _countGuard = false);
     _countTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       final left = (_count ?? 1) - 1;
@@ -69,6 +81,7 @@ class _RecordScreenState extends State<RecordScreen> {
     HapticFeedback.heavyImpact();
     setState(() => _count = null);
     await rec.start();
+    await hr.begin(_hrKey); // sykevyö (jos valittu) mukaan tallennuksen alusta
   }
 
   @override
@@ -93,6 +106,7 @@ class _RecordScreenState extends State<RecordScreen> {
         if (!st.isGranted) {
           setState(() {
             _busy = false;
+            _permissionError = true;
             _error = t('Sijaintilupa tarvitaan reitin tallentamiseen. Voit kirjata lenkin myös ilman GPS:ää.');
           });
           return;
@@ -103,6 +117,8 @@ class _RecordScreenState extends State<RecordScreen> {
       if (widget.recover) {
         if (!await rec.recover(title: title, text: text, channel: channel)) {
           await rec.open(widget.sport, title: title, text: text, channel: channel);
+        } else {
+          await hr.begin(_hrKey); // palautettu lenkki jatkuu: syke taas mukaan
         }
       } else {
         await rec.open(widget.sport, title: title, text: text, channel: channel);
@@ -116,14 +132,25 @@ class _RecordScreenState extends State<RecordScreen> {
   @override
   void dispose() {
     _countTimer?.cancel();
+    _guardTimer?.cancel();
     rec.removeListener(_changed);
     if (widget.recorder == null) rec.dispose();
     super.dispose();
   }
 
+  /// Sykevyön istunto; tulos luetaan liikunnassa (hr.take) reitin mukana.
+  static const _hrKey = 'gps';
+
+  /// Hylätty tallennus: sykkeitä ei viedä liikuntaan.
+  Future<void> _hrDrop() async {
+    await hr.end(_hrKey);
+    hr.take(_hrKey);
+  }
+
   Future<void> _finish() async {
     final f = rec.lastFix;
     if (f != null) await saveLastLocation(f.lat, f.lon);
+    await hr.end(_hrKey);
     final r = await rec.finish(name: sportName(widget.sport));
     if (!mounted) return;
     Navigator.of(context).pop(r);
@@ -134,6 +161,7 @@ class _RecordScreenState extends State<RecordScreen> {
     // Takaisin laskennan aikana: vain laskenta perutaan, GPS jää etsimään.
     if (_count != null) return _cancelCountdown();
     if (rec.state == RecState.idle || rec.state == RecState.searching) {
+      await _hrDrop();
       await rec.discard();
       if (mounted) Navigator.of(context).pop();
       return;
@@ -169,6 +197,7 @@ class _RecordScreenState extends State<RecordScreen> {
         ),
       );
       if (sure == true) {
+        await _hrDrop();
         await rec.discard();
         if (mounted) Navigator.of(context).pop();
       } else if (wasRecording) {
@@ -186,14 +215,14 @@ class _RecordScreenState extends State<RecordScreen> {
         if (!didPop) _askStop();
       },
       child: Scaffold(
-        appBar: AppBar(title: Text('📍 ${sportName(widget.sport)}')),
+        appBar: AppBar(title: BarTitle(Text('📍 ${sportName(widget.sport)}'))),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
             child: _busy
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                ? Center(child: Text(_error!, textAlign: TextAlign.center))
+                ? _errorView(cs)
                 : rec.state == RecState.searching && _count != null
                 ? _countdown(cs)
                 : rec.state == RecState.searching
@@ -204,6 +233,58 @@ class _RecordScreenState extends State<RecordScreen> {
       ),
     );
   }
+
+  /// Virhe (esim. sijaintilupa kielletty): ei umpikujaa. Luvat, uusi yritys, keskeneräisen reitin hylkäys
+  /// (muuten se avautuisi joka käynnistyksellä uudelleen) ja paluu.
+  Widget _errorView(ColorScheme cs) => Center(
+    child: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_error!, textAlign: TextAlign.center),
+          const SizedBox(height: 20),
+          if (_permissionError)
+            OutlinedButton.icon(
+              key: const ValueKey('gpsOpenSettings'),
+              onPressed: openAppSettings,
+              icon: const Icon(Icons.settings_outlined),
+              label: Text(t('Avaa sovelluksen luvat')),
+            ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('gpsRetry'),
+            onPressed: () {
+              setState(() {
+                _error = null;
+                _busy = true;
+              });
+              _init();
+            },
+            icon: const Icon(Icons.refresh),
+            label: Text(t('Yritä uudelleen')),
+          ),
+          if (widget.recover) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              key: const ValueKey('gpsDiscard'),
+              onPressed: () async {
+                await _hrDrop();
+                await rec.discard();
+                if (mounted) Navigator.of(context).pop();
+              },
+              child: Text(t('Hylkää keskeneräinen reitti')),
+            ),
+          ],
+          const SizedBox(height: 8),
+          FilledButton(
+            key: const ValueKey('gpsBack'),
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(t('Takaisin')),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _signal(ColorScheme cs) {
     final f = rec.lastFix;
@@ -334,12 +415,19 @@ class _RecordScreenState extends State<RecordScreen> {
         const Spacer(),
         FilledButton.icon(
           style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
-          onPressed: _startNow,
+          onPressed: () {
+            if (!_countGuard) _startNow();
+          },
           icon: const Icon(Icons.fast_forward),
           label: Text(t('Ohita laskenta'), style: const TextStyle(fontSize: 18)),
         ),
         const SizedBox(height: 8),
-        TextButton(onPressed: _cancelCountdown, child: Text(t('Peruuta'))),
+        TextButton(
+          onPressed: () {
+            if (!_countGuard) _cancelCountdown();
+          },
+          child: Text(t('Peruuta')),
+        ),
       ],
     );
   }
@@ -374,7 +462,10 @@ class _RecordScreenState extends State<RecordScreen> {
       children: [
         const SamiBand(height: 4, pattern: false),
         const SizedBox(height: 8),
+        // Signaali ja syke (sykevyö) samalla rivillä.
         Center(child: _signal(cs)),
+        // Sykevyö: syke, alue ja minikäyrä.
+        const HrLiveStrip(),
         const SizedBox(height: 8),
         Text(
           fmtDurationSec(rec.elapsed.inSeconds),

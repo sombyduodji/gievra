@@ -64,9 +64,16 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - palautusajastin (valinnainen): raskaissa ja lähellä maksimia pidempi tauko, lämmittelyissä ja kevennysviikolla
   lyhyempi, omat ajat kuormaluokittain ±15 s; ilmoitus valitulla äänellä ja värinällä myös näytön ollessa pois päältä
   tai toisessa sovelluksessa
+- **sykevyö Bluetoothilla** (Polar H10, Verity Sense, Garmin HRM …): syke treenin ja palautuksen aikana, palautus
+  voi odottaa sykkeen laskua, ja treeniin tallentuvat sykekäyrä, sykealueet ja tutkituilla menetelmillä lasketut
+  kalorit; treeni-ilmoitus pitää Gievran käynnissä näytön ollessa pois päältä
+- tekstin koko: Pieni, Normaali tai Suuri (myös puhelimen oma suuri fontti toimii)
 - treenin ajastin, *Treeni valmis!* ja vertailu edelliseen kertaan, useampi treeni samana päivänä
   (*Lisää uusi treeni*), jakaminen
-- valmis treeni lukittuu 🔒: avautuu lukutilaan, ja muokkaus kysyy ensin; ei palautusajastinta eikä painoehdotuksia
+- valmis treeni lukittuu 🔒: avautuu lukutilaan, ja muokkaus kysyy ensin; ei palautusajastinta eikä painoehdotuksia;
+  tallennettu liikunta avautuu yhteenvetona (aika, matka, vauhti, reitti, syke, rasitus ja fiilis)
+- *Treeni valmis!* -ikkuna: rasitus arvioidaan sykkeestä tai vauhdista, salitreenin ennätykset ja painojen nousut
+  näkyvät heti
 
 **Valmiit treeniohjelmat**
 - lyhyt aloituskysely: tavoite (voimanosto, lihaskasvu, rasvanpoltto, yleiskunto, fiiliksellä), kokemus,
@@ -80,7 +87,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 
 **Ohjelmapohjat ja ohjelmien vaihto**
 - tallenna ohjelma `.gmd`-tiedostoksi ja lähetä toiselle, tuo valmentajan tai kaverin pohja
-- Androidilla `.gmd` aukeaa suoraan Gievralla (*Avaa sovelluksella* tai *Jaa → Gievra*)
+- Androidilla `.gmd` aukeaa suoraan Gievralla (*Avaa sovelluksella* tai *Jaa → Gievra*), samoin FitNotes- ja Gievran
+  varmuuskopio, Garminin CSV ja `.md`-treenit: sovellus tunnistaa tiedoston kuten *Tuo tiedosto* -painikkeessa
 - tallennetut ohjelmat: vaihda ohjelmaa milloin vain, treenihistoria säilyy
 
 **Liikkeet ja ohjeet**
@@ -101,10 +109,11 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   FitNotesin punnitukset tuodaan mukana
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
-- **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa etusivulla
-  on Sali / Kestävyys -valinta; kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke
+- **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa
+  etusivun Tänään-kortissa ovat Sali ja Liikunta rinnakkain (useammin tehty leveämpänä, Liikunta-puolella viimeksi tehdyn
+  lajin kuvake); kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke
 - urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
-  (kesto, kalorit, keski- ja maksimisyke ja askeleet heti *Treeni valmis!* -näkymässä): käsin tai Androidilla
+  (kesto, kalorit, keski- ja maksimisyke, sykekäyrä ja -alueet sekä askeleet heti *Treeni valmis!* -näkymässä): käsin tai Androidilla
   **Health Connectista** – treenin jälkeen *Kellon tiedot → Health Connect*, Gievra etsii treenin aikaa lähellä
   olevan kellon harjoituksen ja kysyy *Onko tämä se?* (vain luku, vain tämän treenin aikaväli, ei koko historiaa);
   kävelyssä ja retkeilyssä valinta harjoituksen sovelluksen (esim. Oura) omien ja kaikkien lähteiden askelten välillä,
@@ -138,6 +147,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - huonot paikannukset, mahdottomat nopeudet ja piikit suodatetaan jo treenin aikana; paikallaanolo ei kasvata matkaa
 - tallennus jatkuu taustalla näytön ollessa pois, ilman Googlen palveluita; keskeytynyt tallennus palautuu
 - reitti näkyy kartalla ja tallentuu `.gpx`-tiedostona treenin viereen
+- kyydin tunnistus kävelyssä ja juoksussa: jos reitillä on autolla tai bussilla ajettu pätkä, Gievra kysyy
+  *Nousitko kyytiin?*, ja pätkän voi poistaa reitistä, matkasta ja ajasta
 - reitin korjaus poluille treenin jälkeen ladatuilla kartoilla: kytkin ja 3–10 m -liukusäädin, matka ja vauhti
   päivittyvät (aika ei); jalan kävely- ja pyörätiet ja jalkakäytävät ennen autoteitä, metsässä ja kaukana poluista
   GPS-reittiin luotetaan; alkuperäinen reitti säilyy .gpx-tiedostossa, joten korjausta voi muuttaa myöhemmin
@@ -209,6 +220,10 @@ käännöskorjaukset:
 Gievra on vapaa ohjelma [GNU GPL v3.0](LICENSE) -lisenssillä: saat käyttää, tutkia, muokata ja jakaa sitä,
 kunhan muokatut versiot jaetaan samalla lisenssillä. Sovelluksen käyttämien kirjastojen ja fonttien lisenssit
 näkyvät sovelluksessa (☰ → Tietoa → Avoin lähdekoodi ja lisenssit).
+
+**Kuvat:** treeni-ilmoituksen taustakuvat (`note_bg_*.png`) on piirretty Gievraa varten skriptillä
+[`tools/make_note_bg.py`](tools/make_note_bg.py) (ei kolmannen osapuolen kuvia), ja ne ovat sovelluksen kanssa
+samalla lisenssillä.
 
 **Kartat:** ladattavat karttapaketit perustuvat OpenStreetMap-aineistoon (© OpenStreetMap contributors) ja
 ovat [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) -lisenssin alaisia (sovelluksen koodista

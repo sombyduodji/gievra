@@ -67,6 +67,16 @@ bool _inRange(DateTime d, CsvExportOptions o) => !d.isBefore(dateOnly(o.from)) &
 /// Liikkeen nimi viennissä: käyttöliittymän kielellä (englanniksi aina englanninkielinen nimi).
 String _exerciseName(String name) => isEnglish ? (englishOf(name) ?? exerciseDisplay(name)) : exerciseLabel(name);
 
+/// Sykkeen tai kalorien lähde: sykevyö, älykello (Health Connect) tai käsin syötetty.
+String _source(String? s) => switch (s) {
+  'sykevyö' || 'syke' => t('Sykevyö'),
+  'kello' => t('Älykello'),
+  'käsin' => t('Käsin syötetty'),
+  _ => '',
+};
+
+String _clock(DateTime d) => [d.hour, d.minute, d.second].map((v) => v.toString().padLeft(2, '0')).join(':');
+
 /// Useampi CSV-tiedosto yhtenä zippinä. Archive.files on vain luku -lista, joten tiedostot lisätään addFile-kutsulla.
 List<int> csvZip(List<CsvFile> files) {
   final a = Archive();
@@ -147,6 +157,8 @@ List<CsvFile> buildCsvExport(
           w.hrAvg,
           w.hrMax,
           w.kcal,
+          _source(w.hrSource),
+          _source(w.kcalSource),
           w.steps,
           w.strideM == null ? '' : _num((w.strideM! * 100).round() / 100),
           w.feeling == null ? '' : t(feelingOf(w.feeling)!.$3),
@@ -166,6 +178,8 @@ List<CsvFile> buildCsvExport(
             t('Keskisyke'),
             t('Maksimisyke'),
             t('Kalorit (kcal)'),
+            t('Sykkeen lähde'),
+            t('Kalorien lähde'),
             t('Askeleet'),
             t('Askelpituus (m)'),
             t('Fiilis'),
@@ -175,6 +189,62 @@ List<CsvFile> buildCsvExport(
         ),
       );
     }
+  }
+
+  // Salitreenit yhteenvetona (kesto, syke ja kalorit treeniä kohden; sarjat ovat salisarjat-tiedostossa).
+  if (o.gym) {
+    final rows = <List<Object?>>[
+      for (final w in ws.where((w) => w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty)))
+        [
+          isoDate(w.date),
+          trName(w.title),
+          w.minutes == null ? '' : fmtDurationSec(w.minutes! * 60),
+          w.hrAvg,
+          w.hrMax,
+          w.kcal,
+          _source(w.hrSource),
+          _source(w.kcalSource),
+          w.feeling == null ? '' : t(feelingOf(w.feeling)!.$3),
+        ],
+    ];
+    if (rows.any((r) => r.skip(2).take(4).any((v) => v != null && v != ''))) {
+      out.add(
+        CsvFile(
+          '${t('salitreenit')}.csv',
+          _table([
+            t('Päivä'),
+            t('Treeni'),
+            t('Kesto'),
+            t('Keskisyke'),
+            t('Maksimisyke'),
+            t('Kalorit (kcal)'),
+            t('Sykkeen lähde'),
+            t('Kalorien lähde'),
+            t('Fiilis'),
+          ], rows),
+          rows.length,
+        ),
+      );
+    }
+  }
+
+  // Sykekäyrät (sykevyö tai kello Health Connectista): lukema käyrän välein treeneistä, jotka kuuluvat valittuihin (sali / liikunta).
+  final hrRows = <List<Object?>>[
+    for (final w in ws)
+      if (w.hrSeries case final h? when (w.activity == null ? o.gym : o.cardio))
+        for (final (i, v) in h.values.indexed)
+          if (v > 0)
+            [
+              isoDate(w.date),
+              w.activity == null ? trName(w.title) : sportName(w.activity!),
+              _clock(h.start.add(Duration(seconds: i * h.interval))),
+              v,
+            ],
+  ];
+  if (hrRows.isNotEmpty) {
+    out.add(
+      CsvFile('${t('syke')}.csv', _table([t('Päivä'), t('Treeni'), t('Kellonaika'), t('Syke')], hrRows), hrRows.length),
+    );
   }
 
   if (o.body) {

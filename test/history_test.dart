@@ -96,8 +96,8 @@ void main() {
     expect(suggestedMax(ws, 'Penkkipunnerrus', now).$1, isNull);
   });
 
-  test('Oikea FitNotes-varmuuskopio', () {
-    final r = readFitnotes(Platform.environment['FITNOTES']!);
+  test('Oikea FitNotes-varmuuskopio', () async {
+    final r = await readFitnotes(Platform.environment['FITNOTES']!);
     final p = analyzeHistory(r.workouts)!;
     for (final l in ['Takakyykky', 'Penkkipunnerrus', 'Maastaveto']) {
       final pr = bestLift(r.workouts, l);

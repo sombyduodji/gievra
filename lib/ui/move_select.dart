@@ -26,7 +26,7 @@ class _MoveSelectScreenState extends State<MoveSelectScreen> {
     final cats = allExercises();
     return Scaffold(
       appBar: AppBar(
-        title: Text(t('Valitse liikkeet ({0})', [_sel.length])),
+        title: BarTitle(Text(t('Valitse liikkeet ({0})', [_sel.length]))),
         actions: [TextButton(onPressed: () => Navigator.pop(context, _sel), child: Text(t('Valmis')))],
       ),
       body: ListView(

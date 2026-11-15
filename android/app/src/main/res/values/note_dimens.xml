@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Treeni-ilmoituksen tiivis korkeus: Android 12+ antaa omalle näkymälle vain 48 dp kehyksen sisällä. -->
+<resources>
+    <dimen name="note_small_h">64dp</dimen>
+</resources>

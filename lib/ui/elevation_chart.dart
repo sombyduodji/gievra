@@ -96,16 +96,20 @@ class ElevationCard extends StatelessWidget {
                       ),
                     ),
                     width: _labelWidth(box.maxWidth, total, splits[i].$1, every),
-                    child: Text(
-                      splitText(splits[i], speed: speed),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      // Viimeinen vajaa kilometri himmeämpänä (vauhti samassa yksikössä, vertailukelpoinen).
-                      style: sub.copyWith(
-                        fontSize: 11,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                        color: splits[i].$2 < 990 ? sub.color?.withValues(alpha: 0.6) : null,
-                        fontStyle: splits[i].$2 < 990 ? FontStyle.italic : null,
+                    // Kapea viimeinen kilometri: teksti pienenee mahtuakseen (ei leikkaannu).
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        splitText(splits[i], speed: speed),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        // Viimeinen vajaa kilometri himmeämpänä (vauhti samassa yksikössä, vertailukelpoinen).
+                        style: sub.copyWith(
+                          fontSize: 11,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: splits[i].$2 < 990 ? sub.color?.withValues(alpha: 0.6) : null,
+                          fontStyle: splits[i].$2 < 990 ? FontStyle.italic : null,
+                        ),
                       ),
                     ),
                   ),

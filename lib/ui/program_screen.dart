@@ -9,6 +9,7 @@ import 'program_template.dart';
 import 'program_view.dart';
 import 'programs_screen.dart';
 import '../l10n.dart';
+import 'widgets.dart' show BarTitle;
 
 /// ☰ → Ohjelma ja tavoitteet: nykyinen ohjelma, uusi ohjelma tai vapaa treeni.
 class ProgramScreen extends StatelessWidget {
@@ -21,7 +22,7 @@ class ProgramScreen extends StatelessWidget {
       final p = settings.program;
       void intro() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IntroScreen()));
       return Scaffold(
-        appBar: AppBar(title: Text(t('Ohjelma ja tavoitteet'))),
+        appBar: AppBar(title: BarTitle(Text(t('Ohjelma ja tavoitteet')))),
         body: p == null
             ? ListView(
                 padding: const EdgeInsets.all(20),

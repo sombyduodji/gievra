@@ -11,15 +11,23 @@ import 'l10n.dart' as l10n;
 
 /// Lajin osuus jaksossa: kerrat, minuutit ja kilometrit.
 class SportShare {
-  int count = 0, minutes = 0, steps = 0;
+  int count = 0, seconds = 0, steps = 0;
   double km = 0;
+
+  /// Sekunnit lasketaan yhteen ja pyöristetään vasta lopuksi (lyhyetkin liikunnat lasketaan).
+  int get minutes => (seconds / 60).round();
 }
 
 class Recap {
   final DateTime from, to; // to = seuraavan jakson alku
-  int gym = 0, activities = 0, sets = 0, prs = 0, minutes = 0, kcal = 0;
+  int gym = 0, activities = 0, sets = 0, prs = 0, kcal = 0;
   int dropSets = 0, amrapSets = 0; // pudotus- ja AMRAP-sarjat (sisältyvät sarjoihin)
-  int gymMinutes = 0, cardioMinutes = 0;
+
+  /// Kesto sekunteina; minuutit pyöristetään vasta summasta, ettei jokaisen treenin pyöristys kerry.
+  int seconds = 0, gymSeconds = 0, cardioSeconds = 0;
+  int get minutes => (seconds / 60).round();
+  int get gymMinutes => (gymSeconds / 60).round();
+  int get cardioMinutes => (cardioSeconds / 60).round();
   int timed = 0, parts = 0; // osia (sali / kestävyys) yhteensä ja niistä kesto kirjattu
   double volume = 0, km = 0;
   final List<int> feelings = [];
@@ -45,30 +53,38 @@ String? workoutKind(Workout w) => w.activity != null || isNoteCardio(w)
     ? 'gym'
     : null;
 
-/// FitNotesin kardiorivien yhteisaika minuutteina (muistiinpanoista).
-int noteCardioMinutes(Workout w) {
+/// FitNotesin kardiorivien yhteisaika sekunteina (muistiinpanoista).
+int noteCardioSeconds(Workout w) {
   var s = 0;
   for (final m in _cardioNote.allMatches(w.notes)) {
     if (m[1] != null) s += int.parse(m[1]!) * 60 + int.parse(m[2]!);
   }
-  return (s / 60).round();
+  return s;
 }
 
-/// Treenin kesto minuutteina: kirjattu kesto, kestävyyslajin tarkka aika tai tuodun kardion aika.
+/// FitNotesin kardiorivien yhteisaika minuutteina.
+int noteCardioMinutes(Workout w) => (noteCardioSeconds(w) / 60).round();
+
+/// Treenin kesto sekunteina: tarkka aika (ajanotto, GPS), kirjattu kesto tai tuodun kardion aika.
 /// Salitreenin kestoa ei arvioida, jos sitä ei ole kirjattu.
-int workoutMinutes(Workout w) {
-  if (w.minutes != null) return w.minutes!;
-  if (w.seconds != null) return (w.seconds! / 60).round();
-  return isNoteCardio(w) ? noteCardioMinutes(w) : 0;
+int workoutSeconds(Workout w) {
+  if (w.seconds != null) return w.seconds!;
+  if (w.minutes != null) return w.minutes! * 60;
+  return isNoteCardio(w) ? noteCardioSeconds(w) : 0;
 }
 
-/// Treenin osat koosteeseen: ('gym' | 'cardio', minuutit). FitNotesin päivä, jossa on sekä sarjoja että
+/// Treenin kesto minuutteina (pyöristetty sekunneista).
+int workoutMinutes(Workout w) => (workoutSeconds(w) / 60).round();
+
+/// Treenin osat koosteeseen: ('gym' | 'cardio', sekunnit). FitNotesin päivä, jossa on sekä sarjoja että
 /// kardiorivejä, on kaksi osaa: salitreeni ja kestävyys (muistiinpanojen aika).
 List<(String, int)> workoutParts(Workout w) {
   final k = workoutKind(w);
   if (k == null) return const [];
-  if (k == 'gym' && _cardioNote.hasMatch(w.notes)) return [('gym', w.minutes ?? 0), ('cardio', noteCardioMinutes(w))];
-  return [(k, workoutMinutes(w))];
+  if (k == 'gym' && _cardioNote.hasMatch(w.notes)) {
+    return [('gym', (w.minutes ?? 0) * 60), ('cardio', noteCardioSeconds(w))];
+  }
+  return [(k, workoutSeconds(w))];
 }
 
 /// Jakson kooste. [kind]: 'all' = kaikki, 'gym' = salitreenit, 'cardio' = liikunta ja lajit.
@@ -77,18 +93,18 @@ Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'})
   for (final w in ws) {
     if (w.date.isBefore(from) || !w.date.isBefore(to)) continue;
     var counted = false;
-    for (final (k, mins) in workoutParts(w)) {
+    for (final (k, secs) in workoutParts(w)) {
       if (kind != 'all' && kind != k) continue;
       counted = true;
-      r.minutes += mins;
+      r.seconds += secs;
       r.parts++;
-      if (mins > 0) r.timed++;
+      if (secs > 0) r.timed++;
       if (k == 'cardio') {
         r.activities++;
-        r.cardioMinutes += mins;
+        r.cardioSeconds += secs;
         final s = r.sports.putIfAbsent(w.activity ?? 'Muu liikunta', SportShare.new);
         s.count++;
-        s.minutes += mins;
+        s.seconds += secs;
         if (w.activity != null) {
           r.km += w.distanceKm ?? 0;
           s.km += w.distanceKm ?? 0;
@@ -97,7 +113,7 @@ Recap recap(List<Workout> ws, DateTime from, DateTime to, {String kind = 'all'})
         }
       } else {
         r.gym++;
-        r.gymMinutes += mins;
+        r.gymSeconds += secs;
         r.sets += w.exercises.fold(0, (a, e) => a + e.workSets.length);
         r.prs += w.exercises.expand((e) => e.sets).where((s) => s.pr).length;
         r.dropSets += w.exercises.expand((e) => e.workSets).where((s) => s.kind == dropSet).length;

@@ -12,6 +12,7 @@ testiversion päälle (pienempi versionCode). Kellonaika kasvaa molemmissa haaro
 
   python3 tools/version.py          tulostaa version ja versionCoden
   python3 tools/version.py --flutter   tulostaa flutter build -argumentit
+  GIEVRA_VERSION=0.6.5.20261114.64 python3 tools/version.py   kiinnittää version (tools/build_apk.sh käyttää samaa)
 """
 import datetime
 import os
@@ -26,6 +27,12 @@ def git(*args):
 
 
 def version():
+    # Kiinnitetty versio (esim. kaksi rinnakkaista koontia, jotka vaihdetaan toistensa päälle samalla versiolla):
+    # GIEVRA_VERSION=0.6.5.20261114.64 -> versionCode 2026111464.
+    pinned = os.environ.get("GIEVRA_VERSION", "").strip()
+    if pinned:
+        parts = pinned.split(".")
+        return pinned, int(parts[-2]) * 100 + int(parts[-1])
     release = open(os.path.join(ROOT, "RELEASE_VERSION"), encoding="utf-8").read().strip()
     try:
         if git("rev-parse", "--is-shallow-repository").strip() == "true":

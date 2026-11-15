@@ -571,7 +571,12 @@ class MapStore extends ChangeNotifier {
           await _setVersion(x.file, x.sha256);
           unverified.remove(x.file);
         } catch (e) {
-          dl.error = _cancel ? l10n.t('peruttu') : l10n.errorText(e);
+          // Verkkovirhe (ei yhteyttä, aikakatkaisu) tiiviinä käyttäjän kielellä, ei raakana poikkeustekstinä osoitteineen.
+          dl.error = _cancel
+              ? l10n.t('peruttu')
+              : (e is SocketException || e is http.ClientException || e is TimeoutException)
+              ? l10n.t('ei verkkoyhteyttä')
+              : l10n.errorText(e);
           failed.add(dl);
         }
         notifyListeners();

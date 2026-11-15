@@ -16,13 +16,18 @@
 #   ./emulaattori.sh adb ARGS...            muu adb-komento
 #   ./emulaattori.sh pysayta                pysäyttää laitteen
 #   ./emulaattori.sh tila                   onko laite käynnissä
+#
+# Muu Android-versio: EMU_API=30 ./emulaattori.sh kaynnista (Android 11, oma laite treeni-a30; vain yksi
+# laite kerrallaan, joten pysäytä edellinen ensin). Muut komennot toimivat sellaisinaan.
 cd "$(dirname "$0")" || exit 1
 
 WORK="${XDG_CACHE_HOME:-$HOME/.cache}/treenipaivakirja-build/android"
-SYSTEM_IMAGE="system-images;android-35;google_apis;x86_64"
+API="${EMU_API:-35}"
+SYSTEM_IMAGE="system-images;android-$API;google_apis;x86_64"
 IMAGE=treenipaivakirja-android-emu
 NAME=treeni-emu
 AVD=treeni-dev
+[ "$API" = 35 ] || AVD="treeni-a$API"
 PACKAGE=fi.somby.gievra
 ADB=/work/emu/sdk/platform-tools/adb
 
@@ -47,14 +52,14 @@ in_image() {
 
 setup() {
     mkdir -p "$WORK/emu/avd" "$WORK/home" "$WORK/kuvat" || exit 1
-    if [ ! -x "$WORK/emu/sdk/emulator/emulator" ] || [ ! -d "$WORK/emu/sdk/system-images/android-35" ]; then
+    if [ ! -x "$WORK/emu/sdk/emulator/emulator" ] || [ ! -d "$WORK/emu/sdk/system-images/android-$API" ]; then
         echo "Asennetaan emulaattori ja järjestelmäkuva (kerran, ~5 Gt)..."
         in_image sh -c "yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/work/emu/sdk --licenses >/dev/null &&
             /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/work/emu/sdk \
                 emulator platform-tools 'cmdline-tools;latest' '$SYSTEM_IMAGE' >/dev/null" || exit 1
     fi
     if [ ! -f "$WORK/emu/avd/$AVD.ini" ]; then
-        echo "Luodaan virtuaalilaite $AVD (Pixel 6, Android 15)..."
+        echo "Luodaan virtuaalilaite $AVD (Pixel 6, API $API)..."
         in_image sh -c "echo no | /work/emu/sdk/cmdline-tools/latest/bin/avdmanager -s create avd \
             -n $AVD -k '$SYSTEM_IMAGE' -d pixel_6 >/dev/null" || exit 1
     fi

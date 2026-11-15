@@ -20,11 +20,38 @@ class InjuryScreen extends StatefulWidget {
 class _InjuryScreenState extends State<InjuryScreen> {
   late final Set<String> _sel = {...widget.initial};
 
+  /// Valintoja muutettu tallentamatta (Takaisin kysyy ensin; ennen valinta hylättiin hiljaa, yötesti 15.11.).
+  bool get _dirty => _sel.length != widget.initial.toSet().length || !_sel.containsAll(widget.initial);
+  bool _leaving = false;
+
+  Future<void> _confirmLeave() async {
+    final r = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Tallennetaanko muutokset?')),
+        content: Text(t('Muuten muutokset hylätään.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'discard'), child: Text(t('Hylkää'))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'save'), child: Text(t('Tallenna'))),
+        ],
+      ),
+    );
+    if (!mounted || r == null) return;
+    if (r == 'save') {
+      await _save();
+    } else {
+      setState(() => _leaving = true);
+      Navigator.pop(context);
+    }
+  }
+
   Future<void> _save() async {
     final ids = [
       for (final r in injuryRegions)
         if (_sel.contains(r.id)) r.id,
     ];
+    setState(() => _leaving = true);
     if (widget.picker) {
       Navigator.pop(context, ids);
       return;
@@ -67,78 +94,84 @@ class _InjuryScreenState extends State<InjuryScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t('Vammatila')),
-        actions: [TextButton(onPressed: _save, child: Text(widget.picker ? t('Valmis') : t('Tallenna')))],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-        children: [
-          const SamiBand(height: 4, pattern: false),
-          const SizedBox(height: 12),
-          LangNotice(
-            settings.healthLang == 'en'
-                ? t('Ei saatavilla saameksi: vammatilan ohjeet näkyvät englanniksi.')
-                : t('Ei saatavilla saameksi: vammatilan ohjeet näkyvät suomeksi.'),
-            show: uiLang == 'se',
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Sami.red.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Sami.red.withValues(alpha: .6)),
+    return PopScope(
+      canPop: _leaving || !_dirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: BarTitle(Text(t('Vammatila'))),
+          actions: [TextButton(onPressed: _save, child: Text(widget.picker ? t('Valmis') : t('Tallenna')))],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          children: [
+            const SamiBand(height: 4, pattern: false),
+            const SizedBox(height: 12),
+            LangNotice(
+              settings.healthLang == 'en'
+                  ? t('Ei saatavilla saameksi: vammatilan ohjeet näkyvät englanniksi.')
+                  : t('Ei saatavilla saameksi: vammatilan ohjeet näkyvät suomeksi.'),
+              show: uiLang == 'se',
             ),
-            child: Text(
-              t(
-                'Vammatila ei tee diagnoosia eikä korvaa fysioterapeutin tai lääkärin arviota. Se ehdottaa '
-                'varovaisia muutoksia harjoitteluun. Jos kipu on kova, pahenee tai ei helpota parissa '
-                'viikossa, hakeudu ammattilaisen arvioon.',
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Sami.red.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Sami.red.withValues(alpha: .6)),
               ),
-              style: TextStyle(fontSize: 13),
-            ),
-          ),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            leading: const Icon(Icons.warning_amber, color: Sami.red),
-            title: Text(t('Punaiset liput: milloin lääkäriin')),
-            children: [Padding(padding: const EdgeInsets.only(bottom: 8), child: _Md(injuryRedFlags))],
-          ),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            leading: const Icon(Icons.speed),
-            title: Text(t('Kipuasteikko ja paluu kuormaan')),
-            children: [Padding(padding: const EdgeInsets.only(bottom: 8), child: _Md(injuryGeneralRules))],
-          ),
-          SectionLabel(t('Missä vaiva on?')),
-          for (final r in injuryRegions)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ExpansionTile(
-                shape: const Border(),
-                leading: Checkbox(
-                  value: _sel.contains(r.id),
-                  onChanged: (v) => setState(() => v == true ? _sel.add(r.id) : _sel.remove(r.id)),
+              child: Text(
+                t(
+                  'Vammatila ei tee diagnoosia eikä korvaa fysioterapeutin tai lääkärin arviota. Se ehdottaa '
+                  'varovaisia muutoksia harjoitteluun. Jos kipu on kova, pahenee tai ei helpota parissa '
+                  'viikossa, hakeudu ammattilaisen arvioon.',
                 ),
-                title: Text(t(r.name)),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(t(r.explanation), style: const TextStyle(fontSize: 13)),
-                  if (r.avoid.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(t('Vältä aluksi: {0}', [r.avoid.map(exerciseLabel).join(', ')]), style: sub),
-                  ],
-                  if (r.recommended.isNotEmpty)
-                    Text(t('Yleensä hyvin siedetyt: {0}', [r.recommended.join(', ')]), style: sub),
-                  if (r.tendon.isNotEmpty) ...[const SizedBox(height: 6), Text(t(r.tendon), style: sub)],
-                ],
+                style: TextStyle(fontSize: 13),
               ),
             ),
-          const SizedBox(height: 8),
-          Text(t('Lähteet: docs/tutkimus/vammatila.md (JOSPT-hoitosuositukset, Käypä hoito, BJSM ym.).'), style: sub),
-        ],
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              leading: const Icon(Icons.warning_amber, color: Sami.red),
+              title: Text(t('Punaiset liput: milloin lääkäriin')),
+              children: [Padding(padding: const EdgeInsets.only(bottom: 8), child: _Md(injuryRedFlags))],
+            ),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              leading: const Icon(Icons.speed),
+              title: Text(t('Kipuasteikko ja paluu kuormaan')),
+              children: [Padding(padding: const EdgeInsets.only(bottom: 8), child: _Md(injuryGeneralRules))],
+            ),
+            SectionLabel(t('Missä vaiva on?')),
+            for (final r in injuryRegions)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ExpansionTile(
+                  shape: const Border(),
+                  leading: Checkbox(
+                    value: _sel.contains(r.id),
+                    onChanged: (v) => setState(() => v == true ? _sel.add(r.id) : _sel.remove(r.id)),
+                  ),
+                  title: Text(t(r.name)),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t(r.explanation), style: const TextStyle(fontSize: 13)),
+                    if (r.avoid.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(t('Vältä aluksi: {0}', [r.avoid.map(exerciseLabel).join(', ')]), style: sub),
+                    ],
+                    if (r.recommended.isNotEmpty)
+                      Text(t('Yleensä hyvin siedetyt: {0}', [r.recommended.join(', ')]), style: sub),
+                    if (r.tendon.isNotEmpty) ...[const SizedBox(height: 6), Text(t(r.tendon), style: sub)],
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+            Text(t('Lähteet: docs/tutkimus/vammatila.md (JOSPT-hoitosuositukset, Käypä hoito, BJSM ym.).'), style: sub),
+          ],
+        ),
       ),
     );
   }

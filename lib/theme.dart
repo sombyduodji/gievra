@@ -25,6 +25,15 @@ class Sami {
   static const yellowDark = Color(0xFF7A5C00);
 }
 
+/// Tekstikoot (uusi ulkoasu): neljä kokoa, kaikki kasvavat järjestelmän fontin mukana. Uusissa ja muokatuissa
+/// näkymissä käytetään näitä kovakoodattujen arvojen sijaan (aiemmin 11 eri kokoa, yli 100 kohdassa).
+class AppText {
+  static const caption = 12.0; // alarivit, päiväykset, selitteet
+  static const body = 14.0; // rivit, kuvaukset
+  static const title = 18.0; // kortin otsikko, painike
+  static const headline = 24.0; // sivun otsikko, iso luku
+}
+
 /// Punainen tekstin väri teeman mukaan (vaaleassa [Sami.redDark], tummassa [Sami.redLight]).
 Color redText(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? Sami.redLight : Sami.redDark;
 

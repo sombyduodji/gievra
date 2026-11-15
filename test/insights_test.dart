@@ -42,8 +42,8 @@ void main() {
   });
 
   final real = Platform.environment['FITNOTES'];
-  test('Oikea historia', () {
-    final r = readFitnotes(real!);
+  test('Oikea historia', () async {
+    final r = await readFitnotes(real!);
     final ins = analyze(r.workouts, now: DateTime(2026, 10, 30));
     // ignore: avoid_print
     print(

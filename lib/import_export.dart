@@ -11,6 +11,7 @@ import 'daily_steps.dart';
 export 'fitnotes_db_stub.dart' if (dart.library.ffi) 'fitnotes_db.dart';
 import 'exercises.dart';
 import 'injuries.dart' show injuryById;
+import 'l10n.dart';
 import 'models.dart';
 import 'program.dart';
 
@@ -320,8 +321,36 @@ ImportResult readMdBytes(Map<String, List<int>> files) {
   return readMdFiles(texts, repaired: repaired, unreadable: failed);
 }
 
+/// Tuonnin rajat valtavaa tiedostoa ja zip-pommia vastaan. Väljät: vuosien treenit ja GPS-reitit mahtuvat
+/// (tunnin lenkin GPX on noin 0,3–0,5 Mt, koko varmuuskopio pakattuna yleensä alle 100 Mt).
+const importMaxFileMb = 500, importMaxEntryMb = 100, importMaxTotalMb = 1024;
+
+/// Valitun tiedoston koko ennen sen lukemista muistiin.
+void checkImportSize(int bytes) {
+  if (bytes > importMaxFileMb * 1024 * 1024) {
+    throw FormatException(t('Tiedosto on liian suuri tuotavaksi (yli {0} Mt).', [importMaxFileMb]));
+  }
+}
+
+/// Zipin tiedostojen puretut koot ennen purkamista: yksittäinen tiedosto ja kaikki yhteensä.
+void checkZipLimits(Archive archive) {
+  var total = 0;
+  for (final f in archive.files) {
+    if (!f.isFile) continue;
+    if (f.size > importMaxEntryMb * 1024 * 1024) {
+      throw FormatException(t('Varmuuskopiossa on liian suuri tiedosto: {0}', [p.basename(f.name)]));
+    }
+    total += f.size;
+    if (total > importMaxTotalMb * 1024 * 1024) {
+      throw FormatException(t('Varmuuskopio on purettuna liian suuri (yli {0} Mt).', [importMaxTotalMb]));
+    }
+  }
+}
+
 ImportResult readZip(List<int> bytes) {
+  checkImportSize(bytes.length);
   final archive = ZipDecoder().decodeBytes(bytes);
+  checkZipLimits(archive);
   final list = <Workout>[];
   String? settingsMd, programMd, bodyMd, stepsMd;
   final routes = <String, String>{}; // reittitiedoston nimi -> GPX
@@ -368,6 +397,8 @@ ImportResult readZip(List<int> bytes) {
     try {
       final w = parseWorkout(text, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(base));
       sets += w.exercises.fold(0, (a, e) => a + e.sets.length);
+      // Palautus kirjoittaa tiedoston sellaisenaan (ei korjattua merkistöä: se kirjoitetaan uudelleen UTF-8:na).
+      if (!decoded.$2) w.originalMd = text;
       list.add(w);
     } catch (err) {
       failed[base] = f.content;
@@ -379,8 +410,9 @@ ImportResult readZip(List<int> bytes) {
     final gpx = routes[w.route];
     if (gpx != null) {
       w.routeGpx = gpx;
-    } else {
+    } else if (w.route != null) {
       w.route = null; // reittitiedosto puuttuu varmuuskopiosta
+      w.originalMd = null; // route:-rivi ei saa jäädä osoittamaan puuttuvaan tiedostoon
     }
   }
   list.sort((a, b) => a.date.compareTo(b.date));
@@ -442,6 +474,8 @@ Future<int> applyImport(ImportResult r, {bool addInjuries = false}) async {
     for (final e in tmp.customMeasure.entries) {
       if (!settings.customMeasure.containsKey(e.key)) settings.setMeasure(e.key, e.value);
     }
+    // Sykevyön kalorilaskennan tiedot (syntymävuosi, sukupuoli, maksimisyke …), jos tällä laitteella ei vielä ole.
+    settings.mergeHrProfile(tmp);
     // Sairas- ja lomatauot: ilman niitä paluun kevyemmät kuormat ja käynnissä oleva tauko katosivat.
     // Kuten sovelluksessa, vain salitreeni päättää tauon; kävely tai muu liikunta tauon aikana ei.
     settings.mergePauses(
@@ -460,7 +494,10 @@ Future<int> applyImport(ImportResult r, {bool addInjuries = false}) async {
   if (r.bodyMd != null) {
     final imported = parseBody(r.bodyMd!);
     if (!imported.isEmpty) {
+      final wasEmpty = settings.body.isEmpty;
       await settings.setBody(mergeBody(settings.body, imported));
+      // Tyhjään päiväkirjaan tiedosto sellaisenaan (järjestys ja omat rivit säilyvät).
+      if (wasEmpty) await files.write(bodyFileName, r.bodyMd!);
       if (r.settingsMd != null && (Settings()..applyMarkdown(r.settingsMd!)).bodyTracker) {
         settings.setBodyTracker(true);
       }

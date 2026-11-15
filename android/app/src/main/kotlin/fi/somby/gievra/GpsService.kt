@@ -28,6 +28,18 @@ class GpsService : Service(), LocationListener {
         /// Dartin kuuntelija (EventChannel); null, kun sovellus ei ole auki.
         @Volatile var sink: ((Map<String, Any>) -> Unit)? = null
         @Volatile var running = false
+        @Volatile private var instance: GpsService? = null
+        @Volatile private var lastNote: android.app.Notification? = null
+
+        /** Sykevyö yhdistyi tai katkesi kesken lenkin: etualan tyyppi uudelleen (connectedDevice mukaan tai pois). */
+        fun refreshType(ctx: Context) {
+            val s = instance ?: return
+            val n = OngoingNote.current(ctx) ?: lastNote ?: return
+            try {
+                s.foreground(n)
+            } catch (_: Exception) {
+            }
+        }
 
         fun rawFile(ctx: Context) = File(ctx.filesDir, "gps-recording.csv")
 
@@ -59,15 +71,13 @@ class GpsService : Service(), LocationListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.getStringExtra("title")?.let { title = it }
         intent?.getStringExtra("text")?.let { text = it }
-        val channelName = intent?.getStringExtra("channel") ?: "GPS"
+        // Androidin uudelleenkäynnistämänä intent on null: kanavan nimi säilyy (muuten se nimettäisiin "GPS":ksi).
+        val channelName = intent?.getStringExtra("channel") ?: OngoingNote.channelName(this) ?: "GPS"
         // Ensimmäinen sisältö (odotetaan signaalia); Dart päivittää sen heti lajiksi ja ajaksi (OngoingNote.show).
+        WorkoutService.stop(this) // GPS-palvelu ottaa saman ilmoituksen (ja pitää sovelluksen hereillä)
         val n = OngoingNote.build(this, title, System.currentTimeMillis(), true, text, channelName)
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
-            } else {
-                startForeground(NOTIFICATION, n)
-            }
+            foreground(n)
         } catch (e: Exception) {
             // Android 14+: sijaintilupa peruttu tai uudelleenkäynnistys taustalta ei ole sallittu. Ei kaadeta
             // sovellusta eikä yritetä uudelleen; tallennetut paikannukset jäävät tiedostoon palautusta varten.
@@ -114,7 +124,21 @@ class GpsService : Service(), LocationListener {
         main.post { sink?.invoke(m) }
     }
 
+    /** Etualalle: sijainti ja sykevyön ollessa valittuna myös connectedDevice (ks. HeartRateBle.fgsType). */
+    fun foreground(n: android.app.Notification) {
+        lastNote = n
+        instance = this
+        if (Build.VERSION.SDK_INT >= 34) {
+            startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or HeartRateBle.fgsType(this))
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
+            startForeground(NOTIFICATION, n)
+        }
+    }
+
     override fun onDestroy() {
+        instance = null
         try {
             (getSystemService(Context.LOCATION_SERVICE) as LocationManager).removeUpdates(this)
         } catch (e: Exception) {

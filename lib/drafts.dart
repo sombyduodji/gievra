@@ -25,8 +25,13 @@ class ActivityDraft {
 
   static String? _last;
 
+  /// Testejä varten: montako kertaa luonnosta on yritetty tallentaa.
+  @visibleForTesting
+  static int debugSaves = 0;
+
   /// Tallentaa luonnoksen, jos se on muuttunut. [extra]: näkymän oma tila (ajanotto, reitti …).
   static Future<void> save(Workout w, {Map<String, Object?> extra = const {}}) async {
+    debugSaves++;
     if (kIsWeb) return;
     final text = jsonEncode({
       'saved': DateTime.now().toIso8601String(),

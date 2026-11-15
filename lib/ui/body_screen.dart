@@ -78,7 +78,7 @@ class BodyScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     return Scaffold(
-      appBar: AppBar(title: Text(t('Paino ja pituus'))),
+      appBar: AppBar(title: BarTitle(Text(t('Paino ja pituus')))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _add(context),
         icon: const Icon(Icons.add),

@@ -27,7 +27,7 @@ class SyncScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: sync,
       builder: (context, _) => Scaffold(
-        appBar: AppBar(title: Text(t('Synkronointi'))),
+        appBar: AppBar(title: BarTitle(Text(t('Synkronointi')))),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
           children: [

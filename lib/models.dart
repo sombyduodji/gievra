@@ -1,3 +1,5 @@
+import 'hr_calc.dart';
+
 import 'dart:convert';
 
 import 'exercises.dart';
@@ -54,6 +56,11 @@ String fmtPace(double secPerKm) {
 }
 
 /// Kesto sekunteina muotoon 25:31 tai 1:05:09.
+/// Tarkasta ajasta tallennettavat minuutit: pyöristys, mutta vähintään 1, kun aikaa on. Tiedoston
+/// "duration: N min" pysyy järkevänä myös vanhemmille versioille (ne eivät tunne lyhyttä "time:"-aikaa
+/// kaikissa lajeissa); tämä versio käyttää tarkkaa aikaa aina, kun se on.
+int minutesFromSeconds(int secs) => secs <= 0 ? 0 : ((secs / 60).round() < 1 ? 1 : (secs / 60).round());
+
 String fmtDurationSec(int sec) {
   final h = sec ~/ 3600, m = (sec % 3600) ~/ 60, s = sec % 60;
   String two(int v) => v.toString().padLeft(2, '0');
@@ -110,6 +117,11 @@ class Workout {
   String? runType; // juoksun tyyppi (kevyt, palauttava, pitka, vauhti, intervallit, kisavauhti, kilpailu)
   int? seconds; // tarkka kesto sekunteina (kestävyyslajit; minutes on pyöristetty)
   int? kcal, hrAvg, hrMax; // sykemittarin tai älykellon tiedot (valinnainen)
+
+  /// Sykevyön käyrä (5 s välein) ja tietojen lähteet: hrSource 'sykevyö' / 'kello' / 'käsin',
+  /// kcalSource 'syke' (laskettu sykevyöstä) / 'kello' / 'käsin'. Tiedostossa hr_series, hr_source, kcal_source.
+  HrSeries? hrSeries;
+  String? hrSource, kcalSource;
   int? steps; // askeleet (kävely ja muut kävelylajit, valinnainen)
 
   /// Kirjoitetaanko laskettu askelpituus tiedostoon: uusiin treeneihin kyllä, vanhoihin vain jos rivi oli jo
@@ -140,6 +152,10 @@ class Workout {
 
   /// Tallentamaton reitti GPX-tekstinä: kirjoitetaan tiedostoksi, kun treeni tallennetaan (ei .md:hen).
   String? routeGpx;
+
+  /// Varmuuskopiosta luettu alkuperäinen teksti: palautus kirjoittaa sen sellaisenaan (ei uudelleen muotoiltuna),
+  /// jottei käsin kirjoitettu tai jäsentimelle tuntematon rivi katoa. Ei tallennu mihinkään muuhun.
+  String? originalMd;
 
   Workout({
     required DateTime date,
@@ -310,6 +326,11 @@ String workoutToMarkdown(Workout w) {
   if (w.kcal != null) b.writeln('kcal: ${w.kcal}');
   if (w.hrAvg != null) b.writeln('hr_avg: ${w.hrAvg}');
   if (w.hrMax != null) b.writeln('hr_max: ${w.hrMax}');
+  if (w.hrSource case final s?) b.writeln('hr_source: $s');
+  if (w.kcalSource case final s?) b.writeln('kcal_source: $s');
+  // Käyrä yhdellä rivillä otsakkeessa: vanhemmat versiot ohittavat tuntemattoman avaimen (oma ##-osio näkyisi niille
+  // liikkeenä).
+  if (w.hrSeries case final s?) b.writeln('hr_series: ${s.encode()}');
   if (w.hcId case final id?) b.writeln('hc_id: $id');
   if (w.healthSource case final src?) {
     b.writeln('watch_source: Health Connect${src.isEmpty ? '' : ' ($src)'}');
@@ -382,10 +403,12 @@ String workoutToMarkdown(Workout w) {
   return b.toString();
 }
 
-const _unitRe = r'(?:\s*(?:s|sek|sekuntia|askelta|askel|edestakaisin|m|metriä)\b)?';
+const _unitRe = r'(?:\s*(?:s|sek|sekuntia|askelta|askel|edestakaisin|m|metriä|toistoa|toisto|krt|kertaa)\b)?';
 final _setRe = RegExp(r'^(?:\d+[.)]|[-*])\s*(\d+(?:[.,]\d+)?)\s*kg\s*[×xX*]\s*(\d+)' + _unitRe + r'(.*)$');
-// Ilman painoa: "1. 45 s", "2. 20 askelta"
-final _bwSetRe = RegExp(r'^(?:\d+[.)]|[-*])\s*(\d+)\s*(?:s|sek|sekuntia|askelta|askel|edestakaisin|m|metriä)\b(.*)$');
+// Ilman painoa: "1. 45 s", "2. 20 askelta", "3. 8 toistoa" (käsin kirjoitettu kehonpainoliike)
+final _bwSetRe = RegExp(
+  r'^(?:\d+[.)]|[-*])\s*(\d+)\s*(?:s|sek|sekuntia|askelta|askel|edestakaisin|m|metriä|toistoa|toisto|krt|kertaa)\b(.*)$',
+);
 final _rpeRe = RegExp(r'@\s*(\d+(?:[.,]\d+)?)');
 final _rirRe = RegExp(r'RIR\s*(3\+|1\s*[-–]\s*2|[0-9])');
 final _warmupRe = RegExp(r'^[-*]\s*(.+?):\s*(\d+)\s*min');
@@ -457,6 +480,10 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   if (w.steps == 0) w.steps = null;
   w.hrAvg = num('hr_avg');
   w.hrMax = num('hr_max');
+  const sources = {'sykevyö', 'kello', 'käsin', 'syke', 'nopeus'};
+  if (meta['hr_source']?.trim() case final s? when sources.contains(s)) w.hrSource = s;
+  if (meta['kcal_source']?.trim() case final s? when sources.contains(s)) w.kcalSource = s;
+  if (meta['hr_series'] case final s?) w.hrSeries = HrSeries.decode(s, w.date);
   w.watchTime = (meta['duration'] ?? '').contains('kello');
   w.manualTime = !w.watchTime && (meta['duration'] ?? '').contains('käsin');
   final src = RegExp(r'^Health Connect(?: \((.*)\))?$').firstMatch(meta['watch_source']?.trim() ?? '');

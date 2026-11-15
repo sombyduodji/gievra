@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/body.dart';
 import 'package:treenipaivakirja/csv_export.dart';
+import 'package:treenipaivakirja/hr_calc.dart';
 import 'package:treenipaivakirja/import_detect.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/models.dart';
@@ -54,7 +55,7 @@ void main() {
     expect(gym, contains('"Hyvä päivä; jalat ""raskaat"""'), reason: 'lainausmerkit kahdennetaan');
     expect(gym, isNot(contains('Bench Press')), reason: 'aikavälin ulkopuolella');
     expect(files[0].rows, 3);
-    expect(files[1].text, contains('2026-11-03,Running,26:00,5.2,5:00,150,,,,,Good'));
+    expect(files[1].text, contains('2026-11-03,Running,26:00,5.2,5:00,150,,,,,,,Good'));
     expect(files[2].text, contains('2026-11-03,82.4,180'));
   });
 
@@ -101,5 +102,40 @@ void main() {
     final zip = ZipDecoder().decodeBytes(csvZip(files));
     expect(zip.files.map((f) => f.name), files.map((f) => f.name));
     expect(zip.files.first.content, utf8.encode(files.first.text));
+  });
+
+  test('Sykevyö: salitreenien yhteenveto, lähteet ja sykekäyrä omana tiedostonaan', () {
+    final hrWs = [
+      Workout(date: day, title: 'Koko keho A', minutes: 55)
+        ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)]))
+        ..hrAvg = 121
+        ..hrMax = 158
+        ..kcal = 250
+        ..hrSource = 'sykevyö'
+        ..kcalSource = 'syke'
+        ..hrSeries = HrSeries(DateTime(2026, 11, 3, 17), 5, [110, 0, 130]),
+      Workout(date: day, title: 'Juoksu', activity: 'Juoksu', session: 2)
+        ..seconds = 1560
+        ..hrAvg = 150
+        ..hrSource = 'käsin'
+        ..kcal = 300
+        ..kcalSource = 'kello',
+    ];
+    final files = {
+      for (final f in buildCsvExport(hrWs, body, CsvExportOptions(from: DateTime(2000), to: DateTime(2030))))
+        f.name: f.text,
+    };
+    expect(files.keys, ['salisarjat.csv', 'liikunta.csv', 'salitreenit.csv', 'syke.csv']);
+    expect(files['salitreenit.csv'], contains('2026-11-03;Koko keho A;55:00;121;158;250;Sykevyö;Sykevyö;'));
+    expect(files['liikunta.csv'], contains(';150;;300;Käsin syötetty;Älykello;'));
+    expect(files['syke.csv'], contains('Päivä;Treeni;Kellonaika;Syke\n'));
+    expect(files['syke.csv'], contains('2026-11-03;Koko keho A;17:00:00;110\n2026-11-03;Koko keho A;17:00:10;130'));
+    // Pelkkä liikunta valittuna: salin käyrä ei tule mukaan.
+    final cardioOnly = buildCsvExport(
+      hrWs,
+      body,
+      CsvExportOptions(from: DateTime(2000), to: DateTime(2030), gym: false),
+    );
+    expect(cardioOnly.map((f) => f.name), ['liikunta.csv']);
   });
 }

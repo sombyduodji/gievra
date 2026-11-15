@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sykkeen tausta ilmoituksessa, sykealue 4 (sama väri kuin sovelluksen aluemerkissä). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#FFFAECE7" />
+    <corners android:radius="99dp" />
+</shape>

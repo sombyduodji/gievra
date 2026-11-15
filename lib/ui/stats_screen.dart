@@ -182,7 +182,15 @@ class _StatsScreenState extends State<StatsScreen> {
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     final ws = store.workouts;
     final (a, b) = _period(_offset);
-    final (pa, pb) = _period(_offset + 1);
+    var (pa, pb) = _period(_offset + 1);
+    // Kesken oleva jakso (tämä kuukausi): verrataan edellisen jakson samaan määrään päiviä (1.–5. vs 1.–5.), ettei
+    // kuun alussa kaikki näytä punaista laskua koko edelliseen kuukauteen verrattuna.
+    final tomorrow = addDays(dateOnly(DateTime.now()), 1);
+    final partial = !_custom && b.isAfter(tomorrow) && a.isBefore(tomorrow);
+    if (partial) {
+      final cut = addDays(pa, _days(a, tomorrow));
+      if (cut.isBefore(pb)) pb = cut;
+    }
     // Suodatin näkyy, kun käytössä on sekä sali että kestävyys (asetus tai historia).
     final hasGym = ws.any((w) => workoutKind(w) == 'gym');
     final hasCardio = ws.any((w) => workoutKind(w) == 'cardio');
@@ -203,10 +211,14 @@ class _StatsScreenState extends State<StatsScreen> {
         ? (span <= 126 ? 'week' : (monthsN <= 24 ? 'month' : 'year'))
         : (_months > 3 ? 'month' : 'week');
     final monthly = bucket == 'month';
+    // Pylväät päättyvät tähän päivään (kuluva viikko oikeassa reunassa), ei jakson loppuun: kesken olevalla
+    // kuukaudella tulevat viikot näkyivät tyhjinä pylväinä (päivätesti 14.11., käyttäjän päätös 14.11.).
+    final now0 = dateOnly(DateTime.now());
+    final barEnd = lastDay.isAfter(now0) ? now0 : lastDay;
     final bars = switch (bucket) {
-      'year' => yearlyCounts(ws, a, lastDay),
-      'month' => monthlyCounts(ws, lastDay, months: monthsN),
-      _ => weeklyCounts(ws, lastDay, weeks: weeksN),
+      'year' => yearlyCounts(ws, a, barEnd),
+      'month' => monthlyCounts(ws, barEnd, months: monthsN),
+      _ => weeklyCounts(ws, barEnd, weeks: weeksN),
     };
     final hasEarlier = ws.any((w) => w.date.isBefore(a));
     final today = dateOnly(DateTime.now());
@@ -227,11 +239,19 @@ class _StatsScreenState extends State<StatsScreen> {
         decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
         child: Column(
           children: [
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            // Arvo yhdellä rivillä (suurella fontilla ennen "160 / kg").
             FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(label, style: sub, maxLines: 1),
+              child: Text(
+                value,
+                maxLines: 1,
+                softWrap: false,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
             ),
+            // Pitkä nimike (esim. saameksi "dovdu gaskamearálaččat"): sanat omille riveilleen eikä sanan keskeltä
+            // katkaistuna; rivin ruudut venyvät samankorkuisiksi (IntrinsicHeight).
+            FitLabel(label, style: sub),
             // Muutosrivi aina paikallaan ja yhtä korkea (myös korostettu lasku), jotta rivin ruudut ovat yhtä korkeita.
             SizedBox(
               height: 19,
@@ -303,6 +323,10 @@ class _StatsScreenState extends State<StatsScreen> {
       Text(switch (_span) {
         _ when _custom =>
           hasEarlier ? t('Vertailu yhtä pitkään jaksoon ennen') : t('Ei vertailua: ennen jaksoa ei ole treenejä'),
+        _ when partial => t('Vertailu edellisen jakson samoihin päiviin ({0}–{1})', [
+          MaterialLocalizations.of(context).formatShortMonthDay(pa),
+          MaterialLocalizations.of(context).formatShortMonthDay(addDays(pb, -1)),
+        ]),
         'quarter' => t('Vertailu edelliseen 3 kuukauteen'),
         'half' => t('Vertailu edelliseen 6 kuukauteen'),
         _ => t('Vertailu edelliseen kuukauteen'),
@@ -351,35 +375,65 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
         ...periodControls,
         const SizedBox(height: 10),
+        // Yhteenvetolause ensin (ennen: vain ruudukko lukuja): jakson treenit ja ero edelliseen.
+        // Kestävyydessä liikuntakerrat ja matka ("5 liikuntakertaa · 23,4 km"), muuten treenit.
+        if (kind == 'cardio' ? r.activities > 0 : r.sessions > 0)
+          Padding(
+            key: const ValueKey('statsHeadline'),
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 14),
+            child: Text(() {
+              final cardio = kind == 'cardio';
+              final n = cardio ? r.activities : r.sessions, prev = cardio ? p.activities : p.sessions;
+              final d = n - prev;
+              // Yksikkömuoto erikseen: "1 treeni", ei "1 treeniä".
+              var count = cardio
+                  ? (n == 1 ? t('1 liikuntakerta') : t('{0} liikuntakertaa', [n]))
+                  : (n == 1 ? t('1 treeni') : t('{0} treeniä', [n]));
+              if (cardio && r.km > 0) count += ' · ${fmtNum((r.km * 10).round() / 10)} km';
+              if (prev == 0) return count;
+              final cmp = d == 0
+                  ? t('yhtä monta kuin edellisellä jaksolla')
+                  : d > 0
+                  ? t('{0} enemmän kuin edellisellä jaksolla', [d])
+                  : t('{0} vähemmän kuin edellisellä jaksolla', [-d]);
+              return '$count, $cmp';
+            }(), style: const TextStyle(fontSize: AppText.headline, fontWeight: FontWeight.w700, height: 1.2)),
+          ),
         if (kind != 'cardio') ...[
-          Row(
-            children: [
-              tile('${r.sessions}', kind == 'all' ? t('treeniä') : t('salitreeniä'), delta(r.sessions, p.sessions)),
-              const SizedBox(width: 6),
-              tile(
-                r.minutes == 0 ? '–' : _hours(r.minutes),
-                _timeLabel(r),
-                delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
-              ),
-              const SizedBox(width: 6),
-              tile(r.feeling == null ? '–' : feelingOf(r.feeling!.round())!.$2, t('fiilis keskimäärin'), ''),
-            ],
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                tile('${r.sessions}', kind == 'all' ? t('treeniä') : t('salitreeniä'), delta(r.sessions, p.sessions)),
+                const SizedBox(width: 6),
+                tile(
+                  r.minutes == 0 ? '–' : _hours(r.minutes),
+                  _timeLabel(r),
+                  delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
+                ),
+                const SizedBox(width: 6),
+                tile(r.feeling == null ? '–' : feelingOf(r.feeling!.round())!.$2, t('fiilis keskimäärin'), ''),
+              ],
+            ),
           ),
           const SizedBox(height: 6),
-          Row(
-            children: [
-              tile('${r.sets}', t('sarjaa'), delta(r.sets, p.sets)),
-              const SizedBox(width: 6),
-              tile(
-                r.volume == 0 ? '–' : _vol(r.volume),
-                t('volyymi'),
-                p.volume == 0 || r.volume == p.volume
-                    ? delta(r.volume, p.volume)
-                    : '${r.volume > p.volume ? '↑' : '↓'} ${_vol((r.volume - p.volume).abs())}',
-              ),
-              const SizedBox(width: 6),
-              tile('${r.prs}', t('ennätystä'), ''),
-            ],
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                tile('${r.sets}', t('sarjaa'), delta(r.sets, p.sets)),
+                const SizedBox(width: 6),
+                tile(
+                  r.volume == 0 ? '–' : _vol(r.volume),
+                  t('volyymi'),
+                  p.volume == 0 || r.volume == p.volume
+                      ? delta(r.volume, p.volume)
+                      : '${r.volume > p.volume ? '↑' : '↓'} ${_vol((r.volume - p.volume).abs())}',
+                ),
+                const SizedBox(width: 6),
+                tile('${r.prs}', t('ennätystä'), ''),
+              ],
+            ),
           ),
           // Erikoissarjat erikseen, vain kun niitä on.
           if (r.dropSets + r.amrapSets > 0)
@@ -444,7 +498,9 @@ class _StatsScreenState extends State<StatsScreen> {
                   Text(
                     [
                       t('{0} krt', [e.value.count]),
-                      if (e.value.minutes > 0) _hours(e.value.minutes),
+                      // Alle minuutin laji näkyy tarkkana (0:16), ei piiloon pyöristettynä.
+                      if (e.value.seconds > 0)
+                        e.value.seconds < 60 ? fmtDurationSec(e.value.seconds) : _hours(e.value.minutes),
                       if (e.value.km > 0) '${fmtNum((e.value.km * 10).round() / 10)} km',
                       if (e.value.steps > 0) t('{0} askelta', [thousands(e.value.steps)]),
                     ].join(' · '),
@@ -470,8 +526,12 @@ class _StatsScreenState extends State<StatsScreen> {
             program: settings.program!,
             done: () {
               final end = b.isAfter(today) ? addDays(today, 1) : b;
-              final sets = loggedSets(ws, a, end);
-              final weeks = (end.difference(a).inDays / 7).clamp(1.0, 100000.0);
+              // Keskiarvo vasta ohjelman alusta: sitä edeltävät viikot (toinen ohjelma tai ei treenejä) laskisivat
+              // keskiarvoa, vaikka ohjelmaa olisi noudatettu.
+              final ps = dateOnly(settings.program!.start);
+              final from = ps.isAfter(a) && ps.isBefore(end) ? ps : a;
+              final sets = loggedSets(ws, from, end);
+              final weeks = (end.difference(from).inDays / 7).clamp(1.0, 100000.0);
               return {for (final e in sets.entries) e.key: (e.value / weeks * 10).round() / 10};
             }(),
             doneLabel: t('toteutunut, keskimäärin viikossa'),
@@ -562,7 +622,7 @@ class _StatsScreenState extends State<StatsScreen> {
     // Päivän askeleet päällä: Treenit- ja Askeleet-välilehdet, sama jakso molemmissa.
     if (!stepsTabAvailable) {
       return Scaffold(
-        appBar: AppBar(title: Text(t('Edistyminen ja tilastot'))),
+        appBar: AppBar(title: BarTitle(Text(t('Edistyminen ja tilastot')))),
         body: workoutsBody,
       );
     }
@@ -571,7 +631,7 @@ class _StatsScreenState extends State<StatsScreen> {
       initialIndex: widget.tab == 'steps' ? 1 : 0,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(t('Edistyminen ja tilastot')),
+          title: BarTitle(Text(t('Edistyminen ja tilastot'))),
           bottom: TabBar(
             tabs: [
               Tab(text: t('Treenit')),
@@ -641,7 +701,16 @@ class _Bars extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(labels[i], style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant), maxLines: 1),
+                    // Suurella tekstillä päiväys pienenee mahtuakseen pylvään levyyn (ei katkea).
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        labels[i],
+                        style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant),
+                        maxLines: 1,
+                        softWrap: false,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -785,43 +854,63 @@ class _StackBars extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 120,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (var i = 0; i < weeks.length; i++)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (g(i) + c(i) > 0) Text('${g(i) + c(i)}', style: const TextStyle(fontSize: 9)),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Column(
-                            children: [
-                              if (c(i) > 0) Container(height: 80 * c(i) / max, color: Sami.green),
-                              if (g(i) > 0) Container(height: 80 * g(i) / max, color: Sami.red),
-                            ],
+        // Ruudunlukija: yksi yhteenveto pylväiden irrallisten lukujen ja päiväysten sijaan ("9.11.: 2, 16.11.: 1").
+        Semantics(
+          container: true,
+          label: [
+            for (var i = 0; i < weeks.length; i++)
+              if (g(i) + c(i) > 0)
+                '${yearly
+                    ? weeks[i].$1.year
+                    : monthly
+                    ? _monthShort(weeks[i].$1.month)
+                    : numDate(weeks[i].$1)}: ${g(i) + c(i)}',
+          ].join(', '),
+          excludeSemantics: true,
+          child: SizedBox(
+            height: 120,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var i = 0; i < weeks.length; i++)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (g(i) + c(i) > 0) Text('${g(i) + c(i)}', style: const TextStyle(fontSize: 9)),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Column(
+                              children: [
+                                if (c(i) > 0) Container(height: 80 * c(i) / max, color: Sami.green),
+                                if (g(i) > 0) Container(height: 80 * g(i) / max, color: Sami.red),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          yearly
-                              ? '${weeks[i].$1.year}'
-                              : monthly
-                              ? _monthShort(weeks[i].$1.month)
-                              : numDate(weeks[i].$1),
-                          style: label,
-                          maxLines: 1,
-                        ),
-                      ],
+                          const SizedBox(height: 2),
+                          // Päiväys pienenee aina pylvään levyiseksi (myös järjestelmän suurella fontilla): katkaistu
+                          // "12.1" luettiin tammikuuksi (päivätesti 14.11.).
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              yearly
+                                  ? '${weeks[i].$1.year}'
+                                  : monthly
+                                  ? _monthShort(weeks[i].$1.month)
+                                  : numDate(weeks[i].$1),
+                              style: label,
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 6),

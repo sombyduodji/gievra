@@ -21,7 +21,9 @@ void main() {
     expect((Settings()..applyMarkdown(md)).trainMode, 'cardio');
   });
 
-  testWidgets('Etusivu: Molemmat-tilassa + Sali ja + Liikunta vierekkäin, muuten yksi painike', (tester) async {
+  testWidgets('Etusivu: Molemmat-tilassa Sali ja Liikunta rinnakkain (käytetympi leveämpi), muuten yksi painike', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -39,10 +41,38 @@ void main() {
     ];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    // Molemmat: + Sali ja + Liikunta vierekkäin, muut lajit pikavalintoina, tämän päivän lenkki rivinä.
+    // Molemmat: iso painike on se laji, jota on tehty enemmän viimeisen 14 päivän aikana (tässä liikunta), toinen
+    // pienempi painike (Sali); muut lajit omalla sivulla, tämän päivän lenkki rivinä.
+    // Rinnakkain jaettu painike (14.11.): Sali vasemmalla, Liikunta oikealla; käytetympi leveämpi.
+    double wOf(String k) => tester.getSize(find.byKey(ValueKey(k))).width;
+    expect(find.text('Liikunta'), findsOneWidget);
+    expect(find.text('Sali'), findsOneWidget);
+    expect(wOf('splitActivity'), greaterThan(wOf('splitGym')));
+    // Ei Viimeksi-alariviä (käyttäjä 15.11.): viimeisimmän lajin emoji Liikunta-puolella.
+    expect(find.text('Viimeksi: Juoksu'), findsNothing);
+    expect(find.descendant(of: find.byKey(const ValueKey('splitActivity')), matching: find.text('🏃')), findsOneWidget);
+    expect(find.text('Aloita salitreeni'), findsNothing);
+    expect(find.text('Pyöräily'), findsNothing); // lajit omalla sivulla, ei pikavalintoina
+    // Salitreenejä enemmän: sali on iso painike ja liikunta pieni.
+    store.workouts = [
+      Workout(date: DateTime.now().subtract(const Duration(days: 2)), title: 'Treeni')
+        ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)])),
+      Workout(date: DateTime.now().subtract(const Duration(days: 3)), title: 'Treeni')
+        ..exercises.add(ExerciseEntry('Penkkipunnerrus', [SetEntry(60, 5)])),
+      Workout(date: DateTime.now(), title: 'Juoksu', activity: 'Juoksu', distanceKm: 6, seconds: 1800, minutes: 30),
+    ];
+    settings.setTrainMode('cardio');
+    settings.setTrainMode('both');
+    await tester.pump();
     expect(find.text('Sali'), findsOneWidget);
     expect(find.text('Liikunta'), findsOneWidget);
-    expect(find.text('Pyöräily'), findsNothing); // lajit omalla sivulla, ei pikavalintoina
+    expect(wOf('splitGym'), greaterThan(wOf('splitActivity')));
+    store.workouts = [
+      Workout(date: DateTime.now(), title: 'Juoksu', activity: 'Juoksu', distanceKm: 6, seconds: 1800, minutes: 30),
+    ];
+    settings.setTrainMode('cardio');
+    settings.setTrainMode('both');
+    await tester.pump();
     // Tämän päivän lenkki rivinä (ja tilastokortin Juoksu-puolella).
     expect(find.textContaining('6 km', findRichText: true), findsWidgets);
     // Pelkkä sali: ei valintaa, vanha etusivu.

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Androidin oma varmuuskopio (Android 12+): asetukset ja treenit mukaan, mutta ei tämän puhelimen sykevyön
+     osoitetta (laite/), keskeneräistä liikuntaluonnosta, GPS-tallennuksen tilaa eikä karttapaketteja (isot, ladattavissa
+     uudelleen; pilvivarmuuskopion 25 Mt:n raja). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="laite/" />
+        <exclude domain="file" path="liikunta-luonnos.json" />
+        <exclude domain="file" path="gps-recording.json" />
+        <exclude domain="file" path="gps-recording.csv" />
+        <exclude domain="file" path="kartat/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="laite/" />
+        <exclude domain="file" path="liikunta-luonnos.json" />
+        <exclude domain="file" path="gps-recording.json" />
+        <exclude domain="file" path="gps-recording.csv" />
+    </device-transfer>
+</data-extraction-rules>

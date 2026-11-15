@@ -112,3 +112,7 @@ SessionCompare compareSession(Workout w, List<Workout> all, Program? p) {
 /// Ajastimen teksti: "12 min", "1 h 05 min".
 String fmtDuration(int minutes) =>
     minutes < 60 ? '$minutes min' : '${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')} min';
+
+/// Treenin kesto näytettäväksi: tarkka aika (ajanotto, GPS: m:ss tai h:mm:ss) tai kirjatut minuutit.
+String? durationText(Workout w) =>
+    w.seconds != null ? fmtDurationSec(w.seconds!) : (w.minutes == null ? null : fmtDuration(w.minutes!));

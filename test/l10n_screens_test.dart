@@ -1,9 +1,11 @@
+import 'dart:math' as math;
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, MethodChannel, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:treenipaivakirja/anim/cue_lang.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/custom_merge.dart';
@@ -35,6 +37,20 @@ import 'package:treenipaivakirja/ui/stats_screen.dart';
 import 'package:treenipaivakirja/ui/workout.dart';
 import 'package:treenipaivakirja/ui/widgets.dart';
 import 'package:treenipaivakirja/ui/set_logger.dart';
+import 'package:treenipaivakirja/ui/onboarding.dart';
+import 'package:treenipaivakirja/battery.dart';
+import 'package:treenipaivakirja/ui/battery_ui.dart';
+import 'package:treenipaivakirja/ui/hr_ui.dart';
+import 'package:treenipaivakirja/heart_rate.dart';
+
+import 'dart:async';
+
+import 'package:treenipaivakirja/hr_calc.dart';
+import 'package:treenipaivakirja/body.dart';
+import 'package:treenipaivakirja/ui/whats_new_dialog.dart';
+import 'package:treenipaivakirja/whats_new.dart';
+import 'package:treenipaivakirja/rest.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph, RenderFittedBox;
 
 // Käännöstarkistus näkymittäin: englanniksi ja saameksi näkyvissä ei saa olla suomenkielistä tekstiä.
 // Tunnistus: (1) teksti on .po-tiedoston suomenkielinen alkuteksti, jolla on eri käännös, (2) siinä on ä tai ö
@@ -93,6 +109,39 @@ final ThemeData? _shotTheme = switch (Platform.environment['GIEVRA_THEME']) {
   'light' => _withFallback(buildTheme(Brightness.light)),
   _ => null,
 };
+// Katkenneet ja kutistuneet tekstit raporttiin (GIEVRA_CLIP_REPORT=<tiedosto>): "…"-katkaisu (maxLines ylittyi) ja
+// FittedBoxin alle 80 %:iin pienentämä teksti. Ei kaada testiä: raportteja verrataan koon välillä (100 % vs 130 %).
+final _clipReport = Platform.environment['GIEVRA_CLIP_REPORT'];
+
+void _reportClips(WidgetTester tester, String lang, String where) {
+  if (_clipReport == null) return;
+  final out = StringBuffer();
+  for (final r in tester.allRenderObjects) {
+    if (r is RenderParagraph && r.didExceedMaxLines) {
+      out.writeln('$lang\t$where\tcut\t${r.text.toPlainText().replaceAll('\n', ' ')}');
+    } else if (r is RenderFittedBox && r.hasSize && r.child != null && r.child!.hasSize) {
+      final c = r.child!.size;
+      if (c.width <= 0 || c.height <= 0) continue;
+      final f = [r.size.width / c.width, r.size.height / c.height].reduce((a, b) => a < b ? a : b);
+      if (f < .8) {
+        final texts = <String>[];
+        void walk(RenderObject o) {
+          if (o is RenderParagraph) texts.add(o.text.toPlainText().replaceAll('\n', ' '));
+          o.visitChildren(walk);
+        }
+
+        walk(r);
+        out.writeln('$lang\t$where\tshrunk ${(f * 100).round()} %\t${texts.join(' / ')}');
+      }
+    }
+  }
+  if (out.isNotEmpty) File(_clipReport!).writeAsStringSync(out.toString(), mode: FileMode.append);
+}
+
+// Tekstin koon tarkistus (Asetukset → Tekstin koko): GIEVRA_TEXT_SCALE=1.3 GIEVRA_SHOTS=<kansio> flutter test
+// test/l10n_screens_test.dart – näkymät puhelimen levyisinä (411 px) ja tekstit 130 %:na; ylivuodot kaatavat testin.
+final double? _textScale = double.tryParse(Platform.environment['GIEVRA_TEXT_SCALE'] ?? '');
+
 ThemeData _withFallback(ThemeData t) =>
     t.copyWith(textTheme: t.textTheme.apply(fontFamilyFallback: const ['DejaVu', 'Emoji']));
 
@@ -109,6 +158,15 @@ class _TApp extends StatelessWidget {
       locale: flutterLocale(uiLang),
       supportedLocales: appSupportedLocales,
       localizationsDelegates: appLocalizationsDelegates,
+      builder: _textScale == null
+          ? null
+          : (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(_textScale!)),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(width: 411, child: child),
+              ),
+            ),
       home: home,
     ),
   );
@@ -156,6 +214,7 @@ void main() {
       // [allow]: tekstit, jotka saavat näkyä suomeksi (saameksi liikevinkit, joista näkyy erillinen ilmoitus).
       Future<void> check(WidgetTester tester, String where, {List<String> allow = const []}) async {
         if (_shots != null) await _capture(tester, '$lang-$where');
+        _reportClips(tester, lang, where);
         final b = lang == 'fi' ? const <String>[] : [..._finnish(tester, lang).where((x) => !allow.contains(x))];
         if (b.isNotEmpty) found[where] = b;
         expect(b, isEmpty, reason: 'suomenkielistä tekstiä näkymässä "$where" ($lang)');
@@ -163,6 +222,8 @@ void main() {
 
       setUpAll(() async {
         TestWidgetsFlutterBinding.ensureInitialized();
+        // Etusivun kortti muistaa valitun puolen: ilman tätä kuvakaappaustilassa MissingPluginException.
+        SharedPreferences.setMockInitialValues({});
         if (_shots != null) await _loadShotFonts();
         await setUiLang(lang);
         final po = lang == 'fi' ? '' : await rootBundle.loadString('assets/l10n/$lang.po');
@@ -217,7 +278,8 @@ void main() {
           for (var step = 2; step <= 12; step++) {
             await check(tester, 'kysely $step ($goal)');
             if (step == 2) await _tapText(tester, t(goal));
-            if (step == 3 && exp != null) await _tapText(tester, t(exp));
+            // Kokemus on vammakysymyksen jälkeen (sivu 4); haetaan tekstillä.
+            if (exp != null && find.text(t(exp)).hitTestable().evaluate().isNotEmpty) await _tapText(tester, t(exp));
             if (days != null && find.text(days).hitTestable().evaluate().isNotEmpty && step >= 5) {
               await _tapText(tester, days);
               if (minutes != null) await _tapText(tester, minutes);
@@ -506,6 +568,122 @@ void main() {
           ),
         ),
         'health connect -tuonti': () => const HealthImportScreen(),
+        'aloitus': () => const OnboardingScreen(),
+        'sykevyö': () => const HrScreen(),
+        'syke: salitreeni': () {
+          _hrOn('gym:shot', 148);
+          return WorkoutScreen(
+            workout: Workout(date: dateOnly(DateTime.now()), title: 'Koko keho A')
+              ..exercises.addAll([
+                ExerciseEntry('Takakyykky', [SetEntry(100, 5)]),
+                ExerciseEntry('Penkkipunnerrus'),
+              ]),
+          );
+        },
+        'akku: ohje': () {
+          battery
+            ..exempt = false
+            ..samsung = true;
+          return const Scaffold(body: BatteryHelpSheet());
+        },
+        'akku: aloitus': () {
+          battery.exempt = false;
+          return const Scaffold(
+            body: Padding(padding: EdgeInsets.all(16), child: BatteryIntroSection()),
+          );
+        },
+        'syke: palautus': () {
+          _hrOn('gym:shot', 112);
+          rest.start(150, 'Takakyykky');
+          return SetLoggerScreen(
+            date: dateOnly(DateTime.now()),
+            entry: ExerciseEntry('Takakyykky', [SetEntry(100, 5)]),
+            target: Target(4, 5, 5, '1–2', 150, '4 × 5'),
+            onChanged: () async {},
+          );
+        },
+        'syke: kävely (rengas)': () {
+          _hrOn('activity', 131);
+          return const Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(18),
+                child: HrRing(sessionKey: 'activity'),
+              ),
+            ),
+          );
+        },
+        'yhteenveto: juoksu sykevyöllä': () {
+          settings
+            ..birthYear = 1986
+            ..sex = 'nainen'
+            ..body = BodyLog(heightCm: 165, weights: {day: 62});
+          return SavedScreen(
+            workout: Workout(date: day, title: 'Juoksu', activity: 'Juoksu')
+              ..seconds = 1800
+              ..minutes = 30
+              ..distanceKm = 5
+              ..hrAvg = 152
+              ..hrMax = 178
+              ..hrSource = 'sykevyö'
+              ..kcal = 330
+              ..kcalSource = 'syke'
+              ..hrSeries = HrSeries(DateTime(day.year, day.month, day.day, 17), 5, [
+                // Lämmittely ja intervallit: syke nousee ja laskee vähitellen kuten oikeasti.
+                for (var i = 0; i < 360; i++)
+                  i < 60
+                      ? (95 + i * 0.75).round()
+                      : (148 + 14 * math.sin((i - 60) / 60 * 2 * math.pi) + 3 * math.sin(i / 3)).round(),
+              ]),
+          );
+        },
+        'ohjelmakysely ensimmäisellä kerralla': () => const IntroScreen(firstRun: true),
+        'yhteenveto: sali': () => SavedScreen(
+          workout: Workout(date: day, title: 'Koko keho A')
+            ..minutes = 52
+            ..feeling = 4
+            ..exercises.addAll([
+              ExerciseEntry('Takakyykky', [SetEntry(100, 5), SetEntry(100, 5)]),
+              ExerciseEntry('Kahvakuula-askelkyykky', [SetEntry(20, 8)]),
+            ]),
+        ),
+        'yhteenveto: juoksu': () => SavedScreen(
+          workout: Workout(date: day, title: 'Juoksu', activity: 'Juoksu')
+            ..seconds = 1800
+            ..minutes = 30
+            ..distanceKm = 5
+            ..intensity = 'reipas'
+            ..hrAvg = 148
+            ..kcal = 410,
+        ),
+        'sarjan kirjaus ja palautus': () {
+          rest.start(150, 'Kahvakuula-askelkyykky');
+          return SetLoggerScreen(
+            date: day,
+            entry: ExerciseEntry('Kahvakuula-askelkyykky', [SetEntry(20, 8)]),
+            target: Target(3, 8, 12, '2–3', 90, '3 × 8–12'),
+            onChanged: () async {},
+          );
+        },
+        'uutta tässä versiossa': () => Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => showWhatsNew(context, whatsNew.where((f) => f.version.startsWith('0.6.')).toList(), '0.6.6'),
+            );
+            return const Scaffold();
+          },
+        ),
+        'fiilis ja rasitus': () => Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => askFeeling(context, askIntensity: true));
+            return const Scaffold();
+          },
+        ),
+        'etusivu: sairastauko ja vammat': () {
+          settings.pauses = [Pause(day.subtract(const Duration(days: 2)), 'sairas')];
+          settings.injuries = [for (final r in injuryRegions) r.id];
+          return const HomeScreen();
+        },
       };
       for (final MapEntry(key: name, value: make) in screens.entries) {
         testWidgets('Näkymä: $name', (tester) async {
@@ -515,7 +693,23 @@ void main() {
           settings.program = null;
           await tester.pumpWidget(_TApp(home: make()));
           await tester.pump(const Duration(seconds: 1));
+          // Ikkunat (Uutta tässä versiossa, fiilis) avautuvat ensimmäisen kuvan jälkeen: animaatio loppuun.
+          await tester.pump(const Duration(seconds: 1));
           await check(tester, name);
+          // Näkymäkohtaiset tilat pois (tauko, vammat, palautusajastin).
+          rest.stop();
+          if (hr.recording) {
+            // Ei odoteta: lopetus odottaa seuraavaa kierrosta, jota testin kello ei aja.
+            unawaited(hr.end('gym:shot'));
+            unawaited(hr.end('activity'));
+          }
+          hr.address = null;
+          settings.birthYear = null;
+          settings.sex = null;
+          settings.pauses = [];
+          settings.injuries = [];
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump(const Duration(milliseconds: 10)); // sykevyön lopetuksen ajastin
         });
       }
 
@@ -721,4 +915,55 @@ void main() {
       });
     });
   }
+}
+
+/// Keksitty sykevyö näkymätarkistukseen.
+class _ShotHr implements HrSource {
+  final c = StreamController<Map<String, Object?>>.broadcast();
+  @override
+  Stream<Map<String, Object?>> get events => c.stream;
+  @override
+  Future<bool> supported() async => true;
+  @override
+  Future<bool> enabled() async => true;
+  @override
+  Future<void> scan(int seconds) async {}
+  @override
+  Future<void> stopScan() async {}
+  @override
+  Future<void> connect(String address) async => c.add({'type': 'state', 'state': 'connected'});
+  @override
+  Future<void> disconnect() async {}
+  @override
+  Future<void> requestEnable() async {}
+  @override
+  Future<bool> needsLocation() async => false;
+  @override
+  Future<bool> permitted() async => true;
+}
+
+final _shotHr = _ShotHr();
+
+/// Sykevyö käytössä, profiili annettu, viimeiset 3 min lukemia (sarja ja palautuminen) ja nykyinen syke [bpm].
+void _hrOn(String key, int bpm) {
+  settings
+    ..birthYear = DateTime.now().year - 40
+    ..sex = 'mies'
+    ..body = BodyLog(heightCm: 180, weights: {DateTime(2026, 11, 1): 80});
+  hr.source = _shotHr;
+  hr.address = 'AA:BB';
+  hr.name = 'Polar H10';
+  hr.begin(key);
+  final now = DateTime.now();
+  hr.recent
+    ..clear()
+    ..addAll([
+      for (var i = 0; i < 36; i++)
+        (now.subtract(Duration(seconds: 180 - i * 5)), (bpm + 25 * math.sin(i / 36 * 2 * math.pi)).round()),
+    ]);
+  scheduleMicrotask(() {
+    for (var i = 0; i < 3; i++) {
+      _shotHr.c.add({'type': 'hr', 'bpm': bpm, 'contact': true, 't': 0});
+    }
+  });
 }

@@ -11,11 +11,14 @@ void main() {
       testWidgets('Aloitus: $lang, $mode', (tester) async {
         settings
           ..name = null
+          ..started = false
           ..introDone = false
           ..trainMode = mode;
         await tester.runAsync(() => setUiLang(lang));
         await tester.pumpWidget(const TreeniApp());
         await tester.pumpAndSettle();
+        // Nimikenttä ei ole enää automaattisesti valittuna (valinnainen): vieritetään se näkyviin.
+        await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
         await tester.enterText(find.byType(TextField).first, 'Testi');
         await tester.pump();
         final start = find.widgetWithText(FilledButton, t('Aloitetaan'));
@@ -41,6 +44,7 @@ void main() {
       testWidgets('Aloitus, kieli vaihdetaan aloitussivulla: $lang, $mode', (tester) async {
         settings
           ..name = null
+          ..started = false
           ..introDone = false
           ..trainMode = mode;
         await tester.runAsync(() => setUiLang('fi'));
@@ -58,6 +62,8 @@ void main() {
         });
         await tester.pumpAndSettle();
         expect(uiLang, lang);
+        // Nimikenttä ei ole enää automaattisesti valittuna (valinnainen): vieritetään se näkyviin.
+        await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
         await tester.enterText(find.byType(TextField).first, 'Testi');
         await tester.pump();
         final start = find.widgetWithText(FilledButton, t('Aloitetaan'));
@@ -75,4 +81,37 @@ void main() {
       });
     }
   }
+
+  testWidgets('Nimi on valinnainen: tyhjällä nimellä aloitus menee läpi ja tervehdys on ilman nimeä', (tester) async {
+    settings
+      ..name = null
+      ..started = false
+      ..introDone = true
+      ..trainMode = 'gym';
+    await tester.runAsync(() => setUiLang('fi'));
+    await tester.pumpWidget(const TreeniApp());
+    await tester.pumpAndSettle();
+    final start = find.widgetWithText(FilledButton, t('Aloitetaan'));
+    await tester.dragUntilVisible(start, find.byType(ListView).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(start).onPressed, isNotNull);
+    await tester.tap(start);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect((settings.name, settings.started, settings.onboarded), ('', true, true));
+    expect(find.widgetWithText(FilledButton, t('Aloitetaan')), findsNothing);
+    expect(find.textContaining(RegExp(r'^[^,]+!$')), findsWidgets, reason: 'tervehdys ilman nimeä');
+    expect(settings.settingsToMarkdown(), contains('started: true'));
+  });
+
+  test('Vanhat asetukset: nimi annettu = aloitus käyty; started luetaan tiedostosta', () {
+    settings
+      ..name = 'Testi'
+      ..started = false;
+    expect(settings.onboarded, isTrue);
+    settings.name = null;
+    expect(settings.onboarded, isFalse);
+    settings.applyMarkdown('---\nstarted: true\n---\n');
+    expect(settings.onboarded, isTrue);
+  });
 }

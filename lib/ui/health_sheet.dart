@@ -272,9 +272,43 @@ class _HealthSheetState extends State<_HealthSheet> {
                 Expanded(
                   child: FilledButton(
                     style: FilledButton.styleFrom(backgroundColor: Sami.green, foregroundColor: Colors.white),
-                    onPressed: () {
-                      applyCandidate(widget.w, c, steps: stepsSport, chosenSteps: walkHike ? chosen?.$2 : null);
-                      Navigator.pop(context, true);
+                    onPressed: () async {
+                      // Sykevyön (tai käsin kirjatut) sykkeet ja kalorit: kysytään ennen korvaamista.
+                      var replace = false;
+                      if (protectedHr(widget.w, c)) {
+                        final r = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(t('Korvataanko syke ja kalorit?')),
+                            content: Text(
+                              widget.w.hrSource == 'sykevyö' || widget.w.kcalSource == 'syke'
+                                  ? t(
+                                      'Tähän treeniin on jo tallennettu sykevyön syke ja kalorit. Sykevyö mittaa '
+                                      'rinnasta juuri tämän treenin ajan, joten se on yleensä tarkempi kuin kello. '
+                                      'Muut tiedot (esim. askeleet) lisätään joka tapauksessa.',
+                                    )
+                                  : t('Syke tai kalorit on kirjattu käsin. Muut tiedot lisätään joka tapauksessa.'),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: Text(t('Korvaa kellon tiedoilla')),
+                              ),
+                              FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Pidä nykyiset'))),
+                            ],
+                          ),
+                        );
+                        if (r == null || !context.mounted) return;
+                        replace = r;
+                      }
+                      applyCandidate(
+                        widget.w,
+                        c,
+                        steps: stepsSport,
+                        chosenSteps: walkHike ? chosen?.$2 : null,
+                        replace: replace,
+                      );
+                      if (context.mounted) Navigator.pop(context, true);
                     },
                     child: Text(t('Lisää')),
                   ),

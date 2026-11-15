@@ -198,6 +198,9 @@ void main() {
   });
 
   testWidgets('Pudotussarja: −20 % valmiiksi, AMRAP tallentuu ilman varaa ja palaa tavalliseen', (tester) async {
+    // Sarjat peräkkäin heti: ohitetaan vahinkotoiston esto (oma testinsä alla).
+    SetLoggerScreen.repeatGuard = Duration.zero;
+    addTearDown(() => SetLoggerScreen.repeatGuard = const Duration(milliseconds: 600));
     await tall(tester);
     final e = await logger(tester, 'Penkkipunnerrus', sets: [SetEntry(100, 5, rir: 1)]);
     await tester.tap(find.text('Pudotus'));
@@ -219,6 +222,16 @@ void main() {
     expect(e.sets.last.rir, 0);
     expect(find.text('Ei yhtään'), findsOneWidget, reason: 'takaisin tavalliseen');
     expect(find.textContaining('AMRAP'), findsWidgets);
+  });
+
+  testWidgets('Tuplanapautus tallentaa sarjan kerran (vahinkotoisto)', (tester) async {
+    await tall(tester);
+    final e = await logger(tester, 'Penkkipunnerrus', sets: [SetEntry(100, 5, rir: 1)]);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Muutama'));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(e.sets.length, 2, reason: 'kolme nopeaa napautusta = yksi uusi sarja');
   });
 
   testWidgets('Supersarjan luonti treenissä ⋮-valikosta', (tester) async {

@@ -52,6 +52,12 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // R8 (kutistus ja nimien lyhennys) ja käyttämättömien resurssien poisto. Flutter laittaa nämä päälle
+            // oletuksena (ellei --no-shrink); tässä erikseen, ettei julkaisu riipu oletuksesta. Kotlin-luokat, joihin
+            // manifesti viittaa (palvelut, vastaanottimet), säilyvät automaattisesti. Pinojäljet: mapping.txt
+            // (build/app/outputs/mapping/release/), säilytetään julkaisun mukana.
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }

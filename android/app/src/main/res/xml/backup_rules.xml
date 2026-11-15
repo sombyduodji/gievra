@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Androidin oma varmuuskopio (Android 11 ja vanhemmat): samat rajaukset kuin data_extraction_rules.xml. -->
+<full-backup-content>
+    <exclude domain="file" path="laite/" />
+    <exclude domain="file" path="liikunta-luonnos.json" />
+    <exclude domain="file" path="gps-recording.json" />
+    <exclude domain="file" path="gps-recording.csv" />
+    <exclude domain="file" path="kartat/" />
+</full-backup-content>

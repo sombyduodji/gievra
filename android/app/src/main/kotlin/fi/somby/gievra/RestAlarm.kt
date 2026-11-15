@@ -17,11 +17,14 @@ import androidx.core.app.NotificationManagerCompat
 /// Palautusajastin: tarkka hälytys (AlarmManager), joka näyttää ilmoituksen äänellä ja värinällä myös silloin,
 /// kun näyttö on pois päältä tai käyttäjä on toisessa sovelluksessa. Ääni valitaan asetuksista; jokaisella
 /// äänellä on oma ilmoituskanava, koska kanavan ääntä ei voi muuttaa jälkikäteen.
+/// Ilmoitus on lyhyt ponnahdus, joka poistuu itsestään [POPUP_MS] jälkeen (ei jää ilmoituslistaan pyyhittäväksi):
+/// tila näkyy sen jälkeen treeni-ilmoituksen omassa rivissä (OngoingNote).
 object RestAlarm {
     private const val REQUEST = 4711
     private const val NOTIFICATION = 4712
     val sounds = mapOf("pling" to R.raw.rest_pling, "boop" to R.raw.rest_boop, "chime" to R.raw.rest_chime)
     private val vibration = longArrayOf(0, 250, 150, 250)
+    private const val POPUP_MS = 10_000L
 
     private fun channelId(sound: String) = "rest_$sound"
 
@@ -71,6 +74,7 @@ object RestAlarm {
 
     fun schedule(ctx: Context, seconds: Int, title: String, body: String, sound: String) {
         ensureChannel(ctx, sound)
+        NotificationManagerCompat.from(ctx).cancel(NOTIFICATION) // edellisen tauon ponnahdus pois
         val am = ctx.getSystemService(AlarmManager::class.java)
         val at = System.currentTimeMillis() + seconds * 1000L
         val pi = alarmIntent(ctx, title, body, sound)
@@ -100,7 +104,7 @@ object RestAlarm {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVibrate(vibration)
             .setAutoCancel(true)
-            .setTimeoutAfter(60_000)
+            .setTimeoutAfter(POPUP_MS)
             .apply { if (open != null) setContentIntent(open) }
             .build()
         try {

@@ -100,6 +100,9 @@ void main() {
   });
 
   testWidgets('Palautuspalkki näyttää seuraavan sarjan ja päivittyy, kun painoa muutetaan', (tester) async {
+    // Sarjat peräkkäin heti: ohitetaan vahinkotoiston esto (oma testinsä alla).
+    SetLoggerScreen.repeatGuard = Duration.zero;
+    addTearDown(() => SetLoggerScreen.repeatGuard = const Duration(milliseconds: 600));
     tester.view.physicalSize = const Size(1080, 7000);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);

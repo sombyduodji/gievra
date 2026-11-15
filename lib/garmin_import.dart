@@ -281,7 +281,7 @@ bool isGarminCsv(String text) {
             activity: sport,
             distanceKm: km == null ? null : (km * 100).round() / 100,
             seconds: sec,
-            minutes: sec == null ? null : (sec / 60).round(),
+            minutes: sec == null ? null : minutesFromSeconds(sec),
             started: start,
             kcal: garminNum(c.get(r, _cKcal))?.round(),
             hrAvg: garminNum(c.get(r, _cHr))?.round(),

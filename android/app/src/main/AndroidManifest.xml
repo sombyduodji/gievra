@@ -15,7 +15,23 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Treeni käynnissä (WorkoutService): treeni-ilmoitus etualan palveluna, jottei sovellusta jäädytetä taustalla. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Akunsäästö: Androidin oma kysymys, saako Gievra toimia taustalla (käyttäjä päättää). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <!-- Valinnainen sykevyö Bluetoothilla (Polar H10 ym.): haku ja yhteys vain käyttäjän valitsemaan vyöhön.
+         Android 12+: BLUETOOTH_SCAN ilman sijaintia (neverForLocation) ja BLUETOOTH_CONNECT; vanhemmissa
+         Bluetooth-haku vaatii sijaintiluvan (yllä). -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"
+        xmlns:tools="http://schemas.android.com/tools" tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Sykevyö taustalla (näyttö lukittuna): treenin ja GPS-lenkin etualan palvelu myös connectedDevice-tyyppinä,
+         kun vyö on valittu. Ilman sitä OnePlus (OxygenOS 16) katkaisi vyön noin 1,5 min kuluttua. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <!-- Health Connect (valinnainen): syke, harjoitukset, kalorit ja askeleet vain treenin aikaväliltä, vain kun käyttäjä
          pyytää treenin jälkeen. Kirjasto vaatii Android 8:n; vanhemmissa Health Connect näkyy "ei saatavilla". -->
     <uses-sdk xmlns:tools="http://schemas.android.com/tools" tools:overrideLibrary="androidx.health.connect.client" />
@@ -41,7 +57,9 @@
     <application
         android:label="Gievra"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -59,6 +77,9 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Flutterin syvälinkit pois: muuten "Avaa sovelluksella" -tiedoston content://-osoite yritetään avata
+                 näkymän nimenä (pushNamed), mikä kaatui jokaisella avauksella. Tiedostot luetaan itse (MainActivity). -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -67,27 +88,30 @@
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
-            <!-- Ohjelmapohja (.gmd): "Avaa sovelluksella" tiedostonhallinnasta, sähköpostista tai viestistä.
-                 Tiedostopääte tunnistetaan, kun polku on näkyvissä; muuten Gievra tarjoutuu tuntemattomille
-                 tiedostoille ja tarkistaa sisällön itse. -->
+            <!-- "Avaa sovelluksella" tiedostonhallinnasta, sähköpostista tai viestistä: ohjelmapohja (.gmd), FitNotes-
+                 varmuuskopio, Gievran varmuuskopio (.zip), .md-treenit. Tyypin tunnistaa sama koodi kuin Tuo tiedosto
+                 -painikkeessa. Tiedostopääte tunnistetaan, kun polku on näkyvissä; muuten Gievra tarjoutuu tuntemattomille
+                 tiedostoille ja tarkistaa sisällön itse. Vain content://: file://-osoitetta MainActivity ei lue
+                 (hiljainen umpikuja), joten sille ei tarjouduta. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.gmd" />
-                <data android:scheme="file" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.gmd" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" android:mimeType="application/octet-stream" />
                 <data android:scheme="content" android:mimeType="text/markdown" />
+                <data android:scheme="content" android:mimeType="application/zip" />
             </intent-filter>
             <!-- Jaa → Gievra -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
                 <data android:mimeType="text/*" />
             </intent-filter>
         </activity>
@@ -97,7 +121,13 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <receiver android:name=".RestAlarmReceiver" android:exported="false" />
-        <service android:name=".GpsService" android:exported="false" android:foregroundServiceType="location" />
+        <receiver android:name=".OngoingRestoreReceiver" android:exported="false" />
+        <service android:name=".GpsService" android:exported="false" android:foregroundServiceType="location|connectedDevice" />
+        <service android:name=".WorkoutService" android:exported="false" android:foregroundServiceType="specialUse|connectedDevice">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Workout in progress: rest timer and heart rate strap during a gym workout or timed activity" />
+        </service>
         <!-- Vikailmoituksen liitteet sähköpostisovellukselle (ks. MainActivity). -->
         <provider
             android:name="androidx.core.content.FileProvider"

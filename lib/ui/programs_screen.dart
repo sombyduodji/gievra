@@ -82,7 +82,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
     final cs = Theme.of(context).colorScheme;
     final cur = settings.program;
     return Scaffold(
-      appBar: AppBar(title: Text(t('Ohjelmat'))),
+      appBar: AppBar(title: BarTitle(Text(t('Ohjelmat')))),
       body: FutureBuilder(
         future: _list,
         builder: (context, snap) {

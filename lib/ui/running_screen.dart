@@ -14,7 +14,7 @@ class RunningScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(t('Juoksun kehitys'))),
+    appBar: AppBar(title: BarTitle(Text(t('Juoksun kehitys')))),
     body: ListenableBuilder(listenable: store, builder: (context, _) => _body(context)),
   );
 
@@ -190,7 +190,15 @@ class _WeekBars extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(numDate(w.start), style: TextStyle(fontSize: 8, color: cs.onSurfaceVariant)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        numDate(w.start),
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(fontSize: 8, color: cs.onSurfaceVariant),
+                      ),
+                    ),
                   ],
                 ),
               ),

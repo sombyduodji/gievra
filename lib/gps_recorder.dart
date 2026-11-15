@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'gps_filter.dart';
 import 'gpx.dart';
+import 'models.dart' show fmtNum, fmtPace;
 import 'l10n.dart';
 import 'ongoing.dart';
 
@@ -162,6 +163,12 @@ class GpsRecorder extends ChangeNotifier {
 
   double get distanceKm => _filter.distance / 1000;
 
+  /// Ilmoitukseen: matka ja keskivauhti, esim. "3,24 km · 5:41 /km".
+  String ongoingLine() {
+    final p = avgPace;
+    return '${fmtNum((distanceKm * 100).round() / 100)} km${p == null ? '' : ' · ${fmtPace(p)} /km'}';
+  }
+
   /// Keskivauhti s/km (null, kun matkaa alle 50 m).
   double? get avgPace => _filter.distance < 50 ? null : elapsed.inMilliseconds / 1000 / distanceKm;
 
@@ -242,6 +249,7 @@ class GpsRecorder extends ChangeNotifier {
       RecState.paused => OngoingActivity(sport, elapsed: elapsed),
       RecState.recording => OngoingActivity(sport, since: now().subtract(elapsed)),
     };
+    Ongoing.gpsLine = state == RecState.idle ? null : ongoingLine;
     unawaited(Ongoing.refresh());
   }
 

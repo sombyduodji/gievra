@@ -36,6 +36,9 @@ class WeekActivity {
 
 int? _minutesOf(Workout w) => w.seconds != null ? (w.seconds! / 60).round() : w.minutes;
 
+/// Kesto sekunteina (tarkka aika tai kirjatut minuutit): viikon summa pyöristetään vasta lopuksi.
+int? _secondsOf(Workout w) => w.seconds ?? (w.minutes == null ? null : w.minutes! * 60);
+
 Effort effortOf(Workout w) {
   switch (w.intensity) {
     case 'kevyt':
@@ -71,7 +74,7 @@ WeekActivity weekActivity(Iterable<Workout> workouts, DateTime day) {
       if (w.exercises.any((e) => e.sets.any((s) => !s.warmup))) strength.add(w.date);
       continue;
     }
-    final m = _minutesOf(w);
+    final m = _secondsOf(w);
     if (m == null || m <= 0) continue;
     switch (effortOf(w)) {
       case Effort.light:
@@ -82,11 +85,12 @@ WeekActivity weekActivity(Iterable<Workout> workouts, DateTime day) {
         vig += m;
     }
   }
+  int min(int secs) => (secs / 60).round();
   return WeekActivity(
-    moderateEq: mod + 2 * vig,
-    vigorous: vig,
-    moderate: mod,
-    light: light,
+    moderateEq: min(mod + 2 * vig),
+    vigorous: min(vig),
+    moderate: min(mod),
+    light: min(light),
     strengthDays: strength.length,
   );
 }

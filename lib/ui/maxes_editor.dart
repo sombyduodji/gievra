@@ -28,6 +28,8 @@ class MaxesEditor extends StatelessWidget {
           ? t('{0}: raskain kuula, jolla teet 5 hyvää toistoa (kg)', [exerciseLabel(ex)])
           : t('{0}: 1 toiston maksimi (kg)', [exerciseLabel(ex)]),
       kb ? 16 : (maxes[ex] ?? 60),
+      min: 1,
+      max: 1000,
     );
     if (v == null || v <= 0) return;
     // Kahvakuula: 5 toistoa -> arvioitu maksimi (Epley).
@@ -104,6 +106,8 @@ class MaxesEditor extends StatelessWidget {
                       context,
                       t('{0}: 1 toiston maksimi (kg)', [exerciseLabel(l)]),
                       maxes[l] ?? 60,
+                      min: 1,
+                      max: 1000,
                     );
                     if (v != null && v > 0) {
                       maxes[l] = v;
@@ -176,7 +180,7 @@ class _MaxesScreenState extends State<MaxesScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(t('Ennätykset')),
+          title: BarTitle(Text(t('Ennätykset'))),
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 8),

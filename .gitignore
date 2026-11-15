@@ -55,3 +55,4 @@ test/anim/failures/
 
 # Paikalliset työkalut
 /.claude/
+/symbols/

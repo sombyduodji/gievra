@@ -33,8 +33,10 @@ Future<void> _rounds(String name, int rounds, Future<void> Function(int) body, {
   final firstPeak = rss.take(half).reduce((a, b) => a > b ? a : b);
   final lastPeak = rss.skip(half).reduce((a, b) => a > b ? a : b);
   // ignore: avoid_print
-  print('STRESS $name: ${rounds}x ${sw.elapsed.inSeconds}s · RSS alku ${rss.first} Mt, huippu '
-      '${rss.reduce((a, b) => a > b ? a : b)} Mt, loppu ${rss.last} Mt · puoliskojen huiput $firstPeak → $lastPeak Mt');
+  print(
+    'STRESS $name: ${rounds}x ${sw.elapsed.inSeconds}s · RSS alku ${rss.first} Mt, huippu '
+    '${rss.reduce((a, b) => a > b ? a : b)} Mt, loppu ${rss.last} Mt · puoliskojen huiput $firstPeak → $lastPeak Mt',
+  );
   expect(lastPeak - firstPeak, lessThan(slackMb), reason: '$name: muisti kasvaa kierros kierrokselta ($rss)');
 }
 
@@ -95,12 +97,17 @@ void main() {
     } catch (_) {}
   });
 
-  test('Kansion lataus: 3000 treeniä, 15 latausta', () async {
-    await _rounds('reload-3000', 15, (_) async {
-      await store.reload();
-      expect(store.workouts.length, 3000);
-    });
-  }, skip: !_on, timeout: const Timeout(Duration(minutes: 10)));
+  test(
+    'Kansion lataus: 3000 treeniä, 15 latausta',
+    () async {
+      await _rounds('reload-3000', 15, (_) async {
+        await store.reload();
+        expect(store.workouts.length, 3000);
+      });
+    },
+    skip: !_on,
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
 
   test('Asetusten kirjoitus ja luku 6000 kertaa', () async {
     await _rounds('settings-6000', 60, (_) async {
@@ -124,45 +131,61 @@ void main() {
     }, slackMb: 20);
   }, skip: !_on);
 
-  test('Varmuuskopio edestakaisin 3000 treenillä, 24 kertaa', () async {
-    await _rounds('backup-3000', 24, (_) async {
-      final zip = await exportZip();
-      final r = readZip(zip);
-      expect(r.workouts.length, 3000);
-    }, slackMb: 80);
-  }, skip: !_on, timeout: const Timeout(Duration(minutes: 10)));
+  test(
+    'Varmuuskopio edestakaisin 3000 treenillä, 24 kertaa',
+    () async {
+      await _rounds('backup-3000', 24, (_) async {
+        final zip = await exportZip();
+        final r = readZip(zip);
+        expect(r.workouts.length, 3000);
+      }, slackMb: 80);
+    },
+    skip: !_on,
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
 
-  test('GPS: 4 tunnin tallennus (14 400 paikannusta), 3 kertaa', () async {
-    await _rounds('gps-4h', 3, (_) async {
-      var clock = DateTime.utc(2026, 11, 8, 6);
-      final gps = _FakeGps();
-      final rec = GpsRecorder(source: gps, now: () => clock);
-      await rec.open('Juoksu', title: 't', text: 'x', channel: 'c');
-      for (var i = 0; i < 5; i++) {
-        clock = clock.add(const Duration(seconds: 1));
-        gps.send(clock, 62.0, 25.0);
+  test(
+    'GPS: 4 tunnin tallennus (14 400 paikannusta), 3 kertaa',
+    () async {
+      await _rounds('gps-4h', 3, (_) async {
+        var clock = DateTime.utc(2026, 11, 8, 6);
+        final gps = _FakeGps();
+        final rec = GpsRecorder(source: gps, now: () => clock);
+        await rec.open('Juoksu', title: 't', text: 'x', channel: 'c');
+        for (var i = 0; i < 5; i++) {
+          clock = clock.add(const Duration(seconds: 1));
+          gps.send(clock, 62.0, 25.0);
+          await Future<void>.delayed(Duration.zero);
+        }
+        await rec.start();
+        for (var i = 0; i < 14400; i++) {
+          clock = clock.add(const Duration(seconds: 1));
+          gps.send(clock, 62.0 + (i % 600) * 0.00002, 25.0 + i * 0.000025);
+          if (i % 50 == 0) await Future<void>.delayed(Duration.zero);
+        }
         await Future<void>.delayed(Duration.zero);
-      }
-      await rec.start();
-      for (var i = 0; i < 14400; i++) {
-        clock = clock.add(const Duration(seconds: 1));
-        gps.send(clock, 62.0 + (i % 600) * 0.00002, 25.0 + i * 0.000025);
-        if (i % 50 == 0) await Future<void>.delayed(Duration.zero);
-      }
-      await Future<void>.delayed(Duration.zero);
-      final r = await rec.finish(name: 'Juoksu');
-      expect(r, isNotNull);
-      // Tallennin harventaa lähekkäiset pisteet (tässä noin 1,3 m sekunnissa): puolet jää.
-      expect(parseGpx(r!.gpx).expand((s) => s).length, greaterThan(5000));
-      await gps.ctl.close();
-    }, slackMb: 60);
-  }, skip: !_on, timeout: const Timeout(Duration(minutes: 10)));
+        final r = await rec.finish(name: 'Juoksu');
+        expect(r, isNotNull);
+        // Tallennin harventaa lähekkäiset pisteet (tässä noin 1,3 m sekunnissa): puolet jää.
+        expect(parseGpx(r!.gpx).expand((s) => s).length, greaterThan(5000));
+        await gps.ctl.close();
+      }, slackMb: 60);
+    },
+    skip: !_on,
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
 
   testWidgets('Näkymät: etusivu ja uusi treeni kolmella kielellä 40 kertaa', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.6;
     addTearDown(tester.view.reset);
-    settings.program = generateProgram(goal: 'voimanosto', experience: 'keski', days: 4, minutes: 60, injuries: const []);
+    settings.program = generateProgram(
+      goal: 'voimanosto',
+      experience: 'keski',
+      days: 4,
+      minutes: 60,
+      injuries: const [],
+    );
     final po = {
       for (final l in ['en', 'se']) l: parsePo(File('assets/l10n/$l.po').readAsStringSync()),
     };

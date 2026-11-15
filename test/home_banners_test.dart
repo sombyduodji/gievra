@@ -123,6 +123,23 @@ void main() {
     expect(settings.activePause, isNotNull);
   });
 
+  testWidgets('Tauko poistettu -ilmoitus katoaa itsestään (ei jää kaikille sivuille peittämään painikkeita)', (
+    tester,
+  ) async {
+    settings.startPause('loma', DateTime.now());
+    await home(tester);
+    await tester.tap(find.text('Lomalla – nauti!'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lopeta tauko'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Poista tauko'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tauko poistettu'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pumpAndSettle();
+    expect(find.text('Tauko poistettu'), findsNothing);
+  });
+
   testWidgets('Vahingossa aloitetun tauon voi poistaa tauon tiedoista', (tester) async {
     settings.startPause('sairas', DateTime(2026, 11, 7));
     await home(tester);

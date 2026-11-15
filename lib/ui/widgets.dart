@@ -9,8 +9,8 @@ import 'package:flutter/services.dart';
 import '../app_state.dart';
 import '../exercises.dart';
 import '../models.dart';
-import '../sports.dart' show intensities;
 import '../theme.dart';
+import 'finish_sheet.dart';
 import '../l10n.dart';
 
 const fiMonths = [
@@ -147,10 +147,11 @@ class ValueStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget btn(IconData i, VoidCallback f) => SizedBox.square(
+    Widget btn(IconData i, VoidCallback f, String tip) => SizedBox.square(
       dimension: 52,
       child: IconButton.filledTonal(
         onPressed: f,
+        tooltip: tip, // ruudunlukija
         icon: Icon(i),
         style: IconButton.styleFrom(
           backgroundColor: cs.surfaceContainerHigh,
@@ -163,7 +164,7 @@ class ValueStepper extends StatelessWidget {
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
       child: Row(
         children: [
-          btn(Icons.remove, onMinus),
+          btn(Icons.remove, onMinus, t('Vähennä')),
           Expanded(
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
@@ -188,7 +189,7 @@ class ValueStepper extends StatelessWidget {
               ),
             ),
           ),
-          btn(Icons.add, onPlus),
+          btn(Icons.add, onPlus, t('Lisää')),
         ],
       ),
     );
@@ -225,6 +226,15 @@ Future<DateTime?> pickDate(
   helpText: t('Valitse päivä'),
   cancelText: t('Peruuta'),
   confirmText: 'OK',
+  // Suurella tekstillä otsikon päiväys ("maŋŋebárga 10.11.") pienemmällä tyylillä, jotta se mahtuu.
+  builder: (context, child) {
+    if (!bigText(context)) return child!;
+    final th = Theme.of(context);
+    return Theme(
+      data: th.copyWith(datePickerTheme: th.datePickerTheme.copyWith(headerHeadlineStyle: th.textTheme.headlineSmall)),
+      child: child!,
+    );
+  },
 );
 
 /// Kellonajan valinta samoin (vain kellotaulu, 24 h).
@@ -243,23 +253,53 @@ Future<TimeOfDay?> pickTime(BuildContext context, TimeOfDay initial, {required S
 String fmtClock(TimeOfDay c) =>
     '${c.hour.toString().padLeft(2, '0')}${isEnglish ? ':' : '.'}${c.minute.toString().padLeft(2, '0')}';
 
-Future<double?> askNumber(BuildContext context, String title, double current, {bool decimals = true}) async {
+/// Numeron syöttö. [min] ja [max]: sallittu väli; muu arvo (tai tyhjä) näyttää välin, ja ikkuna pysyy auki
+/// (ennen arvo hylättiin hiljaa, ja vanha arvo jäi näkyviin ilman selitystä).
+Future<double?> askNumber(
+  BuildContext context,
+  String title,
+  double current, {
+  bool decimals = true,
+  double? min,
+  double? max,
+}) async {
   final c = TextEditingController(text: fmtNum(current));
+  String? error;
+  final range = min != null && max != null ? t('Sallittu {0}–{1}', [fmtNum(min), fmtNum(max)]) : null;
   final r = await showDialog<double>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: TextField(
-        controller: c,
-        autofocus: true,
-        keyboardType: TextInputType.numberWithOptions(decimal: decimals),
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(decimals ? r'[0-9.,]' : r'[0-9]'))],
-        onSubmitted: (v) => Navigator.pop(ctx, parseNum(v)),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
-        FilledButton(onPressed: () => Navigator.pop(ctx, parseNum(c.text)), child: const Text('OK')),
-      ],
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) {
+        void submit() {
+          final v = parseNum(c.text);
+          if (v == null || (min != null && v < min) || (max != null && v > max)) {
+            setState(() => error = range ?? t('Tarkista luku'));
+            return;
+          }
+          Navigator.pop(ctx, v);
+        }
+
+        // Vierittyvä: vaakatasossa näppäimistö vie lähes koko korkeuden, eikä sisältö saa mennä otsikon päälle.
+        return AlertDialog(
+          scrollable: true,
+          title: Text(title),
+          content: TextField(
+            controller: c,
+            autofocus: true,
+            keyboardType: TextInputType.numberWithOptions(decimal: decimals),
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(decimals ? r'[0-9.,]' : r'[0-9]'))],
+            decoration: InputDecoration(helperText: range, errorText: error),
+            onChanged: (_) {
+              if (error != null) setState(() => error = null);
+            },
+            onSubmitted: (_) => submit(),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Peruuta'))),
+            FilledButton(onPressed: submit, child: const Text('OK')),
+          ],
+        );
+      },
     ),
   );
   return r;
@@ -274,44 +314,12 @@ const feelingSkipped = 0;
 /// Viimeisin [askFeeling]-kyselyssä valittu rasitus (kun kysyttiin).
 String? askedIntensity;
 
-Future<int?> askFeeling(BuildContext context, {bool askIntensity = false, String? intensity}) {
+Future<int?> askFeeling(BuildContext context, {bool askIntensity = false, String? intensity}) async {
+  // Uusi Treeni valmis -ikkuna (finish_sheet.dart); tämä säilyy yksinkertaisena kutsuna ilman yhteenvetoa.
   askedIntensity = intensity;
-  return showModalBottomSheet<int>(
-    context: context,
-    showDragHandle: true,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setSheet) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (askIntensity) ...[
-                Text(t('Rasitus'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 10),
-                SegmentedButton<String>(
-                  showSelectedIcon: false,
-                  segments: [for (final (k, l, e) in intensities) ButtonSegment(value: k, label: Text('$e ${t(l)}'))],
-                  emptySelectionAllowed: true,
-                  selected: {?askedIntensity},
-                  onSelectionChanged: (v) => setSheet(() => askedIntensity = v.firstOrNull),
-                ),
-                const SizedBox(height: 18),
-              ],
-              Text(t('Miltä tuntui?'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 14),
-              FeelingPicker(value: null, onChanged: (v) => Navigator.pop(ctx, v)),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(onPressed: () => Navigator.pop(ctx, feelingSkipped), child: Text(t('Ohita'))),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
+  final r = await showFinishSheet(context, askIntensity: askIntensity, intensity: intensity);
+  if (r != null) askedIntensity = r.intensity;
+  return r?.feeling;
 }
 
 class FeelingPicker extends StatelessWidget {
@@ -319,46 +327,9 @@ class FeelingPicker extends StatelessWidget {
   final ValueChanged<int?> onChanged;
   const FeelingPicker({super.key, required this.value, required this.onChanged});
 
+  /// Sama ulkoasu kuin Treeni valmis -ikkunassa (isot kasvot); uusi napautus valittuun poistaa valinnan.
   @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        for (final (v, emoji, label) in feelings) ...[
-          if (v != 1) const SizedBox(width: 6),
-          Expanded(
-            child: Material(
-              color: value == v ? Sami.yellow.withValues(alpha: .18) : cs.surfaceContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: value == v ? Sami.yellow : Colors.transparent, width: 2),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => onChanged(value == v ? null : v),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Column(
-                    children: [
-                      Text(
-                        emoji,
-                        style: TextStyle(
-                          fontSize: 26,
-                          color: value == null || value == v ? null : cs.onSurface.withValues(alpha: .4),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(t(label), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget build(BuildContext context) => FaceRow(value: value, onTap: (v) => onChanged(value == v ? null : v));
 }
 
 /// Kielivalinta (aloitus ja ☰ → Asetukset): liuskapainikkeet lippujen kanssa. Suomi on oletus;
@@ -647,6 +618,27 @@ class _FlagPainter extends CustomPainter {
 }
 
 /// Liikkeen nimi ja asetuksen mukaan englanninkielinen nimi pienellä sen alla.
+/// Suurempi teksti (Asetukset → Tekstin koko tai puhelimen oma fonttikoko yli 105 %).
+/// Tekstin kerroin leipätekstin koossa (14). Android 14+ skaalaa isoja kokoja vähemmän, joten 100:n koko ei kerro
+/// järjestelmän suurta fonttia.
+double textScale(BuildContext context) => MediaQuery.textScalerOf(context).scale(14) / 14;
+
+bool bigText(BuildContext context) => textScale(context) > 1.05;
+
+/// Rivimäärä: suurella tekstillä yksi lisää, jotta teksti ei katkea (Pieni ennallaan).
+int linesFor(BuildContext context, int lines) => bigText(context) ? lines + 1 : lines;
+
+/// Yläpalkin otsikko: suurella tekstillä pienennetään mahtumaan, ei katkaista ("Kahvakuula-askelky…").
+class BarTitle extends StatelessWidget {
+  final Widget child;
+  const BarTitle(this.child, {super.key});
+
+  @override
+  Widget build(BuildContext context) => bigText(context)
+      ? FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: child)
+      : child;
+}
+
 class ExName extends StatelessWidget {
   final String name;
   final TextStyle? style;
@@ -668,6 +660,44 @@ class ExName extends StatelessWidget {
 }
 
 /// Treenitila: Sali / Kestävyys / Molemmat (asetukset ja aloituskysely).
+/// Tekstin koko: Pieni (entinen koko), Normaali ja Suuri. Jokaisessa vaihtoehdossa "Aa" omassa koossaan, jotta
+/// ero näkyy ennen valintaa (aloitus ja Asetukset → Yleiset).
+class TextSizePicker extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  const TextSizePicker({super.key, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => SegmentedButton<String>(
+    key: const ValueKey('textSize'),
+    showSelectedIcon: false,
+    style: const ButtonStyle(padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4, vertical: 8))),
+    segments: [
+      for (final (v, l) in [('small', t('Pieni')), ('normal', t('Normaali')), ('large', t('Suuri'))])
+        ButtonSegment(
+          value: v,
+          label: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Näyte valitun koon suhteessa nykyiseen: sama kerroin kuin sovelluksessa.
+              Text(
+                'Aa',
+                style: TextStyle(
+                  fontSize: 16 * Settings.textSizes[v]! / settings.textFactor,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                ),
+              ),
+              FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+            ],
+          ),
+        ),
+    ],
+    selected: {value},
+    onSelectionChanged: (s) => onChanged(s.first),
+  );
+}
+
 class TrainModePicker extends StatelessWidget {
   final String value;
   final ValueChanged<String> onChanged;
@@ -815,6 +845,24 @@ class LangNotice extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text('⚠️ $text', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+/// Lyhyt nimike kapeaan ruutuun. Tavallisella fontilla yksi rivi (pienenee tarvittaessa); järjestelmän suurella
+/// fontilla (yli 1,15×) sanat omille riveilleen ja tarvittaessa pienennettynä: ei katkaisua sanan keskeltä eikä
+/// lukukelvotonta kutistusta yhdelle riville. Ei LayoutBuilderia, joten toimii IntrinsicHeightin sisällä.
+class FitLabel extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+  const FitLabel(this.text, {super.key, this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    final big = MediaQuery.textScalerOf(context).scale(10) > 11.5;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(big ? text.split(' ').join('\n') : text, style: style, textAlign: TextAlign.center, softWrap: false),
     );
   }
 }

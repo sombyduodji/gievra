@@ -4,6 +4,8 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
@@ -16,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : FlutterActivity() {
@@ -24,6 +27,8 @@ class MainActivity : FlutterActivity() {
     private var healthResult: MethodChannel.Result? = null
     private var healthAsked: Set<String> = emptySet()
     private val healthContract = PermissionController.createRequestPermissionResultContract()
+    private var saveResult: MethodChannel.Result? = null
+    private var saveSource: String? = null
 
     override fun onDestroy() {
         scope.cancel()
@@ -33,6 +38,10 @@ class MainActivity : FlutterActivity() {
     @Deprecated("FlutterActivity ei tue ActivityResult-rekisteriä; Health Connectin lupakysely palaa tänne")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == SAVE_REQUEST) {
+            onSaveResult(resultCode, data)
+            return
+        }
         if (requestCode != HEALTH_REQUEST) return
         val granted = try {
             healthContract.parseResult(resultCode, data)
@@ -53,11 +62,14 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val HEALTH_REQUEST = 4711
+        private const val SAVE_REQUEST = 4712
     }
-    private var pendingText: String? = null
+    private var pendingIntent: Intent? = null
 
-    /// Avattu tai jaettu tiedosto (ohjelmapohja .gmd) tekstinä. Enintään 1 Mt; sisällön tarkistaa Dart.
-    private fun textFromIntent(intent: Intent?): String? {
+    /// Avattu tai jaettu tiedosto ("Avaa sovelluksella", "Jaa → Gievra"). Tiedosto kopioidaan välimuistiin ja Dart saa
+    /// polun ja nimen; tyypin tunnistaa sama koodi kuin Tuo tiedosto -painikkeessa (FitNotes, zip, csv, .md, .gmd).
+    /// Jaettu pelkkä teksti välitetään tekstinä. Vain content://. Yli 500 Mt:n kopiointi lopetetaan (Dart ilmoittaa).
+    private fun fileFromIntent(intent: Intent?): Map<String, Any?>? {
         if (intent == null) return null
         val uri: Uri? = when (intent.action) {
             Intent.ACTION_VIEW -> intent.data
@@ -67,30 +79,102 @@ class MainActivity : FlutterActivity() {
             }
             else -> null
         }
-        if (uri == null) return if (intent.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT) else null
+        if (uri == null) {
+            if (intent.action != Intent.ACTION_SEND) return null
+            return intent.getStringExtra(Intent.EXTRA_TEXT)?.let { mapOf("text" to it) }
+        }
+        // Vain content://: file://-osoitteella toinen sovellus voisi saada Gievran (kaikkien tiedostojen lupa)
+        // lukemaan tiedoston, johon sillä itsellään ei ole oikeutta.
+        if (uri.scheme != "content") return null
         return try {
-            contentResolver.openInputStream(uri)?.use { s ->
-                val bytes = s.readBytes()
-                if (bytes.size > 1_000_000) null else String(bytes, Charsets.UTF_8)
+            var name: String? = null
+            contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst() && !c.isNull(0)) name = c.getString(0)
             }
+            val dir = File(cacheDir, "opened").apply { deleteRecursively(); mkdirs() }
+            val out = File(dir, "file")
+            val limit = 500L * 1024 * 1024
+            var size = 0L
+            contentResolver.openInputStream(uri)?.use { input ->
+                out.outputStream().use { o ->
+                    val buf = ByteArray(64 * 1024)
+                    while (size <= limit) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        o.write(buf, 0, n)
+                        size += n
+                    }
+                }
+            } ?: return null
+            mapOf("path" to out.path, "name" to (name ?: ""), "tooLarge" to (size > limit))
         } catch (e: Exception) {
             null
         }
     }
 
+    /// Varmuuskopion tallennus: käyttäjä valitsee paikan (SAF), tiedosto kopioidaan sinne ja luetaan takaisin.
+    /// Tulos Dartiin: null = peruttu, muuten {"saved", "verified"}. verified = takaisin luettu SHA-256 täsmää.
+    private fun onSaveResult(resultCode: Int, data: Intent?) {
+        val r = saveResult ?: return
+        val src = saveSource
+        saveResult = null
+        saveSource = null
+        val uri = data?.data
+        if (resultCode != RESULT_OK || uri == null || src == null) {
+            r.success(null)
+            return
+        }
+        scope.launch {
+            val out = kotlinx.coroutines.withContext(Dispatchers.IO) { copyAndVerify(File(src), uri) }
+            r.success(out)
+        }
+    }
+
+    private fun copyAndVerify(src: File, uri: Uri): Map<String, Boolean> {
+        fun digest(input: java.io.InputStream, copyTo: java.io.OutputStream? = null): ByteArray {
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            val buf = ByteArray(256 * 1024)
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                md.update(buf, 0, n)
+                copyTo?.write(buf, 0, n)
+            }
+            return md.digest()
+        }
+        val written = try {
+            val o = contentResolver.openOutputStream(uri, "wt") ?: return mapOf("saved" to false, "verified" to false)
+            o.use { out -> src.inputStream().use { digest(it, out) } }
+        } catch (e: Exception) {
+            return mapOf("saved" to false, "verified" to false)
+        }
+        val back = try {
+            contentResolver.openInputStream(uri)?.use { digest(it) }
+        } catch (e: Exception) {
+            null
+        }
+        return mapOf("saved" to true, "verified" to (back != null && back.contentEquals(written)))
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        textFromIntent(intent)?.let { openChannel?.invokeMethod("open", it) }
+        // Kopiointi taustalla (iso varmuuskopio ei jumita näkymää).
+        scope.launch {
+            val f = withContext(Dispatchers.IO) { fileFromIntent(intent) }
+            f?.let { openChannel?.invokeMethod("open", it) }
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        pendingText = textFromIntent(intent)
+        pendingIntent = intent
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/sqlite").setMethodCallHandler(SqliteBridge())
         openChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/open").also { ch ->
             ch.setMethodCallHandler { call, result ->
                 if (call.method == "initial") {
-                    result.success(pendingText)
-                    pendingText = null
+                    val i = pendingIntent
+                    pendingIntent = null
+                    scope.launch { result.success(withContext(Dispatchers.IO) { fileFromIntent(i) }) }
                 } else {
                     result.notImplemented()
                 }
@@ -99,6 +183,64 @@ class MainActivity : FlutterActivity() {
         // Vikailmoitus: sähköposti vastaanottajalla, aiheella, tekstillä ja liitteillä (Gmail ym.).
         // mailto: ei tue liitteitä, joten käytetään ACTION_SEND(_MULTIPLE)-aikomusta ja FileProvideria.
         // Palautusajastin: hälytys ja ilmoitus (ks. RestAlarm.kt).
+        // Akunsäästö: saako Gievra toimia taustalla (palautusajastin ja sykevyö näyttö pois päältä).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/save").setMethodCallHandler { call, result ->
+            if (call.method != "saveVerified") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+            if (saveResult != null) {
+                result.error("busy", "save in progress", null)
+                return@setMethodCallHandler
+            }
+            saveResult = result
+            saveSource = call.argument<String>("path")
+            val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType(call.argument<String>("mime") ?: "application/octet-stream")
+                .putExtra(Intent.EXTRA_TITLE, call.argument<String>("name") ?: "gievra.zip")
+            try {
+                @Suppress("DEPRECATION")
+                startActivityForResult(i, SAVE_REQUEST)
+            } catch (e: Exception) {
+                saveResult = null
+                saveSource = null
+                result.error("noPicker", e.message, null)
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/power").setMethodCallHandler { call, result ->
+            val pm = getSystemService(PowerManager::class.java)
+            when (call.method) {
+                "status" -> result.success(
+                    mapOf(
+                        "exempt" to (pm?.isIgnoringBatteryOptimizations(packageName) == true),
+                        "samsung" to Build.MANUFACTURER.equals("samsung", ignoreCase = true),
+                    ),
+                )
+                // Androidin oma kysymys "Sallitaanko sovelluksen toimia aina taustalla?".
+                "request" -> {
+                    val ok = try {
+                        startActivity(
+                            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")),
+                        )
+                        true
+                    } catch (e: Exception) {
+                        false
+                    }
+                    result.success(ok)
+                }
+                // Sovelluksen tiedot (Akku → Rajoittamaton), jos kysymys ei aukea tai puhelin vaatii lisäksi oman asetuksen.
+                "appSettings" -> {
+                    try {
+                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/rest").setMethodCallHandler { call, result ->
             val title = call.argument<String>("title") ?: "Gievra"
             val body = call.argument<String>("body") ?: ""
@@ -150,10 +292,56 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        // Sykevyö Bluetoothilla (HeartRateBle.kt): tapahtumat virtana, ohjaus metodeina.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/hr/events").setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(args: Any?, events: EventChannel.EventSink) {
+                    HeartRateBle.sink = { events.success(it) }
+                }
+
+                override fun onCancel(args: Any?) {
+                    HeartRateBle.sink = null
+                }
+            },
+        )
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/hr").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "supported" -> result.success(HeartRateBle.supported(this))
+                "needsLocation" -> result.success(android.os.Build.VERSION.SDK_INT < 31)
+                "permitted" -> result.success(HeartRateBle.permitted(this))
+                "enabled" -> result.success(HeartRateBle.enabled(this))
+                "scan" -> {
+                    HeartRateBle.scan(this, call.argument<Int>("seconds") ?: 15)
+                    result.success(null)
+                }
+                "stopScan" -> {
+                    HeartRateBle.stopScan(this)
+                    result.success(null)
+                }
+                "connect" -> {
+                    HeartRateBle.connect(this, call.argument<String>("address") ?: "")
+                    result.success(null)
+                }
+                "disconnect" -> {
+                    HeartRateBle.disconnect()
+                    result.success(null)
+                }
+                "enable" -> {
+                    // Bluetooth pois päältä: järjestelmän oma kysely.
+                    try {
+                        startActivity(Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                    } catch (_: Exception) {
+                    }
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
         // Käynnissä oleva treeni pudotusvalikossa (OngoingNote.kt).
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/ongoing").setMethodCallHandler { call, result ->
             when (call.method) {
                 "show" -> {
+                    call.argument<String>("publicTitle")?.let { OngoingNote.publicTitle = it }
                     OngoingNote.show(
                         this,
                         call.argument<String>("title") ?: "Gievra",
@@ -161,6 +349,7 @@ class MainActivity : FlutterActivity() {
                         call.argument<Boolean>("paused") == true,
                         call.argument<String>("pausedText") ?: "",
                         call.argument<String>("channel") ?: "Gievra",
+                        OngoingNote.Live.from(call.argument<Map<*, *>>("live")),
                     )
                     result.success(null)
                 }

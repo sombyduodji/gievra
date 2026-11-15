@@ -75,8 +75,19 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    // 0.6.6: kellon sykekäyrä ensimmäisenä (15.11.), lopussa tekstin koko.
     await run(tester, '0.6.6');
+    expect(find.text('Kellon sykekäyrä'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Tekstin koko'),
+      200,
+      scrollable: find.descendant(of: find.byType(AlertDialog), matching: find.byType(Scrollable)).first,
+    );
+    expect(find.text('Tekstin koko'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    await run(tester, '0.6.7');
     expect(find.byType(AlertDialog), findsNothing);
   });
 

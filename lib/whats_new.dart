@@ -13,6 +13,66 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.6',
+    Icons.show_chart,
+    'Kellon sykekäyrä',
+    'Health Connectista haettu syke tallentuu nyt käyränä ja sykealueina, kuten sykevyöllä. Vanhoihin treeneihin: hae kellon tiedot uudelleen.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.space_dashboard_outlined,
+    'Uusi etusivu',
+    'Tänään-kortissa Sali ja Liikunta ovat rinnakkain: useammin tekemäsi on leveämpi, ja Liikunta-puolella on viimeksi tekemäsi lajin kuvake. Kesken oleva salitreeni jatkuu Jatka-painikkeesta. Sama pari on myös kalenterin päivässä.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.flag_circle_outlined,
+    'Uusi Treeni valmis -ikkuna',
+    'Rasitus arvioidaan sykkeestä tai vauhdista (voit vaihtaa), salitreenin ennätykset ja painojen nousut näkyvät heti, ja voit merkitä liikkeet, jotka tuntuivat liian raskailta.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.visibility_outlined,
+    'Tallennettu liikunta',
+    'Vanha liikunta aukeaa yhteenvetona: aika, matka, vauhti, reitti ja syke. Muokkaa-painike avaa muokkauksen.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.directions_car_outlined,
+    'Kyyti tunnistetaan',
+    'Jos GPS-kävelyssä tai -juoksussa on autolla tai bussilla ajettu pätkä, Gievra kysyy, poistetaanko se matkasta ja ajasta.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.file_open_outlined,
+    'Avaa Gievralla',
+    'FitNotes-varmuuskopion, Gievran varmuuskopion (.zip), Garminin CSV:n ja .md-treenit voi avata Gievralla suoraan tiedostoista, sähköpostista tai Jaa-valikosta.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.battery_charging_full,
+    'Treeni pysyy käynnissä',
+    'Käynnissä olevan treenin ilmoitus pitää nyt Gievran käynnissä, kun näyttö on pois päältä: palautuksen ilmoitus tulee ajallaan. Älä sulje treenin ilmoitusta treenin aikana. Varmista myös, että Gievra saa toimia taustalla: Asetukset → Yleiset → Toiminta taustalla.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.favorite,
+    'Palautus sykkeen mukaan',
+    'Sykevyön kanssa palautusajastin voi odottaa, kunnes syke on laskenut, ja ilmoittaa silloin. Palautuksen ilmoitus on nyt lyhyt ponnahdus, joka poistuu itsestään. Asetukset → Keho ja laitteet → Sykevyö.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.monitor_heart_outlined,
+    'Sykevyö',
+    'Sykevyö Bluetoothilla (esim. Polar H10, Verity Sense, Garmin HRM): syke näkyy treenin ja palautuksen aikana, ja treeniin tallentuvat sykekäyrä, sykealueet ja tutkituilla menetelmillä lasketut kalorit. Asetukset → Keho ja laitteet → Sykevyö.',
+  ),
+  NewFeature(
+    '0.6.6',
+    Icons.format_size,
+    'Tekstin koko',
+    'Tekstin koon voi nyt valita. Sinun tekstisi pysyi ennallaan (Pieni). Isompi teksti: Asetukset → Yleiset → Tekstin koko → Normaali tai Suuri.',
+  ),
+  NewFeature(
     '0.6.5',
     Icons.donut_large,
     'Askeleet kalenterissa',

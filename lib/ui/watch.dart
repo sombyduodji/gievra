@@ -84,6 +84,7 @@ class WatchCard extends StatelessWidget {
                   w.watchTime = v != null;
                   w.manualTime = false;
                   w.minutes = v;
+                  w.seconds = null; // käsin kirjattu kesto korvaa ajanoton tarkan ajan
                 }, def: 60);
               }),
               const SizedBox(width: 6),
@@ -93,7 +94,10 @@ class WatchCard extends StatelessWidget {
               t('kalorit'),
               w.kcal,
               'kcal',
-              () => ask(t('Kalorit (kcal)'), w.kcal, (v) => w.kcal = v, def: 400),
+              () => ask(t('Kalorit (kcal)'), w.kcal, (v) {
+                w.kcal = v;
+                w.kcalSource = v == null ? null : 'käsin';
+              }, def: 400),
             ),
             const SizedBox(width: 6),
             box(
@@ -101,7 +105,10 @@ class WatchCard extends StatelessWidget {
               t('keskisyke'),
               w.hrAvg,
               '',
-              () => ask(t('Keskisyke (lyöntiä/min)'), w.hrAvg, (v) => w.hrAvg = v, def: 130),
+              () => ask(t('Keskisyke (lyöntiä/min)'), w.hrAvg, (v) {
+                w.hrAvg = v;
+                w.hrSource = 'käsin';
+              }, def: 130),
             ),
             const SizedBox(width: 6),
             box(
@@ -109,7 +116,10 @@ class WatchCard extends StatelessWidget {
               t('maksimisyke'),
               w.hrMax,
               '',
-              () => ask(t('Maksimisyke (lyöntiä/min)'), w.hrMax, (v) => w.hrMax = v, def: 170),
+              () => ask(t('Maksimisyke (lyöntiä/min)'), w.hrMax, (v) {
+                w.hrMax = v;
+                w.hrSource = 'käsin';
+              }, def: 170),
             ),
             // Askeleet: kävelylajeissa aina (myös käsin); juoksussa vain, kun ne tulivat Health Connectista.
             if ((sportOf(w.activity)?.steps ?? false) && (!isRun(w.activity) || w.steps != null)) ...[
@@ -124,7 +134,7 @@ class WatchCard extends StatelessWidget {
             padding: const EdgeInsets.only(top: 6),
             child: Row(
               children: [
-                const Icon(Icons.favorite, size: 14, color: Sami.green),
+                Icon(Icons.favorite, size: 14, color: greenText(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

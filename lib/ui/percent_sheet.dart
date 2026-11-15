@@ -74,7 +74,7 @@ class _PercentSheetState extends State<_PercentSheet> {
             onMinus: () => setState(() => _max = (_max - step).clamp(step, 1000)),
             onPlus: () => setState(() => _max = (_max + step).clamp(step, 1000)),
             onTap: () async {
-              final v = await askNumber(context, t('Maksimi (kg)'), _max);
+              final v = await askNumber(context, t('Maksimi (kg)'), _max, min: 1, max: 1000);
               if (v != null && v > 0 && v <= 1000) setState(() => _max = v);
             },
           ),

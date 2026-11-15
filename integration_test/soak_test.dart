@@ -156,7 +156,7 @@ void main() {
       round++;
       // 1. FitNotes-tuonti (oikea varmuuskopio, jos annettu) tai keinotekoinen historia.
       if (_fitnotes.isNotEmpty) {
-        final r = readFitnotes(_fitnotes);
+        final r = await readFitnotes(_fitnotes);
         await applyImport(r);
       } else {
         await store.saveMany([

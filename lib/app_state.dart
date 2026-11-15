@@ -15,6 +15,7 @@ import 'durable_write.dart';
 import 'models.dart';
 import 'program.dart';
 import 'exercises.dart';
+import 'heart_rate.dart' show hrProfile, repairLowCoverageKcal;
 
 final settings = Settings();
 final store = WorkoutStore();
@@ -153,6 +154,12 @@ class Settings extends ChangeNotifier {
   String? name;
   String? folder;
   ThemeMode themeMode = ThemeMode.system; // oletus: järjestelmän asetus
+
+  /// Tekstin koko: small = alkuperäinen koko (oletus), normal 115 %, large 130 %. Kerrotaan puhelimen oman
+  /// fonttikoon päälle.
+  String textSize = 'small';
+  static const textSizes = {'small': 1.0, 'normal': 1.15, 'large': 1.3};
+  double get textFactor => textSizes[textSize] ?? 1.0;
   double weightStep = 2.5;
 
   /// Levylaskuri: omat levyt (kg) ja tangon paino.
@@ -162,6 +169,21 @@ class Settings extends ChangeNotifier {
 
   /// Kehonpainon seuranta (asetukset.md: body_tracker). Punnitukset ja pituus kehonpaino.md:ssä ([body]).
   bool bodyTracker = false;
+
+  /// Kalorilaskennan perustiedot (sykevyö): syntymävuosi ja sukupuoli ('mies' / 'nainen'). Pituus ja paino
+  /// kehonpainon seurannasta ([body]).
+  int? birthYear;
+  String? sex;
+
+  /// Palautuminen sarjojen välillä: valmis, kun syke on alle tämän %:n maksimisykkeestä (oletus 60).
+  int hrRecoveryPct = 60;
+
+  /// Oma mitattu maksimisyke (esim. maksimitesti); null = arvio iästä (Tanaka 2001).
+  int? maxHr;
+
+  /// Kalorien oma korjaus −10…+10 % (oletus 0 = tutkimuksen arvo), jos käyttäjä tietää kulutuksensa paremmin
+  /// (esim. kuntotesti tai pitkä seuranta).
+  int kcalAdjustPct = 0;
   BodyLog body = BodyLog();
 
   /// Päivä, jolta etusivun painokortti on ohitettu (laitekohtainen).
@@ -185,6 +207,9 @@ class Settings extends ChangeNotifier {
   String moveNames = 'fi'; // suomen- ja saamenkielinen käyttöliittymä; englanniksi aina 'en'
   bool watch = false; // sykemittarin / älykellon tiedot näkyvissä
   bool restTimer = false; // palautusajastin sarjan tallennuksen jälkeen (oletus pois)
+
+  /// Palautus sykkeen mukaan (sykevyö): ajastin odottaa sykkeen laskua ajan sijaan. Tiedostossa "rest_hr: true".
+  bool restByHr = false;
   String restSound = 'pling'; // pling / boop / chime / none (vain värinä)
   /// Oma säätö palautukseen (s) kuormaluokittain: kevyt, keskiraskas, raskas (ks. rest.dart).
   List<int> restAdjust = [0, 0, 0];
@@ -242,6 +267,18 @@ class Settings extends ChangeNotifier {
   /// Aloituskysely tehty tai ohitettu.
   bool introDone = false;
 
+  /// Aloitussivu (kieli, nimi, mitä treenaat…) käyty. Nimi on valinnainen, joten tieto on erikseen; vanhoissa
+  /// asetuksissa (ennen 0.6.6) aloitus on käyty, jos nimi on annettu.
+  bool started = false;
+  bool get onboarded => started || (name?.isNotEmpty ?? false);
+
+  /// Aloitussivun "Aloitetaan": nimi (voi olla tyhjä) ja aloitus käydyksi.
+  void finishOnboarding(String v) {
+    name = v.trim();
+    started = true;
+    _persist();
+  }
+
   /// Treeniohjelma (ohjelma.md). null = treenataan vapaasti.
   Program? program;
   Pause? get activePause => pauses.where((p) => p.end == null).firstOrNull;
@@ -275,6 +312,7 @@ class Settings extends ChangeNotifier {
     final cached = sp.getString('settingsMd');
     if (cached != null) applyMarkdown(cached);
     await loadFromFolder();
+    await ensureEnglish();
   }
 
   Future<File> settingsFile() async => File(p.join((await store.rootDir()).path, settingsFileName));
@@ -287,6 +325,7 @@ class Settings extends ChangeNotifier {
       final text = await files.read(settingsFileName);
       if (text == null) return false;
       applyMarkdown(text);
+      await ensureEnglish();
       await _p?.setString('settingsMd', settingsToMarkdown());
       notifyListeners();
       return true;
@@ -333,6 +372,48 @@ class Settings extends ChangeNotifier {
 
   void setBodyTracker(bool v) {
     bodyTracker = v;
+    _persist();
+  }
+
+  void setMaxHr(int? v) {
+    maxHr = v?.clamp(120, 230);
+    _persist();
+  }
+
+  void setKcalAdjust(int pct) {
+    kcalAdjustPct = pct.clamp(-10, 10);
+    _persist();
+  }
+
+  void setHrRecovery(int pct) {
+    hrRecoveryPct = pct.clamp(40, 80);
+    _persist();
+  }
+
+  /// Tuonti nykyiseen päiväkirjaan: sykevyön tiedot varmuuskopiosta vain niiltä osin, kuin tällä laitteella ei ole
+  /// omia (syntymävuosi, sukupuoli, oma maksimisyke, palautumisraja, kalorien korjaus). Omia ei ylikirjoiteta.
+  void mergeHrProfile(Settings o) {
+    final before = (birthYear, sex, maxHr, hrRecoveryPct, kcalAdjustPct);
+    birthYear ??= o.birthYear;
+    sex ??= o.sex;
+    maxHr ??= o.maxHr;
+    if (hrRecoveryPct == 60) hrRecoveryPct = o.hrRecoveryPct;
+    if (kcalAdjustPct == 0) kcalAdjustPct = o.kcalAdjustPct;
+    if (before != (birthYear, sex, maxHr, hrRecoveryPct, kcalAdjustPct)) _persist();
+  }
+
+  /// Kalorilaskennan perustiedot: syntymävuosi, sukupuoli, pituus ja nykyinen paino (punnitus tälle päivälle).
+  Future<void> setProfile({
+    required int birthYear,
+    required String sex,
+    required int heightCm,
+    double? weightKg,
+  }) async {
+    this.birthYear = birthYear;
+    this.sex = sex;
+    final b = body.copy()..heightCm = heightCm;
+    if (weightKg != null && b.sorted.lastOrNull?.$2 != weightKg) b.weights[dateOnly(DateTime.now())] = weightKg;
+    await setBody(b);
     _persist();
   }
 
@@ -395,11 +476,17 @@ class Settings extends ChangeNotifier {
       ..writeln('---')
       ..writeln('name: ${name ?? ''}')
       ..writeln('theme: ${themeMode.name}')
+      ..writeln('text_size: $textSize')
       ..writeln('weightStep: ${fileNum(weightStep)}')
       ..writeln('plates: ${plates.map(fileNum).join('; ')}')
       ..writeln('bar: ${fileNum(barKg)}')
       ..writeln('tips: $tips')
       ..writeln('body_tracker: $bodyTracker')
+      ..write(birthYear == null ? '' : 'birth_year: $birthYear\n')
+      ..write(sex == null ? '' : 'sex: $sex\n')
+      ..write(hrRecoveryPct == 60 ? '' : 'hr_recovery: $hrRecoveryPct\n')
+      ..write(maxHr == null ? '' : 'max_hr: $maxHr\n')
+      ..write(kcalAdjustPct == 0 ? '' : 'kcal_adjust: $kcalAdjustPct\n')
       ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
       ..writeln('mode: $trainMode')
       ..writeln('move_names: $moveNames')
@@ -410,11 +497,13 @@ class Settings extends ChangeNotifier {
       ..writeln('ongoing_note: $ongoingNote')
       ..writeln('elev_with_maps: $elevWithMaps')
       ..writeln('rest_timer: $restTimer')
+      ..write(restByHr ? 'rest_hr: true\n' : '')
       ..writeln('rest_sound: $restSound')
       ..writeln('rest_adjust: ${restAdjust.join(', ')}')
       ..writeln('deloadEvery: $deloadEvery')
       ..writeln('snap: ${[for (final e in snapDefaults.entries) '${e.key}=${e.value}'].join('; ')}')
       ..writeln('introDone: $introDone')
+      ..write(started ? 'started: true\n' : '')
       ..writeln('---')
       ..writeln()
       ..writeln('# Gievran asetukset')
@@ -497,6 +586,8 @@ class Settings extends ChangeNotifier {
             if (v.isNotEmpty) name = v;
           case 'theme':
             themeMode = ThemeMode.values.firstWhere((m) => m.name == v, orElse: () => themeMode);
+          case 'text_size':
+            if (textSizes.containsKey(v)) textSize = v;
           case 'weightStep':
             weightStep = parseNum(v) ?? weightStep;
           case 'plates':
@@ -512,6 +603,20 @@ class Settings extends ChangeNotifier {
             tips = v != 'false';
           case 'body_tracker':
             bodyTracker = v == 'true';
+          case 'birth_year':
+            final y = int.tryParse(v);
+            if (y != null && y > 1900 && y <= DateTime.now().year) birthYear = y;
+          case 'sex':
+            if (v == 'mies' || v == 'nainen') sex = v;
+          case 'max_hr':
+            final m = int.tryParse(v);
+            if (m != null && m >= 120 && m <= 230) maxHr = m;
+          case 'kcal_adjust':
+            final r = int.tryParse(v.replaceAll('%', '').replaceAll('+', '').trim());
+            if (r != null && r >= -10 && r <= 10) kcalAdjustPct = r;
+          case 'hr_recovery':
+            final r = int.tryParse(v);
+            if (r != null && r >= 40 && r <= 80) hrRecoveryPct = r;
           case 'sports': // vanha asetus: liikunta päällä -> molemmat (mode: voittaa, jos se on mukana)
             if (!lines.any((l) => l.trim().startsWith('mode:'))) trainMode = v == 'true' ? 'both' : 'gym';
           case 'mode':
@@ -520,10 +625,11 @@ class Settings extends ChangeNotifier {
             if (v == 'true') moveNames = 'both';
           case 'move_names':
             moveNames = const {'fi', 'en', 'both'}.contains(v) ? v : 'fi';
-            nameMode = moveNames;
+            // Vain sovelluksen omat asetukset: varmuuskopion tarkistus (Settings()..applyMarkdown) ei vaihda nimiä.
+            if (identical(this, settings)) nameMode = moveNames;
           case 'health_lang':
             healthLang = v == 'en' ? 'en' : 'fi';
-            healthTextLang = healthLang;
+            if (identical(this, settings)) healthTextLang = healthLang;
           case 'watch':
             watch = v == 'true';
           case 'hc_import':
@@ -536,6 +642,8 @@ class Settings extends ChangeNotifier {
             elevWithMaps = v != 'false';
           case 'rest_timer':
             restTimer = v == 'true';
+          case 'rest_hr':
+            restByHr = v == 'true';
           case 'rest_adjust':
             final a = v.split(',').map((x) => int.tryParse(x.trim()) ?? 0).toList();
             restAdjust = [for (var i = 0; i < 3; i++) i < a.length ? a[i].clamp(-300, 300) : 0];
@@ -543,6 +651,8 @@ class Settings extends ChangeNotifier {
             restSound = const {'pling', 'boop', 'chime', 'none'}.contains(v) ? v : 'pling';
           case 'introDone':
             introDone = v == 'true';
+          case 'started':
+            started = v == 'true';
           case 'deloadEvery':
             deloadEvery = int.tryParse(v) ?? deloadEvery;
           case 'snap':
@@ -661,6 +771,9 @@ class Settings extends ChangeNotifier {
   }
 
   void setName(String v) {
+    // Aloitus on käyty, jos nimeä muokataan asetuksista: ennen 0.6.6 tehdyissä asetuksissa tieto oli vain nimessä,
+    // jolloin nimen tyhjentäminen vei takaisin aloitussivulle.
+    if (onboarded) started = true;
     name = v.trim();
     _persist();
   }
@@ -718,6 +831,13 @@ class Settings extends ChangeNotifier {
   void setTheme(ThemeMode m) {
     themeMode = m;
     _persist();
+  }
+
+  void setTextSize(String v, {bool save = true}) {
+    if (!textSizes.containsKey(v)) return;
+    textSize = v;
+    // Aloituksessa esikatselu heti, tallennus nimen kanssa (setName).
+    save ? _persist() : notifyListeners();
   }
 
   void startPause(String reason, DateTime start) {
@@ -794,6 +914,13 @@ class Settings extends ChangeNotifier {
     _persist();
   }
 
+  /// Sykkeen mukainen palautus käyttää palautusajastinta, joten se kytketään samalla päälle.
+  void setRestByHr(bool v) {
+    restByHr = v;
+    if (v) restTimer = true;
+    _persist();
+  }
+
   void setWatch(bool v) {
     watch = v;
     _persist();
@@ -803,12 +930,14 @@ class Settings extends ChangeNotifier {
     healthLang = v;
     healthTextLang = v;
     _persist();
+    ensureEnglish().then((_) => notifyListeners());
   }
 
   void setMoveNames(String v) {
     moveNames = v;
     nameMode = v;
     _persist();
+    ensureEnglish().then((_) => notifyListeners());
   }
 
   void setSports(bool v) {
@@ -990,6 +1119,11 @@ class WorkoutStore extends ChangeNotifier {
       error = t('Kansiota ei voitu lukea: {0}', [errorText(e)]);
     }
     list.sort((a, b) => b.date.compareTo(a.date));
+    // Vanhojen kävelyjen ja juoksujen kalorit, kun sykettä oli vain osalta ajasta (ks. repairLowCoverageKcal).
+    final profile = hrProfile();
+    for (final w in list) {
+      repairLowCoverageKcal(w, profile);
+    }
     workouts = list;
     unreadable = Map.fromEntries(failed.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
     _recoverCustomExercises();
@@ -1056,7 +1190,9 @@ class WorkoutStore extends ChangeNotifier {
       final rel = workoutPath(w.date, w.session);
       if (await files.exists(rel)) continue;
       await _writeRoute(w);
-      await files.write(rel, workoutToMarkdown(w));
+      // Varmuuskopiosta palautettu: alkuperäinen teksti sellaisenaan (tuntemattomat rivit säilyvät).
+      await files.write(rel, w.originalMd ?? workoutToMarkdown(w));
+      w.originalMd = null;
       onLocalChange?.call(workoutPath(w.date, w.session));
       n++;
     }

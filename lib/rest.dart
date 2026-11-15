@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'app_state.dart';
+import 'heart_rate.dart' show hr;
 import 'exercises.dart';
 import 'insights.dart';
 import 'l10n.dart';
@@ -124,15 +125,42 @@ class RestTimer extends ChangeNotifier {
   String exercise = '';
   Timer? _tick;
 
-  /// Kutsutaan, kun aika loppuu (värinä ja ääni käyttöliittymässä).
-  void Function()? onDone;
+  /// Testejä varten: nyt.
+  @visibleForTesting
+  static DateTime Function() clock = DateTime.now;
+
+  /// Kutsutaan, kun palautus päättyy (värinä, ääni ja viesti käyttöliittymässä): [message] kertoo miksi.
+  void Function(String message)? onDone;
+
+  /// Palautus sykkeen mukaan (sykevyö, Asetukset → Sykevyö): ajastin odottaa, kunnes syke laskee palautumisrajan
+  /// alle, ja ilmoittaa silloin. Jos palautuminen kestää [hrWaitSeconds], muistutetaan kohteliaasti tarkistamaan.
+  bool byHr = false;
+  static const hrWaitSeconds = 300;
+
+  /// Palautus päättyi (aika täynnä tai syke laski) eikä seuraavaa sarjaa ole vielä aloitettu: treeni-ilmoitus
+  /// näyttää sen omassa rivissään. Ohita (stop) ei jätä tätä tilaa.
+  bool over = false;
+
+  /// Sykevyö on käytössä, treeni kerää sykettä ja palautumisraja tiedetään (profiili annettu).
+  static bool get hrModeAvailable =>
+      settings.restByHr && hr.address != null && hr.recording && hr.bpm != null && hr.recoveryBpm(clock()) != null;
+
+  /// Sykkeen mukaan: ohjelman palautusaika varalle (vyön akku loppuu tai yhteys katkeaa tauon aikana).
+  int planned = 0;
+  DateTime? _hrSeen;
+
+  /// Ilman sykelukemaa näin kauan sykkeen mukaan odottava palautus vaihtuu tavalliseen palautusaikaan.
+  static const hrLostSeconds = 15;
+
+  /// Kulunut aika tauon alusta (sykkeen mukaan odotettaessa näytetään tämä).
+  int get elapsed => (total - remaining).clamp(0, 3600);
 
   bool get running => _end != null;
 
   int get remaining {
     final e = _end;
     if (e == null) return 0;
-    final s = e.difference(DateTime.now()).inMilliseconds;
+    final s = e.difference(clock()).inMilliseconds;
     return s <= 0 ? 0 : (s / 1000).ceil();
   }
 
@@ -142,23 +170,75 @@ class RestTimer extends ChangeNotifier {
   String? nextText;
   String? get next => nextFn?.call() ?? nextText;
 
+  /// Sykevyö: syke laski palautumisrajan alle tällä tauolla (värinä kerran; aika jatkuu, käyttäjä päättää).
+  bool recovered = false;
+
+  void _checkRecovered() {
+    if (byHr) {
+      if (hr.bpm != null) {
+        _hrSeen = clock();
+      } else if (clock().difference(_hrSeen ?? clock()).inSeconds >= hrLostSeconds) {
+        // Syke katosi (vyön akku, kantama): tavallinen palautusaika tauon alusta laskien.
+        final start = _end!.subtract(Duration(seconds: total));
+        byHr = false;
+        total = planned;
+        _end = start.add(Duration(seconds: planned));
+        _schedule(); // korvaa 5 min muistutuksen; jos aika on jo kulunut, hälytys heti
+
+        notifyListeners();
+        return;
+      }
+    }
+    if (recovered) return;
+    final v = hr.bpm, target = hr.recoveryBpm(clock());
+    if (v == null || target == null || hr.contact == false || v > target) return;
+    // Vähintään 20 s tauosta: heti sarjan jälkeen syke voi vielä olla matala (lyhyt sarja).
+    if (total - remaining < 20) return;
+    recovered = true;
+    HapticFeedback.mediumImpact();
+    if (byHr) {
+      // Sykkeen mukaan: palautus päättyy nyt. Ajastettu 5 min muistutus perutaan ja lyhyt ponnahdus näytetään.
+      _finish(over: true);
+      _native('cancel');
+      _native('preview', {
+        'title': t('Palautunut! 💪'),
+        'body': t('Seuraava sarja: {0}', [exerciseLabel(exercise)]),
+      });
+      onDone?.call(t('❤️ Palautunut – seuraava sarja!'));
+    }
+  }
+
   void start(int seconds, String exercise) {
-    total = seconds;
+    byHr = hrModeAvailable;
+    over = false;
+    planned = seconds;
+    _hrSeen = clock();
+    total = byHr ? hrWaitSeconds : seconds;
     this.exercise = exercise;
     nextFn = null;
     nextText = null;
-    _end = DateTime.now().add(Duration(seconds: seconds));
+    _end = clock().add(Duration(seconds: total));
     _schedule();
     _tick?.cancel();
-    _tick = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      if (remaining == 0) {
-        _finish(); // ei perua natiivi-ilmoitusta: se soi juuri nyt
-        onDone?.call();
-      } else {
-        notifyListeners();
-      }
-    });
+    recovered = false;
+    _tick = Timer.periodic(const Duration(milliseconds: 500), (_) => tick());
     notifyListeners();
+  }
+
+  /// Puolen sekunnin välein: aika täynnä tai (sykevyö) palautunut. Testit kutsuvat suoraan.
+  @visibleForTesting
+  void tick() {
+    if (remaining == 0) {
+      _finish(over: true); // ei perua natiivi-ilmoitusta: se soi juuri nyt
+      onDone?.call(
+        byHr
+            ? t('❤️ Palautuminen kestää – tarkista syke tai jatka, kun olet valmis.')
+            : t('⏱ Palautus ohi – seuraava sarja!'),
+      );
+    } else {
+      _checkRecovered();
+      notifyListeners();
+    }
   }
 
   /// Lisää tai vähentää aikaa (−15 s / +15 s).
@@ -175,10 +255,11 @@ class RestTimer extends ChangeNotifier {
     }
   }
 
-  void _finish() {
+  void _finish({bool over = false}) {
     _tick?.cancel();
     _tick = null;
     _end = null;
+    this.over = over;
     notifyListeners();
   }
 
@@ -188,10 +269,22 @@ class RestTimer extends ChangeNotifier {
     _native('cancel');
   }
 
+  /// Seuraava sarja tallennettiin tai treeni päättyi: "palautus ohi" -tila pois treeni-ilmoituksesta.
+  void clearOver() {
+    if (!over) return;
+    over = false;
+    notifyListeners();
+  }
+
   /// Ilmoituslupa annettu (Android 13+): silloin ääni ja värinä tulevat ilmoituksesta.
   static bool notificationsOk = false;
 
-  void _schedule() => _native('schedule', {'seconds': remaining});
+  /// Sykkeen mukaan: hälytys vasta 5 min kohdalla (kohtelias muistutus); palautuminen ilmoitetaan heti sen tapahtuessa.
+  void _schedule() => _native('schedule', {
+    'seconds': remaining,
+    if (byHr) 'title': t('Palautuminen kestää'),
+    if (byHr) 'body': t('Syke ei ole vielä laskenut palautumisrajan alle. Tarkista syke tai jatka, kun olet valmis.'),
+  });
 
   /// Androidilla tarkka hälytys ja ilmoitus (ääni, värinä), joka toimii myös näytön ollessa pois päältä tai
   /// toisessa sovelluksessa. Muualla (verkkodemo, testit) vain sovelluksen sisäinen ajastin.

@@ -17,6 +17,8 @@ import '../import_detect.dart';
 import '../import_export.dart';
 import '../injuries.dart' show injuryById, injuryShortName;
 import '../models.dart';
+import '../open_files.dart' show OpenedFile;
+import '../save_verified.dart';
 import '../theme.dart';
 import 'bug_report.dart';
 import 'program_template.dart' show importTemplate;
@@ -25,13 +27,30 @@ import '../l10n.dart';
 
 /// Tuonti muista sovelluksista ja oma varmuuskopio (zip .md-tiedostoista).
 class ImportExportScreen extends StatefulWidget {
-  const ImportExportScreen({super.key});
+  const ImportExportScreen({super.key, this.opened});
+
+  /// Toisesta sovelluksesta avattu tai jaettu tiedosto: tuodaan heti kuten Tuo tiedosto -painikkeella valittu.
+  final OpenedFile? opened;
   @override
   State<ImportExportScreen> createState() => _ImportExportScreenState();
 }
 
 class _ImportExportScreenState extends State<ImportExportScreen> {
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final f = widget.opened;
+    if (f != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _run(() async {
+          checkImportSize(f.tooLarge ? f.size : f.bytes.length);
+          await _importOne(f.name, f.bytes);
+        }),
+      );
+    }
+  }
 
   void _snack(String t) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
 
@@ -63,6 +82,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   Future<void> _importAny() => _run(() async {
     final files = await FilePicker.pickFiles(dialogTitle: t('Valitse tuotava tiedosto'));
     if (files.isEmpty) return;
+    for (final f in files) {
+      checkImportSize(await f.xFile.length());
+    }
     final picked = [for (final f in files) (f.name, await f.xFile.readAsBytes())];
     final kinds = [for (final (n, b) in picked) detectImport(n, b)];
     if (picked.length > 1) {
@@ -74,7 +96,12 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       return;
     }
     final (name, bytes) = picked.single;
-    switch (kinds.single) {
+    await _importOne(name, bytes, kinds.single);
+  });
+
+  /// Yksi tiedosto: tyyppi sisällöstä (ja nimestä), sitten esikatselu tai oma näkymänsä.
+  Future<void> _importOne(String name, Uint8List bytes, [ImportKind? kind]) async {
+    switch (kind ?? detectImport(name, bytes)) {
       case ImportKind.fitnotes:
         await _importFitnotesBytes(bytes);
       case ImportKind.garmin:
@@ -98,14 +125,14 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           ),
         );
     }
-  });
+  }
 
   Future<void> _importFitnotesBytes(List<int> bytes) async {
     // SQLite tarvitsee tiedostopolun: kopioidaan väliaikaiskansioon.
     final tmp = File(p.join((await getTemporaryDirectory()).path, 'fitnotes-import.db'));
     await tmp.writeAsBytes(bytes);
     try {
-      await _preview(readFitnotes(tmp.path, translate: true));
+      await _preview(await readFitnotes(tmp.path, translate: true));
     } finally {
       if (await tmp.exists()) await tmp.delete();
     }
@@ -137,19 +164,32 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   Future<void> _importZip() => _run(() async {
     final f = await _pick(['zip']);
     if (f == null) return;
+    checkImportSize(await f.xFile.length());
     await _preview(readZip(await f.xFile.readAsBytes()));
   });
 
   Future<void> _export() => _run(() async {
     final bytes = await exportZip();
-    final uri = await FilePicker.saveFile(
+    final r = await saveVerified(
+      bytes,
       fileName: 'gievra-${isoDate(DateTime.now())}.zip',
-      bytes: bytes,
-      mimeType: 'application/zip',
-      dialogTitle: t('Tallenna varmuuskopio'),
+      mime: 'application/zip',
+      title: t('Tallenna varmuuskopio'),
     );
-    if (uri == null) return;
-    // Oma täysi varmuuskopio korvaa sovelluksen automaattiset (backup/-kansio).
+    if (r == null) return;
+    if (!r.saved) {
+      if (mounted) _snack(t('Varmuuskopion tallennus epäonnistui. Automaattiset varmuuskopiot säilytetään.'));
+      return;
+    }
+    if (!r.verified) {
+      if (mounted) {
+        _snack(
+          t('Varmuuskopio tallennettu, mutta sitä ei voitu lukea takaisin. Automaattiset varmuuskopiot säilytetään.'),
+        );
+      }
+      return;
+    }
+    // Oma täysi varmuuskopio korvaa sovelluksen automaattiset (backup/-kansio), kun se on varmasti kirjoitettu.
     await autoBackup.deleteAll();
     if (mounted) _snack(t('Varmuuskopio tallennettu ({0} treeniä).', [store.workouts.length]));
   });
@@ -334,7 +374,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     );
     if (ok != true) return;
     final tmp = p.join((await getTemporaryDirectory()).path, 'FitNotes_Backup.fitnotes');
-    final sets = writeFitnotes(tmp, store.workouts, weighIns: settings.body.weights);
+    final sets = await writeFitnotes(tmp, store.workouts, weighIns: settings.body.weights);
     final file = File(tmp);
     final uri = await FilePicker.saveFile(
       fileName: 'FitNotes_Backup_${isoDate(DateTime.now())}.fitnotes',
@@ -555,7 +595,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       ),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(t('Tuonti, vienti ja varmuuskopio'))),
+      appBar: AppBar(title: BarTitle(Text(t('Tuonti, vienti ja varmuuskopio')))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
         children: [
@@ -605,7 +645,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.sync, size: 16, color: Sami.green),
+              Icon(Icons.sync, size: 16, color: greenText(context)),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(

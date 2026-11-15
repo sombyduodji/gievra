@@ -55,27 +55,37 @@ bool get isEnglish => _lang == 'en';
 
 /// Vaihtaa kielen ja lataa sen käännökset. Tuntematon kieli = suomi.
 Future<void> setUiLang(String code) async {
-  if (_en.isEmpty) {
-    try {
-      _en = parsePo(await rootBundle.loadString('assets/l10n/en.po'));
-    } catch (_) {}
-  }
   if (!uiLanguages.any((l) => l.code == code) || code == 'fi') {
     _lang = 'fi';
     _catalog = const {};
     _patternCache = null;
     decimalComma = true;
+  } else {
+    try {
+      _catalog = parsePo(await rootBundle.loadString('assets/l10n/$code.po'));
+      _patternCache = null;
+      _lang = code;
+      decimalComma = code != 'en';
+    } catch (_) {
+      _lang = 'fi';
+      _catalog = const {};
+    }
+  }
+  await ensureEnglish();
+}
+
+/// Englanninkieliset nimet (en.po) ladataan vain, kun niitä tarvitaan: nimiasetus englanti tai molemmat, tai
+/// saamenkielisen käyttöliittymän vammatekstit englanniksi. Suomenkielinen käyttäjä ei jäsennä 280 kt:n tiedostoa
+/// käynnistyksessä. Kutsutaan kielen ja näiden asetusten muuttuessa (app_state).
+Future<void> ensureEnglish() async {
+  if (_lang == 'en') {
+    _en = _catalog;
     return;
   }
+  if (_en.isNotEmpty || (nameMode == 'fi' && !(_lang == 'se' && healthTextLang == 'en'))) return;
   try {
-    _catalog = parsePo(await rootBundle.loadString('assets/l10n/$code.po'));
-    _patternCache = null;
-    _lang = code;
-    decimalComma = code != 'en';
-  } catch (_) {
-    _lang = 'fi';
-    _catalog = const {};
-  }
+    _en = parsePo(await rootBundle.loadString('assets/l10n/en.po'));
+  } catch (_) {}
 }
 
 /// Testeille: kieli ja käännökset suoraan.

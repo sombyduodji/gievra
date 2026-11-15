@@ -16,8 +16,10 @@ import '../maps/path_snap.dart';
 import '../models.dart';
 import '../ongoing.dart';
 import '../session_compare.dart' show fmtDuration;
+import '../share_text.dart' show thousands;
 import '../sports.dart';
 import '../theme.dart';
+import '../vehicle_ride.dart';
 import 'elevation_chart.dart';
 import 'maps_screen.dart';
 import 'record_screen.dart';
@@ -25,8 +27,11 @@ import 'share.dart';
 import 'watch.dart';
 import 'sport_picker.dart';
 import 'widgets.dart';
+import 'finish_sheet.dart';
 import 'workout.dart';
 import '../l10n.dart';
+import '../heart_rate.dart' show hr, applyHeartRate, HrStats;
+import 'hr_ui.dart';
 
 /// Urheilu tai liikunta: laji, kesto, matka (kestävyyslajit), rasitus, fiilis ja muistiinpanot.
 class ActivityScreen extends StatefulWidget {
@@ -68,6 +73,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   /// Ajanotto ilman GPS:ää (Manuaalinen, esim. juoksumatto): käynnissä olevan jakson alku ja kertynyt aika.
   DateTime? _swStart;
+
+  /// Sykevyön istunto ajanotolle (GPS-tallennus käyttää omaansa, ks. RecordScreen).
+  static const _hrKey = 'activity';
+
+  /// GPS-tallennuksen sykkeet (RecordScreen), sovelletaan tallennettaessa.
+  HrStats? _gpsHr;
   Duration _swAcc = Duration.zero;
   bool _swUsed = false;
   Timer? _swTick;
@@ -79,7 +90,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// Ajan kirjaus: true = ajanotto, false = Syötä aika (kesto ja aloitusaika käsin).
   late bool _useWatch = _canStopwatch;
 
-  Duration get _swElapsed => _swAcc + (_swStart == null ? Duration.zero : DateTime.now().difference(_swStart!));
+  Duration get _swElapsed => _swElapsedAt(DateTime.now());
+  Duration _swElapsedAt(DateTime now) => _swAcc + (_swStart == null ? Duration.zero : now.difference(_swStart!));
 
   /// Ajanotto tarjotaan uudelle, tänään tehtävälle liikunnalle.
   // Ei Health Connectista lisätylle: liikunta on jo tehty, aika tuli kellosta.
@@ -109,6 +121,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     setState(() {
       if (_swStart == null) {
         _swStart = DateTime.now();
+        hr.begin(_hrKey); // sykevyö (jos valittu) mukaan ajanotosta
         if (!_swUsed) w.started = _swStart;
         _swUsed = true;
         _swTick = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
@@ -120,21 +133,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
     });
   }
 
-  /// Lopetus: aika kenttään (voi vielä muokata).
-  void _swStop() {
+  /// Lopetus: aika kenttään (voi vielä muokata). [at]: Valmis-napautuksen hetki, ettei kysymyksiin
+  /// vastaamiseen kulunut aika lisäänny treeniin.
+  void _swStop([DateTime? at]) {
     setState(() {
-      _swAcc = _swElapsed;
+      _swAcc = _swElapsedAt(at ?? DateTime.now());
       _swStart = null;
       _swTick?.cancel();
-      final secs = _swAcc.inSeconds;
-      if (_timed) {
-        _setSec(secs < 60 ? 60 : secs);
-      } else {
-        w.minutes = (secs / 60).round().clamp(1, 600);
-      }
+      // Jokainen sekunti talteen kaikissa lajeissa (ennen alle minuutti → 1:00, ja muut kuin matkalajit
+      // pyöristettiin minuuteiksi).
+      _setSec(_swAcc.inSeconds);
       _swAcc = Duration.zero;
       _swDone = true;
-      _swEnd = DateTime.now();
+      _swEnd = at ?? DateTime.now();
     });
     _syncOngoing();
   }
@@ -161,13 +172,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   /// Kesto sekunteina lajista riippumatta (kestävyyslajeissa tarkka aika, muissa minuutit).
-  int get _durSec => _timed ? _sec : (w.minutes ?? 45) * 60;
-  void _setDurSec(int s) {
-    if (_timed) {
-      _setSec(s);
-    } else {
-      w.minutes = (s / 60).round().clamp(1, 600);
-    }
+  int get _durSec => _timed ? _sec : (w.seconds ?? (w.minutes ?? 45) * 60);
+  void _setDurSec(int s) => _setSec(s);
+
+  /// Kesto käsin minuutteina (muut kuin matkalajit): tarkka aika pois, ettei se ja minuutit ole ristiriidassa.
+  void _setMinutes(int m) {
+    w.minutes = m;
+    w.seconds = null;
   }
 
   DateTime _onDay(TimeOfDay v) => DateTime(w.date.year, w.date.month, w.date.day, v.hour, v.minute);
@@ -267,9 +278,20 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   Future<void> _saveDraft() async {
     if (_saved || w.activity == null) return;
+    // Koskematon kirjaus (laji vain valittu tai tallennettu avattu katsottavaksi) ei ole luonnos: muuten Androidin
+    // sulkema sovellus palasi lajin näkymään ja Takaisin kysyi "Tallennetaanko liikunta?", vaikka mitään ei tehty.
+    if (!_dirty) {
+      if (_draftWritten) await ActivityDraft.clear();
+      _draftWritten = false;
+      return;
+    }
     w.notes = _notes.text;
+    _draftWritten = true;
     await ActivityDraft.save(w, extra: _draftExtra());
   }
+
+  /// Tältä sivulta on kirjoitettu luonnos (poistetaan, jos muutokset perutaan käsin).
+  late bool _draftWritten = widget.draft != null;
 
   /// GPS tarjotaan uudelle, tänään tehtävälle matkalajille Androidissa (ei verkkodemossa).
   bool get _canGps =>
@@ -478,6 +500,101 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (remember && w.activity != null) settings.setSnapDefault(w.activity!, m);
   }
 
+  // ---- Kyyti kävely- tai juoksureitillä (vehicle_ride.dart): tallennus jäi päälle autoon tai bussiin. ----
+  bool _ridesDismissed = false;
+  List<List<TrackPoint>>? _ridesFor;
+  String? _ridesSport;
+  List<VehicleRide> _ridesCache = const [];
+
+  /// Kyydit nykyiseltä reitiltä nykyiselle lajille (lajin vaihto pyöräilyksi piilottaa kortin).
+  List<VehicleRide> get _rides {
+    if (!identical(_raw, _ridesFor) || _ridesSport != w.activity) {
+      _ridesFor = _raw;
+      _ridesSport = w.activity;
+      _ridesCache = _raw == null ? const [] : findVehicleRides(_raw!, w.activity);
+    }
+    return _ridesCache;
+  }
+
+  String _clock(DateTime t) => fmtClock(TimeOfDay.fromDateTime(t.toLocal()));
+
+  Future<void> _removeRide(VehicleRide r) async {
+    if (_locked) {
+      await _unlock();
+      if (_locked || !mounted) return;
+    }
+    final raw = _raw;
+    if (raw == null) return;
+    final after = removeRide(raw, r);
+    final oldKm = w.distanceKm;
+    final oldSec = _sec;
+    setState(() {
+      _setSec(secondsWithoutRide(_sec, raw, r));
+      if (r.atStart && w.started != null) w.started = w.started!.add(r.end.difference(raw.first.first.time));
+      _rawDist = distanceWithoutRide(after, _rawDist ?? measureRoute(raw));
+      _raw = after;
+      final note = 'kyyti poistettu ${_clock(r.start)}–${_clock(r.end)}';
+      _desc = _desc.isEmpty ? note : '$_desc; $note';
+    });
+    await _applySnap(w.snapM ?? 0, remember: false);
+    await _saveDraft();
+    if (!mounted) return;
+    final km = (oldKm ?? 0) - (w.distanceKm ?? 0);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          t('Kyyti poistettu: matka −{0} km, aika −{1}', [fmtDec(km < 0 ? 0 : km, 2), fmtDurationSec(oldSec - _sec)]),
+        ),
+      ),
+    );
+  }
+
+  Widget _rideCard(ColorScheme cs, VehicleRide r) {
+    final where = r.atEnd
+        ? t('Reitti, matka ja aika päättyvät kyytiä edeltävään kohtaan.')
+        : r.atStart
+        ? t('Reitti, matka ja aika alkavat kyydin jälkeisestä kohdasta.')
+        : t('Kyydin matka ja aika poistetaan; reitti jatkuu kyydin jälkeen.');
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      decoration: BoxDecoration(
+        color: yellowText(context).withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: yellowText(context).withValues(alpha: .5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '🚌 ${t('Nousitko kyytiin?')}',
+            key: const ValueKey('vehicleRide'),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            t('Klo {0}–{1} reitti eteni noin {2} km/h ({3} km). Kävellen tai juosten se ei ole mahdollista.', [
+              _clock(r.start),
+              _clock(r.end),
+              r.kmh.round(),
+              fmtDec(r.meters / 1000, 1),
+            ]),
+          ),
+          const SizedBox(height: 4),
+          Text(where, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            children: [
+              TextButton(onPressed: () => setState(() => _ridesDismissed = true), child: Text(t('Pidä reitti'))),
+              FilledButton(onPressed: () => _removeRide(r), child: Text(t('Poista kyyti'))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _snapCard(ColorScheme cs) {
     final m = w.snapM ?? 0;
     final on = m > 0;
@@ -568,12 +685,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
         builder: (_) => RecordScreen(sport: sport, recover: recover),
       ),
     );
+    final hs = hr.take('gps');
+    // Kesken jäänyt reitti hylättiin (tallentimen tila poistettu): lajin sivu avattiin vain sitä varten, joten
+    // luonnos pois ja etusivulle. Muuten sovellus palasi seuraavalla käynnistyksellä tyhjään lajin sivuun.
+    if (r == null && recover && mounted && await GpsRecorder.pendingSport() == null) {
+      _saved = true;
+      _draftTick?.cancel();
+      await ActivityDraft.clear();
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
     if (r == null || !mounted) return;
+    _gpsHr = hs; // sovelletaan tallennettaessa, kun kesto on lopullinen
     _swReset();
     setState(() {
       w.activity = sport;
       w.started = r.started;
-      _setSec(r.seconds < 60 ? 60 : r.seconds);
+      _setSec(r.seconds);
       w.distanceKm = r.distanceKm > 0 ? r.distanceKm : null;
       w.routeGpx = r.segments.isEmpty ? null : r.gpx;
       _route = r.segments.isEmpty ? null : r.segments;
@@ -586,6 +714,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       _desc = r.desc;
       _ways = null;
       _waysLoad = null;
+      _ridesDismissed = false;
     });
     // Polulle korjaus lajin oletuksella (5 m tai käyttäjän viimeksi valitsema); säädettävissä kartan alla.
     if (_canSnap) await _applySnap(settings.snapFor(sport), remember: false);
@@ -598,8 +727,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// Kestävyyslajeissa tarkka aika (h:mm:ss); muissa minuutit.
   int get _sec => w.seconds ?? (w.minutes ?? 45) * 60;
   void _setSec(int s) {
-    w.seconds = s.clamp(60, 24 * 3600);
-    w.minutes = (w.seconds! / 60).round();
+    w.seconds = s.clamp(1, 24 * 3600);
+    w.minutes = minutesFromSeconds(w.seconds!);
   }
 
   Future<void> _askTime() async {
@@ -690,18 +819,51 @@ class _ActivityScreenState extends State<ActivityScreen> {
       if (manual == true && mounted) setState(() => _useWatch = false);
       return;
     }
+    // Alle minuutin ajanotto on usein vahingossa aloitettu tai kokeilu: kysytään ennen tallennusta (aika
+    // tallentuu tarkkana, esim. 0:16).
+    // Käynnissä: kellon aika; pysäytetty (Lopeta): tallennettu tarkka aika.
+    final doneAt = DateTime.now(); // kello pysähtyy tähän, vaikka kysymyksiin vastaaminen kestäisi
+    final swSecs = _swElapsed > Duration.zero ? _swElapsedAt(doneAt).inSeconds : (_swDone ? (w.seconds ?? 0) : 0);
+    if (_canStopwatch && _useWatch && !_isSaved && swSecs > 0 && swSecs < 60) {
+      final keep = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(t('Alle minuutin liikunta')),
+          content: Text(t('Ajanotto kesti vain {0}. Tallennetaanko se vai hylätäänkö?', [fmtDurationSec(swSecs)])),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Hylkää'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Tallenna'))),
+          ],
+        ),
+      );
+      if (keep == null || !mounted) return; // takaisin: ajanotto jatkuu
+      if (!keep) {
+        Navigator.of(context).pop(); // kuten Takaisin → Hylkää: ei tallenneta
+        return;
+      }
+    }
     // Fiilis ponnahdusikkunassa ensin (Ohita jatkaa; takaisin peruu lopetuksen ja ajanotto jatkuu).
     if (w.feeling == null && !_isSaved) {
       // Uudessa liikunnassa rasitus samassa kyselyssä (valinnainen); fiiliksen napautus päättää kyselyn.
-      final r = await askFeeling(context, intensity: _live ? w.intensity : null, askIntensity: _live);
+      final r = await showFinishSheet(
+        context,
+        w: w,
+        askIntensity: _live,
+        intensity: _live ? w.intensity : null,
+        series: (hr.peek(_hrKey) ?? _gpsHr)?.series,
+        // Käynnissä olevan ajanoton aika (ei oletus 45:00, joka on vasta ajanoton pysäytyksen jälkeen oikea).
+        durationSec: swSecs > 0 ? swSecs : _sec,
+      );
       if (r == null || !mounted) return;
-      if (_live) w.intensity = askedIntensity;
-      if (r != feelingSkipped) w.feeling = r;
+      if (_live) w.intensity = r.intensity;
+      if (r.feeling != feelingSkipped) w.feeling = r.feeling;
     }
-    if (_swStart != null || _swAcc > Duration.zero) _swStop();
+    if (_swStart != null || _swAcc > Duration.zero) _swStop(doneAt);
+    // Sykevyö (ajanotto tai GPS): käyrä, keskisyke, maksimi ja kalorit.
+    final hs = await hr.end(_hrKey) ?? _gpsHr;
+    if (hs != null) applyHeartRate(w, hs);
     w.notes = _notes.text;
     if (!isRun(w.activity)) w.runType = null;
-    if (!_timed) w.seconds = null;
     w.title = w.activity ?? 'Liikunta'; // tiedostoon aina suomeksi
     await store.save(w);
     _saved = true;
@@ -714,6 +876,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   void dispose() {
     _swTick?.cancel();
+    hr.end(_hrKey); // tallentamatta poistuttu: sykkeet pois
     // Kirjauksesta poistuttiin itse (takaisin) tai se tallennettiin: luonnosta ei tarvita.
     _draftTick?.cancel();
     ActivityDraft.clear();
@@ -800,7 +963,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
     ),
   );
 
-  String get _durText => _timed ? fmtDurationSec(_sec) : t('{0} min', [w.minutes]);
+  /// Tarkka aika, kun se on (ajanotto kaikissa lajeissa); käsin kirjatut minuutit muuten.
+  String get _durText =>
+      _timed ? fmtDurationSec(_sec) : (w.seconds != null ? fmtDurationSec(w.seconds!) : t('{0} min', [w.minutes]));
 
   Widget _watchCard(ColorScheme cs) {
     final running = _swStart != null;
@@ -833,6 +998,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     textAlign: TextAlign.center,
                     style: sub,
                   ),
+                // Sykevyö: iso sykerengas, alue, käyrä ja tilanne tähän asti.
+                const HrRing(sessionKey: 'activity'),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -893,13 +1060,21 @@ class _ActivityScreenState extends State<ActivityScreen> {
       ] else ...[
         SectionLabel(t('Kesto')),
         ValueStepper(
-          value: '${w.minutes}',
-          unit: 'min',
-          onMinus: () => setState(() => w.minutes = (w.minutes! - 5).clamp(5, 600)),
-          onPlus: () => setState(() => w.minutes = (w.minutes! + 5).clamp(5, 600)),
+          // Ajanotosta tarkka aika (m:ss); käsin muutettaessa minuutit.
+          value: w.seconds != null ? fmtDurationSec(w.seconds!) : '${w.minutes}',
+          unit: w.seconds != null ? '' : 'min',
+          onMinus: () => setState(() => _setMinutes((((w.seconds ?? w.minutes! * 60) / 60).round() - 5).clamp(5, 600))),
+          onPlus: () => setState(() => _setMinutes((((w.seconds ?? w.minutes! * 60) / 60).round() + 5).clamp(5, 600))),
           onTap: () async {
-            final v = await askNumber(context, t('Kesto (min)'), w.minutes!.toDouble(), decimals: false);
-            if (v != null && v > 0) setState(() => w.minutes = v.round());
+            final v = await askNumber(
+              context,
+              t('Kesto (min)'),
+              w.minutes!.toDouble(),
+              decimals: false,
+              min: 1,
+              max: 1440,
+            );
+            if (v != null && v > 0) setState(() => _setMinutes(v.round()));
           },
         ),
       ],
@@ -964,6 +1139,244 @@ class _ActivityScreenState extends State<ActivityScreen> {
           for (final x in xs.skip(1)) x.key == _routeKey ? x : EditGuard(locked: true, onTap: _unlock, child: x),
         ];
 
+  /// Tallennetun liikunnan lukunäkymä (lukittu; mockup 10, käyttäjän valinta 14.11.): yksi yhteenvetokortti
+  /// (aika, matka, vauhti tai nopeus, askeleet, kalorit, syke ja askelpituus, kun tiedossa), reitti, syke, rasitus
+  /// ja fiilis, muistiinpanot. Kaikissa lajeissa sama; muokkaus (✎ Muokkaa tai lukko) avaa tavalliset säätimet.
+  Widget _readSummary(ColorScheme cs) {
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final speed = _speedSports.contains(w.activity);
+    final km = w.distanceKm ?? 0;
+    final stats = <(String, String, String)>[
+      (_durText, '', t('Aika')),
+      if (km > 0) (fmtNum((km * 100).round() / 100), 'km', t('Matka')),
+      if (km > 0 && w.pace != null && !speed) (fmtPace(w.paceSecPerKm!), '/km', t('vauhti')),
+      if (km > 0 && w.speedKmh != null && speed) (fmtNum((w.speedKmh! * 10).round() / 10), 'km/h', t('keskinopeus')),
+      if ((w.steps ?? 0) > 0) (thousands(w.steps!), '', t('askeleet')),
+      if ((w.kcal ?? 0) > 0) ('${w.kcal}', 'kcal', t('kalorit')),
+      if (w.hrAvg != null) (t('ka {0}', [w.hrAvg]), '', t('Syke')),
+      if (w.strideM case final m?) (fmtNum((m * 100).round() / 100), 'm', t('askelpituus')),
+    ];
+    final end = _end;
+    final when = [
+      shortDate(w.date),
+      if (w.started != null)
+        end == null
+            ? fmtClock(TimeOfDay.fromDateTime(w.started!))
+            // Sananliittäjät: aikaväli rivittyy kokonaisena (ei "12:00–" ja "12:45" eri riveille).
+            : '${fmtClock(TimeOfDay.fromDateTime(w.started!))}\u2060–\u2060${fmtClock(TimeOfDay.fromDateTime(end))}',
+    ].join(' · ');
+    final sources = [
+      if (w.healthSource != null) w.healthSource!.isEmpty ? 'Health Connect' : 'Health Connect · ${w.healthSource}',
+      if (w.hrSource == 'sykevyö') t('Sykevyö'),
+      if (_hasRoute) 'GPS',
+    ];
+    return Card(
+      key: const ValueKey('readSummary'),
+      margin: const EdgeInsets.only(top: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)),
+                  child: FittedBox(child: Text(sportOf(w.activity)?.icon ?? '✨', style: const TextStyle(fontSize: 26))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Yksi rivi, tarvittaessa pienennettynä: pitkä sana ("Sihkkelastin") ei katkea kesken.
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          sportName(w.activity!),
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, height: 1.2),
+                        ),
+                      ),
+                      Text(when, style: sub.copyWith(fontSize: 13)),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  key: const ValueKey('readEdit'),
+                  onPressed: _unlock,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: Text(t('Muokkaa')),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Kolmen ruudun rivit, rivin ruudut yhtä korkeita (pitkä nimike kahdella rivillä ei tee rosoa).
+            for (var r = 0; r < stats.length; r += 3)
+              Padding(
+                padding: EdgeInsets.only(top: r == 0 ? 0 : 8),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = r; i < r + 3; i++) ...[
+                        if (i > r) const SizedBox(width: 8),
+                        Expanded(child: i < stats.length ? _statTile(stats[i], cs, sub) : const SizedBox()),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            if (sources.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text('♥ ${sources.join(' · ')}', style: TextStyle(fontSize: 12, color: greenText(context))),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Matka: säädin ja vauhti/keskinopeus (uusi kirjaus ja tallennetun muokkaus).
+  List<Widget> _distanceSection() => [
+    SectionLabel(t('Matka')),
+    ValueStepper(
+      value: fmtNum(w.distanceKm ?? 0),
+      unit: 'km',
+      onMinus: () => setState(() {
+        w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500);
+        w.distanceManual = _hasRoute;
+      }),
+      onPlus: () => setState(() {
+        w.distanceKm = (w.distanceKm ?? 0) + .5;
+        w.distanceManual = _hasRoute;
+      }),
+      onTap: () async {
+        final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5, min: 0, max: 1000);
+        if (v != null && v >= 0) {
+          setState(() {
+            w.distanceKm = v == 0 ? null : v;
+            w.distanceManual = _hasRoute;
+          });
+        }
+      },
+    ),
+    if (w.pace != null)
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Row(
+          children: [
+            _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
+            const SizedBox(width: 8),
+            _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
+          ],
+        ),
+      ),
+  ];
+
+  Widget _statTile((String, String, String) st, ColorScheme cs, TextStyle sub) {
+    final (v, unit, label) = st;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 10, 8, 8),
+      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text.rich(
+              TextSpan(
+                text: v,
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+                children: [
+                  if (unit.isNotEmpty)
+                    TextSpan(
+                      text: ' $unit',
+                      style: sub.copyWith(fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                ],
+              ),
+              maxLines: 1,
+            ),
+          ),
+          Text(label, maxLines: 2, style: sub),
+        ],
+      ),
+    );
+  }
+
+  /// Muokkausnäkymän ryhmä omana korttinaan (Aika, Matka, Kellon tiedot).
+  Widget _group(List<Widget> children) => Card(
+    margin: const EdgeInsets.only(top: 12),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+    ),
+  );
+
+  /// Reittikortti (kartta, korkeusprofiili tai kilometrit, polulle korjaus); sama luku- ja muokkausnäkymässä.
+  Widget _routeCard() => Padding(
+    key: _routeKey,
+    padding: const EdgeInsets.only(top: 12),
+    child: Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Text('📍', style: TextStyle(fontSize: 22)),
+            // Poisto vain tallentamattomalle reitille (polulle korjaus asettaa routeGpx:n myös
+            // tallennetulle treenille, jonka reittitiedosto jää ennalleen).
+            title: Text(w.routeGpx != null && w.route == null ? t('Reitti tallennettu') : t('Reitti')),
+            subtitle: Text(t('GPS-reitti tallentuu .gpx-tiedostona treenin viereen.')),
+            trailing: w.routeGpx != null && w.route == null
+                ? TextButton(
+                    onPressed: () => setState(() {
+                      w.routeGpx = null;
+                      _route = null;
+                    }),
+                    child: Text(t('Poista reitti')),
+                  )
+                : null,
+          ),
+          if (!_ridesDismissed && _rides.isNotEmpty) _rideCard(Theme.of(context).colorScheme, _rides.first),
+          if (_route != null && _route!.any((s) => s.length >= 2))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: SizedBox(
+                height: 240,
+                child: RouteMap(
+                  segments: _route!,
+                  original: (w.snapM ?? 0) > 0 ? _raw : null,
+                  fallback: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: CustomPaint(
+                      painter: RoutePainter(_route!, Theme.of(context).colorScheme.primary),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (_profileFor(_route) case final prof?)
+            ElevationCard(prof, speed: _speedSports.contains(w.activity))
+          // Ilman korkeustietoja: kilometrien vauhti silti (reitin omista ajoista).
+          else if (_splitsFor(_route) case final sp? when _profileDone && sp.length > 1)
+            KmSplitsCard(sp, speed: _speedSports.contains(w.activity)),
+          if (_canSnap) _snapCard(Theme.of(context).colorScheme),
+        ],
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -996,7 +1409,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 ),
               ),
         appBar: AppBar(
-          title: Text(w.activity == null ? t('Liikunta') : sportName(w.activity!)),
+          title: BarTitle(Text(w.activity == null ? t('Liikunta') : sportName(w.activity!))),
           actions: [
             // Tallennettu liikunta: jakaminen ja poisto (kuten salitreenissä).
             if (_isSaved)
@@ -1021,6 +1434,29 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   w.activity = s;
                   _baseline = _snapshot();
                 }),
+              ),
+            ] else if (_locked) ...[
+              // Lukunäkymä: yhteenveto ja tulokset, ei säätimiä (muokkaus avaa ne).
+              _readSummary(cs),
+              if (_hasRoute) _routeCard(),
+              HrDetails(w),
+              EffortFeelingCard(
+                intensity: w.intensity,
+                onIntensity: (v) => setState(() => w.intensity = v),
+                feeling: w.feeling,
+                onFeeling: (v) => setState(() => w.feeling = v),
+              ),
+              SectionLabel(t('Muistiinpanot')),
+              TextField(
+                controller: _notes,
+                minLines: 2,
+                maxLines: 6,
+                decoration: InputDecoration(
+                  hintText: t('Reitti, sää, joukkue, tulos… (vapaaehtoinen)'),
+                  filled: true,
+                  fillColor: cs.surfaceContainer,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                ),
               ),
             ] else ...[
               const SizedBox(height: 12),
@@ -1101,136 +1537,46 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ),
                 ],
               ] else ...[
-                if (_hasRoute)
-                  Padding(
-                    key: _routeKey,
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Card(
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Text('📍', style: TextStyle(fontSize: 22)),
-                            // Poisto vain tallentamattomalle reitille (polulle korjaus asettaa routeGpx:n myös
-                            // tallennetulle treenille, jonka reittitiedosto jää ennalleen).
-                            title: Text(w.routeGpx != null && w.route == null ? t('Reitti tallennettu') : t('Reitti')),
-                            subtitle: Text(t('GPS-reitti tallentuu .gpx-tiedostona treenin viereen.')),
-                            trailing: w.routeGpx != null && w.route == null
-                                ? TextButton(
-                                    onPressed: () => setState(() {
-                                      w.routeGpx = null;
-                                      _route = null;
-                                    }),
-                                    child: Text(t('Poista reitti')),
-                                  )
-                                : null,
-                          ),
-                          if (_route != null && _route!.any((s) => s.length >= 2))
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                              child: SizedBox(
-                                height: 240,
-                                child: RouteMap(
-                                  segments: _route!,
-                                  original: (w.snapM ?? 0) > 0 ? _raw : null,
-                                  fallback: Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceContainer,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: CustomPaint(
-                                      painter: RoutePainter(_route!, Theme.of(context).colorScheme.primary),
-                                      child: const SizedBox.expand(),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (_profileFor(_route) case final prof?)
-                            ElevationCard(prof, speed: _speedSports.contains(w.activity))
-                          // Ilman korkeustietoja: kilometrien vauhti silti (reitin omista ajoista).
-                          else if (_splitsFor(_route) case final sp? when _profileDone && sp.length > 1)
-                            KmSplitsCard(sp, speed: _speedSports.contains(w.activity)),
-                          if (_canSnap) _snapCard(Theme.of(context).colorScheme),
-                        ],
-                      ),
-                    ),
-                  ),
+                if (_hasRoute) _routeCard(),
                 // GPS-lenkki: aika ja matka mitattuina arvoina; Korjaa avaa tavalliset säätimet.
                 if (_gpsView)
                   _gpsSummary(cs)
-                else ...[
+                else if (!_live) ...[
+                  // Tallennetun muokkaus: aika ja matka omina kortteinaan (mockup 10).
+                  _group([_timeSection(cs)]),
+                  if (sport?.distance ?? false) _group(_distanceSection()),
+                ] else ...[
                   _timeSection(cs),
-                  if (sport?.distance ?? false) ...[
-                    SectionLabel(t('Matka')),
-                    ValueStepper(
-                      value: fmtNum(w.distanceKm ?? 0),
-                      unit: 'km',
-                      onMinus: () => setState(() {
-                        w.distanceKm = ((w.distanceKm ?? 0) - .5).clamp(0, 500);
-                        w.distanceManual = _hasRoute;
-                      }),
-                      onPlus: () => setState(() {
-                        w.distanceKm = (w.distanceKm ?? 0) + .5;
-                        w.distanceManual = _hasRoute;
-                      }),
-                      onTap: () async {
-                        final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5);
-                        if (v != null && v >= 0) {
-                          setState(() {
-                            w.distanceKm = v == 0 ? null : v;
-                            w.distanceManual = _hasRoute;
-                          });
-                        }
-                      },
-                    ),
-                    if (w.pace != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: Row(
-                          children: [
-                            _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
-                            const SizedBox(width: 8),
-                            _Metric(
-                              value: fmtNum((w.speedKmh! * 10).round() / 10),
-                              unit: 'km/h',
-                              label: t('keskinopeus'),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                  if (sport?.distance ?? false) ..._distanceSection(),
                 ],
                 // Askeleet Kellon tiedot -kortissa (Health Connect tai käsin), ei omana kohtanaan.
-                // Uudessa liikunnassa rasitus kysytään lopussa fiiliksen kanssa; muuten sivulla.
-                if (!_live) ...[
-                  SectionLabel(t('Rasitus')),
-                  SegmentedButton<String>(
-                    showSelectedIcon: false,
-                    segments: [for (final (k, l, e) in intensities) ButtonSegment(value: k, label: Text('$e ${t(l)}'))],
-                    // Ei oletusta: rasitus vain, jos käyttäjä valitsee (uudelleen napautus poistaa valinnan).
-                    emptySelectionAllowed: true,
-                    selected: {?w.intensity},
-                    onSelectionChanged: (v) => setState(() => w.intensity = v.firstOrNull),
-                  ),
-                ],
                 // Uusi, tänään tehtävä liikunta: kellon tiedot ja fiilis kysytään lopussa (Treeni valmis → ponnahdus ja
                 // yhteenveto). Aiemman päivän, Health Connectista tuodun ja tallennetun kohdalla ne ovat sivulla.
                 if ((settings.watch || w.healthSource != null) && !_live)
-                  WatchCard(
-                    w: w,
-                    onChanged: () async {
-                      setState(() {});
-                      // Jo tallennettu liikunta: kellon tiedot (Health Connect tai käsin) tiedostoon heti, ettei
-                      // takaisin-painike hukkaa niitä. Uusi kirjaus tallentuu Treeni valmis -painikkeella.
-                      if (store.onDay(w.date).any((x) => x.session == w.session && x.activity != null)) {
-                        await store.save(w);
-                      }
-                    },
+                  _group([
+                    WatchCard(
+                      w: w,
+                      onChanged: () async {
+                        setState(() {});
+                        // Jo tallennettu liikunta: kellon tiedot (Health Connect tai käsin) tiedostoon heti, ettei
+                        // takaisin-painike hukkaa niitä. Uusi kirjaus tallentuu Treeni valmis -painikkeella.
+                        if (store.onDay(w.date).any((x) => x.session == w.session && x.activity != null)) {
+                          await store.save(w);
+                        }
+                      },
+                    ),
+                  ]),
+                // Sykevyön käyrä ja sykealueet.
+                if (!_live) HrDetails(w),
+                // Rasitus ja fiilis yhdessä kortissa sykkeen jälkeen (ennen kellon tiedot ja syke olivat välissä).
+                // Uudessa liikunnassa molemmat kysytään lopussa Treeni valmis -ikkunassa.
+                if (!_live || _isSaved)
+                  EffortFeelingCard(
+                    intensity: w.intensity,
+                    onIntensity: _live ? null : (v) => setState(() => w.intensity = v),
+                    feeling: w.feeling,
+                    onFeeling: _isSaved ? (v) => setState(() => w.feeling = v) : null,
                   ),
-                if (_isSaved) ...[
-                  SectionLabel(t('Miltä tuntui?')),
-                  FeelingPicker(value: w.feeling, onChanged: (v) => setState(() => w.feeling = v)),
-                ],
                 SectionLabel(t('Muistiinpanot')),
                 TextField(
                   controller: _notes,

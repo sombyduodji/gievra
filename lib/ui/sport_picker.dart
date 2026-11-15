@@ -156,12 +156,15 @@ class _SportTile extends StatelessWidget {
             children: [
               Text(sport.icon, style: const TextStyle(fontSize: 26)),
               const SizedBox(height: 4),
-              Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              // Pitkä nimi (saame, suuri teksti) pienenee mahtuakseen, ei katkea.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
               ),
               Text(
                 en ?? '',

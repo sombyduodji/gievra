@@ -22,6 +22,9 @@ class HealthImportButton extends StatelessWidget {
 
   static bool get visible => settings.hcImport && !kIsWeb && !isDemo && Platform.isAndroid;
 
+  /// Health Connect on käytettävissä tällä laitteella (Android, ei demo); ei vaadi tuontiasetusta.
+  static bool get available => !kIsWeb && !isDemo && Platform.isAndroid;
+
   @override
   Widget build(BuildContext context) {
     // Yhtä leveä kuin yläpuolen Sali/Liikunta-painikkeet, samat kulmat, mutta matalampi ja hillitty vihreä
@@ -249,7 +252,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
     final sub = TextStyle(fontSize: 13, color: cs.onSurfaceVariant);
     final today = dateOnly(DateTime.now());
     return Scaffold(
-      appBar: AppBar(title: Text(t('Lisää tehty liikunta'))),
+      appBar: AppBar(title: BarTitle(Text(t('Lisää tehty liikunta')))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [

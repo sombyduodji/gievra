@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../battery.dart';
 import '../daily_steps.dart';
 import 'steps_ui.dart' show stepsSupported;
 
@@ -9,6 +10,7 @@ import '../app_state.dart';
 import '../body.dart';
 import '../models.dart' show dateOnly;
 import '../theme.dart';
+import 'battery_ui.dart';
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -36,7 +38,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _steps = false;
 
   void _done() {
-    if (_c.text.trim().isEmpty) return;
     settings.trainMode = _mode;
     // Kehonpainon seuranta: pituus ja nykyinen paino ovat valinnaisia (voi lisätä myöhemmin asetuksista).
     settings.bodyTracker = _body;
@@ -54,7 +55,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
     // Pelkkä kestävyys: salin ohjelmakysely ohitetaan (sen voi tehdä myöhemmin valikosta).
     if (_mode == 'cardio') settings.introDone = true;
-    settings.setName(_c.text);
+    markBatteryHintShown(); // aloitus kertoi jo: päivityksen jälkeistä ohjetta ei näytetä
+    settings.finishOnboarding(_c.text);
   }
 
   @override
@@ -72,6 +74,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const Text('Kieli · Giella', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 6),
             const LanguagePicker(),
+            const SizedBox(height: 16),
+            // Tekstin koko heti alussa: valinta näkyy koko sivulla saman tien (tallentuu nimen kanssa).
+            Text(t('Tekstin koko'), style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 6),
+            ListenableBuilder(
+              listenable: settings,
+              builder: (context, _) =>
+                  TextSizePicker(value: settings.textSize, onChanged: (v) => settings.setTextSize(v, save: false)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t('Pieni on tavallinen koko. Voit vaihtaa tätä myöhemmin asetuksista.'),
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
             const SizedBox(height: 24),
             Text(
               t('Bures!'),
@@ -95,12 +111,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
             SectionLabel(t('Miksi haluat, että sinua kutsutaan?')),
+            // Valinnainen: tyhjänä tervehdys ilman nimeä. Ei automaattista näppäimistöä, joka peittäisi sivun.
             TextField(
               controller: _c,
-              autofocus: true,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                hintText: t('Nimi, lempinimi tai mitä vain'),
+                hintText: t('Nimi tai lempinimi (valinnainen)'),
+                hintMaxLines: linesFor(context, 1),
                 filled: true,
                 fillColor: cs.surfaceContainer,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -209,9 +226,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ],
+            // Akunsäästö (Android): ehdotus sallia toiminta taustalla, jotta treeni ei pysähdy näytön sammuessa.
+            if (BatteryHelp.supported) ...[
+              SectionLabel(t('Saako Gievra toimia taustalla?')),
+              const BatteryIntroSection(),
+            ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _c.text.trim().isEmpty ? null : _done,
+              onPressed: _done,
               child: Text(t('Aloitetaan'), style: TextStyle(fontSize: 16)),
             ),
           ],

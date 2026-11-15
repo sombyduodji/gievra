@@ -120,6 +120,7 @@ void main() {
     store.workouts = [];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
+    // Molemmat, ei treenejä: sali on iso painike (tasatilanne), liikunta pienempi vieressä.
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
     tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();

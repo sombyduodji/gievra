@@ -37,6 +37,11 @@ void main() {
   test('Asetus tallentuu', () {
     final s = Settings()..healthLang = 'en';
     expect((Settings()..applyMarkdown(s.settingsToMarkdown())).healthLang, 'en');
+    // Väliaikainen Settings (varmuuskopion tarkistus) ei vaihda käytössä olevaa; sovelluksen omat asetukset vaihtavat.
+    healthTextLang = 'fi';
+    expect((Settings()..applyMarkdown(s.settingsToMarkdown())).healthLang, 'en');
+    expect(healthTextLang, 'fi');
+    settings.applyMarkdown(s.settingsToMarkdown());
     expect(healthTextLang, 'en');
   });
 }

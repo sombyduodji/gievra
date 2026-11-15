@@ -52,6 +52,63 @@ void main() {
     expect(ys.fold<int>(0, (a, y) => a + y.$2), 7);
   });
 
+  testWidgets('Lajeittain: alle minuutin laji näkyy tarkkana (0:16), pidempi minuutteina', (tester) async {
+    store.workouts.addAll([
+      Workout(date: today, title: 'Koripallo', activity: 'Koripallo', minutes: 1, seconds: 16, session: 2),
+      Workout(date: today, title: 'Jooga', activity: 'Jooga', minutes: 45, seconds: 45 * 60 + 2, session: 3),
+    ]);
+    await open(tester);
+    expect(find.text('1 krt · 0:16'), findsOneWidget);
+    expect(find.text('1 krt · 45 min'), findsOneWidget);
+  });
+
+  testWidgets('1 kk: 12 viikon kaavio päättyy kuluvaan viikkoon, ei tulevia tyhjiä viikkoja (päätös 14.11.)', (
+    tester,
+  ) async {
+    await open(tester);
+    final thisWeek = numDate(weekStart(today));
+    final nextWeek = numDate(addDays(weekStart(today), 7));
+    final elevenAgo = numDate(addDays(weekStart(today), -77));
+    expect(find.text(thisWeek), findsWidgets, reason: 'kuluva viikko oikeassa reunassa');
+    expect(find.text(elevenAgo), findsWidgets, reason: '12 viikkoa: 11 aiempaa + kuluva');
+    expect(find.text(nextWeek), findsNothing, reason: 'ei tulevia viikkoja');
+  });
+
+  testWidgets('Ruudunlukija: viikkokaavio on yksi yhteenveto ("9.11.: 2"), ei irrallisia lukuja', (tester) async {
+    final h = tester.ensureSemantics();
+    await open(tester);
+    final week = numDate(weekStart(addDays(today, -3)));
+    expect(find.bySemanticsLabel(RegExp('${RegExp.escape(week)}: 1')), findsOneWidget);
+    h.dispose();
+  });
+
+  testWidgets('Yhteenvetolause: jakson treenit ja ero edelliseen (uusi ulkoasu)', (tester) async {
+    await open(tester);
+    expect(find.byKey(const ValueKey('statsHeadline')), findsOneWidget);
+    expect(find.textContaining('treeniä'), findsWidgets);
+  });
+
+  testWidgets('Yhteenvetolause Kestävyys-välilehdellä: liikuntakerrat ja matka', (tester) async {
+    store.workouts.addAll([
+      Workout(date: addDays(today, -2), title: 'Juoksu', activity: 'Juoksu')
+        ..seconds = 1800
+        ..distanceKm = 5.2,
+      Workout(date: addDays(today, -1), title: 'Kävely', activity: 'Kävely')
+        ..seconds = 2400
+        ..distanceKm = 3,
+    ]);
+    tester.view.physicalSize = const Size(1080, 6000);
+    tester.view.devicePixelRatio = 2.7;
+    addTearDown(tester.view.reset);
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) => d.toString().contains('overflowed') ? null : onError?.call(d);
+    addTearDown(() => FlutterError.onError = onError);
+    await tester.pumpWidget(const MaterialApp(home: StatsScreen(kind: 'cardio')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('statsHeadline')), findsOneWidget);
+    expect(find.textContaining('2 liikuntakertaa · 8,2 km'), findsOneWidget);
+  });
+
   testWidgets('Jaksot: 1 kk oletuksena, viikko ja vuosi poistuneet', (tester) async {
     await open(tester);
     for (final l in ['1 kk', '3 kk', '6 kk', 'Oma']) {
@@ -61,7 +118,14 @@ void main() {
     expect(find.text('Vuosi'), findsNothing);
     final seg = tester.widget<SegmentedButton<String>>(find.byType(SegmentedButton<String>).last);
     expect(seg.selected, {'month'});
-    expect(find.text('Vertailu edelliseen kuukauteen'), findsOneWidget);
+    // Kuluva kuukausi on kesken: verrataan edellisen kuukauden samoihin päiviin (ei koko kuukauteen), paitsi
+    // kuun viimeisenä päivänä, jolloin jakso on täysi.
+    final today = DateTime.now();
+    final lastDay = DateTime(today.year, today.month + 1, 0).day == today.day;
+    expect(
+      find.textContaining(lastDay ? 'Vertailu edelliseen kuukauteen' : 'Vertailu edellisen jakson samoihin päiviin'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Oma aikaväli: ensimmäisestä treenistä tähän päivään, vuosittaiset pylväät', (tester) async {

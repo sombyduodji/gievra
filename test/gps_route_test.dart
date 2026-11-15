@@ -313,6 +313,12 @@ void main() {
     await tester.tap(find.textContaining('Aloita silti'));
     await tester.pump();
     expect(find.byKey(const ValueKey('countdown')), findsOneWidget);
+    // Tuplanapautus (painike on samassa kohdassa kuin Aloita silti): heti tuleva napautus ei ohita laskentaa.
+    await tester.tap(find.text('Ohita laskenta'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('countdown')), findsOneWidget);
+    expect(rec.state, isNot(RecState.recording));
+    await tester.pump(const Duration(milliseconds: 750));
     await tester.tap(find.text('Ohita laskenta'));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();

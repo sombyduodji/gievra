@@ -67,7 +67,8 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
   if (text == null) {
     final files = await FilePicker.pickFiles(dialogTitle: t('Valitse ohjelmapohja (.gmd)'));
     if (files.isEmpty) return false;
-    text = utf8.decode(await files.first.xFile.readAsBytes(), allowMalformed: true);
+    // Pohja on pieni tekstitiedosto: yli 1 Mt ei ole pohja (sama raja kuin avatuilla ja jaetuilla tiedostoilla).
+    text = await files.first.xFile.length() > 1000000 ? '' : utf8.decode(await files.first.xFile.readAsBytes(), allowMalformed: true);
   }
   final p = looksLikeProgram(text) ? parseProgram(text) : null;
   if (!context.mounted) return false;

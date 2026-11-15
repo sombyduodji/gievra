@@ -105,7 +105,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     if (st.modify.isNotEmpty) {
       return Text(
         '🩹 ${t(st.modify.first)}',
-        maxLines: 1,
+        maxLines: linesFor(context, 1),
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
       );
@@ -128,7 +128,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
       }
     }
     return Scaffold(
-      appBar: AppBar(title: Text(t('Valitse liike'))),
+      appBar: AppBar(title: BarTitle(Text(t('Valitse liike')))),
       body: Column(
         children: [
           Padding(

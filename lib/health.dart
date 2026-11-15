@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'hr_calc.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'sports.dart';
@@ -33,6 +34,9 @@ class HealthCandidate {
   /// Harjoituksen tallentaneen sovelluksen omat askeleet ja kaikkien sovellusten askeleet samalta ajalta
   /// (samaa minuuttia ei lasketa kahdesti). Kävelyyn ja retkeilyyn käyttäjä valitsee, kumpi lisätään.
   final int? ownSteps, allSteps;
+
+  /// Sykelukemat (aika, lyönnit) käyräksi: kellon tai sormuksen syke treenin aikana (ennen vain keskiarvo ja maksimi).
+  final List<(DateTime, int)> hrSamples;
   const HealthCandidate({
     required this.session,
     required this.start,
@@ -51,7 +55,16 @@ class HealthCandidate {
     this.stepsInfo,
     this.ownSteps,
     this.allSteps,
+    this.hrSamples = const [],
   });
+
+  static List<(DateTime, int)> samplesOf(Map m) {
+    final ts = (m['hrT'] as List?) ?? const [], vs = (m['hrV'] as List?) ?? const [];
+    return [
+      for (var i = 0; i < ts.length && i < vs.length; i++)
+        (DateTime.fromMillisecondsSinceEpoch((ts[i] as num).toInt()), (vs[i] as num).toInt()),
+    ];
+  }
 
   /// Askelista tehty liikunta saman ajan sykkeellä, kaloreilla ja matkalla (rangeStats).
   HealthCandidate withStats(Map m) => HealthCandidate(
@@ -69,10 +82,25 @@ class HealthCandidate {
     meters: (m['meters'] as num?)?.toDouble(),
     stepsOnly: stepsOnly,
     pkg: pkg,
+    hrSamples: samplesOf(m),
   );
 
   /// Puhelimen oma askelmittari: Android merkitsee sen tunnisteella eikä sovelluksen nimellä.
   static String appName(String? raw) => (raw ?? '').replaceAll('@phone', t('Puhelimen askelmittari'));
+
+  /// Askeleet lähteittäin vianetsintään, käyttöliittymän kielellä: "Oura: 5200, minuuteittain paras: 5300, Health
+  /// Connect yhteensä: 5400". Natiivipuoli antaa vain luvut.
+  static String? stepsInfoText(Map m) {
+    final src = (m['stepsBySource'] as String?)?.trim() ?? '';
+    final best = (m['stepsMinuteBest'] as num?)?.toInt();
+    final total = (m['stepsHcTotal'] as num?)?.toInt();
+    final parts = [
+      if (src.isNotEmpty) appName(src),
+      if (best != null) t('minuuteittain paras: {0}', [best]),
+      if (total != null) t('Health Connect yhteensä: {0}', [total]),
+    ];
+    return parts.isEmpty ? null : parts.join(', ');
+  }
 
   factory HealthCandidate.fromMap(Map m) => HealthCandidate(
     session: m['kind'] == 'session',
@@ -87,9 +115,10 @@ class HealthCandidate {
     steps: (m['steps'] as num?)?.toInt(),
     id: m['id'] as String?,
     meters: (m['meters'] as num?)?.toDouble(),
-    stepsInfo: (m['stepsBySource'] as String?)?.trim().isEmpty ?? true ? null : appName(m['stepsBySource'] as String),
+    stepsInfo: stepsInfoText(m),
     ownSteps: (m['ownSteps'] as num?)?.toInt(),
     allSteps: (m['allSteps'] as num?)?.toInt(),
+    hrSamples: samplesOf(m),
   );
 
   /// Treenin oma aika ilman harjoitusta ja ilman sykettä: pelkät askeleet.
@@ -151,12 +180,34 @@ List<HealthCandidate> rankCandidates(Workout w, List<HealthCandidate> all) {
   return [for (final e in scored) e.$1];
 }
 
+/// Korvaisiko Health Connectin harjoitus sykevyön tai käsin kirjatut sykkeet tai kalorit (kysytään ensin).
+bool protectedHr(Workout w, HealthCandidate c) =>
+    ((c.hrAvg != null || c.hrMax != null) && (w.hrSource == 'sykevyö' || w.hrSource == 'käsin')) ||
+    (c.kcal != null && (w.kcalSource == 'syke' || w.kcalSource == 'käsin'));
+
 /// Täyttää treeniin syke- ja kaloritiedot ehdokkaasta (vain ne, jotka löytyivät); askeleet vain lajeihin, joissa
 /// ne kirjataan (kävely, juoksu, retkeily …).
-void applyCandidate(Workout w, HealthCandidate c, {bool steps = false, int? chosenSteps}) {
-  if (c.hrAvg != null) w.hrAvg = c.hrAvg;
-  if (c.hrMax != null) w.hrMax = c.hrMax;
-  if (c.kcal != null) w.kcal = c.kcal;
+/// [replace]: korvataanko sykevyön tai käsin kirjatut sykkeet ja kalorit (käyttäjä vahvisti, ks. [protectedHr]).
+void applyCandidate(Workout w, HealthCandidate c, {bool steps = false, int? chosenSteps, bool replace = false}) {
+  final keepHr = !replace && (w.hrSource == 'sykevyö' || w.hrSource == 'käsin');
+  final keepKcal = !replace && (w.kcalSource == 'syke' || w.kcalSource == 'käsin');
+  if (!keepHr && (c.hrAvg != null || c.hrMax != null)) {
+    // Kellon syke korvaa vyön tai aiemman kellon käyrän: käyrä kellon lukemista (käyttäjä 15.11.: Oura näyttää
+    // käyrän, Gievra vain keskisykkeen), muuten pois, ettei käyrä ja alueet näytä eri lukuja kuin keskisyke ja maksimi.
+    final series = hrSeriesFromHealth(c.hrSamples);
+    if (series != null) {
+      w.hrSeries = series;
+    } else if (w.hrSource == 'sykevyö' || w.hrSource == 'kello') {
+      w.hrSeries = null;
+    }
+    if (c.hrAvg != null) w.hrAvg = c.hrAvg;
+    if (c.hrMax != null) w.hrMax = c.hrMax;
+    w.hrSource = 'kello';
+  }
+  if (!keepKcal && c.kcal != null) {
+    w.kcal = c.kcal;
+    w.kcalSource = 'kello';
+  }
   final n = chosenSteps ?? c.steps;
   if (steps && (n ?? 0) > 0) w.steps = n;
   // Health Connectista lisätty liikunta (sama harjoitus): myös matka päivittyy, ellei sitä ole kirjoitettu käsin.
@@ -164,6 +215,27 @@ void applyCandidate(Workout w, HealthCandidate c, {bool steps = false, int? chos
     w.distanceKm = (c.meters! / 10).round() / 100;
   }
   w.healthSource = c.app;
+}
+
+/// Health Connectin sykelukemista käyrä. Väli lähteen tiheyden mukaan (lukemien välien mediaani: Oura / Health Sync
+/// 5 s, harvempi kello 30–60 s), ettei harva kello näytä katkoilta. Alle 2 lukemaa: ei käyrää.
+HrSeries? hrSeriesFromHealth(List<(DateTime, int)> samples) {
+  final xs = [
+    for (final s in samples)
+      if (s.$2 > 0) s,
+  ]..sort((a, b) => a.$1.compareTo(b.$1));
+  if (xs.length < 2) return null;
+  final gaps = [for (var i = 1; i < xs.length; i++) xs[i].$1.difference(xs[i - 1].$1).inMilliseconds / 1000]..sort();
+  final median = gaps[gaps.length ~/ 2];
+  final interval = const [5, 10, 15, 30, 60].firstWhere((v) => median <= v, orElse: () => 60);
+  final t0 = xs.first.$1;
+  final start = DateTime(t0.year, t0.month, t0.day, t0.hour, t0.minute, t0.second);
+  return HrSeries.fromSamples(
+    xs,
+    interval: interval,
+    start: start,
+    end: xs.last.$1.add(const Duration(seconds: 1)),
+  );
 }
 
 /// Kanava Android-puolelle (HealthBridge.kt).
@@ -348,7 +420,7 @@ bool isStrengthType(int? type) => type == 70 || type == 81 || type == 13;
   // Salitreeni on jo lisätty, jos samaan aikaan olevaan salitreeniin on jo haettu kellon tiedot.
   bool gymHasIt(HealthCandidate c, Workout w) {
     if (w.activity != null || w.healthSource == null || w.started == null) return false;
-    final we = w.started!.add(Duration(minutes: w.minutes ?? 0));
+    final we = w.started!.add(Duration(seconds: w.durationSec ?? 0));
     return w.started!.isBefore(c.end) && we.isAfter(c.start);
   }
 
@@ -377,7 +449,7 @@ Workout workoutFromHealth(HealthCandidate c, String sport, {required int session
     session: session,
     started: c.start,
     seconds: secs,
-    minutes: (secs / 60).round(),
+    minutes: minutesFromSeconds(secs),
     distanceKm: km,
     kcal: c.kcal,
     hrAvg: c.hrAvg,

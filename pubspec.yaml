@@ -111,3 +111,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# FitNotes-tuonti ja -vienti: Androidissa puhelimen oma SQLite (lib/sql_db.dart, SqliteBridge.kt), joten
+# package:sqlite3 ei pakkaa omaa 1,7 Mt:n libsqlite3.so:ta APK:hon. Muilla alustoilla oma kirjasto kuten ennen.
+hooks:
+  user_defines:
+    sqlite3:
+      source:
+        android: process
+        default: sqlite3

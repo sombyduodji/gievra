@@ -18,6 +18,7 @@ import '../l10n.dart';
 import '../rest.dart';
 import 'rest_banner.dart';
 import 'plate_sheet.dart';
+import 'hr_ui.dart' show HrLiveStrip;
 import 'percent_sheet.dart';
 import '../plates.dart';
 
@@ -43,6 +44,11 @@ class SetLoggerScreen extends StatefulWidget {
     this.superset,
     this.supersetNext,
   });
+
+  /// Näin pian edellisen jälkeen tullut tallennusnapautus on vahinkotoisto (testit voivat lyhentää).
+  @visibleForTesting
+  static Duration repeatGuard = const Duration(milliseconds: 600);
+
   @override
   State<SetLoggerScreen> createState() => _SetLoggerScreenState();
 }
@@ -458,8 +464,14 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     }
   }
 
+  DateTime? _lastSave;
+
   /// Yksi napautus tallentaa sarjan ja vastauksen "jäikö varaa" (null = ei merkitty).
   Future<void> _saveSet([int? rir]) async {
+    // Vahinkotuplanapautus (hikinen sormi, napautus kahteen kertaan) ei tallenna samaa sarjaa kahdesti.
+    final now = DateTime.now();
+    if (_lastSave != null && now.difference(_lastSave!).abs() < SetLoggerScreen.repeatGuard) return;
+    _lastSave = now;
     setState(() {
       _edited = false;
       if (_warming) {
@@ -605,7 +617,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       // Palautusajastin kiinteänä alapalkkina: ei siirrä painikkeita sormen alta.
       bottomNavigationBar: const RestBanner(),
       appBar: AppBar(
-        title: ExName(e.name),
+        title: BarTitle(ExName(e.name)),
         actions: [
           // Prosenttilaskuri painoliikkeissä (napautus valitsee painon).
           if (_m == Measure.reps)
@@ -625,6 +637,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
         children: [
           const SamiBand(height: 4, pattern: false),
+          // Sykevyö: syke ja alue myös sarjan aikana.
+          const HrLiveStrip(),
           const SizedBox(height: 12),
           if (widget.superset case final g?)
             Container(
@@ -690,7 +704,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                   onMinus: () => _setKg((_kg - step).clamp(0, 1000)),
                   onPlus: () => _setKg((_kg + step).clamp(0, 1000)),
                   onTap: () async {
-                    final v = await askNumber(context, t('Paino (kg)'), _kg);
+                    final v = await askNumber(context, t('Paino (kg)'), _kg, min: 0, max: 1000);
                     if (v != null && v >= 0 && v <= 1000) _setKg(v);
                   },
                 ),
@@ -704,7 +718,14 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                   onMinus: () => _setReps((_reps - _m.step).clamp(1, 9999)),
                   onPlus: () => _setReps((_reps + _m.step).clamp(1, 9999)),
                   onTap: () async {
-                    final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false);
+                    final v = await askNumber(
+                      context,
+                      t(_m.label),
+                      _reps.toDouble(),
+                      decimals: false,
+                      min: 1,
+                      max: 9999,
+                    );
                     if (v != null && v >= 1 && v <= 9999) _setReps(v.round());
                   },
                 ),
@@ -819,19 +840,36 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 6),
-              Row(
-                children: [
-                  for (final (v, label) in reserveWords(_m).answers) ...[
-                    if (v != 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
-                        onPressed: () => _saveSet(v),
-                        child: Text(label, style: const TextStyle(fontSize: 15)),
+              // Samankorkuiset painikkeet myös, kun yksi teksti pienenee (IntrinsicHeight + stretch).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (v, label) in reserveWords(_m).answers) ...[
+                      if (v != 0) const SizedBox(width: 8),
+                      Expanded(
+                        // Suuri järjestelmän fontti: teksti pienenee yhdelle riville keskelle, painikkeet pysyvät
+                        // samankorkuisina (ennen "Ii veaháge" rivittyi vasempaan reunaan ja painike kasvoi).
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                          ),
+                          onPressed: () => _saveSet(v),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              softWrap: false,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
             const SizedBox(height: 8),
@@ -840,13 +878,17 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             // Yhtä iso kuin yllä oleva painike, vihreä (tehty).
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 backgroundColor: Sami.green,
                 foregroundColor: Colors.white,
               ),
               onPressed: _markDone,
               icon: const Icon(Icons.check),
-              label: Text(t('Merkitse liike valmiiksi'), style: const TextStyle(fontSize: 15)),
+              // Suurella tekstillä pienenee painikkeen sisään (ennen reunasta reunaan ilman väliä).
+              label: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(t('Merkitse liike valmiiksi'), maxLines: 1, style: const TextStyle(fontSize: 15)),
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -885,12 +927,19 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                             ),
                           ),
-                        // Joustava: pudotus- ja AMRAP-merkinnät ja pitkät käännökset eivät vie riviä yli.
+                        // Joustava: pudotus- ja AMRAP-merkinnät ja pitkät käännökset eivät vie riviä yli. Yksi rivi,
+                        // tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8").
                         Flexible(
-                          child: Text(
-                            '${fmtSet(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
-                            textAlign: TextAlign.end,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Text(
+                              '${fmtSet(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
+                              textAlign: TextAlign.end,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -964,7 +1013,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             onMinus: () => setState(() => _kg = (_kg - step).clamp(0, 1000)),
             onPlus: () => setState(() => _kg = (_kg + step).clamp(0, 1000)),
             onTap: () async {
-              final v = await askNumber(context, t('Paino (kg)'), _kg);
+              final v = await askNumber(context, t('Paino (kg)'), _kg, min: 0, max: 1000);
               if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
             },
           ),
@@ -985,7 +1034,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             onMinus: () => setState(() => _reps = (_reps - _m.step).clamp(1, 9999)),
             onPlus: () => setState(() => _reps = (_reps + _m.step).clamp(1, 9999)),
             onTap: () async {
-              final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false);
+              final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false, min: 1, max: 9999);
               if (v != null && v >= 1 && v <= 9999) setState(() => _reps = v.round());
             },
           ),
@@ -997,7 +1046,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
           SegmentedButton<int?>(
             showSelectedIcon: false,
             segments: [
-              for (final (v, label) in rw.answers) ButtonSegment(value: v, label: Text(label)),
+              for (final (v, label) in rw.answers) ButtonSegment(value: v, label: _segLabel(label)),
               const ButtonSegment(value: null, label: Text('–')),
             ],
             selected: {_rir},
@@ -1062,11 +1111,13 @@ class _CompactStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget btn(IconData i, VoidCallback f) => SizedBox.square(
-      dimension: 48,
+    // Nimi ruudunlukijalle ja pitkälle painallukselle (ennen TalkBack sanoi vain "Painike").
+    Widget btn(IconData i, VoidCallback f, String tip) => SizedBox.square(
+      dimension: 52, // isompi napautuskohde (ennen 48); 56 ei mahtunut 300 dp:n näytölle
       child: IconButton.filledTonal(
         onPressed: f,
-        icon: Icon(i),
+        tooltip: tip,
+        icon: Icon(i, size: 26),
         style: IconButton.styleFrom(
           backgroundColor: cs.surfaceContainerHigh,
           foregroundColor: yellowText(context),
@@ -1079,12 +1130,17 @@ class _CompactStepper extends StatelessWidget {
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
       child: Column(
         children: [
-          Text(
-            label.toUpperCase(),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, letterSpacing: .6, color: cs.onSurfaceVariant),
+          // Yksi rivi, tarvittaessa pienempänä: suurella fontilla "GEARDDUHEAMIT" katkesi sanan keskeltä ja
+          // toistoruutu kasvoi painoruutua korkeammaksi.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(fontSize: 11, letterSpacing: .6, color: cs.onSurfaceVariant),
+            ),
           ),
           InkWell(
             borderRadius: BorderRadius.circular(10),
@@ -1100,7 +1156,7 @@ class _CompactStepper extends StatelessWidget {
                       children: [
                         TextSpan(
                           text: value,
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                          style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w700),
                         ),
                         if (unit.isNotEmpty)
                           TextSpan(
@@ -1116,7 +1172,10 @@ class _CompactStepper extends StatelessWidget {
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [btn(Icons.remove, onMinus), btn(Icons.add, onPlus)],
+            children: [
+              btn(Icons.remove, onMinus, t('Vähennä: {0}', [label])),
+              btn(Icons.add, onPlus, t('Lisää: {0}', [label])),
+            ],
           ),
         ],
       ),
@@ -1125,6 +1184,10 @@ class _CompactStepper extends StatelessWidget {
 }
 
 String _cap(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
+/// Segmenttinapin teksti yhdelle riville: suuri tekstikoko tai pitkä käännös pienentää tekstiä, ei katkaise sanaa
+/// kesken ("Dábála/š", "AMRA/P" järjestelmän fontilla 2,0).
+Widget _segLabel(String s) => FittedBox(fit: BoxFit.scaleDown, child: Text(s, maxLines: 1, softWrap: false));
 
 /// Sarjan tyyppi: tavallinen, pudotus tai AMRAP.
 class SetKindPicker extends StatelessWidget {
@@ -1136,9 +1199,9 @@ class SetKindPicker extends StatelessWidget {
   Widget build(BuildContext context) => SegmentedButton<String?>(
     showSelectedIcon: false,
     segments: [
-      ButtonSegment(value: null, label: Text(t('Tavallinen'))),
-      ButtonSegment(value: dropSet, label: Text(t('Pudotus'))),
-      const ButtonSegment(value: amrapSet, label: Text('AMRAP')),
+      ButtonSegment(value: null, label: _segLabel(t('Tavallinen'))),
+      ButtonSegment(value: dropSet, label: _segLabel(t('Pudotus'))),
+      ButtonSegment(value: amrapSet, label: _segLabel('AMRAP')),
     ],
     selected: {value},
     onSelectionChanged: (v) => onChanged(v.first),
