@@ -9,6 +9,7 @@ void main() {
     expect(weightTotal('Käsipainopenkki', 44), '22 kg kummassakin kädessä');
     expect(weightTitle('Rintatuettu kulmasoutu käsipainoilla'), 'Paino yhteensä (2 käsipainoa)');
     expect(weightTitle('Farmer walk'), 'Paino yhteensä (2 painoa)');
+    expect(weightTitle('Farmer walk hex barilla'), 'Paino (tanko ja levyt)');
     // Yhden käden liike: per käsipaino, ei kokonaispainoa.
     expect(weightTitle('Käsipainosoutu'), 'Paino per käsipaino');
     expect(weightTotal('Käsipainosoutu', 30), isNull);

@@ -87,7 +87,7 @@ class _StatsScreenState extends State<StatsScreen> {
             label: Text(numDate(d, year: true), style: const TextStyle(fontSize: 15)),
             onPressed: () async {
               final v = await pickDate(ctx, initial: d, first: min, last: today);
-              if (v != null) set(() => onPick(dateOnly(v)));
+              if (v != null && ctx.mounted) set(() => onPick(dateOnly(v)));
             },
           );
           Widget quick(String label, bool on, VoidCallback tap) =>

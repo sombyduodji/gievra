@@ -91,8 +91,15 @@ void main() {
     expect(find.text('Käsipainot yhteispainona'), findsOneWidget);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
+    // 0.6.7.1: uinnin vauhti ja matkan ja ajan tarkistus.
+    await run(tester, '0.6.7.1');
+    expect(find.text('Uutta versiossa 0.6.7.1'), findsOneWidget);
+    expect(find.text('Uinnin vauhti 100 metrille'), findsOneWidget);
+    expect(find.text('Matkan ja ajan tarkistus'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
     // Versio ilman uusia ominaisuuksia: ei ikkunaa.
-    await run(tester, '0.6.8');
+    await run(tester, '0.6.7.2');
     expect(find.byType(AlertDialog), findsNothing);
   });
 

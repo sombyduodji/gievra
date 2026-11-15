@@ -79,6 +79,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   /// Liike valmis. Jos viimeinen sarja on vielä tallentamatta (tai sarjoja ei ole), ilmoitus ja takaisin
   /// kirjaukseen: sarja tallennetaan vastaamalla, jäikö varaa.
   Future<void> _markDone() async {
+    if (rest.justClosed) return; // palkki sulkeutui juuri sormen alta
     if (_edited || e.sets.isEmpty) {
       // OK palaa kirjaukseen; "Merkitse silti" ei jätä umpikujaa (esim. vahingossa painettu + ja −).
       final anyway = await showDialog<bool>(
@@ -348,12 +349,13 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     // Kahden käsipainon tai kuulan liikkeet: historia yhteispainona (käyttäjä 15.11.), syöttö painoa kohden.
     final mul = loadMultiplier(e.name);
     final total = mul == 2 ? ' ${t('yhteensä')}' : '';
-    // Kahden käsipainon liikkeissä sarjat muodossa "2 × 12 kg × 10" (fmtSet), muuten tiivis "60×6".
+    // Tuplakahvakuula: kuulien yhteispaino "48×8 yhteensä"; muut fmtSetsCompact-muodossa.
     final last = _last == null
         ? t('ei aiempaa')
-        : totalDumbbells(e.name)
-        // Kahden käsipainon liikkeet: kummankin käden paino, yksikkö kerran (käyttäjä 15.11., vaihtoehto B).
-        ? '${shortDate(_last.$1)} – ${fmtSetsCompact(e.name, _last.$2.sets)} ${kgUnit(e.name)}'
+        : mul == 1
+        // Tiivis muoto kuten muualla, yksikkö kerran (käyttäjä 15.11., vaihtoehto B); kahden käsipainon liikkeissä
+        // kummankin käden paino. Aika- ja matkaliikkeissä yksikkö sarjassa (ennen "0×60, 0×60" ilman yksikköä).
+        ? '${shortDate(_last.$1)} – ${fmtSetsCompact(e.name, _last.$2.sets)}${unitOnce(e.name, _last.$2.sets) ? ' ${kgUnit(e.name)}' : ''}'
         : '${shortDate(_last.$1)} – ${_last.$2.sets.map((s) => '${fmtNum(s.kg * mul)}×${s.reps}').join(', ')}$total';
     return Material(
       color: cs.surfaceContainer,
@@ -481,6 +483,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
 
   /// Yksi napautus tallentaa sarjan ja vastauksen "jäikö varaa" (null = ei merkitty).
   Future<void> _saveSet([int? rir]) async {
+    if (rest.justClosed) return; // palkki sulkeutui juuri sormen alta
     // Vahinkotuplanapautus (hikinen sormi, napautus kahteen kertaan) ei tallenna samaa sarjaa kahdesti.
     final now = DateTime.now();
     if (_lastSave != null && now.difference(_lastSave!).abs() < SetLoggerScreen.repeatGuard) return;
@@ -1053,7 +1056,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             onPlus: () => setState(() => _kg = (_kg + step).clamp(0, 1000)),
             onTap: () async {
               final v = await askNumber(context, t('Paino (kg)'), _kg, min: 0, max: 1000);
-              if (v != null && v >= 0 && v <= 1000) setState(() => _kg = v);
+              if (v != null && v >= 0 && v <= 1000 && mounted) setState(() => _kg = v);
             },
           ),
           if (weightTotal(widget.name, _kg) != null)
@@ -1074,7 +1077,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
             onPlus: () => setState(() => _reps = (_reps + _m.step).clamp(1, 9999)),
             onTap: () async {
               final v = await askNumber(context, t(_m.label), _reps.toDouble(), decimals: false, min: 1, max: 9999);
-              if (v != null && v >= 1 && v <= 9999) setState(() => _reps = v.round());
+              if (v != null && v >= 1 && v <= 9999 && mounted) setState(() => _reps = v.round());
             },
           ),
           if (_m == Measure.reps && !widget.set.warmup) ...[
@@ -1118,6 +1121,8 @@ class _EditSetSheetState extends State<_EditSetSheet> {
 String? weightTitle(String exercise) {
   if (pairedKettlebell.contains(exercise)) return t('Paino per kuula (2 kuulaa)');
   // Kahden käsipainon liikkeet yhteispainona (käyttäjä 15.11.: näin ne on aina ajateltu ja kirjattu FitNotesissa).
+  // Hex bar: tangon ja levyjen paino (ei lisäpaino eikä kahden painon liike).
+  if (exercise == 'Farmer walk hex barilla') return t('Paino (tanko ja levyt)');
   if (exercise == 'Farmer walk' || exercise == 'Renegade-soutu') return t('Paino yhteensä (2 painoa)');
   if (pairedDumbbell.contains(exercise)) return t('Paino yhteensä (2 käsipainoa)');
   if (kettlebellOnly(exercise)) return t('Paino per kuula');
@@ -1154,6 +1159,7 @@ class _CompactStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final ts = MediaQuery.textScalerOf(context);
     // Nimi ruudunlukijalle ja pitkälle painallukselle (ennen TalkBack sanoi vain "Painike").
     Widget btn(IconData i, VoidCallback f, String tip) => SizedBox.square(
       dimension: 52, // isompi napautuskohde (ennen 48); 56 ei mahtunut 300 dp:n näytölle
@@ -1175,14 +1181,19 @@ class _CompactStepper extends StatelessWidget {
         children: [
           // Yksi rivi, tarvittaessa pienempänä: suurella fontilla "GEARDDUHEAMIT" katkesi sanan keskeltä ja
           // toistoruutu kasvoi painoruutua korkeammaksi.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label.toUpperCase(),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              softWrap: false,
-              style: TextStyle(fontSize: 11, letterSpacing: .6, color: cs.onSurfaceVariant),
+          // Kiinteä rivikorkeus: pitkä otsikko pienenee, mutta ruudut pysyvät samankorkuisina ja luvut samalla
+          // tasolla (suuri tekstikoko, 15.11.).
+          SizedBox(
+            height: ts.scale(11) * 1.45,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label.toUpperCase(),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(fontSize: 11, letterSpacing: .6, color: cs.onSurfaceVariant),
+              ),
             ),
           ),
           InkWell(
@@ -1190,6 +1201,7 @@ class _CompactStepper extends StatelessWidget {
             onTap: onTap,
             child: SizedBox(
               width: double.infinity,
+              height: ts.scale(38) * 1.25 + 8,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: FittedBox(

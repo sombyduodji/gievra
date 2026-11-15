@@ -13,6 +13,18 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.7.1',
+    Icons.pool,
+    'Uinnin vauhti 100 metrille',
+    'Uinnin vauhdin voi näyttää muodossa min/100 m: Asetukset → Harjoittelu → Uinnin vauhti.',
+  ),
+  NewFeature(
+    '0.6.7.1',
+    Icons.speed,
+    'Matkan ja ajan tarkistus',
+    'Jos käsin syötetty matka ja aika tekevät lajille mahdottoman nopeuden (esim. 1 km ajassa 0:10), Gievra pyytää tarkistamaan ne ennen tallennusta.',
+  ),
+  NewFeature(
     '0.6.7',
     Icons.fitness_center,
     'Käsipainot yhteispainona',

@@ -60,15 +60,21 @@ void main() {
       expect(kgUnit('Rintatuettu kulmasoutu käsipainoilla', short: true), 'kg/käsi');
       expect(fmtSetHand('Käsipainopystypunnerrus', SetEntry(24, 10)), '12 kg/käsi × 10');
       expect(fmtSet('Käsipainopystypunnerrus', SetEntry(24, 10)), '24 kg × 10', reason: 'sama luku kuin syötössä');
-      expect(fmtSetsCompact('Farmer walk', [SetEntry(48, 2)]), '24 × 2 edestakaisin');
-      expect(fmtSetsCompact('Farmer walk hex barilla', [SetEntry(100, 2)]), '100 × 2 edestakaisin');
+      expect(fmtSetsCompact('Farmer walk', [SetEntry(48, 2)]), '24 kg/käsi × 2 edestakaisin');
+      expect(fmtSetsCompact('Farmer walk hex barilla', [SetEntry(100, 2)]), '100 kg × 2 edestakaisin');
       expect(kgUnit('Farmer walk hex barilla'), 'kg');
       expect(fmtSetsCompact('Takakyykky', [SetEntry(100, 5), SetEntry(80, 8, kind: dropSet)]), '100 × 5 · ↘ 80 × 8');
-      expect(hasWeight([SetEntry(0, 10)]), isFalse);
+      expect(unitOnce('Penkkipunnerrus', [SetEntry(0, 10)]), isFalse);
+      expect(unitOnce('Farmer walk hex barilla', [SetEntry(60, 2)]), isFalse);
+      expect(fmtSetsCompact('Farmer walk hex barilla', [SetEntry(60, 2)]), '60 kg × 2 edestakaisin');
       // Hex bar: ei levylaskuria (tangon paino ei ole suoran tangon), ei kahden painon liike.
       expect(isBarbell('Farmer walk hex barilla'), isFalse);
       expect(totalDumbbells('Farmer walk hex barilla'), isFalse);
       expect(measureOf('Farmer walk hex barilla'), Measure.trips);
+      // Yksikkö käännettynä (ennen "edestakaisin" englanninkielisen palautusajastimen seuraavassa sarjassa, 15.11.).
+      debugSetCatalog('en', {'edestakaisin': 'round trips'});
+      addTearDown(() => debugSetCatalog('fi', const {}));
+      expect(fmtSet('Farmer walk hex barilla', SetEntry(100, 2)), '100 kg × 2 round trips');
     },
   );
 

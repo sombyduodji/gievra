@@ -145,7 +145,7 @@ class _MapsScreenState extends State<MapsScreen> {
   /// Sijainti kerran GPS:llä (enintään minuutti); ei tallennusta.
   Future<void> _locate() async {
     final st = await Permission.locationWhenInUse.request();
-    if (!st.isGranted) return;
+    if (!st.isGranted || !mounted) return;
     setState(() => _locating = true);
     final src = AndroidGpsSource();
     // Kesken jäänyt tai käynnissä oleva reitin tallennus: käytetään sen paikannuksia, eikä palvelua pysäytetä

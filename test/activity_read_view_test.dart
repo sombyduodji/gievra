@@ -11,7 +11,7 @@ import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/ui/activity.dart';
 import 'package:treenipaivakirja/ui/finish_sheet.dart' show EffortFeelingCard;
-import 'package:treenipaivakirja/ui/widgets.dart' show ValueStepper;
+import 'package:treenipaivakirja/ui/widgets.dart' show ValueStepper, fmtClock;
 
 // Tallennetun liikunnan lukunäkymä (mockup 10): yhteenvetokortti kaikissa lajeissa, muokkaus avaa säätimet
 // ryhmiteltyinä. Keksityt treenit.
@@ -111,6 +111,26 @@ void main() {
     expect(find.byKey(const ValueKey('readSummary')), findsOneWidget);
     expect(find.byKey(const ValueKey('route')), findsOneWidget);
     expect(inSummary('GPS'), findsWidgets);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('GPS-kävely tauolla: loppuaika reitin viimeisestä pisteestä, ei alku + kesto (testikierros 15.11.)', (
+    tester,
+  ) async {
+    final t0 = DateTime.utc(2026, 11, 12, 8);
+    final segs = [
+      [for (var i = 0; i <= 60; i++) TrackPoint(t0.add(Duration(seconds: i * 30)), 62 + i * .0003, 25.0)],
+    ];
+    final w = Workout(date: day, title: 'Kävely', activity: 'Kävely', distanceKm: 2)
+      ..started = t0.toLocal()
+      ..seconds = 1500 // 5 min taukoa
+      ..minutes = 25
+      ..routeGpx = routeToGpx(segs, name: 'Kävely', type: 'Kävely', raw: segs, rawDistance: 2000);
+    await open(tester, w);
+    final end = fmtClock(TimeOfDay.fromDateTime(t0.add(const Duration(minutes: 30)).toLocal()));
+    final wrong = fmtClock(TimeOfDay.fromDateTime(t0.add(const Duration(minutes: 25)).toLocal()));
+    expect(inSummary(end), findsWidgets);
+    expect(inSummary(wrong), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

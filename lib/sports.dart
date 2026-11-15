@@ -96,3 +96,26 @@ List<Sport> sportsByUse(Iterable<String?> history, {Iterable<Sport> among = spor
     return c != 0 ? c : order[a.name]!.compareTo(order[b.name]!);
   });
 }
+
+/// Suurin uskottava keskinopeus (km/h) lajeittain; käsin syötetty matka ja aika tarkistetaan tätä vasten
+/// (esim. 1 km ajassa 0:10 = 360 km/h on lähes varmasti kirjoitusvirhe). Rajat reilusti huippujen yläpuolella.
+const _maxKmh = {
+  'Juoksu': 30.0,
+  'Hölkkä': 30.0,
+  'Kävely': 12.0,
+  'Sauvakävely': 14.0,
+  'Retkeily': 12.0,
+  'Lumikenkäily': 12.0,
+  'Uinti': 8.0,
+  'Soutu': 25.0,
+  'Melonta': 25.0,
+  'Hiihto': 45.0,
+  'Luistelu': 50.0,
+  'Pyöräily': 70.0,
+};
+
+/// Onko keskinopeus epäuskottava lajille? Tuntemattomille lajeille raja 120 km/h.
+bool implausibleSpeed(String? sport, double km, int seconds) {
+  if (km <= 0 || seconds <= 0) return false;
+  return km / (seconds / 3600) > (_maxKmh[sport] ?? 120);
+}

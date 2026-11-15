@@ -67,6 +67,22 @@ DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 /// Kalenteripäivien lisäys (Duration ei kelpaa: kesäaikasiirtymä siirtää kellonaikaa).
 DateTime addDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
 
+/// Uinnin vauhti näytössä 100 metrille (☰ → Asetukset → Harjoittelu, käyttäjä 15.11.). Tiedostoon aina /km.
+bool swimPer100 = false;
+
+/// Näytetäänkö lajin vauhti 100 metrille (uinti, kun asetus on päällä).
+bool pacePer100(String? activity) => swimPer100 && activity == 'Uinti';
+
+/// Vauhti näytölle lajin mukaan: ("1:52", "min/100 m") tai ("5:06", "min/km").
+(String, String) paceParts(double secPerKm, String? activity) =>
+    pacePer100(activity) ? (fmtPace(secPerKm / 10), 'min/100 m') : (fmtPace(secPerKm), 'min/km');
+
+/// Vauhti tekstinä: "5:06 min/km" tai [short] "5:06 /km" (uinnissa asetuksen mukaan /100 m).
+String paceText(double secPerKm, String? activity, {bool short = false}) {
+  final (v, u) = paceParts(secPerKm, activity);
+  return '$v ${short ? u.substring(3) : u}';
+}
+
 /// Vauhti (s/km) muotoon 5:06.
 String fmtPace(double secPerKm) {
   final s = secPerKm.round();
@@ -225,7 +241,7 @@ class Workout {
 
   /// Vauhti min/km (kestävyyslajit).
   /// Näytöllä "5:06 min/km"; tiedostoon kirjoitetaan ennallaan "5:06 /km" (vanhat tiedostot eivät muutu).
-  String? get pace => paceSecPerKm == null ? null : '${fmtPace(paceSecPerKm!)} min/km';
+  String? get pace => paceSecPerKm == null ? null : paceText(paceSecPerKm!, activity);
 
   /// Keskimääräinen askelpituus metreinä: matka / askeleet (esim. GPS-kävely ja Health Connectin askeleet).
   /// Vain uskottavat arvot (0,3–2,5 m): koko päivän askeleet lyhyelle lenkille eivät kelpaa.
@@ -426,7 +442,11 @@ String workoutToMarkdown(Workout w) {
     b
       ..writeln()
       ..writeln('## $notesHeading')
-      ..writeln(w.notes.trim());
+      // #-alkuiset rivit Markdown-escapella (\#): muuten "# x" luettiin otsikoksi ja "## x" liikkeeksi, jonka alle
+      // muistiinpanon rivit tulkittiin sarjoiksi (testikierros 15.11.). Markdown-katselimessa näkyy "# x".
+      ..writeln(
+        w.notes.trim().split('\n').map((l) => l.trimLeft().startsWith('#') ? l.replaceFirst('#', r'\#') : l).join('\n'),
+      );
   }
   return b.toString();
 }
@@ -586,7 +606,7 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
       final m = _warmupRe.firstMatch(t);
       if (m != null) w.warmup = Warmup(m[1]!, int.parse(m[2]!));
     } else if (section == notesHeading) {
-      notes.add(line);
+      notes.add(t.startsWith(r'\#') ? line.replaceFirst(r'\#', '#') : line);
     } else {
       final m = _setRe.firstMatch(t);
       final bw = m == null ? _bwSetRe.firstMatch(t) : null;

@@ -611,7 +611,7 @@ String _plain(String exercise, SetEntry s, double kg, String unit) {
   final m = measureOf(exercise);
   return m == Measure.reps
       ? '${fmtNum(kg)} $unit × ${s.reps}'
-      : (s.kg == 0 ? '${s.reps} ${m.unit}' : '${fmtNum(kg)} $unit × ${s.reps} ${m.unit}');
+      : (s.kg == 0 ? '${s.reps} ${t(m.unit)}' : '${fmtNum(kg)} $unit × ${s.reps} ${t(m.unit)}');
 }
 
 // Pudotussarjan jatko nuolella, AMRAP merkittynä.
@@ -641,15 +641,19 @@ String fmtSetsCompact(String exercise, Iterable<SetEntry> sets) {
     final w = fmtNum(shownKg(exercise, s.kg));
     final base = m == Measure.reps
         ? (s.kg == 0 ? '${s.reps}' : '$w × ${s.reps}')
-        : (s.kg == 0 ? '${s.reps} ${m.unit}' : '$w × ${s.reps} ${m.unit}');
+        // Muut mittatavat (matka, aika, kerrat): paino yksikköineen sarjassa, koska yksikkö kerran perässä ("10 × 2
+        // edestakaisin kg") luettiin väärin (testikierros 15.11.).
+        : (s.kg == 0 ? '${s.reps} ${t(m.unit)}' : '$w ${kgUnit(exercise, short: true)} × ${s.reps} ${t(m.unit)}');
     return '${_withKind(s, base)}${s.pr ? ' 🏆' : ''}';
   }
 
   return sets.map(one).join(' · ');
 }
 
-/// Onko sarjoissa painoa (yksikkö näytetään vain silloin).
-bool hasWeight(Iterable<SetEntry> sets) => sets.any((s) => s.kg > 0);
+/// Näytetäänkö painon yksikkö kerran [fmtSetsCompact]-luettelon perässä: vain toistoliikkeissä, joissa on painoa
+/// (muissa mittatavoissa yksikkö on jo sarjassa).
+bool unitOnce(String exercise, Iterable<SetEntry> sets) =>
+    measureOf(exercise) == Measure.reps && sets.any((s) => s.kg > 0);
 
 /// Hakusanat: arkikieli ja englanti (FitNotes / netti), jotta "lankutus" tai "plank" löytää Lankun.
 const _aliases = {

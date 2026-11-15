@@ -234,6 +234,7 @@ class Settings extends ChangeNotifier {
 
   /// Päivän askeleet Health Connectista (Android; oletus pois): etusivun kortti ja tilastot (daily_steps.dart).
   bool dailySteps = false;
+  bool swimPer100m = false; // uinnin vauhti 100 metrille (näyttö)
   void setDailySteps(bool v) {
     dailySteps = v;
     _persist();
@@ -497,6 +498,7 @@ class Settings extends ChangeNotifier {
       ..writeln('sports: $sports') // vanhemmat versiot lukevat tämän
       ..writeln('mode: $trainMode')
       ..writeln('move_names: $moveNames')
+      ..write(swimPer100m ? 'swim_pace: 100m\n' : '')
       ..writeln('health_lang: $healthLang')
       ..writeln('watch: $watch')
       ..writeln('hc_import: $hcImport')
@@ -634,6 +636,9 @@ class Settings extends ChangeNotifier {
             moveNames = const {'fi', 'en', 'both'}.contains(v) ? v : 'fi';
             // Vain sovelluksen omat asetukset: varmuuskopion tarkistus (Settings()..applyMarkdown) ei vaihda nimiä.
             if (identical(this, settings)) nameMode = moveNames;
+          case 'swim_pace':
+            swimPer100m = v == '100m';
+            if (identical(this, settings)) swimPer100 = swimPer100m;
           case 'health_lang':
             healthLang = v == 'en' ? 'en' : 'fi';
             if (identical(this, settings)) healthTextLang = healthLang;
@@ -938,6 +943,13 @@ class Settings extends ChangeNotifier {
     healthTextLang = v;
     _persist();
     ensureEnglish().then((_) => notifyListeners());
+  }
+
+  void setSwimPer100(bool v) {
+    swimPer100m = v;
+    swimPer100 = v;
+    _persist();
+    notifyListeners();
   }
 
   void setMoveNames(String v) {

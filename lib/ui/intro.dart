@@ -414,7 +414,7 @@ class _IntroScreenState extends State<IntroScreen> {
         () async {
           final r = await Navigator.of(context)
               .push<List<String>>(MaterialPageRoute(builder: (_) => InjuryScreen(initial: _injuries, picker: true)));
-          if (r != null) setState(() => _injuries = r);
+          if (r != null && mounted) setState(() => _injuries = r);
         },
         icon: '🩹',
       ),

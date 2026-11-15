@@ -135,7 +135,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   minuutti lasketaan kahdesti) ja lihaskuntopäivät (tavoite 2) WHO:n liikuntasuosituksen mukaan
 - treenin lopussa yksi *Treeni valmis!* -painike: fiilis (liikunnassa myös rasitus) kysytään samassa ikkunassa, ja
   yhteenveto näyttää vain täytetyt tiedot; lajivalinta haulla ja ryhminä, ilman GPS:ää *Ajanotto* (aloita, tauko,
-  lopeta, korjattava alku ja loppu) tai *Syötä itse*
+  lopeta, korjattava alku ja loppu) tai *Syötä itse*; käsin syötetyn matkan ja ajan mahdoton nopeus (esim. 1 km
+  ajassa 0:10) kysytään ennen tallennusta; uinnin vauhti min/km tai min/100 m (*Asetukset → Harjoittelu*)
 - GPS-tallennus alkaa 5 sekunnin laskennan jälkeen (ehdit laittaa puhelimen taskuun); askelpituus (matka /
   askeleet) liikunnan tiedoissa, kun askeleet ovat mukana
 - yksi ilmoitus käynnissä olevasta treenistä (laji ja kulunut aika; salitreeni, ajanotto tai GPS-lenkki)

@@ -186,8 +186,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<TimeOfDay?> _askClock(TimeOfDay init, String title) async =>
       ActivityScreen._debugPick?.call() ?? await pickTime(context, init, title: title);
 
-  /// Loppuaika: pysäytetyn ajanoton loppu, muuten alku + kesto.
-  DateTime? get _end => _swDone && _swEnd != null ? _swEnd : w.started?.add(Duration(seconds: _durSec));
+  /// Loppuaika: pysäytetyn ajanoton loppu; GPS-reitissä viimeisen pisteen aika (kesto ei sisällä taukoja, joten
+  /// alku + kesto näytti tauon jälkeen liian aikaista loppua, testikierros 15.11.); muuten alku + kesto.
+  DateTime? get _end {
+    if (_swDone && _swEnd != null) return _swEnd;
+    final s = w.started;
+    if (s == null) return null;
+    final last = _route?.lastWhere((g) => g.isNotEmpty, orElse: () => const []).lastOrNull?.time.toLocal();
+    final byDuration = s.add(Duration(seconds: _durSec));
+    return last != null && last.isAfter(byDuration) ? last : byDuration;
+  }
 
   Future<void> _pickStart() async {
     final v = await _askClock(
@@ -346,7 +354,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
           padding: const EdgeInsets.only(top: 8),
           child: Row(
             children: [
-              _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
+              _Metric(
+                value: paceParts(w.paceSecPerKm!, w.activity).$1,
+                unit: paceParts(w.paceSecPerKm!, w.activity).$2,
+                label: t('vauhti'),
+              ),
               const SizedBox(width: 8),
               _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
             ],
@@ -726,13 +738,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   /// Kestävyyslajeissa tarkka aika (h:mm:ss); muissa minuutit.
   int get _sec => w.seconds ?? (w.minutes ?? 45) * 60;
+
+  /// Epäuskottava nopeus hyväksytty (Tallenna silti): ei kysytä uudelleen tässä näkymässä.
+  bool _speedOk = false;
   void _setSec(int s) {
     w.seconds = s.clamp(1, 24 * 3600);
     w.minutes = minutesFromSeconds(w.seconds!);
   }
 
   Future<void> _askTime() async {
-    final c = TextEditingController(text: fmtDurationSec(_sec));
+    final c = selectedText(fmtDurationSec(_sec));
     final v = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -841,6 +856,35 @@ class _ActivityScreenState extends State<ActivityScreen> {
         Navigator.of(context).pop(); // kuten Takaisin → Hylkää: ei tallenneta
         return;
       }
+    }
+    // Käsin syötetty matka ja aika: epäuskottava nopeus (esim. 1 km ajassa 0:10) on yleensä kirjoitusvirhe.
+    final secsNow = swSecs > 0 ? swSecs : _sec;
+    if (w.route == null &&
+        w.hcId == null &&
+        w.healthSource == null &&
+        !_speedOk &&
+        implausibleSpeed(w.activity, w.distanceKm ?? 0, secsNow)) {
+      final kmh = (w.distanceKm! / (secsNow / 3600)).round();
+      final keep = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          key: const ValueKey('implausibleSpeed'),
+          title: Text(t('Tarkista matka ja aika')),
+          content: Text(
+            t('{0} km ajassa {1} on noin {2} km/h. Onko matka tai aika väärin?', [
+              fmtNum(w.distanceKm!),
+              fmtDurationSec(secsNow),
+              kmh,
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Tallenna silti'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Muokkaa'))),
+          ],
+        ),
+      );
+      if (keep != true || !mounted) return;
+      _speedOk = true;
     }
     // Fiilis ponnahdusikkunassa ensin (Ohita jatkaa; takaisin peruu lopetuksen ja ajanotto jatkuu).
     if (w.feeling == null && !_isSaved) {
@@ -1153,7 +1197,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final stats = <(String, String, String)>[
       (_durText, '', t('Aika')),
       if (km > 0) (fmtNum((km * 100).round() / 100), 'km', t('Matka')),
-      if (km > 0 && w.pace != null && !speed) (fmtPace(w.paceSecPerKm!), '/km', t('vauhti')),
+      if (km > 0 && w.pace != null && !speed)
+        (
+          paceParts(w.paceSecPerKm!, w.activity).$1,
+          paceParts(w.paceSecPerKm!, w.activity).$2.substring(3),
+          t('vauhti'),
+        ),
       if (km > 0 && w.speedKmh != null && speed) (fmtNum((w.speedKmh! * 10).round() / 10), 'km/h', t('keskinopeus')),
       if ((w.steps ?? 0) > 0) (thousands(w.steps!), '', t('askeleet')),
       if ((w.kcal ?? 0) > 0) ('${w.kcal}', 'kcal', t('kalorit')),
@@ -1263,7 +1312,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       }),
       onTap: () async {
         final v = await askNumber(context, t('Matka (km)'), w.distanceKm ?? 5, min: 0, max: 1000);
-        if (v != null && v >= 0) {
+        if (v != null && v >= 0 && mounted) {
           setState(() {
             w.distanceKm = v == 0 ? null : v;
             w.distanceManual = _hasRoute;
@@ -1276,7 +1325,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
         padding: const EdgeInsets.only(top: 10),
         child: Row(
           children: [
-            _Metric(value: fmtPace(w.paceSecPerKm!), unit: 'min/km', label: t('vauhti')),
+            _Metric(
+              value: paceParts(w.paceSecPerKm!, w.activity).$1,
+              unit: paceParts(w.paceSecPerKm!, w.activity).$2,
+              label: t('vauhti'),
+            ),
             const SizedBox(width: 8),
             _Metric(value: fmtNum((w.speedKmh! * 10).round() / 10), unit: 'km/h', label: t('keskinopeus')),
           ],

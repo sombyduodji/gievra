@@ -210,7 +210,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   bool _finishing = false;
 
   Future<void> _finish() async {
-    if (_finishing) return;
+    if (_finishing || rest.justClosed) return; // myös: palautuspalkki sulkeutui juuri sormen alta
     _finishing = true;
     try {
       // Fiilis ensin ponnahdusikkunassa (Ohita jatkaa ilman; takaisin peruu lopetuksen eikä muuta mitään).
@@ -348,7 +348,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         Text(
                           // Tiivis luettelo, yksikkö kerran (kahden käsipainon liikkeissä kg/käsi).
                           '${setsLabel(e.workSets.length)} · ${fmtSetsCompact(e.name, work)}'
-                          '${hasWeight(work) ? ' ${kgUnit(e.name, short: true)}' : ''}',
+                          '${unitOnce(e.name, work) ? ' ${kgUnit(e.name, short: true)}' : ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: sub,
@@ -608,7 +608,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   ExName(n, style: const TextStyle(fontWeight: FontWeight.w600)),
                                   Text(
                                     sets.isNotEmpty
-                                        ? '${fmtSetsCompact(n, sets)}${hasWeight(sets) ? ' ${kgUnit(n, short: true)}' : ''}'
+                                        ? '${fmtSetsCompact(n, sets)}${unitOnce(n, sets) ? ' ${kgUnit(n, short: true)}' : ''}'
                                         : it != null && settings.program != null
                                         ? '${targetFor(settings.program!, it, w.date).sets} × ${targetFor(settings.program!, it, w.date).reps}'
                                         : t('ei vielä sarjoja'),
@@ -1409,7 +1409,7 @@ class _SavedScreenState extends State<SavedScreen> {
                     Text(
                       [
                         e.workSets.length == 1 ? t('1 sarja') : t('{0} sarjaa', [e.workSets.length]),
-                        if (hasWeight(e.workSets)) kgUnit(e.name),
+                        if (unitOnce(e.name, e.workSets)) kgUnit(e.name),
                       ].join(' · '),
                       style: sub,
                     ),
@@ -1594,7 +1594,9 @@ class _SavedScreenState extends State<SavedScreen> {
                               ],
                             ),
                           ),
-                        if (c.history.length > 2) ...[
+                        // Ei, jos tämän kerran volyymi on 0 (vain aika-, matka- tai kertaliikkeitä: "→ 0 kg" näytti
+                        // romahdukselta, testikierros 15.11.).
+                        if (c.history.length > 2 && c.volume > 0) ...[
                           const SizedBox(height: 8),
                           Text(
                             t('Volyymi viime kerroilla: {0} kg', [
@@ -1669,7 +1671,7 @@ class _DurationDialog extends StatefulWidget {
 }
 
 class _DurationDialogState extends State<_DurationDialog> {
-  late final _c = TextEditingController(text: '${widget.minutes}');
+  late final _c = selectedText('${widget.minutes}');
   late TimeOfDay? _start = widget.start;
 
   @override

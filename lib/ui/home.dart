@@ -150,7 +150,8 @@ class _DayScreen extends StatelessWidget {
       ? [
           if (w.durationSec != null) (Icons.timer_outlined, fmtDurationSec(w.durationSec!)),
           if (w.distanceKm != null) (Icons.straighten, '${fmtNum(w.distanceKm!)} km'),
-          if (w.paceSecPerKm != null) (Icons.speed, '${fmtPace(w.paceSecPerKm!)} /km'),
+          if (w.paceSecPerKm != null)
+            (Icons.speed, paceText(w.paceSecPerKm!, w.activity, short: true)),
           if (w.steps != null) (Icons.directions_walk, thousands(w.steps!)),
           if (w.hrAvg != null) (Icons.favorite_border, '${w.hrAvg}'),
         ]

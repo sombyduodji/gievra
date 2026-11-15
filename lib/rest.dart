@@ -241,10 +241,19 @@ class RestTimer extends ChangeNotifier {
     }
   }
 
-  /// Lisää tai vähentää aikaa (−15 s / +15 s).
+  /// Lisää tai vähentää aikaa (−15 s / +15 s). Vähennys ei lopeta ajastinta: vähintään [minLeft] s jää (tai nykyinen,
+  /// jos vähemmän). Ennen toistuva −15 s -napautus vei ajan nollaan, palkki katosi sormen alta ja seuraavat
+  /// napautukset osuivat alla olevaan Merkitse liike valmiiksi -painikkeeseen (testikierros 15.11.). Lopetus: Ohita.
+  static const minLeft = 5;
   void adjust(int seconds) {
     final e = _end;
     if (e == null) return;
+    if (seconds < 0) {
+      final left = remaining;
+      final allowed = left <= minLeft ? 0 : left - minLeft;
+      if (-seconds > allowed) seconds = -allowed;
+      if (seconds == 0) return;
+    }
     _end = e.add(Duration(seconds: seconds));
     total = (total + seconds).clamp(0, 3600);
     if (remaining == 0) {
@@ -255,7 +264,15 @@ class RestTimer extends ChangeNotifier {
     }
   }
 
+  /// Milloin palkki viimeksi sulkeutui (Ohita tai aika loppui). Palkin alla olevat painikkeet (sarjan tallennus,
+  /// Merkitse liike valmiiksi, Treeni valmis) eivät ota napautuksia [tapGuard] ajan: Ohita-tuplanapautuksen toinen
+  /// napautus osui alla olevaan painikkeeseen (testikierros 15.11., käyttäjä: 1 s).
+  DateTime? closedAt;
+  static const tapGuard = Duration(seconds: 1);
+  bool get justClosed => closedAt != null && clock().difference(closedAt!) < tapGuard;
+
   void _finish({bool over = false}) {
+    if (_end != null) closedAt = clock();
     _tick?.cancel();
     _tick = null;
     _end = null;

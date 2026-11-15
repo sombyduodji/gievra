@@ -17,7 +17,7 @@ Future<double?> askBodyValue(
   String? title,
   (DateTime, double)? previous,
 }) {
-  final c = TextEditingController(text: current == null ? '' : (height ? '${current.round()}' : fmtNum(current)));
+  final c = selectedText(current == null ? '' : (height ? '${current.round()}' : fmtNum(current)));
   String? error;
   return showDialog<double>(
     context: context,

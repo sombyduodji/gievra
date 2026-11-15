@@ -42,7 +42,8 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
 
   Future<void> _pickDate() async {
     final d = await pickDate(context, initial: _date, first: DateTime(2000), last: DateTime.now());
-    if (d != null) setState(() => _date = dateOnly(d));
+    // mounted: näkymä voi sulkeutua valitsimen ollessa auki (monkey-testi 15.11.: setState suljetussa näkymässä).
+    if (d != null && mounted) setState(() => _date = dateOnly(d));
   }
 
   void _start(bool withWarmup) {
@@ -176,7 +177,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                       if (v == null) return;
                       d.label = v.isEmpty ? null : v;
                       await settings.setProgram(settings.program);
-                      setState(() {});
+                      if (mounted) setState(() {});
                     },
                   ),
                 DayCard(

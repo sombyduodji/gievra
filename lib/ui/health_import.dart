@@ -154,7 +154,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
   Future<void> _pickDay() async {
     final today = dateOnly(DateTime.now());
     final d = await pickDate(context, initial: _day, first: today.subtract(const Duration(days: 365)), last: today);
-    if (d != null) _setDay(d);
+    if (d != null && mounted) _setDay(d);
   }
 
   String _dayLabel() {

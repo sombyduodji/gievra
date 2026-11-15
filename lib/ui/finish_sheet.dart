@@ -178,7 +178,7 @@ class _FinishSheetState extends State<FinishSheet> {
       if (hasHr)
         t('ka {0}', [s.avg])
       else if (w.activity != null && (w.distanceKm ?? 0) > 0 && dur != null && (sportOf(w.activity)?.steps ?? false))
-        '${fmtPace(dur / w.distanceKm!)} /km',
+        paceText(dur / w.distanceKm!, w.activity, short: true),
     ];
     final chips = <Widget>[];
     if (w.activity == null) {

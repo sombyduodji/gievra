@@ -771,6 +771,22 @@ class _SettingsSection extends StatelessWidget {
                 style: sub,
               ),
             ),
+            if (settings.trainMode != 'gym') ...[
+              Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Uinnin vauhti'))),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<bool>(
+                  key: const ValueKey('swimPace'),
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('min/km')),
+                    ButtonSegment(value: true, label: Text('min/100 m')),
+                  ],
+                  selected: {settings.swimPer100m},
+                  onSelectionChanged: (s) => settings.setSwimPer100(s.first),
+                ),
+              ),
+            ],
             Padding(padding: EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Painon lisäys (kg)'))),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1418,7 +1434,7 @@ Future<void> showPauseDialog(BuildContext context) async {
               label: Text(t('Alkoi {0}.{1}.{2}', [start.day, start.month, start.year])),
               onPressed: () async {
                 final d = await pickDate(ctx, initial: start, first: DateTime(2000), last: DateTime.now());
-                if (d != null) set(() => start = dateOnly(d));
+                if (d != null && ctx.mounted) set(() => start = dateOnly(d));
               },
             ),
             const SizedBox(height: 12),

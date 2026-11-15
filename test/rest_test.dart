@@ -129,4 +129,37 @@ reps: raskas
     expect(r.running, isFalse);
     expect(r.remaining, 0);
   });
+
+  test('Toistuva −15 s ei lopeta ajastinta (palkki ei katoa sormen alta), Ohita lopettaa', () {
+    final r = RestTimer();
+    r.start(60, 'Penkkipunnerrus');
+    for (var i = 0; i < 10; i++) {
+      r.adjust(-15);
+    }
+    expect(r.running, isTrue);
+    expect(r.remaining, inInclusiveRange(4, 5));
+    r.adjust(15);
+    expect(r.remaining, inInclusiveRange(19, 20));
+    r.stop();
+    expect(r.running, isFalse);
+  });
+
+  test('Palkin sulkeuduttua 1 s napautussuoja (Ohita-tuplanapautus), sitten taas normaali', () {
+    var now = DateTime(2026, 11, 15, 12);
+    final old = RestTimer.clock;
+    RestTimer.clock = () => now;
+    addTearDown(() => RestTimer.clock = old);
+    final r = RestTimer();
+    expect(r.justClosed, isFalse);
+    r.start(60, 'Penkkipunnerrus');
+    expect(r.justClosed, isFalse, reason: 'käynnissä');
+    r.stop();
+    expect(r.justClosed, isTrue);
+    now = now.add(const Duration(milliseconds: 900));
+    expect(r.justClosed, isTrue);
+    now = now.add(const Duration(milliseconds: 200));
+    expect(r.justClosed, isFalse);
+    r.stop(); // ei käynnissä: ei uutta suojaa
+    expect(r.justClosed, isFalse);
+  });
 }

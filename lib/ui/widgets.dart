@@ -255,6 +255,15 @@ String fmtClock(TimeOfDay c) =>
 
 /// Numeron syöttö. [min] ja [max]: sallittu väli; muu arvo (tai tyhjä) näyttää välin, ja ikkuna pysyy auki
 /// (ennen arvo hylättiin hiljaa, ja vanha arvo jäi näkyviin ilman selitystä).
+/// Lukukentän ohjain, jonka arvo on valittuna: kirjoitus korvaa sen eikä jatka sitä (ennen "5" + "30" = 530 km,
+/// testikierros 15.11.).
+TextEditingController selectedText(String text) => TextEditingController.fromValue(
+  TextEditingValue(
+    text: text,
+    selection: TextSelection(baseOffset: 0, extentOffset: text.length),
+  ),
+);
+
 Future<double?> askNumber(
   BuildContext context,
   String title,
@@ -263,7 +272,7 @@ Future<double?> askNumber(
   double? min,
   double? max,
 }) async {
-  final c = TextEditingController(text: fmtNum(current));
+  final c = selectedText(fmtNum(current));
   String? error;
   final range = min != null && max != null ? t('Sallittu {0}–{1}', [fmtNum(min), fmtNum(max)]) : null;
   final r = await showDialog<double>(

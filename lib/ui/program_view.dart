@@ -414,7 +414,7 @@ class _ItemSheetState extends State<_ItemSheet> {
   Future<void> _pickOther() async {
     final name = await Navigator.of(context)
         .push<String>(MaterialPageRoute(builder: (_) => const ExercisePickerScreen()));
-    if (name != null) setState(() => _preview = name);
+    if (name != null && mounted) setState(() => _preview = name);
   }
 
   @override

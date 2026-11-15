@@ -65,4 +65,25 @@ void main() {
     expect(find.byType(WorkoutScreen), findsOneWidget);
     expect(find.byType(SavedScreen), findsNothing);
   });
+
+  testWidgets('volyymirivi vain, kun tällä kerralla on toistoliikkeitä (ei "→ 0 kg")', (tester) async {
+    tester.view.physicalSize = const Size(412 * 3, 3000 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    Workout w(int d, ExerciseEntry e) => Workout(date: addDays(day, -d), title: 'Treeni')
+      ..minutes = 40
+      ..exercises.add(e);
+    final earlier = [for (final d in [21, 14, 7]) w(d, ExerciseEntry('Takakyykky', [SetEntry(60, 8)]))];
+    final squat = w(0, ExerciseEntry('Takakyykky', [SetEntry(62.5, 8)]));
+    store.workouts = [squat, ...earlier];
+    await tester.pumpWidget(MaterialApp(home: SavedScreen(workout: squat)));
+    await tester.pump();
+    expect(find.textContaining('Volyymi viime kerroilla'), findsOneWidget, reason: 'vertailu toimii');
+    final walk = w(0, ExerciseEntry('Farmer walk hex barilla', [SetEntry(60, 2)]));
+    store.workouts = [walk, ...earlier];
+    await tester.pumpWidget(MaterialApp(home: SavedScreen(key: UniqueKey(), workout: walk)));
+    await tester.pump();
+    expect(find.textContaining('Volyymi viime kerroilla'), findsNothing);
+    expect(find.textContaining('60 kg × 2 edestakaisin'), findsWidgets);
+  });
 }

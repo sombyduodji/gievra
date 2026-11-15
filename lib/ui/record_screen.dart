@@ -103,6 +103,7 @@ class _RecordScreenState extends State<RecordScreen> {
     try {
       if (widget.recorder == null) {
         final st = await Permission.locationWhenInUse.request();
+        if (!mounted) return;
         if (!st.isGranted) {
           setState(() {
             _busy = false;
@@ -482,8 +483,12 @@ class _RecordScreenState extends State<RecordScreen> {
         Row(
           children: [
             metric(fmtDec(rec.distanceKm, 2), 'km', t('matka')),
-            metric(cur == null ? '–' : fmtPace(cur), 'min/km', t('vauhti nyt')),
-            metric(avg == null ? '–' : fmtPace(avg), 'min/km', t('keskivauhti')),
+            metric(cur == null ? '–' : paceParts(cur, widget.sport).$1, paceParts(1, widget.sport).$2, t('vauhti nyt')),
+            metric(
+              avg == null ? '–' : paceParts(avg, widget.sport).$1,
+              paceParts(1, widget.sport).$2,
+              t('keskivauhti'),
+            ),
           ],
         ),
         const SizedBox(height: 12),

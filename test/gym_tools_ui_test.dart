@@ -10,6 +10,7 @@ import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/plates.dart';
 import 'package:treenipaivakirja/program.dart';
 import 'package:treenipaivakirja/progression.dart';
+import 'package:treenipaivakirja/rest.dart';
 import 'package:treenipaivakirja/ui/plate_sheet.dart';
 import 'package:treenipaivakirja/ui/set_logger.dart';
 import 'package:treenipaivakirja/ui/workout.dart';
@@ -167,6 +168,51 @@ void main() {
     },
   );
 
+  testWidgets('Suuri teksti: paino- ja toistoruutu samankorkuiset, luvut samalla tasolla (käyttäjä 15.11.)', (
+    tester,
+  ) async {
+    await tall(tester, width: 1080);
+    final e = ExerciseEntry('Käsipainopystypunnerrus', [SetEntry(20, 8)]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(360, 2333), textScaler: TextScaler.linear(1.6)),
+          child: SetLoggerScreen(date: DateTime(2026, 11, 12), entry: e, onChanged: () async {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    final card = find.byKey(const ValueKey('setCard'));
+    final kg = tester.getRect(find.descendant(of: card, matching: find.textContaining('20')).first);
+    final reps = tester.getRect(find.descendant(of: card, matching: find.textContaining('8')).first);
+    expect((kg.center.dy - reps.center.dy).abs(), lessThan(2));
+    final minus = find.descendant(of: card, matching: find.byIcon(Icons.remove));
+    expect((tester.getRect(minus.at(0)).top - tester.getRect(minus.at(1)).top).abs(), lessThan(1));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Edellinen kerta tiiviisti yksikön kanssa: toistot "60 × 8 · 62,5 × 6 kg", aika "60 s" (testikierros 15.11.)', (
+    tester,
+  ) async {
+    await tall(tester);
+    store.workouts = [
+      Workout(
+        date: DateTime(2026, 11, 9),
+        exercises: [
+          ExerciseEntry('Penkkipunnerrus', [SetEntry(60, 8), SetEntry(62.5, 6)]),
+          ExerciseEntry('Lankku', [SetEntry(0, 60), SetEntry(0, 45)]),
+        ],
+      ),
+    ];
+    addTearDown(() => store.workouts = []);
+    await logger(tester, 'Penkkipunnerrus');
+    expect(find.textContaining('60 × 8 · 62,5 × 6 kg', findRichText: true), findsOneWidget);
+    await tester.pumpWidget(const SizedBox()); // uusi näkymä, ei edellisen tilaa
+    await logger(tester, 'Lankku');
+    expect(find.textContaining('60 s · 45 s', findRichText: true), findsOneWidget);
+    expect(find.textContaining('0×60', findRichText: true), findsNothing);
+  });
+
   testWidgets('Levylaskuri: levyt näkyvät ja omien levyjen muutos päivittää', (tester) async {
     await tall(tester);
     store.workouts = [
@@ -248,6 +294,36 @@ void main() {
     expect(e.sets.last.rir, 0);
     expect(find.text('Ei yhtään'), findsOneWidget, reason: 'takaisin tavalliseen');
     expect(find.textContaining('AMRAP'), findsWidgets);
+  });
+
+  testWidgets('Ohita-palkin sulkeuduttua 1 s napautussuoja: sormen alle jäänyt painike ei tallenna (käyttäjä 15.11.)', (
+    tester,
+  ) async {
+    SetLoggerScreen.repeatGuard = Duration.zero;
+    addTearDown(() => SetLoggerScreen.repeatGuard = const Duration(milliseconds: 600));
+    var now = DateTime(2026, 11, 15, 12);
+    final old = RestTimer.clock;
+    RestTimer.clock = () => now;
+    addTearDown(() {
+      RestTimer.clock = old;
+      rest.stop();
+      rest.closedAt = null;
+    });
+    await tall(tester);
+    final e = await logger(tester, 'Penkkipunnerrus', sets: [SetEntry(100, 5, rir: 1)]);
+    rest.start(90, 'Penkkipunnerrus');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Ohita palautus'));
+    await tester.pump();
+    expect(rest.running, isFalse);
+    await tester.tap(find.text('Muutama'));
+    await tester.pump();
+    expect(e.sets, hasLength(1), reason: 'napautus heti sulkeutumisen jälkeen ei tallenna');
+    now = now.add(const Duration(milliseconds: 1100));
+    await tester.tap(find.text('Muutama'));
+    await tester.pump();
+    expect(e.sets, hasLength(2), reason: '1 s jälkeen tavallinen tallennus');
+    rest.stop();
   });
 
   testWidgets('Tuplanapautus tallentaa sarjan kerran (vahinkotoisto)', (tester) async {
