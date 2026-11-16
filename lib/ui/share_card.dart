@@ -173,11 +173,7 @@ class WorkoutShareCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(exerciseLabel(e.name), style: const TextStyle(fontWeight: FontWeight.w700)),
-                      Text(
-                        '${fmtSetsCompact(e.name, e.workSets)}'
-                        '${unitOnce(e.name, e.workSets) ? ' ${kgUnit(e.name, short: true)}' : ''}',
-                        style: const TextStyle(fontSize: 13, color: _sub),
-                      ),
+                      Text(fmtSetsUnit(e.name, e.workSets), style: const TextStyle(fontSize: 13, color: _sub)),
                     ],
                   ),
                 ),

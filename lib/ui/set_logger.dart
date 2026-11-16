@@ -375,7 +375,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         : mul == 1
         // Tiivis muoto kuten muualla, yksikkö kerran (käyttäjä 15.11., vaihtoehto B); kahden käsipainon liikkeissä
         // kummankin käden paino. Aika- ja matkaliikkeissä yksikkö sarjassa (ennen "0×60, 0×60" ilman yksikköä).
-        ? '${shortDate(_last.$1)} – ${fmtSetsCompact(e.name, _last.$2.sets)}${unitOnce(e.name, _last.$2.sets) ? ' ${kgUnit(e.name)}' : ''}'
+        ? '${shortDate(_last.$1)} – ${fmtSetsUnit(e.name, _last.$2.sets, short: false)}'
         : '${shortDate(_last.$1)} – ${_last.$2.sets.map((s) => '${fmtNum(s.kg * mul)}×${s.reps}').join(', ')}$total';
     return Material(
       color: cs.surfaceContainer,

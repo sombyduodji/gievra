@@ -656,6 +656,12 @@ String fmtSetsCompact(String exercise, Iterable<SetEntry> sets) {
 
 /// Näytetäänkö painon yksikkö kerran [fmtSetsCompact]-luettelon perässä: vain toistoliikkeissä, joissa on painoa
 /// (muissa mittatavoissa yksikkö on jo sarjassa).
+/// Sarjat tiiviisti yksikkö edessä: "kg: 20 × 8 · 40 × 6" tai "kg/käsi: 12 × 12 · 22 × 10". Ennen yksikkö oli
+/// lopussa ("24 × 10 kg/käsi"), ja viimeiset toistot luettiin kiloiksi (käyttäjä 16.11.).
+String fmtSetsUnit(String exercise, Iterable<SetEntry> sets, {bool short = true}) => unitOnce(exercise, sets)
+    ? '${kgUnit(exercise, short: short)}: ${fmtSetsCompact(exercise, sets)}'
+    : fmtSetsCompact(exercise, sets);
+
 bool unitOnce(String exercise, Iterable<SetEntry> sets) =>
     measureOf(exercise) == Measure.reps && sets.any((s) => s.kg > 0);
 

@@ -401,8 +401,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ExName(e.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         Text(
                           // Tiivis luettelo, yksikkö kerran (kahden käsipainon liikkeissä kg/käsi).
-                          '${setsLabel(e.workSets.length)} · ${fmtSetsCompact(e.name, work)}'
-                          '${unitOnce(e.name, work) ? ' ${kgUnit(e.name, short: true)}' : ''}',
+                          '${setsLabel(e.workSets.length)} · ${fmtSetsUnit(e.name, work)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: sub,
@@ -664,7 +663,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                   ExName(n, style: const TextStyle(fontWeight: FontWeight.w600)),
                                   Text(
                                     sets.isNotEmpty
-                                        ? '${fmtSetsCompact(n, sets)}${unitOnce(n, sets) ? ' ${kgUnit(n, short: true)}' : ''}'
+                                        ? fmtSetsUnit(n, sets)
                                         : it != null && settings.program != null
                                         ? targetFor(settings.program!, it, w.date).text
                                         : t('ei vielä sarjoja'),

@@ -191,27 +191,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Edellinen kerta tiiviisti yksikön kanssa: toistot "60 × 8 · 62,5 × 6 kg", aika "60 s" (testikierros 15.11.)', (
-    tester,
-  ) async {
-    await tall(tester);
-    store.workouts = [
-      Workout(
-        date: DateTime(2026, 11, 9),
-        exercises: [
-          ExerciseEntry('Penkkipunnerrus', [SetEntry(60, 8), SetEntry(62.5, 6)]),
-          ExerciseEntry('Lankku', [SetEntry(0, 60), SetEntry(0, 45)]),
-        ],
-      ),
-    ];
-    addTearDown(() => store.workouts = []);
-    await logger(tester, 'Penkkipunnerrus');
-    expect(find.textContaining('60 × 8 · 62,5 × 6 kg', findRichText: true), findsOneWidget);
-    await tester.pumpWidget(const SizedBox()); // uusi näkymä, ei edellisen tilaa
-    await logger(tester, 'Lankku');
-    expect(find.textContaining('60 s · 45 s', findRichText: true), findsOneWidget);
-    expect(find.textContaining('0×60', findRichText: true), findsNothing);
-  });
+  testWidgets(
+    'Edellinen kerta tiiviisti yksikön kanssa: toistot "60 × 8 · 62,5 × 6 kg", aika "60 s" (testikierros 15.11.)',
+    (tester) async {
+      await tall(tester);
+      store.workouts = [
+        Workout(
+          date: DateTime(2026, 11, 9),
+          exercises: [
+            ExerciseEntry('Penkkipunnerrus', [SetEntry(60, 8), SetEntry(62.5, 6)]),
+            ExerciseEntry('Lankku', [SetEntry(0, 60), SetEntry(0, 45)]),
+          ],
+        ),
+      ];
+      addTearDown(() => store.workouts = []);
+      await logger(tester, 'Penkkipunnerrus');
+      expect(
+        find.textContaining('kg: 60 × 8 · 62,5 × 6', findRichText: true),
+        findsOneWidget,
+      ); // yksikkö edessä (16.11.)
+      await tester.pumpWidget(const SizedBox()); // uusi näkymä, ei edellisen tilaa
+      await logger(tester, 'Lankku');
+      expect(find.textContaining('60 s · 45 s', findRichText: true), findsOneWidget);
+      expect(find.textContaining('0×60', findRichText: true), findsNothing);
+    },
+  );
 
   testWidgets('Levylaskuri: levyt näkyvät ja omien levyjen muutos päivittää', (tester) async {
     await tall(tester);
