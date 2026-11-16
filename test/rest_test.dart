@@ -162,4 +162,17 @@ reps: raskas
     r.stop(); // ei käynnissä: ei uutta suojaa
     expect(r.justClosed, isFalse);
   });
+
+  test('Kello taaksepäin palkin sulkeuduttua: ei pysyvää napautussuojaa (yötesti 16.11.)', () {
+    var now = DateTime(2026, 11, 16, 12);
+    final old = RestTimer.clock;
+    RestTimer.clock = () => now;
+    addTearDown(() => RestTimer.clock = old);
+    final r = RestTimer();
+    r.start(60, 'Penkkipunnerrus');
+    r.stop();
+    expect(r.justClosed, isTrue);
+    now = now.subtract(const Duration(hours: 1));
+    expect(r.justClosed, isFalse);
+  });
 }

@@ -42,13 +42,21 @@ void main() {
     expect(perms.where((p) => p.contains('health.WRITE')), isEmpty);
   });
 
-  test('ulkoa avattavat osat: vain pääikkuna ja Health Connectin lupanäkymä', () {
+  test('ulkoa avattavat osat: vain pääikkuna, tiedoston avaus ja Health Connectin lupanäkymä', () {
     final exported = [
       for (final kind in ['activity', 'activity-alias', 'service', 'receiver', 'provider'])
         for (final t in tags(kind))
           if (attr(t, 'exported') == 'true') attr(t, 'name')!,
     ];
-    expect(exported.toSet(), {'.MainActivity', 'ViewPermissionUsageActivity'});
+    expect(exported.toSet(), {'.MainActivity', '.OpenFileActivity', 'ViewPermissionUsageActivity'});
+    // Avaa sovelluksella / Jaa menee läpikulkuaktiviteetin kautta (yötesti 16.11.: ei toista Gievraa muistiin).
+    final main = tags('activity').firstWhere((t) => attr(t, 'name') == '.MainActivity');
+    final mainBody = body.substring(body.indexOf(main), body.indexOf('</activity>', body.indexOf(main)));
+    expect(mainBody, isNot(contains('android.intent.action.VIEW"')));
+    expect(mainBody, isNot(contains('android.intent.action.SEND"')));
+    final open = tags('activity').firstWhere((t) => attr(t, 'name') == '.OpenFileActivity');
+    expect(attr(open, 'noHistory'), 'true');
+    expect(attr(open, 'excludeFromRecents'), 'true');
     // Lupanäkymä vain järjestelmälle.
     final alias = tags('activity-alias').single;
     expect(attr(alias, 'permission'), 'android.permission.START_VIEW_PERMISSION_USAGE');
@@ -77,5 +85,21 @@ void main() {
     // Avatut tiedostot eivät ole Flutterin reittejä (ks. manifestin kommentti).
     final deeplink = tags('meta-data').where((t) => attr(t, 'name') == 'flutter_deeplinking_enabled');
     expect(deeplink.map((t) => attr(t, 'value')), ['false']);
+  });
+
+  // Testikierros 16.11.: kun Gievra käynnistyi tiedoston avauksesta, tehtävän pohja-aikomukseksi jäi VIEW + tiedosto.
+  // Takaisin-poistumisen jälkeen kuvake teki toisen Gievra-kortin Viimeisimpiin, ja vanha kortti avasi tuonnin
+  // esikatselun uudelleen toiseen MainActivityyn. Välitys on siksi käynnistimen aikomus (MAIN + LAUNCHER) ja tiedosto
+  // lisätietona, eikä historiasta tai tallennetusta tilasta palautettu käynnistys avaa tiedostoa toista kertaa.
+  test('tiedoston avaus välitetään käynnistimen aikomuksena, eikä historiasta avata uudelleen', () {
+    const dir = 'android/app/src/main/kotlin/fi/somby/gievra';
+    final open = File('$dir/OpenFileActivity.kt').readAsStringSync();
+    expect(open, contains('Intent(Intent.ACTION_MAIN)'));
+    expect(open, contains('addCategory(Intent.CATEGORY_LAUNCHER)'));
+    expect(open, contains('putExtra(MainActivity.EXTRA_OPEN'));
+    expect(open, isNot(contains('setDataAndType')));
+    final main = File('$dir/MainActivity.kt').readAsStringSync();
+    expect(main, contains('FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY'));
+    expect(main, contains('pendingIntent = if (restored) null else intent'));
   });
 }

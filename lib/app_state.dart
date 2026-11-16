@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -452,6 +453,28 @@ class Settings extends ChangeNotifier {
     await _persist();
   }
 
+  /// Omien liikkeiden lihakset (käyttäjä 16.11.): liike → lihakset ja osat (muscleAreas).
+  Map<String, List<String>> customMuscles = {};
+
+  void setCustomMuscles(String exercise, List<String> muscles) {
+    customMuscles = {...customMuscles, exercise: muscles};
+    _syncCustomMuscles();
+    _persist();
+  }
+
+  /// Viikon kuorman rekisteri: valitut lihakset, muuten kategorian mukaan (vanhat omat liikkeet ilman valintaa).
+  void _syncCustomMuscles() {
+    const byCategory = {
+      'Rinta': ['rinta'],
+      'Selkä': ['leveä selkälihas', 'yläselkä'],
+      'Olkapäät': ['etuolkapää', 'sivuolkapää'],
+      'Keskivartalo': ['vatsa'],
+    };
+    customExerciseMuscles
+      ..clear()
+      ..addAll({for (final n in customExercises) n: ?(customMuscles[n] ?? byCategory[customCategory[n]])});
+  }
+
   void setMeasure(String exercise, Measure m) {
     customMeasure = {...customMeasure, exercise: m};
     _persist();
@@ -560,6 +583,14 @@ class Settings extends ChangeNotifier {
         ..writeln('## Mittaustavat');
       for (final e in customMeasure.entries) {
         b.writeln('- ${e.key}: ${e.value.label}');
+      }
+    }
+    if (customMuscles.isNotEmpty) {
+      b
+        ..writeln()
+        ..writeln('## Omien liikkeiden lihakset');
+      for (final e in customMuscles.entries) {
+        if (e.value.isNotEmpty) b.writeln('- ${e.key}: ${e.value.join(', ')}');
       }
     }
     if (injuries.isNotEmpty) {
@@ -684,6 +715,7 @@ class Settings extends ChangeNotifier {
     List<Pause>? pauseList;
     List<String>? inj;
     Map<String, Measure>? meas;
+    Map<String, List<String>>? cm;
     TrainingStyle? st;
     for (; i < lines.length; i++) {
       final t = lines[i].trim();
@@ -693,6 +725,7 @@ class Settings extends ChangeNotifier {
         if (section == 'Tauot') pauseList = [];
         if (section == 'Vammat') inj = [];
         if (section == 'Mittaustavat') meas = {};
+        if (section == 'Omien liikkeiden lihakset') cm = {};
         if (section == 'Treenityyli') st = TrainingStyle();
         if (section == 'Omat liikkeet') {
           custom = [];
@@ -719,6 +752,14 @@ class Settings extends ChangeNotifier {
         final head = sp > 0 ? item.substring(0, sp) : '';
         final isIcon = head.isNotEmpty && !RegExp(r'[A-Za-zÅÄÖåäöÁáČčĐđŊŋŠšŦŧŽž0-9]').hasMatch(head);
         eq!.add(isIcon ? Equipment(head, item.substring(sp + 1).trim()) : Equipment('⭐', item));
+      } else if (section == 'Omien liikkeiden lihakset') {
+        final k = item.lastIndexOf(':');
+        if (k <= 0) continue;
+        final parts = [
+          for (final x in item.substring(k + 1).split(','))
+            if (x.trim().isNotEmpty) x.trim(),
+        ];
+        if (parts.isNotEmpty) cm![item.substring(0, k).trim()] = parts;
       } else if (section == 'Mittaustavat') {
         final k = item.lastIndexOf(':');
         final m = k > 0 ? Measure.byName(item.substring(k + 1).trim()) : null;
@@ -780,6 +821,8 @@ class Settings extends ChangeNotifier {
       customExercises = custom;
       customCategory = cats!;
     }
+    if (cm != null) customMuscles = cm;
+    _syncCustomMuscles();
   }
 
   void setName(String v) {
@@ -1015,6 +1058,8 @@ class Settings extends ChangeNotifier {
     customExercises = [...customExercises]..remove(n);
     customCategory.remove(n);
     customMeasure.remove(n);
+    customMuscles.remove(n);
+    _syncCustomMuscles();
     _persist();
   }
 
@@ -1026,6 +1071,7 @@ class Settings extends ChangeNotifier {
     for (final n in add) {
       if (names[n] != ownCategory) customCategory[n] = names[n]!;
     }
+    _syncCustomMuscles();
     _persist();
   }
 }
@@ -1188,8 +1234,31 @@ class WorkoutStore extends ChangeNotifier {
   /// Treenin reitti GPX-tekstinä (null = ei reittiä tai tiedosto puuttuu).
   Future<String?> readRoute(Workout w) async => w.routeGpx ?? (w.route == null ? null : files.read(routeRel(w)));
 
-  Future<String> save(Workout w) async {
+  /// Saman treenitiedoston tallennukset ja poistot peräkkäin: päällekkäiset kirjoitukset saattoivat päätyä
+  /// levylle väärässä järjestyksessä (vanhempi sisältö jäi voimaan), ja poisto kesken tallennuksen toi
+  /// tiedoston takaisin.
+  final _fileQueue = <String, Future<void>>{};
+
+  Future<R> _inOrder<R>(String rel, Future<R> Function() f) async {
+    // Oma portti jonoon; vain päällekkäinen kutsu odottaa edellistä. Portti aukeaa aina (myös virheestä), joten
+    // epäonnistunut tallennus ei pysäytä seuraavia.
+    // Avain kansion kanssa: sama suhteellinen polku toisessa treenikansiossa on eri tiedosto.
+    final key = '${settings.folder ?? ''}|$rel';
+    final prev = _fileQueue[key];
+    final gate = Completer<void>();
+    _fileQueue[key] = gate.future;
+    try {
+      if (prev != null) await prev;
+      return await f();
+    } finally {
+      if (identical(_fileQueue[key], gate.future)) _fileQueue.remove(key);
+      gate.complete();
+    }
+  }
+
+  Future<String> save(Workout w) => _inOrder(workoutPath(w.date, w.session), () async {
     await _writeRoute(w);
+    // Sisältö luetaan vasta omalla vuorolla: viimeisin tila tallentuu.
     final path = await files.write(workoutPath(w.date, w.session), workoutToMarkdown(w));
     onLocalChange?.call(workoutPath(w.date, w.session));
     workouts
@@ -1198,7 +1267,7 @@ class WorkoutStore extends ChangeNotifier {
       ..sort((a, b) => b.date.compareTo(a.date));
     notifyListeners();
     return path;
-  }
+  });
 
   /// Tuonti: kirjoittaa treenit levylle. Olemassa olevat päivät ohitetaan (ei ylikirjoitusta).
   /// Palauttaa tallennettujen määrän.
@@ -1207,19 +1276,23 @@ class WorkoutStore extends ChangeNotifier {
     for (final w in list) {
       if (onDay(w.date).any((x) => x.session == w.session)) continue;
       final rel = workoutPath(w.date, w.session);
-      if (await files.exists(rel)) continue;
-      await _writeRoute(w);
-      // Varmuuskopiosta palautettu: alkuperäinen teksti sellaisenaan (tuntemattomat rivit säilyvät).
-      await files.write(rel, w.originalMd ?? workoutToMarkdown(w));
-      w.originalMd = null;
-      onLocalChange?.call(workoutPath(w.date, w.session));
-      n++;
+      // Samassa jonossa kuin save/delete: samanaikainen tallennus samaan päivään ei mene ristiin (yötesti 16.11.).
+      final wrote = await _inOrder(rel, () async {
+        if (await files.exists(rel)) return false;
+        await _writeRoute(w);
+        // Varmuuskopiosta palautettu: alkuperäinen teksti sellaisenaan (tuntemattomat rivit säilyvät).
+        await files.write(rel, w.originalMd ?? workoutToMarkdown(w));
+        w.originalMd = null;
+        onLocalChange?.call(rel);
+        return true;
+      });
+      if (wrote) n++;
     }
     await reload();
     return n;
   }
 
-  Future<void> delete(DateTime d, [int session = 1]) async {
+  Future<void> delete(DateTime d, [int session = 1]) => _inOrder(workoutPath(d, session), () async {
     final old = onDay(d).where((x) => x.session == session).firstOrNull;
     // Vain treenin oma reitti (vvvv-kk-pp[-n].gpx): muokattu tai synkattu route:-rivi ei saa poistaa muuta tiedostoa.
     if (old?.route != null && routeRel(old!) == routePath(old.date, old.session)) {
@@ -1230,7 +1303,7 @@ class WorkoutStore extends ChangeNotifier {
     onLocalChange?.call(workoutPath(d, session));
     workouts.removeWhere((x) => x.date == dateOnly(d) && x.session == session);
     notifyListeners();
-  }
+  });
 
   /// Raskain aiempi sarja liikkeessä ennen annettua päivää.
   double maxKgBefore(String exercise, DateTime before) {
@@ -1247,16 +1320,33 @@ class WorkoutStore extends ChangeNotifier {
     return best;
   }
 
-  /// Edellinen kerta, kun liike tehtiin ennen annettua päivää.
-  (DateTime, ExerciseEntry)? lastBefore(String exercise, DateTime before) {
-    for (final w in workouts) {
-      if (!w.date.isBefore(before)) continue;
-      for (final e in w.exercises) {
-        if (e.name == exercise && e.sets.isNotEmpty) return (w.date, e);
-      }
-    }
-    return null;
+  /// Edellinen kerta, kun liike tehtiin ennen annettua päivää tai saman päivän aiemmassa treenissä ([session]:
+  /// nykyisen treenin numero; testikierros 16.11.: päivän toinen salitreeni ei nähnyt ensimmäistä).
+  (DateTime, ExerciseEntry)? lastBefore(String exercise, DateTime before, [int session = 1]) {
+    final w = latestEarlier(
+      workouts.where((w) => w.exercises.any((e) => e.name == exercise && e.sets.isNotEmpty)),
+      before,
+      session,
+    );
+    return w == null ? null : (w.date, w.exercises.firstWhere((e) => e.name == exercise && e.sets.isNotEmpty));
   }
+}
+
+/// Treeni on ennen päivän [date] treeniä numero [session]: aiempi päivä tai saman päivän aiempi treeni.
+bool earlierThan(Workout w, DateTime date, [int session = 1]) {
+  final d = dateOnly(date);
+  final wd = dateOnly(w.date);
+  return wd.isBefore(d) || (wd == d && w.session < session);
+}
+
+/// Uusin treeni ennen päivän [date] treeniä numero [session] (päivä, sitten saman päivän treenin numero).
+Workout? latestEarlier(Iterable<Workout> list, DateTime date, [int session = 1]) {
+  Workout? best;
+  for (final w in list) {
+    if (!earlierThan(w, date, session)) continue;
+    if (best == null || w.date.isAfter(best.date) || (w.date == best.date && w.session > best.session)) best = w;
+  }
+  return best;
 }
 
 /// Treenikansion tiedostot: puhelimessa ja tietokoneella oikeat .md-tiedostot, verkkodemossa muistissa

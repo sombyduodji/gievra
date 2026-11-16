@@ -66,7 +66,11 @@ String stepsToMarkdown(Map<DateTime, int> days, Map<DateTime, List<String>> apps
     if (m == null) continue;
     final d = DateTime.tryParse(m[1]!);
     if (d == null || isoDate(d) != m[1]) continue;
-    days[d] = int.parse(m[2]!);
+    // Liian pitkä luku (kirjoitusvirhe) ohitetaan: poikkeus tyhjensi ennen koko askelhistorian muistista,
+    // ja seuraava päivitys kirjoitti tiedoston uudelleen ilman vanhoja päiviä.
+    final n = int.tryParse(m[2]!);
+    if (n == null) continue;
+    days[d] = n;
     final a = (m[3] ?? '').split(',').map((x) => x.trim()).where((x) => x.isNotEmpty).toList();
     if (a.isNotEmpty) apps[d] = a;
   }

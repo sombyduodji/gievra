@@ -68,7 +68,9 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
     final files = await FilePicker.pickFiles(dialogTitle: t('Valitse ohjelmapohja (.gmd)'));
     if (files.isEmpty) return false;
     // Pohja on pieni tekstitiedosto: yli 1 Mt ei ole pohja (sama raja kuin avatuilla ja jaetuilla tiedostoilla).
-    text = await files.first.xFile.length() > 1000000 ? '' : utf8.decode(await files.first.xFile.readAsBytes(), allowMalformed: true);
+    text = await files.first.xFile.length() > 1000000
+        ? ''
+        : utf8.decode(await files.first.xFile.readAsBytes(), allowMalformed: true);
   }
   final p = looksLikeProgram(text) ? parseProgram(text) : null;
   if (!context.mounted) return false;
@@ -88,7 +90,18 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (meta['author'] != null) Text(t('Tekijä: {0}', [meta['author']])),
-          Text(p.displayTitle, style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+          Text(p.kindTitle, style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+          // Käsin kirjoitettu pohja, jonka tavoitetta ei tunneta (esim. "goal: voima"): kerrotaan, ettei se ole virhe
+          // mutta suositukset lasketaan yleiskunnon mukaan (testikierros 16.11.).
+          if (!goals.containsKey(p.goal))
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '⚠️ ${t('Tuntematon tavoite "{0}". Ohjelma toimii, mutta viikon kuorman suositukset lasketaan '
+                'yleiskunnon mukaan. Tavoitteen voi vaihtaa tekemällä uuden ohjelman.', [p.goal])}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
           const SizedBox(height: 10),
           for (final d in p.plan) ...[
             Text(d.uiName, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -115,13 +128,16 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Ota käyttöön'))),
+        // Tallennettuihin lisättäessä painike ei lupaa käyttöönottoa (testi 16.11.).
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(activate ? t('Ota käyttöön') : t('Lisää'))),
       ],
     ),
   );
   if (ok != true || !context.mounted) return false;
   if (!activate) {
-    await saveProgramAs(p, meta['name'] ?? p.displayTitle.split(' · ').first);
+    final name = meta['name'] ?? p.displayTitle.split(' · ').first;
+    if (!await confirmProgramOverwrite(context, name)) return false;
+    await saveProgramAs(p, name);
     return true;
   }
   if (!await askSaveCurrent(context)) return false;
@@ -138,7 +154,8 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
 const savedProgramsDir = 'ohjelmat';
 
 String _safeName(String s) {
-  final n = s.trim().replaceAll(RegExp(r'[^\w\-äöåÄÖÅ ]'), '').trim();
+  // Kaikki kirjaimet säilyvät (testi 16.11.: saamen á, č, đ, ŋ, š, ŧ, ž katosivat tiedostonimestä).
+  final n = s.trim().replaceAll(RegExp(r'[^\p{L}\p{N}_\- ]', unicode: true), '').trim();
   return n.isEmpty ? 'ohjelma' : n;
 }
 
@@ -177,14 +194,44 @@ Future<bool> askSaveCurrent(BuildContext context) async {
     ),
   );
   if (r == null || r == 'cancel') return false;
-  if (r == 'save') await saveProgramAs(cur, name.text);
+  if (r == 'save') {
+    if (!context.mounted || !await confirmProgramOverwrite(context, name.text)) return false;
+    await saveProgramAs(cur, name.text);
+  }
   return true;
 }
 
+/// Tallennetun ohjelman tiedostopolku nimelle.
+String savedProgramPath(String name) => '$savedProgramsDir/${_safeName(name)}.$templateExtension';
+
 /// Tallentaa ohjelman nimellä (koko ohjelma maksimeineen ja aloituspäivineen, jotta viikot jatkuvat).
 Future<void> saveProgramAs(Program p, String name) async {
-  final md = programToMarkdown(p).replaceFirst('---\n', '---\nname: ${name.trim()}\n');
-  await files.write('$savedProgramsDir/${_safeName(name)}.$templateExtension', md);
+  final md = programToMarkdown(p, name: name);
+  await files.write(savedProgramPath(name), md);
+}
+
+/// Kysyy, ennen kuin samanniminen tallennettu ohjelma korvataan (käyttäjä 15.11.: kysy). [keep]: polku, jonka
+/// saa korvata kysymättä (sama ohjelma, esim. nimen kirjainkoon muutos). false = ei tallenneta.
+Future<bool> confirmProgramOverwrite(BuildContext context, String name, {String? keep}) async {
+  final target = savedProgramPath(name);
+  if (target.toLowerCase() == keep?.toLowerCase() || !await files.exists(target)) return true;
+  if (!context.mounted) return false;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(t('Korvataanko ohjelma?')),
+      content: Text(t('Nimellä ”{0}” on jo tallennettu ohjelma. Se korvataan tällä.', [name.trim()])),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+        FilledButton(
+          key: const ValueKey('overwriteProgram'),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(t('Korvaa')),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
 }
 
 /// Tallennetut ohjelmat: (polku, nimi, ohjelma).

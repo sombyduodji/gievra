@@ -157,15 +157,24 @@ class _RecordScreenState extends State<RecordScreen> {
     Navigator.of(context).pop(r);
   }
 
+  bool _leaving = false;
+
+  /// Hylkää ja poistuu. Tuplanapautus tai -Takaisin ei saa sulkea kahta näkymää (alla oleva liikuntanäkymä
+  /// sulkeutuisi kysymättä).
+  Future<void> _discardAndLeave() async {
+    if (_leaving) return;
+    _leaving = true;
+    await _hrDrop();
+    await rec.discard();
+    if (mounted) Navigator.of(context).pop();
+  }
+
   /// Takaisin-painike tai Lopeta: tallennetaanko, hylätäänkö vai jatketaanko.
   Future<void> _askStop() async {
     // Takaisin laskennan aikana: vain laskenta perutaan, GPS jää etsimään.
     if (_count != null) return _cancelCountdown();
     if (rec.state == RecState.idle || rec.state == RecState.searching) {
-      await _hrDrop();
-      await rec.discard();
-      if (mounted) Navigator.of(context).pop();
-      return;
+      return _discardAndLeave();
     }
     // Kello pysähtyy, kun Lopeta painetaan; Jatka jatkaa siitä.
     final wasRecording = rec.state == RecState.recording;
@@ -268,11 +277,7 @@ class _RecordScreenState extends State<RecordScreen> {
             const SizedBox(height: 8),
             TextButton(
               key: const ValueKey('gpsDiscard'),
-              onPressed: () async {
-                await _hrDrop();
-                await rec.discard();
-                if (mounted) Navigator.of(context).pop();
-              },
+              onPressed: _discardAndLeave,
               child: Text(t('Hylkää keskeneräinen reitti')),
             ),
           ],

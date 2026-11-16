@@ -31,6 +31,7 @@ class MainActivity : FlutterActivity() {
     private var saveSource: String? = null
 
     override fun onDestroy() {
+        if (live?.get() === this) live = null
         scope.cancel()
         super.onDestroy()
     }
@@ -61,16 +62,75 @@ class MainActivity : FlutterActivity() {
     }
 
     companion object {
+        /// Käynnissä oleva MainActivity (toisen käynnistyksen vartija, ks. onCreate).
+        private var live: java.lang.ref.WeakReference<MainActivity>? = null
         private const val HEALTH_REQUEST = 4711
         private const val SAVE_REQUEST = 4712
+
+        /// OpenFileActivityn välittämä alkuperäinen VIEW/SEND-aikomus (itse aikomus on MAIN + LAUNCHER).
+        const val EXTRA_OPEN = "fi.somby.gievra.OPEN"
     }
     private var pendingIntent: Intent? = null
+
+    /// Näkymä palautettiin tallennetusta tilasta (prosessi tapettu taustalla): käynnistysaikomuksen tiedostoa ei
+    /// avata toista kertaa.
+    private var restored = false
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        restored = savedInstanceState != null
+        // Toinen Gievra samaan aikaan (käyttäjä 16.11.: vartija): vanhojen versioiden Viimeisimmät-kortti (pohja-aikomus
+        // VIEW/SEND) tai muu reitti käynnistää toisen MainActivityn ja toisen Flutter-moottorin samoihin tiedostoihin.
+        // Käynnissä oleva tuodaan esiin ja tämä suljetaan heti: finish() onCreatessa ohittaa onStartin, joten Dart-koodi
+        // ei käynnisty tässä toisessa moottorissa lainkaan.
+        val other = live?.get()
+        if (other != null && other !== this && !other.isFinishing && !other.isDestroyed) {
+            super.onCreate(savedInstanceState)
+            handOverTo(other)
+            finish()
+            return
+        }
+        live = java.lang.ref.WeakReference(this)
+        super.onCreate(savedInstanceState)
+    }
+
+    /// Tuo käynnissä olevan Gievran tehtävän eteen; uusi tiedosto (ei historiasta) välitetään sille.
+    private fun handOverTo(other: MainActivity) {
+        // Juuri käynnissä olevan Gievran tehtävä eteen (tarkka tehtävä: Viimeisimmissä voi olla vanhoja Gievra-kortteja,
+        // joihin käynnistimen aikomus voisi osua).
+        try {
+            val am = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+            val task = am.appTasks.firstOrNull { t ->
+                val info = t.taskInfo ?: return@firstOrNull false
+                val id = if (Build.VERSION.SDK_INT >= 29) info.taskId else @Suppress("DEPRECATION") info.persistentId
+                id == other.taskId
+            }
+            android.util.Log.i("Gievra", "toinen MainActivity: tehtävä ${other.taskId} eteen (${task != null})")
+            task?.moveToFront()
+        } catch (e: Exception) {
+            android.util.Log.w("Gievra", "toinen MainActivity: eteen tuonti epäonnistui", e)
+        }
+        val i = intent ?: return
+        if (i.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
+        if (i.action == Intent.ACTION_VIEW || i.action == Intent.ACTION_SEND || i.hasExtra(EXTRA_OPEN)) {
+            other.onNewIntent(i)
+        }
+    }
+
+    /// Avattavan tiedoston aikomus: OpenFileActivityn välittämä alkuperäinen tai (vanha tapa) suora VIEW/SEND.
+    /// Viimeisimmät-näkymästä uudelleen käynnistetty tehtävä saa saman pohja-aikomuksen toiseen kertaan
+    /// (LAUNCHED_FROM_HISTORY): sitä ei avata uudelleen (testikierros 16.11.: tuonnin esikatselu palasi).
+    private fun openIntent(intent: Intent?): Intent? {
+        if (intent == null) return null
+        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return null
+        @Suppress("DEPRECATION")
+        return intent.getParcelableExtra<Intent>(EXTRA_OPEN) ?: intent
+    }
 
     /// Avattu tai jaettu tiedosto ("Avaa sovelluksella", "Jaa → Gievra"). Tiedosto kopioidaan välimuistiin ja Dart saa
     /// polun ja nimen; tyypin tunnistaa sama koodi kuin Tuo tiedosto -painikkeessa (FitNotes, zip, csv, .md, .gmd).
     /// Jaettu pelkkä teksti välitetään tekstinä. Vain content://. Yli 500 Mt:n kopiointi lopetetaan (Dart ilmoittaa).
-    private fun fileFromIntent(intent: Intent?): Map<String, Any?>? {
-        if (intent == null) return null
+    private fun fileFromIntent(launch: Intent?): Map<String, Any?>? {
+        val intent = openIntent(launch) ?: return null
         val uri: Uri? = when (intent.action) {
             Intent.ACTION_VIEW -> intent.data
             Intent.ACTION_SEND -> {
@@ -85,14 +145,20 @@ class MainActivity : FlutterActivity() {
         }
         // Vain content://: file://-osoitteella toinen sovellus voisi saada Gievran (kaikkien tiedostojen lupa)
         // lukemaan tiedoston, johon sillä itsellään ei ole oikeutta.
-        if (uri.scheme != "content") return null
+        // Tiedosto, jota ei voi lukea: Dart näyttää ilmoituksen (aiemmin etusivu aukesi ilman selitystä).
+        val failed = mapOf<String, Any?>("error" to true)
+        if (uri.scheme != "content") return failed
         return try {
             var name: String? = null
             contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
                 if (c.moveToFirst() && !c.isNull(0)) name = c.getString(0)
             }
-            val dir = File(cacheDir, "opened").apply { deleteRecursively(); mkdirs() }
-            val out = File(dir, "file")
+            // Oma tiedosto joka avaukselle: nopea toinen avaus ei poista tai korvaa tiedostoa, jota Dart vielä lukee
+            // (yötesti 16.11.). Yli 10 min vanhat edelliset avaukset siivotaan.
+            val dir = File(cacheDir, "opened").apply { mkdirs() }
+            val old = System.currentTimeMillis() - 10 * 60 * 1000
+            dir.listFiles()?.forEach { if (it.lastModified() < old) it.deleteRecursively() }
+            val out = File(dir, "file-${System.nanoTime()}")
             val limit = 500L * 1024 * 1024
             var size = 0L
             contentResolver.openInputStream(uri)?.use { input ->
@@ -105,10 +171,10 @@ class MainActivity : FlutterActivity() {
                         size += n
                     }
                 }
-            } ?: return null
+            } ?: return failed
             mapOf("path" to out.path, "name" to (name ?: ""), "tooLarge" to (size > limit))
         } catch (e: Exception) {
-            null
+            failed
         }
     }
 
@@ -146,6 +212,11 @@ class MainActivity : FlutterActivity() {
             val o = contentResolver.openOutputStream(uri, "wt") ?: return mapOf("saved" to false, "verified" to false)
             o.use { out -> src.inputStream().use { digest(it, out) } }
         } catch (e: Exception) {
+            // Valitsin loi jo tyhjän tiedoston: poistetaan se, ettei jäljelle jää 0 tavun "varmuuskopiota".
+            try {
+                android.provider.DocumentsContract.deleteDocument(contentResolver, uri)
+            } catch (_: Exception) {
+            }
             return mapOf("saved" to false, "verified" to false)
         }
         val back = try {
@@ -167,7 +238,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        pendingIntent = intent
+        pendingIntent = if (restored) null else intent
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/sqlite").setMethodCallHandler(SqliteBridge())
         openChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/open").also { ch ->
             ch.setMethodCallHandler { call, result ->

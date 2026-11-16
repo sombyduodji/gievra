@@ -47,6 +47,12 @@ class _IntroScreenState extends State<IntroScreen> {
 
   static const _lifts = ['Takakyykky', 'Penkkipunnerrus', 'Maastaveto'];
 
+  @override
+  void dispose() {
+    _page.dispose();
+    super.dispose();
+  }
+
   bool get _pl => _goal == 'voimanosto';
 
   /// Voimanoston kilpaliikkeiden maksimit esitäytetään historiasta vain tankovoimanostossa.

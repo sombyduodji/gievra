@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, MethodChannel, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:treenipaivakirja/ui/program_view.dart' show WeeklyLoadCard;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:treenipaivakirja/anim/cue_lang.dart';
 import 'package:treenipaivakirja/app_state.dart';
@@ -282,7 +283,11 @@ void main() {
             if (step == 2) await _tapText(tester, t(goal));
             // Kokemus on vammakysymyksen jälkeen (sivu 4); haetaan tekstillä.
             if (exp != null && find.text(t(exp)).hitTestable().evaluate().isNotEmpty) await _tapText(tester, t(exp));
-            if (days != null && find.text(days).hitTestable().evaluate().isNotEmpty && step >= 5) {
+            // Ohjelman yhteenvedossa luvut (esim. viikon kuorman alarivi "2") eivät ole päivävalintoja.
+            if (days != null &&
+                find.byType(WeeklyLoadCard).evaluate().isEmpty &&
+                find.text(days).hitTestable().evaluate().isNotEmpty &&
+                step >= 5) {
               await _tapText(tester, days);
               if (minutes != null) await _tapText(tester, minutes);
               if (reps != null) await _tapText(tester, t(reps));

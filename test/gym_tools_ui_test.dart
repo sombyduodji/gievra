@@ -269,6 +269,43 @@ void main() {
     expect(find.text('Levyt / puoli: 25 + 5 + 1,25'), findsOneWidget, reason: '82,5 kg valittu');
   });
 
+  testWidgets('Pudotussarja painoporrasta kevyemmällä painolla tallentuu kerran eikä kaadu', (tester) async {
+    // Testikierros 15.11.: 1 kg + Pudotus heitti virheen (clamp(0, negatiivinen)); tallennus näytti kuolleelta
+    // ja jokainen napautus lisäsi piilossa uuden sarjan.
+    SetLoggerScreen.repeatGuard = Duration.zero;
+    addTearDown(() => SetLoggerScreen.repeatGuard = const Duration(milliseconds: 600));
+    await tall(tester);
+    final e = await logger(tester, 'Penkkipunnerrus', sets: [SetEntry(1, 5, rir: 1)]);
+    await tester.tap(find.text('Pudotus'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Ei yhtään'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(e.sets.length, 2);
+    expect(e.sets.last.kind, dropSet);
+  });
+
+  testWidgets('Pudotus ei korvaa itse muutettua painoa (yötesti 16.11.)', (tester) async {
+    // OnePlus: paino 1 kg ja sitten Pudotus → 15 kg (−20 % edellisestä). Itse syötetty paino säilyy.
+    SetLoggerScreen.repeatGuard = Duration.zero;
+    addTearDown(() => SetLoggerScreen.repeatGuard = const Duration(milliseconds: 600));
+    await tall(tester);
+    final e = await logger(tester, 'Penkkipunnerrus', sets: [SetEntry(100, 5, rir: 1)]);
+    await tester.tap(find.byIcon(Icons.remove).first);
+    await tester.pump();
+    await tester.tap(find.text('Pudotus'));
+    await tester.pump();
+    await tester.tap(find.text('Ei yhtään'));
+    await tester.pump();
+    expect(e.sets.last.kind, dropSet);
+    expect(e.sets.last.kg, 97.5, reason: 'itse vähennetty 100 → 97,5, ei 80');
+    // Tallennuksen jälkeen pudotus jatkuu tavalliseen tapaan −20 %:lla.
+    await tester.tap(find.text('Ei yhtään'));
+    await tester.pump();
+    expect(e.sets.last.kg, 77.5);
+  });
+
   testWidgets('Pudotussarja: −20 % valmiiksi, AMRAP tallentuu ilman varaa ja palaa tavalliseen', (tester) async {
     // Sarjat peräkkäin heti: ohitetaan vahinkotoiston esto (oma testinsä alla).
     SetLoggerScreen.repeatGuard = Duration.zero;
@@ -324,6 +361,43 @@ void main() {
     await tester.pump();
     expect(e.sets, hasLength(2), reason: '1 s jälkeen tavallinen tallennus');
     rest.stop();
+  });
+
+  testWidgets('Ohita-tuplanapautus ei avaa alla olevan sarjan korjausta (yötesti 16.11.)', (tester) async {
+    var now = DateTime(2026, 11, 16, 12);
+    final old = RestTimer.clock;
+    RestTimer.clock = () => now;
+    addTearDown(() {
+      RestTimer.clock = old;
+      rest.stop();
+      rest.closedAt = null;
+    });
+    await tall(tester);
+    await logger(tester, 'Penkkipunnerrus', sets: [SetEntry(100, 5, rir: 1)]);
+    rest.start(90, 'Penkkipunnerrus');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Ohita palautus'));
+    await tester.pump();
+    await tester.tap(find.textContaining('100 kg × 5').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Korjaa sarja 1'), findsNothing, reason: 'napautus heti palkin sulkeuduttua');
+    now = now.add(const Duration(milliseconds: 1100));
+    await tester.tap(find.textContaining('100 kg × 5').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Korjaa sarja 1'), findsOneWidget);
+  });
+
+  testWidgets('Vain kehonpainolla tehtävä liike alkaa lisäpainosta 0 (yötesti 16.11.)', (tester) async {
+    await tall(tester);
+    final e = await logger(tester, 'Leuanveto');
+    await tester.tap(find.text('Muutama'));
+    await tester.pump();
+    expect(e.sets.single.kg, 0);
+    await tester.pumpWidget(const SizedBox()); // uusi näkymä (ei samaa tilaa ja tuplanapautussuojaa)
+    final p = await logger(tester, 'Penkkipunnerrus');
+    await tester.tap(find.text('Muutama'));
+    await tester.pump();
+    expect(p.sets.single.kg, 20, reason: 'tankoliike ennallaan');
   });
 
   testWidgets('Tuplanapautus tallentaa sarjan kerran (vahinkotoisto)', (tester) async {

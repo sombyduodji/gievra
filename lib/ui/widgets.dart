@@ -644,7 +644,11 @@ class BarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => bigText(context)
-      ? FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: child)
+      // Pieni väli oikeaan reunaan: pitkä otsikko ei osu näytön reunaan (testikierros 16.11., saame).
+      ? Padding(
+          padding: const EdgeInsetsDirectional.only(end: 8),
+          child: FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: child),
+        )
       : child;
 }
 
@@ -680,7 +684,12 @@ class TextSizePicker extends StatelessWidget {
   Widget build(BuildContext context) => SegmentedButton<String>(
     key: const ValueKey('textSize'),
     showSelectedIcon: false,
-    style: const ButtonStyle(padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4, vertical: 8))),
+    // Kulmikkaampi muoto ja reilumpi reunus: suurella tekstillä pyöreät päädyt leikkasivat sanan (testikierros 16.11.:
+    // saame, fontti 1,3: "Stuoris" alareunasta, "Dábálaš" reunoissa kiinni).
+    style: const ButtonStyle(
+      padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 8, vertical: 10)),
+      shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14)))),
+    ),
     segments: [
       for (final (v, l) in [('small', t('Pieni')), ('normal', t('Normaali')), ('large', t('Suuri'))])
         ButtonSegment(
@@ -874,4 +883,37 @@ class FitLabel extends StatelessWidget {
       child: Text(big ? text.split(' ').join('\n') : text, style: style, textAlign: TextAlign.center, softWrap: false),
     );
   }
+}
+
+/// Teksti, jonka pisin sana mahtuu aina riville: fontti pienenee, ettei sana katkea kesken (saame, suuri teksti:
+/// "Áigemihti/deapmi", "viehkanmátt/u"; yötesti 16.11.). Rivittyy edelleen sanojen välistä. [width] = käytettävissä
+/// oleva leveys (annetaan ulkopuolelta, koska IntrinsicHeight ei salli LayoutBuilderia).
+class WordFitText extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+  final double width;
+  final TextAlign textAlign;
+  const WordFitText(this.text, {super.key, required this.style, required this.width, this.textAlign = TextAlign.start});
+
+  /// Tyyli, jolla pisin sana mahtuu leveyteen [width].
+  static TextStyle fitted(BuildContext context, String text, TextStyle style, double width) {
+    final st = DefaultTextStyle.of(context).style.merge(style);
+    if (!width.isFinite || width <= 0 || st.fontSize == null) return st;
+    var widest = 0.0;
+    for (final w in text.split(RegExp(r'\s+'))) {
+      if (w.isEmpty) continue;
+      final tp = TextPainter(
+        text: TextSpan(text: w, style: st),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      widest = math.max(widest, tp.width);
+      tp.dispose();
+    }
+    return widest > width ? st.copyWith(fontSize: st.fontSize! * width / widest * 0.98) : st;
+  }
+
+  @override
+  Widget build(BuildContext context) => Text(text, style: fitted(context, text, style, width), textAlign: textAlign);
 }

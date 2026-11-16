@@ -46,6 +46,7 @@ const Map<String, List<String>> exerciseCatalog = {
   ],
   'Rinta': [
     'Vinopenkki',
+    'Vinopenkki tauolla',
     'Käsipainopenkki',
     'Vinokäsipainopenkki',
     'Kaapeliristikkäis',
@@ -97,6 +98,7 @@ const Map<String, List<String>> exerciseCatalog = {
     'Ojentajapunnerrus taljassa',
     'Ranskalainen punnerrus',
     'Kapea penkki',
+    'Kapea taukopenkki',
     'Ojentajapunnerrus pään yli',
     'Penkkidipit',
     'Ranteen koukistus',
@@ -234,6 +236,7 @@ const exerciseEquipment = <String, Set<Equip>>{
   'Pistoolikyykky': {_bw},
   'Lantionnosto': {_bw, _kb},
   'Vinopenkki': {_t},
+  'Vinopenkki tauolla': {_t},
   'Käsipainopenkki': {_k},
   'Vinokäsipainopenkki': {_k},
   'Kaapeliristikkäis': {_ta},
@@ -279,6 +282,7 @@ const exerciseEquipment = <String, Set<Equip>>{
   'Ojentajapunnerrus taljassa': {_ta},
   'Ranskalainen punnerrus': {_t, _k},
   'Kapea penkki': {_t},
+  'Kapea taukopenkki': {_t},
   'Ojentajapunnerrus pään yli': {_k, _ta, _kb},
   'Penkkidipit': {_bw},
   'Ranteen koukistus': {_t, _k},
@@ -616,7 +620,7 @@ String _plain(String exercise, SetEntry s, double kg, String unit) {
 
 // Pudotussarjan jatko nuolella, AMRAP merkittynä.
 String _withKind(SetEntry s, String base) => switch (s.kind) {
-  dropSet => '↘ $base',
+  dropSet => '↓ $base', // ↓ ei ole emoji (↘ piirtyi Samsungilla sinisenä emojina myös FE0E:n kanssa)
   amrapSet => '$base AMRAP',
   _ => base,
 };
@@ -657,6 +661,8 @@ bool unitOnce(String exercise, Iterable<SetEntry> sets) =>
 
 /// Hakusanat: arkikieli ja englanti (FitNotes / netti), jotta "lankutus" tai "plank" löytää Lankun.
 const _aliases = {
+  'Vinopenkki tauolla': ['paused incline', 'incline paused', 'vino tauko', 'vinotaukopenkki'],
+  'Kapea taukopenkki': ['close grip paused', 'paused close grip', 'kapea tauko', 'pysäytys'],
   'Lankku': ['lankutus', 'plank'],
   'Kylkilankku': ['sivulankku', 'side plank'],
   'Takakyykky': ['kyykky', 'squat', 'back squat'],
@@ -758,6 +764,10 @@ const categoryNames = [
 ];
 
 /// Kategoriat omalle liikkeelle.
+/// Omien liikkeiden lihakset (asetukset.md "## Omien liikkeiden lihakset" + kategorian oletus), viikon kuormaa varten.
+/// Asetukset päivittävät tämän; viikon kuorma lukee sen (loadOf).
+final customExerciseMuscles = <String, List<String>>{};
+
 const exerciseCategories = ['Jalat', 'Rinta', 'Selkä', 'Olkapäät', 'Kädet', 'Keskivartalo', 'Kardio', 'Koko keho'];
 
 BodyGroup bodyGroupOf(String exercise) {

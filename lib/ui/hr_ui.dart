@@ -760,7 +760,12 @@ class _ProfileSheetState extends State<_ProfileSheet> {
               key: const ValueKey('birthYear'),
               controller: _year,
               keyboardType: TextInputType.number,
-              decoration: dec(t('Syntymävuosi'), null),
+              // Tallenna on pois käytöstä väärällä vuodella: näytetään sallittu väli (kuten maksimisykkeessä).
+              decoration: dec(t('Syntymävuosi'), null).copyWith(
+                errorText: _year.text.trim().isNotEmpty && _y == null
+                    ? '${DateTime.now().year - 100}–${DateTime.now().year - 10}'
+                    : null,
+              ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 10),

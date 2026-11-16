@@ -25,10 +25,10 @@ import 'program.dart';
 bool isCompound(String exercise) => slots.values.any((s) => s.compound && s.defaults.contains(exercise));
 
 /// Paras arvioitu maksimi (e1RM) ennen päivää, työsarjoista.
-double bestE1rmBefore(String exercise, DateTime date) {
+double bestE1rmBefore(String exercise, DateTime date, [int session = 1]) {
   var best = 0.0;
   for (final w in store.workouts) {
-    if (!w.date.isBefore(date)) continue;
+    if (!earlierThan(w, date, session)) continue;
     for (final e in w.exercises) {
       if (e.name != exercise) continue;
       for (final s in e.workSets) {
@@ -269,7 +269,12 @@ class RestTimer extends ChangeNotifier {
   /// napautus osui alla olevaan painikkeeseen (testikierros 15.11., käyttäjä: 1 s).
   DateTime? closedAt;
   static const tapGuard = Duration(seconds: 1);
-  bool get justClosed => closedAt != null && clock().difference(closedAt!) < tapGuard;
+  bool get justClosed {
+    final c = closedAt;
+    if (c == null) return false;
+    final d = clock().difference(c);
+    return d >= Duration.zero && d < tapGuard; // kello taaksepäin: ei suojaa (muuten napautukset nieltäisiin)
+  }
 
   void _finish({bool over = false}) {
     if (_end != null) closedAt = clock();

@@ -32,6 +32,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
       ? null
       : suggestDay(settings.program!, store.workouts, widget.date);
   late PlanDay? _day = _sugg?.$1;
+  Set<String> get _todayMuscles => musclesTrainedToday(store.workouts, _date);
   final _newEq = TextEditingController();
 
   @override
@@ -204,12 +205,21 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                     ),
                   ],
                 ),
-                if (_sugg?.$2 != null)
+                if (_sugg?.$2 != null && _day != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text('💡 ${_sugg!.$2}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                   ),
               ],
+              // Vapaa treeni (tai ei ohjelmaa): samana päivänä jo kuormittuneet lihakset (käyttäjä 16.11.).
+              if (_day == null && _todayMuscles.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '💡 ${t('Tänään kuormittui jo {0}. Jos treenaat vielä, jätä enemmän varaa.', [_todayMuscles.map(t).join(', ')])}',
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                ),
               const SizedBox(height: 22),
               Text(t('Lisätäänkö lämmittely?'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 10),

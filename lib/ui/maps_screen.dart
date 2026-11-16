@@ -47,8 +47,9 @@ class MapsScreen extends StatefulWidget {
   final String? sport;
 
   /// Avautuva välilehti (2 = ladatut, esim. vanhojen korkeustiedostojen päivitys).
-  final int initialTab;
-  const MapsScreen({super.key, this.sport, this.initialTab = 0});
+  /// Aloitusvälilehti; null = Ladatut, jos karttoja on jo, muuten Verkosta (käyttäjä 16.11.).
+  final int? initialTab;
+  const MapsScreen({super.key, this.sport, this.initialTab});
 
   @override
   State<MapsScreen> createState() => _MapsScreenState();
@@ -71,7 +72,10 @@ class _MapsScreenState extends State<MapsScreen> {
   static Widget _oneLine(String s) => FittedBox(fit: BoxFit.scaleDown, child: Text(s, maxLines: 1, softWrap: false));
 
   /// Välilehti: 0 = lataa verkosta, 1 = tuo tiedostosta, 2 = ladatut kartat.
-  late int _tab = widget.initialTab;
+  late int _tab = widget.initialTab ?? 2;
+
+  /// Verkon karttaluettelo haettu tällä avauksella (haetaan vasta Verkosta-välilehdellä, ei turhaa yhteyttä).
+  bool _fetched = false;
   List<MapPack> _outdated = const [];
 
   @override
@@ -92,9 +96,19 @@ class _MapsScreenState extends State<MapsScreen> {
   }
 
   Future<void> _init() async {
-    final err = await store.load(refresh: true);
-    final loc = await lastLocation();
-    _used = await store.usedBytes();
+    // Virhe sijainnin tai tilan luvussa ei saa jättää latauskiekkoa pyörimään.
+    String? err;
+    (double, double)? loc;
+    try {
+      // Ladatut ensin, kun karttoja on jo: ei verkkoyhteyttä ennen kuin Verkosta-välilehti avataan (käyttäjä 16.11.).
+      if (widget.initialTab == null && (await store.installedFiles()).isEmpty && mounted) setState(() => _tab = 0);
+      err = await store.load(refresh: true, network: _tab == 0);
+      if (_tab == 0) _fetched = true;
+      loc = await lastLocation();
+      _used = await store.usedBytes();
+    } catch (e) {
+      err ??= errorText(e);
+    }
     if (!mounted) return;
     setState(() {
       _loading = false;
@@ -145,12 +159,32 @@ class _MapsScreenState extends State<MapsScreen> {
   /// Sijainti kerran GPS:llä (enintään minuutti); ei tallennusta.
   Future<void> _locate() async {
     final st = await Permission.locationWhenInUse.request();
-    if (!st.isGranted || !mounted) return;
+    if (!mounted) return;
+    if (!st.isGranted) {
+      // Lupa evätty (toisella kerralla pysyvästi: Android ei enää kysy): ei hiljaista umpikujaa (yötesti 16.11.).
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('Sijaintilupaa ei annettu. Valitse kunnat listasta.')),
+          action: st.isPermanentlyDenied
+              ? SnackBarAction(label: t('Avaa sovelluksen luvat'), onPressed: openAppSettings)
+              : null,
+          persist: false,
+        ),
+      );
+      return;
+    }
     setState(() => _locating = true);
     final src = AndroidGpsSource();
     // Kesken jäänyt tai käynnissä oleva reitin tallennus: käytetään sen paikannuksia, eikä palvelua pysäytetä
     // tai tallennettuja paikannuksia poisteta.
-    final recording = await GpsRecorder.pendingSport() != null || await src.running();
+    final bool recording;
+    try {
+      recording = await GpsRecorder.pendingSport() != null || await src.running();
+    } catch (_) {
+      // Virhe tilan kyselyssä ei saa jättää painiketta pysyvästi "haetaan"-tilaan.
+      if (mounted) setState(() => _locating = false);
+      return;
+    }
     final done = Completer<(double, double)?>();
     final sub = src.events.listen((e) {
       final f = fixFromEvent(e);
@@ -222,6 +256,10 @@ class _MapsScreenState extends State<MapsScreen> {
         content: Text(
           failed.isEmpty
               ? t('Kartat ladattu.')
+              // Kaikki epäonnistuivat (esim. ei verkkoa): ei lukua, joka sisältäisi myös yleiskartan ja korkeustiedot
+              // ("3 karttaa", vaikka valittu yksi kunta; testikierros 16.11.).
+              : failed.length >= packs.length
+              ? t('Karttoja ei voitu ladata: {0}', [failed.first.error])
               : t('{0} karttaa ei voitu ladata: {1}', [failed.length, failed.first.error]),
         ),
       ),
@@ -237,15 +275,16 @@ class _MapsScreenState extends State<MapsScreen> {
     if (files.isEmpty || !mounted) return;
     setState(() => _importing = true);
     final progress = ValueNotifier<MapImportProgress?>(null);
-    final nav = Navigator.of(context);
+    final nav = Navigator.of(context, rootNavigator: true);
     var progressOpen = true;
-    unawaited(
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => PopScope(canPop: false, child: _ImportProgressDialog(progress)),
-      ).whenComplete(() => progressOpen = false),
+    // Oma reitti talteen: lopuksi suljetaan juuri tämä ikkuna (removeRoute), ei päällimmäistä näkymää. Ennen
+    // pop() sulki kesken tuonnin avatun toisen näkymän, ja tämä ikkuna jäi pysyvästi auki (ei Takaisin-painiketta).
+    final route = DialogRoute<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(canPop: false, child: _ImportProgressDialog(progress)),
     );
+    unawaited(nav.push(route).whenComplete(() => progressOpen = false));
     MapImportResult? r;
     String? err;
     try {
@@ -258,7 +297,7 @@ class _MapsScreenState extends State<MapsScreen> {
     } catch (e) {
       err = t('Karttapakettia ei voitu tuoda: {0}', [errorText(e)]);
     }
-    if (progressOpen) nav.pop();
+    if (progressOpen) nav.removeRoute(route);
     progress.dispose();
     if (!mounted) return;
     setState(() {
@@ -442,6 +481,7 @@ class _MapsScreenState extends State<MapsScreen> {
               onSelectionChanged: (v) {
                 setState(() => _tab = v.first);
                 if (_tab == 2) _refreshInstalled();
+                if (_tab == 0 && !_fetched) _fetchOnline();
               },
             ),
           ),
@@ -599,21 +639,6 @@ class _MapsScreenState extends State<MapsScreen> {
                                   child: Text(t('Lataa')),
                                 ),
                         ),
-                      if (_selected.isNotEmpty)
-                        FilledButton(
-                          onPressed: busy
-                              ? null
-                              : () => _download([
-                                  for (final x in store.allPacks)
-                                    if (_selected.contains(x.file)) x,
-                                ]),
-                          child: Text(
-                            t('Lataa valitut ({0}) · {1}', [
-                              _selected.length,
-                              _sizeText(store.allPacks.where((x) => _selected.contains(x.file))),
-                            ]),
-                          ),
-                        ),
                       const Divider(height: 32),
                       Text(t('Ladattu: {0}', [fmtBytes(_used)])),
                       const SizedBox(height: 4),
@@ -644,6 +669,29 @@ class _MapsScreenState extends State<MapsScreen> {
                     ],
                   ),
           ),
+          // Valittujen lataus aina näkyvissä alareunassa (testikierros 16.11.: painike oli pitkän kuntaluettelon alla).
+          if (_tab == 0 && c != null && _selected.isNotEmpty)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 10),
+                child: FilledButton(
+                  key: const ValueKey('downloadSelected'),
+                  onPressed: busy
+                      ? null
+                      : () => _download([
+                          for (final x in store.allPacks)
+                            if (_selected.contains(x.file)) x,
+                        ]),
+                  child: Text(
+                    t('Lataa valitut ({0}) · {1}', [
+                      _selected.length,
+                      _sizeText(store.allPacks.where((x) => _selected.contains(x.file))),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -671,6 +719,23 @@ class _MapsScreenState extends State<MapsScreen> {
     ),
   );
 
+  /// Verkosta-välilehti ensimmäistä kertaa: luettelo verkosta (tallennettu näkyy heti, päivitys taustalla).
+  Future<void> _fetchOnline() async {
+    _fetched = true;
+    setState(() => _loading = store.catalog == null);
+    String? err;
+    try {
+      err = await store.load(refresh: true);
+    } catch (e) {
+      err = errorText(e);
+    }
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _error = store.catalog == null ? (err ?? '') : null;
+    });
+  }
+
   List<(String, int)> _files = const [];
 
   Future<void> _refreshInstalled() async {
@@ -697,6 +762,9 @@ class _MapsScreenState extends State<MapsScreen> {
       if (c.all?.file == f) return c.country == 'fi' ? t('Koko Suomi') : t('Koko maa: {0}', [c.label(uiLang)]);
       final x = c.packs.where((x) => x.file == f).firstOrNull;
       if (x != null) return _withCountry(x.label(uiLang), c.country);
+      // Korkeustiedot alueen nimellä (testikierros 16.11.: näkyi tiedostonimenä "eckero.elev").
+      final e = c.packs.where((x) => x.elev?.file == f).firstOrNull;
+      if (e != null) return t('{0}: korkeustiedot', [_withCountry(e.label(uiLang), c.country)]);
     }
     return f == 'yleiskartta.pmtiles' ? t('Yleiskartta') : (f == 'suomi.pmtiles' ? t('Koko Suomi') : f);
   }

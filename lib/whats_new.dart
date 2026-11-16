@@ -13,6 +13,36 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.7.2',
+    Icons.swap_horiz,
+    'Tämä tai tuo -liikkeet',
+    'Ohjelman liikkeelle voi lisätä vaihtoehtoja (esim. penkki tai taukopenkki). Treenissä valitset, minkä teet tänään; jokaisella oma historia ja painoehdotus.',
+  ),
+  NewFeature(
+    '0.6.7.2',
+    Icons.drag_indicator,
+    'Ohjelman muokkaus',
+    'Liikkeiden järjestys vetämällä tai Siirrä ylös / alas, ja päiviä voi lisätä ja poistaa. Ohjelman ja treenin voi jakaa kuvana (WhatsApp ym.).',
+  ),
+  NewFeature(
+    '0.6.7.2',
+    Icons.bar_chart,
+    'Tarkempi viikon kuorma',
+    'Olkapää ja selkä osineen, käsivarret ja jalat ryhminä, pohkeet, kyynärvarret, lähentäjät ja keskivartalo omina riveinään.',
+  ),
+  NewFeature(
+    '0.6.7.2',
+    Icons.play_circle_outline,
+    'Liikeohje liikettä valitessa',
+    'Liikevalitsimen ▶ näyttää animaation ja vinkit ennen valintaa. Uudet liikkeet: kapea taukopenkki ja vinopenkki tauolla.',
+  ),
+  NewFeature(
+    '0.6.7.2',
+    Icons.lightbulb_outline,
+    'Omat liikkeet',
+    'Omalle liikkeelle valitaan lihakset, jolloin se näkyy viikon kuormassa. Liikkeen voi ehdottaa Gievraan (💡) ja poistaa pitkällä painalluksella.',
+  ),
+  NewFeature(
     '0.6.7.1',
     Icons.pool,
     'Uinnin vauhti 100 metrille',

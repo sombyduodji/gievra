@@ -63,7 +63,7 @@ void main() {
       expect(fmtSetsCompact('Farmer walk', [SetEntry(48, 2)]), '24 kg/käsi × 2 edestakaisin');
       expect(fmtSetsCompact('Farmer walk hex barilla', [SetEntry(100, 2)]), '100 kg × 2 edestakaisin');
       expect(kgUnit('Farmer walk hex barilla'), 'kg');
-      expect(fmtSetsCompact('Takakyykky', [SetEntry(100, 5), SetEntry(80, 8, kind: dropSet)]), '100 × 5 · ↘ 80 × 8');
+      expect(fmtSetsCompact('Takakyykky', [SetEntry(100, 5), SetEntry(80, 8, kind: dropSet)]), '100 × 5 · ↓ 80 × 8');
       expect(unitOnce('Penkkipunnerrus', [SetEntry(0, 10)]), isFalse);
       expect(unitOnce('Farmer walk hex barilla', [SetEntry(60, 2)]), isFalse);
       expect(fmtSetsCompact('Farmer walk hex barilla', [SetEntry(60, 2)]), '60 kg × 2 edestakaisin');
@@ -129,7 +129,10 @@ void main() {
           for (final r in l)
             if (guessPerDumbbell(r, ws)) r,
       };
-      expect(await applyDumbbellReview(rows, per), 3);
+      final applied = <DumbbellRow>{};
+      expect(await applyDumbbellReview(rows, per, applied: applied), 3);
+      // Uusi yritys (esim. tallennusvirheen jälkeen) ei kerro samoja painoja toiseen kertaan (yötesti 16.11.).
+      expect(await applyDumbbellReview(rows, per, applied: applied), 3);
       expect(store.workouts.every((w) => !w.dumbbellReview), isTrue);
       List<double> kgs(int day, String ex) => store.workouts
           .firstWhere((w) => w.date.day == day)

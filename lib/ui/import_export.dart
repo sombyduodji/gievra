@@ -55,6 +55,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   void _snack(String t) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
 
   Future<void> _run(Future<void> Function() f) async {
+    // Nopea tuplanapautus ehtii ennen kuin rivit poistuvat käytöstä: toinen vienti poistaisi ensimmäisen
+    // väliaikaistiedoston, ja tallennus epäonnistuisi (jäljelle jäi 0 tavun tiedosto).
+    if (_busy) return;
     setState(() => _busy = true);
     try {
       await f();
@@ -191,7 +194,10 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     }
     // Oma täysi varmuuskopio korvaa sovelluksen automaattiset (backup/-kansio), kun se on varmasti kirjoitettu.
     await autoBackup.deleteAll();
-    if (mounted) _snack(t('Varmuuskopio tallennettu ({0} treeniä).', [store.workouts.length]));
+    if (mounted) {
+      final n = store.workouts.length;
+      _snack(n == 1 ? t('Varmuuskopio tallennettu (1 treeni).') : t('Varmuuskopio tallennettu ({0} treeniä).', [n]));
+    }
   });
 
   /// Luettava vienti (CSV) käyttäjän kielellä: käyttäjä valitsee, mitä jaetaan ja miltä ajalta.
@@ -324,7 +330,11 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                 Text(
                   files.isEmpty
                       ? t('Valitulla aikavälillä ei ole vietävää.')
-                      : files.map((f) => t('{0}: {1} riviä', [f.name, f.rows])).join('\n'),
+                      : files
+                            .map(
+                              (f) => f.rows == 1 ? t('{0}: 1 rivi', [f.name]) : t('{0}: {1} riviä', [f.name, f.rows]),
+                            )
+                            .join('\n'),
                   style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                 ),
               ],
@@ -412,11 +422,13 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) => AlertDialog(
           scrollable: true,
-          title: Text(t('Tuo: {0}', [r.source])),
+          title: Text(
+            t('Tuo: {0}', [r.source == '.md-tiedostot' ? t('.md-tiedostot') : r.source]),
+          ), // yötesti 16.11.: oli suomeksi
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _row(t('Treenipäiviä'), '${r.workouts.length}'),
+              _row(t('Treenejä'), '${r.workouts.length}'),
               if (r.sets > 0 || r.workouts.every((w) => w.activity == null)) _row(t('Sarjoja'), '${r.sets}'),
               if (r.workouts.any((w) => w.activity != null))
                 _row(
@@ -499,12 +511,16 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
               const SizedBox(height: 10),
               if (r.existing > 0)
                 Text(
-                  t('{0} päivää on jo päiväkirjassa. Niitä ei muuteta.', [r.existing]),
+                  r.existing == 1
+                      ? t('1 treeni on jo päiväkirjassa. Sitä ei muuteta.')
+                      : t('{0} treeniä on jo päiväkirjassa. Niitä ei muuteta.', [r.existing]),
                   style: TextStyle(color: cs.onSurfaceVariant),
                 ),
               Text(
                 newWeighIns > 0
                     ? t('Tuodaan {0} uutta treeniä ja {1} punnitusta.', [newCount, newWeighIns])
+                    : newCount == 1
+                    ? t('Tuodaan 1 uusi treeni.')
                     : t('Tuodaan {0} uutta treeniä.', [newCount]),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),

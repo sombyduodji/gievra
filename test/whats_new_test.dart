@@ -98,8 +98,14 @@ void main() {
     expect(find.text('Matkan ja ajan tarkistus'), findsOneWidget);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    // 0.6.7.2: tämä tai tuo -liikkeet ym. (käyttäjän valitsema numero, vaikka uusia ominaisuuksia).
     await run(tester, '0.6.7.2');
+    expect(find.text('Uutta versiossa 0.6.7.2'), findsOneWidget);
+    expect(find.text('Tämä tai tuo -liikkeet'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Versio ilman uusia ominaisuuksia: ei ikkunaa.
+    await run(tester, '0.6.7.3');
     expect(find.byType(AlertDialog), findsNothing);
   });
 

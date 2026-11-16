@@ -150,7 +150,10 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
                 children: [
                   SizedBox(
                     height: 40,
+                    // Välilehtien kanssa oikean reunan kuvake pysyy reunassa (testikierros 16.11.: ⓘ oli keskellä,
+                    // koska Spacer sai osan tilasta, jota valitsin ei käyttänyt): ylijäävä tila jaetaan väliin.
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (many)
                           Flexible(
@@ -180,34 +183,36 @@ class _HomeStatsCardState extends State<HomeStatsCard> {
                                 child: FittedBox(fit: BoxFit.scaleDown, child: widget.progressTrailing!),
                               ),
                             ),
-                          )
-                        else if (many)
-                          const Spacer(),
-                        if (side != 'progress') ...[
-                          // Askeleet: päivitys heti Health Connectista (esim. kun Oura tai kävelymatto on
-                          // synkronoinut).
-                          if (side == 'steps')
-                            ListenableBuilder(
-                              listenable: dailySteps,
-                              builder: (context, _) => IconButton(
-                                tooltip: t('Päivitä askeleet'),
-                                visualDensity: VisualDensity.compact,
-                                onPressed: dailySteps.loading ? null : () => dailySteps.refresh(),
-                                icon: dailySteps.loading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.refresh),
-                              ),
-                            ),
-                          Icon(
-                            side == 'week' ? Icons.info_outline : Icons.chevron_right,
-                            size: side == 'week' ? 20 : null,
-                            color: cs.onSurfaceVariant,
                           ),
-                        ],
+                        if (side != 'progress')
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Askeleet: päivitys heti Health Connectista (esim. kun Oura tai kävelymatto on
+                              // synkronoinut).
+                              if (side == 'steps')
+                                ListenableBuilder(
+                                  listenable: dailySteps,
+                                  builder: (context, _) => IconButton(
+                                    tooltip: t('Päivitä askeleet'),
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: dailySteps.loading ? null : () => dailySteps.refresh(),
+                                    icon: dailySteps.loading
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.refresh),
+                                  ),
+                                ),
+                              Icon(
+                                side == 'week' ? Icons.info_outline : Icons.chevron_right,
+                                size: side == 'week' ? 20 : null,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ),

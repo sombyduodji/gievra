@@ -158,6 +158,11 @@ const exerciseCues = <String, List<String>>{
     "Laske tanko ylärintaan solisluiden alle",
     "Lapaluut yhteen, kyynärpäät ~45° kyljistä",
   ],
+  "Vinopenkki tauolla": [
+    "Penkki 30–45° kulmaan, lapaluut yhteen",
+    "Laske tanko ylärintaan ja pysäytä 1–2 s, jännitys pysyy",
+    "Paina vasta, kun tanko on täysin pysähtynyt",
+  ],
   "Käsipainopenkki": [
     "Käsipainot rinnan sivuilla, kämmenet jalkoihin päin",
     "Laske syvälle, kyynärpäät ~45° kyljistä",
@@ -367,6 +372,11 @@ const exerciseCues = <String, List<String>>{
     "Olkavarret pysyvät paikallaan",
   ],
   "Kapea penkki": ["Ote hartioiden levyinen", "Kyynärpäät lähellä kylkiä", "Tanko rinnan alaosaan, paina suoriksi"],
+  "Kapea taukopenkki": [
+    "Ote hartioiden levyinen, kyynärpäät lähellä kylkiä",
+    "Laske tanko rinnan alaosaan ja pysäytä 1–2 s, jännitys pysyy",
+    "Paina suoriksi vasta, kun tanko on täysin pysähtynyt",
+  ],
   "Ojentajapunnerrus pään yli": [
     "Kädet pään yllä, kyynärpäät osoittavat ylös",
     "Laske paino pään taakse venytykseen",

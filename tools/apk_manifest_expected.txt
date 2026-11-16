@@ -1,4 +1,5 @@
 exported activity fi.somby.gievra.MainActivity
+exported activity fi.somby.gievra.OpenFileActivity
 exported activity-alias fi.somby.gievra.ViewPermissionUsageActivity [android.permission.START_VIEW_PERMISSION_USAGE]
 exported receiver androidx.profileinstaller.ProfileInstallReceiver [android.permission.DUMP]
 exported service androidx.health.platform.client.impl.sdkservice.HealthDataSdkService

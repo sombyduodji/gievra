@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import '../program_edit.dart';
 import '../progression.dart';
 import '../injuries.dart';
 import '../program.dart';
@@ -25,6 +26,9 @@ import '../plates.dart';
 /// Sarjojen kirjaus yhdelle liikkeelle.
 class SetLoggerScreen extends StatefulWidget {
   final DateTime date;
+
+  /// Saman päivän treenin numero: päivän aiemmat treenit ovat "edellinen kerta" (testikierros 16.11.).
+  final int session;
   final ExerciseEntry entry;
   final Future<void> Function() onChanged;
   final Target? target;
@@ -37,6 +41,7 @@ class SetLoggerScreen extends StatefulWidget {
   const SetLoggerScreen({
     super.key,
     required this.date,
+    this.session = 1,
     required this.entry,
     required this.onChanged,
     this.target,
@@ -55,20 +60,29 @@ class SetLoggerScreen extends StatefulWidget {
 
 class _SetLoggerScreenState extends State<SetLoggerScreen> {
   ExerciseEntry get e => widget.entry;
-  late final _last = store.lastBefore(e.name, widget.date);
+  late final _last = store.lastBefore(e.name, widget.date, widget.session);
   late final double _bestBefore = store.maxKgBefore(e.name, widget.date);
   late final Suggestion? _sugg = widget.target != null
-      ? suggestForTarget(e.name, widget.date, widget.target!)
-      : suggestNext(e.name, widget.date);
+      ? suggestForTarget(e.name, widget.date, widget.target!, session: widget.session)
+      : suggestNext(e.name, widget.date, session: widget.session);
   late final InjuryStatus _inj = injuryStatus(e.name, settings.injuries);
-  late final double _bestE1rm = bestE1rmBefore(e.name, widget.date);
+
+  /// Tämän liikkeen lihakset, jotka kuormittuivat jo tänään toisessa salitreenissä (käyttäjä 16.11.).
+  late final Set<String> _sameDay = heavyMusclesOf(e.name)
+      .intersection(musclesTrainedToday(store.workouts, widget.date, exceptSession: widget.session));
+  late final double _bestE1rm = bestE1rmBefore(e.name, widget.date, widget.session);
 
   /// Painoa tai toistoja muutettu viimeisen tallennuksen jälkeen (sarja on vielä tallentamatta).
   bool _edited = false;
 
+  /// Painoa muutettu itse viimeisen tallennuksen jälkeen: sarjatyypin vaihto ei silloin korvaa sitä esitäytöllä
+  /// (yötesti 16.11.: 1 kg ja sitten Pudotus → 15 kg).
+  bool _kgEdited = false;
+
   void _setKg(num v) => setState(() {
     _kg = v.toDouble();
     _edited = true;
+    _kgEdited = true;
   });
 
   void _setReps(num v) => setState(() {
@@ -190,15 +204,16 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   }
 
   /// Pudotussarja: edellisen sarjan paino −20 % valmiiksi. Pudotuksista takaisin tavalliseen tai AMRAP-sarjaan:
-  /// viimeisimmän muun kuin pudotussarjan paino (ei pudotusten jälkeistä kevyttä painoa).
+  /// viimeisimmän muun kuin pudotussarjan paino (ei pudotusten jälkeistä kevyttä painoa). Itse syötetty paino säilyy.
   void _setKind(String? k) => setState(() {
     final wasDrop = _kind == dropSet;
     _kind = k;
     final work = e.sets.where((s) => !s.warmup).toList();
     final prev = work.lastOrNull;
+    if (_kgEdited) return;
     if (k == dropSet && prev != null && prev.kg > 0) {
       final step = stepFor(e.name);
-      _kg = ((prev.kg * .8 / step).round() * step).clamp(0, prev.kg - step).toDouble();
+      _kg = ((prev.kg * .8 / step).round() * step).clamp(0, prev.kg > step ? prev.kg - step : 0).toDouble();
     } else if (wasDrop && k != dropSet) {
       final main = work.lastWhere((s) => s.kind != dropSet, orElse: () => SetEntry(_kg, _reps));
       _kg = main.kg;
@@ -232,6 +247,11 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     if (src == null && _sugg == null && _m != Measure.reps) {
       _kg = 0;
       _reps = _m.initial;
+    }
+    // Vain kehonpainolla tehtävä liike (leuanveto, punnerrus) ensimmäistä kertaa: lisäpaino 0, ei tangon 20 kg
+    // (yötesti 16.11.: leuanveto alkoi 20 kg:sta).
+    if (src == null && _sugg == null && (exerciseEquipment[e.name]?.every((q) => q == Equip.kehonpaino) ?? false)) {
+      _kg = 0;
     }
     // Lämmittely kohti työpainoa (ehdotus tai edellinen kerta).
     final work = _sugg?.kg ?? _last?.$2.workSets.lastOrNull?.kg;
@@ -378,11 +398,13 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        '${t('Tavoite')}: ${target.sets} × ${target.reps}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'} · '
+                        '${t('Tavoite')}: ${target.text}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'} · '
                         '${reserveTarget(_m, target.rir)}',
                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                     ),
+                    // Väli laskuriin: pitkä tavoiteteksti ei osu siihen kiinni ("…varaa0/4", testikierros 16.11.).
+                    const SizedBox(width: 8),
                     Text('${e.workSets.length}/${target.sets}', style: sub),
                   ],
                 ),
@@ -490,6 +512,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     _lastSave = now;
     setState(() {
       _edited = false;
+      _kgEdited = false;
       if (_warming) {
         e.sets.add(SetEntry(_kg, _reps, warmup: true));
         _warmIdx++;
@@ -505,7 +528,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         if (_kind == amrapSet) _kind = null;
         if (_kind == dropSet && _kg > 0) {
           final step = stepFor(e.name);
-          _kg = ((_kg * .8 / step).round() * step).clamp(0, _kg - step).toDouble();
+          _kg = ((_kg * .8 / step).round() * step).clamp(0, _kg > step ? _kg - step : 0).toDouble();
         }
       }
       _recomputePr();
@@ -687,7 +710,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-          if (_inj.flagged || widget.note != null)
+          if (_inj.flagged || widget.note != null || (_sameDay.isNotEmpty && e.workSets.isEmpty))
             Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
@@ -703,6 +726,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                   if (widget.note != null) '🩹 ${trNote(widget.note!)}' else ..._inj.modify.map((m) => '🩹 ${t(m)}'),
                   if (settings.injuries.isNotEmpty)
                     t('Kipua enintään 3–5/10, ja sen pitää rauhoittua aamuun mennessä.'),
+                  if (_sameDay.isNotEmpty && e.workSets.isEmpty)
+                    '💡 ${t('Tänään toisessa treenissä kuormittui jo {0}. Jätä enemmän varaa.', [_sameDay.map(t).join(', ')])}',
                 ].join('\n'),
                 style: const TextStyle(fontSize: 13),
               ),
@@ -931,7 +956,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => _editSet(i),
+                  onTap: () =>
+                      rest.justClosed ? null : _editSet(i), // palkki sulkeutui juuri sormen alta (Ohita-tuplanapautus)
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     child: Row(
@@ -1097,14 +1123,28 @@ class _EditSetSheetState extends State<_EditSetSheet> {
           const SizedBox(height: 18),
           Row(
             children: [
-              TextButton.icon(
-                onPressed: () => Navigator.pop(context, const _EditResult(0, 0, null, delete: true)),
-                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-                label: Text(t('Poista'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              // Kapea näyttö (360 dp) tai suuri teksti: Poista kapenee, ettei rivi vuoda yli (yötesti 16.11.).
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    onPressed: () => Navigator.pop(context, const _EditResult(0, 0, null, delete: true)),
+                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                    label: Text(
+                      t('Poista'),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    ),
+                  ),
+                ),
               ),
-              const Spacer(),
-              TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Peruuta'))),
-              const SizedBox(width: 8),
+              TextButton(
+                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                onPressed: () => Navigator.pop(context),
+                child: Text(t('Peruuta')),
+              ),
+              const SizedBox(width: 4),
               FilledButton(
                 onPressed: () => Navigator.pop(context, _EditResult(_kg, _reps, _rir, kind: _kind)),
                 child: Text(t('Tallenna')),

@@ -133,6 +133,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
     });
   }
 
+  /// Aloita-painikkeen tuplanapautus: toinen napautus osui samalle kohdalle ilmestyneeseen Tauko-painikkeeseen,
+  /// ja kello jäi huomaamatta tauolle ajassa 0:00 (testikierros 15.11.). Tauko vasta sekunnin kuluttua aloituksesta.
+  void _swPauseTap() {
+    final s = _swStart;
+    if (s != null && DateTime.now().difference(s) < const Duration(seconds: 1)) return;
+    _swStartPause();
+  }
+
   /// Lopetus: aika kenttään (voi vielä muokata). [at]: Valmis-napautuksen hetki, ettei kysymyksiin
   /// vastaamiseen kulunut aika lisäänny treeniin.
   void _swStop([DateTime? at]) {
@@ -819,7 +827,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   Future<void> _saveInner() async {
     // Ajanotto valittu mutta ei aloitettu: muuten tallentuisi oletuskesto huomaamatta.
-    if (_canStopwatch && _useWatch && !_swUsed && !_swDone && _swStart == null && _swAcc == Duration.zero) {
+    // Sama, jos kello käynnistettiin ja pysäytettiin heti (alle 1 s): oletuskesto 45:00 ei saa tallentua.
+    if (_canStopwatch && _useWatch && !_swDone && _swStart == null && _swAcc < const Duration(seconds: 1)) {
       final manual = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -944,8 +953,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
             child: SegmentedButton<bool>(
               showSelectedIcon: false,
               segments: [
-                ButtonSegment(value: true, icon: const Icon(Icons.timer_outlined), label: Text(t('Ajanotto'))),
-                ButtonSegment(value: false, icon: const Icon(Icons.edit_outlined), label: Text(t('Syötä aika'))),
+                // Yksi rivi, pienenee tarvittaessa: saameksi suurella tekstillä "Áigemihtideapmi" katkesi keskeltä.
+                ButtonSegment(
+                  value: true,
+                  icon: const Icon(Icons.timer_outlined),
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ajanotto'), maxLines: 1)),
+                ),
+                ButtonSegment(
+                  value: false,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Syötä aika'), maxLines: 1)),
+                ),
               ],
               selected: {watch},
               // Käynnissä olevaa ajanottoa ei vaihdeta piiloon: valinta näkyy, mutta Syötä aika ei ole valittavissa.
@@ -1053,7 +1071,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       child: FilledButton.icon(
                         key: const ValueKey('swPause'),
                         style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                        onPressed: _swStartPause,
+                        onPressed: _swPauseTap,
                         icon: Icon(running ? Icons.pause : Icons.play_arrow),
                         label: Text(running ? t('Tauko') : t('Jatka')),
                       ),
@@ -1519,15 +1537,25 @@ class _ActivityScreenState extends State<ActivityScreen> {
               ),
             ] else ...[
               const SizedBox(height: 12),
-              Row(
+              // Wrap: pitkä painiketeksti suurella tekstillä (saame: "Molsso valáštallama") siirtyy omalle rivilleen
+              // eikä purista lajin nimeä katkeamaan keskeltä sanaa ("Saliba / ndy", testikierros 15.11.).
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
                 children: [
-                  Text(sport?.icon ?? '✨', style: const TextStyle(fontSize: 34)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      sportName(w.activity!),
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(sport?.icon ?? '✨', style: const TextStyle(fontSize: 34)),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          sportName(w.activity!),
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ),
                   TextButton(
                     onPressed: () => setState(() {
@@ -1667,7 +1695,7 @@ class _GpsChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget small(IconData icon, String title, String sub, VoidCallback onTap, Key key) => Expanded(
+    Widget small(IconData icon, String title, String sub, VoidCallback onTap, Key key, double inner) => Expanded(
       child: Material(
         key: key,
         color: cs.surfaceContainer,
@@ -1681,14 +1709,16 @@ class _GpsChoice extends StatelessWidget {
               children: [
                 Icon(icon, size: 26, color: yellowText(context)),
                 const SizedBox(height: 6),
-                Text(
+                WordFitText(
                   title,
+                  width: inner,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                WordFitText(
                   sub,
+                  width: inner,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
                 ),
@@ -1736,29 +1766,37 @@ class _GpsChoice extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (onWatch != null) ...[
-                small(
-                  Icons.timer_outlined,
-                  t('Ajanotto'),
-                  t('Ilman GPS:ää, esim. juoksumatto'),
-                  onWatch!,
-                  const ValueKey('startWatch'),
-                ),
-                const SizedBox(width: 10),
-              ],
-              small(
-                Icons.edit_outlined,
-                t('Syötä itse'),
-                t('Jo tehty: aika ja matka'),
-                onManual,
-                const ValueKey('startManual'),
+        // Laatan sisäleveys (2 laattaa, väli 10, sisennys 8 + 8) sanojen sovitukseen; LayoutBuilder IntrinsicHeightin ulkopuolella.
+        LayoutBuilder(
+          builder: (context, c) {
+            final inner = (onWatch != null ? (c.maxWidth - 10) / 2 : c.maxWidth) - 16;
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (onWatch != null) ...[
+                    small(
+                      Icons.timer_outlined,
+                      t('Ajanotto'),
+                      t('Ilman GPS:ää, esim. juoksumatto'),
+                      onWatch!,
+                      const ValueKey('startWatch'),
+                      inner,
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  small(
+                    Icons.edit_outlined,
+                    t('Syötä itse'),
+                    t('Jo tehty: aika ja matka'),
+                    onManual,
+                    const ValueKey('startManual'),
+                    inner,
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );

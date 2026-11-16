@@ -62,10 +62,16 @@ Future<int> applyDumbbellReview(
   Map<String, List<DumbbellRow>> rows,
   Set<DumbbellRow> perDumbbell, {
   Set<DumbbellRow> hexBar = const {},
+  Set<DumbbellRow>? applied,
 }) async {
   final touched = <Workout>{};
   for (final l in rows.values) {
     for (final r in l) {
+      // Uusi yritys tallennusvirheen jälkeen: jo muutettuja rivejä ei kerrota uudelleen (yötesti 16.11.: ×4).
+      if (applied != null && !applied.add(r)) {
+        touched.add(r.w);
+        continue;
+      }
       if (hexBar.contains(r)) {
         renameExercise(r.w, r.e, hexBarFarmerWalk);
       } else if (perDumbbell.contains(r)) {
@@ -91,13 +97,25 @@ class _DumbbellReviewScreenState extends State<DumbbellReviewScreen> {
         if (guessPerDumbbell(r, store.workouts)) r,
   };
   final Set<DumbbellRow> _hex = {};
+  final Set<DumbbellRow> _applied = {}; // muistissa jo muutetut (uusi yritys virheen jälkeen)
   bool _saving = false;
 
   String _sets(ExerciseEntry e) => e.sets.map((s) => '${fmtNum(s.kg)}×${s.reps}').join(', ');
 
   Future<void> _save() async {
+    if (_saving) return;
     setState(() => _saving = true);
-    final n = await applyDumbbellReview(_rows, _per, hexBar: _hex);
+    final int n;
+    try {
+      n = await applyDumbbellReview(_rows, _per, hexBar: _hex, applied: _applied);
+    } catch (e) {
+      // Virhe ei saa jättää Tallenna-painiketta pysyvästi pois käytöstä.
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Virhe: {0}', [errorText(e)]))));
+      }
+      return;
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Päivitetty {0} treeniä.', [n]))));
     Navigator.pop(context, true);

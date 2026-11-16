@@ -84,8 +84,12 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - voimanoston 10 viikon sykli, kevennysviikot, painot arvioidusta maksimista
 - kahvakuulaohjelmat painotuksen mukaan: voima, lihaskasvu, kunto tai perusta yhdellä kuulalla
 - kehonpainolla treenaaminen ilman salia
-- ohjelman tarkistus: työntö- ja vetoliikkeiden tasapaino, liikemallit, viikon kuorma lihasryhmittäin
+- ohjelman tarkistus: työntö- ja vetoliikkeiden tasapaino, liikemallit, viikon kuorma lihasryhmittäin (olkapää ja
+  selkä osineen, käsivarret ja jalat ryhminä, pohkeet, kyynärvarret, lähentäjät ja keskivartalo)
 - valitse liikkeet itse, vaihda, lisää ja poista; jokainen muutos arvioidaan
+- ohjelman muokkaus: järjestys vetämällä, päivien lisäys ja poisto, *tämä tai tuo* -vaihtoehdot liikkeelle (treenissä
+  valitset, minkä teet tänään; jokaisella oma historia ja painoehdotus)
+- jaa ohjelma tai treeni kuvana (WhatsApp ym.) tai pohjana (`.gmd`)
 
 **Ohjelmapohjat ja ohjelmien vaihto**
 - tallenna ohjelma `.gmd`-tiedostoksi ja lähetä toiselle, tuo valmentajan tai kaverin pohja
@@ -94,8 +98,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - tallennetut ohjelmat: vaihda ohjelmaa milloin vain, treenihistoria säilyy
 
 **Liikkeet ja ohjeet**
-- 148 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula (myös kahdella kuulalla) ja kehonpaino
-- *Näin teet*: liikeanimaatio ja tekniikkavinkit jokaiselle liikkeelle
+- 151 liikettä: voimanosto, vapaat painot, laitteet, kahvakuula (myös kahdella kuulalla) ja kehonpaino
+- *Näin teet*: liikeanimaatio ja tekniikkavinkit jokaiselle liikkeelle, myös liikevalitsimessa (▶) ennen valintaa
+- omat liikkeet: lihasvalinta (näkyy viikon kuormassa), ehdotus Gievraan ja poisto
 - oikea mittaustapa: lankku sekunteina, askelkyykkykävely askelina, kannot edestakaisina
 - sarjan kirjaus tiiviisti: paino ja toistot vierekkäin, ohje ja mittaustapa ?-painikkeesta; palautusajastin
   näyttää seuraavan sarjan; liikkeen pitkä painallus: lisää supersarjaan, pura supersarja tai poista tästä treenistä

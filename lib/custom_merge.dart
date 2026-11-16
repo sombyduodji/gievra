@@ -100,6 +100,11 @@ Future<int> mergeMove(MoveMatch m) async {
             it.exercise = to;
             changed = true;
           }
+          final k = it.alts.indexOf(from);
+          if (k >= 0) {
+            it.alts[k] = to;
+            changed = true;
+          }
         }
       }
       final max = p.maxes.remove(from);

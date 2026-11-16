@@ -8,6 +8,7 @@ import 'intro.dart';
 import 'program_template.dart';
 import 'program_view.dart';
 import 'programs_screen.dart';
+import 'share_card.dart';
 import '../l10n.dart';
 import 'widgets.dart' show BarTitle;
 
@@ -95,6 +96,13 @@ class ProgramScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  // Jaa ohjelma kuvana tai pohjana (käyttäjä 16.11.: WhatsApp ym.).
+                  OutlinedButton.icon(
+                    onPressed: () => shareProgram(context, p),
+                    icon: const Icon(Icons.share_outlined),
+                    label: Text(t('Jaa ohjelma')),
+                  ),
+                  const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () async {
                       if (await askSaveCurrent(context)) await settings.setProgram(null);
@@ -134,7 +142,7 @@ class _SavedProgramsState extends State<_SavedPrograms> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.swap_horiz),
               title: Text(name),
-              subtitle: Text(p.displayTitle, style: const TextStyle(fontSize: 12)),
+              subtitle: Text(p.kindTitle, style: const TextStyle(fontSize: 12)),
               onTap: () async {
                 await switchToSaved(context, path, p);
                 if (mounted) setState(() => _list = savedPrograms());

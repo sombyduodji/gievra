@@ -8,8 +8,9 @@ import 'package:share_plus/share_plus.dart';
 import '../models.dart';
 import '../share_text.dart';
 import '../l10n.dart';
+import 'share_card.dart';
 
-/// Jaa treeni: yhteenveto tekstinä tai .md-tiedostona.
+/// Jaa treeni: kuvana, yhteenveto tekstinä tai .md-tiedostona.
 Future<void> shareWorkout(BuildContext context, Workout w) async {
   final choice = await showModalBottomSheet<String>(
     context: context,
@@ -18,6 +19,12 @@ Future<void> shareWorkout(BuildContext context, Workout w) async {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          ListTile(
+            leading: const Icon(Icons.image_outlined),
+            title: Text(t('Jaa kuvana')),
+            subtitle: Text(t('Siisti kuva treenistä (WhatsApp ym.)')),
+            onTap: () => Navigator.pop(ctx, 'image'),
+          ),
           ListTile(
             leading: const Icon(Icons.chat_outlined),
             title: Text(t('Jaa yhteenveto')),
@@ -35,7 +42,16 @@ Future<void> shareWorkout(BuildContext context, Workout w) async {
       ),
     ),
   );
-  if (choice == null) return;
+  if (choice == null || !context.mounted) return;
+  if (choice == 'image') {
+    final name = '${isoDate(w.date)}${w.session > 1 ? '-${w.session}' : ''}.png';
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ShareCardScreen(card: WorkoutShareCard(w), fileName: name),
+      ),
+    );
+    return;
+  }
   if (choice == 'text') {
     await SharePlus.instance.share(
       ShareParams(

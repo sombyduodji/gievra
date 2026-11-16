@@ -106,4 +106,22 @@ void main() {
     }
     expect(find.text('koti'), findsOneWidget);
   });
+
+  // Testikierros 16.11.: tiedosto, jota Gievra ei saa luettua, ohitettiin hiljaa.
+  testWidgets('Avattu tiedosto, jota ei voi lukea: ilmoitus', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(navigatorKey: appNavigator, scaffoldMessengerKey: appMessenger, home: const Scaffold()),
+    );
+    await showOpened({'error': true});
+    await tester.pump();
+    expect(find.text('Tiedostoa ei voitu avata.'), findsOneWidget);
+  });
+
+  testWidgets('.md-treeni: yksi uusi treeni yksikössä', (tester) async {
+    const md =
+        '---\ndate: 2019-03-04\ntitle: Testitreeni\ntags: [treeni]\n---\n\n# Testitreeni\n\n'
+        '## Penkkipunnerrus\n1. 40 kg × 8\n';
+    await open(tester, OpenedFile('2019-03-04.md', Uint8List.fromList(utf8.encode(md))));
+    expect(find.text('Tuodaan 1 uusi treeni.'), findsOneWidget);
+  });
 }

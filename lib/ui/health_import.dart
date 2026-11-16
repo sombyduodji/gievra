@@ -164,7 +164,21 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
     return shortDate(_day);
   }
 
+  bool _adding = false;
+
+  /// Rivin napautus. Tuplanapautus ei saa avata kahta näkymää samasta treenistä (alempi kopio tallentaisi
+  /// poistuessaan vanhan tilansa ylemmän päälle).
   Future<void> _add(HealthCandidate c) async {
+    if (_adding) return;
+    _adding = true;
+    try {
+      await _addInner(c);
+    } finally {
+      _adding = false;
+    }
+  }
+
+  Future<void> _addInner(HealthCandidate c) async {
     if (isStrengthType(c.type)) return _addGym(c);
     final sport =
         sportForHealthType(c.type) ??

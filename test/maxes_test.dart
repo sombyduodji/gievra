@@ -53,7 +53,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MaterialApp(home: ProgramScreen()));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Muokkaa ennätyksiä'), 300);
+    await tester.scrollUntilVisible(find.text('Muokkaa ennätyksiä'), 300, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Muokkaa ennätyksiä'));
     await tester.pumpAndSettle();
     expect(find.byType(MaxesScreen), findsOneWidget);

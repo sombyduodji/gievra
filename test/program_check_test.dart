@@ -62,4 +62,16 @@ void main() {
     print('${problems.length} ongelmaa, ${unique.length} erilaista:\n${unique.take(80).join('\n')}');
     expect(problems, isEmpty);
   });
+
+  // Testikierros 16.11.: huomioissa luki "rinta: 0.0 sarjaa viikossa" (liukuluku sellaisenaan).
+  test('Huomioiden sarjamäärät ilman turhaa desimaalia', () {
+    final p = generateProgram(goal: 'kasvu', experience: 'keski', days: 3, minutes: 60, injuries: const []);
+    // Tyhjennetään päivät yhtä liikettä lukuun ottamatta: viikon sarjat jäävät alle rajan.
+    for (final d in p.plan) {
+      d.items.removeRange(1, d.items.length);
+    }
+    final issues = validateProgram(p);
+    expect(issues.where((i) => i.contains('sarjaa viikossa')), isNotEmpty);
+    expect(issues.where((i) => RegExp(r'\d\.0 sarjaa').hasMatch(i)), isEmpty, reason: issues.join('\n'));
+  });
 }

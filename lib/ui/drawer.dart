@@ -154,7 +154,12 @@ class AppDrawer extends StatelessWidget {
                 subtitle: knownInjuries(settings.injuries).isEmpty
                     ? Text(t('Kipu tai vamma: vältettävät liikkeet ja korvaavat'), style: sub)
                     : _withBadge(
-                        Text(t('{0} aluetta valittuna', [knownInjuries(settings.injuries).length]), style: sub),
+                        Text(
+                          knownInjuries(settings.injuries).length == 1
+                              ? t('1 alue valittuna')
+                              : t('{0} aluetta valittuna', [knownInjuries(settings.injuries).length]),
+                          style: sub,
+                        ),
                       ),
                 onTap: () => _go(context, builder: (_) => InjuryScreen(initial: settings.injuries)),
               ),
@@ -965,13 +970,17 @@ class _SettingsSection extends StatelessWidget {
               onChanged: settings.setWatch,
             ),
             // Omat tiedot sykkeeseen: myös ilman sykevyötä (kellon syke Health Connectista, käyttäjä 15.11.).
-            ListTile(
-              key: const ValueKey('hrProfileSettings'),
-              leading: const Icon(Icons.favorite_border),
-              title: Text(t('Sykealueet ja kalorit')),
-              subtitle: Text(hrProfileSummary(), style: sub),
-              trailing: const Icon(Icons.edit_outlined),
-              onTap: () => askHrProfile(context), // osio kuuntelee asetuksia: rivi päivittyy tallennuksesta
+            // Oma semanttinen solmu kuten sykevyörivillä: muuten ruudunlukija luki rivin koko sivun alueena
+            // (testikierros 15.11.: rivin alue [0,286][1080,2595]).
+            MergeSemantics(
+              child: ListTile(
+                key: const ValueKey('hrProfileSettings'),
+                leading: const Icon(Icons.favorite_border),
+                title: Text(t('Sykealueet ja kalorit')),
+                subtitle: Text(hrProfileSummary(), style: sub),
+                trailing: const Icon(Icons.edit_outlined),
+                onTap: () => askHrProfile(context), // osio kuuntelee asetuksia: rivi päivittyy tallennuksesta
+              ),
             ),
             // Sykevyö Bluetoothilla (Android): syke treenin aikana, keskisyke ja maksimi treeniin.
             if (hr.available)
@@ -1258,7 +1267,7 @@ Future<void> showFeedback(BuildContext context) => showDialog(
     ),
     actions: [
       TextButton(
-        onPressed: () => _open('mailto:${AppInfo.feedbackEmail}?subject=Gievra-palaute'),
+        onPressed: () => _open('mailto:${AppInfo.feedbackEmail}?subject=${Uri.encodeComponent(t('Gievra-palaute'))}'),
         child: Text(t('Avaa sähköposti')),
       ),
       if (AppInfo.github != null)

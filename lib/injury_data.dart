@@ -39,6 +39,8 @@ const injuryRegions = <InjuryRegion>[
           "kapeampi ote (n. 1,5 × hartialeveys), kyynärpäät n. 45° vartalosta, liikerata kivuttomaan syvyyteen",
       "Vinopenkki":
           "kapeampi ote (n. 1,5 × hartialeveys), kyynärpäät n. 45° vartalosta, liikerata kivuttomaan syvyyteen",
+      "Vinopenkki tauolla":
+          "kapeampi ote (n. 1,5 × hartialeveys), kyynärpäät n. 45° vartalosta, liikerata kivuttomaan syvyyteen",
       "Smith-vinopenkki":
           "kapeampi ote (n. 1,5 × hartialeveys), kyynärpäät n. 45° vartalosta, liikerata kivuttomaan syvyyteen",
       "Käsipainopenkki": "neutraali ote (kämmenet vastakkain), loiva kulma, ei syvää alaasentoa",
@@ -82,9 +84,13 @@ const injuryRegions = <InjuryRegion>[
           "ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle (esim. pyyhe tai lauta rinnalla)",
       "Vinopenkki":
           "ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle (esim. pyyhe tai lauta rinnalla)",
+      "Vinopenkki tauolla":
+          "ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle (esim. pyyhe tai lauta rinnalla)",
       "Smith-vinopenkki":
           "ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle (esim. pyyhe tai lauta rinnalla)",
       "Kapea penkki":
+          "ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle (esim. pyyhe tai lauta rinnalla)",
+      "Kapea taukopenkki":
           "ote alle 1,5 × hartialeveys, pysäytä tanko 4–6 cm rinnan yläpuolelle (esim. pyyhe tai lauta rinnalla)",
       "Käsipainopenkki": "neutraali ote, ei syvää alaasentoa",
       "Vinokäsipainopenkki": "neutraali ote, ei syvää alaasentoa",
@@ -114,6 +120,7 @@ const injuryRegions = <InjuryRegion>[
       "Penkkipunnerrus": "kapeampi ote, ei syvää alaasentoa",
       "Taukopenkki": "kapeampi ote, ei syvää alaasentoa",
       "Vinopenkki": "kapeampi ote, ei syvää alaasentoa",
+      "Vinopenkki tauolla": "kapeampi ote, ei syvää alaasentoa",
       "Low bar -kyykky": "leveämpi ote, ei pakotettua ulkokiertoa",
       "Takakyykky": "leveämpi ote, ei pakotettua ulkokiertoa",
       "Kaapeliristikkäis": "lyhyt liikerata, kädet edessä",
@@ -209,6 +216,7 @@ const injuryRegions = <InjuryRegion>[
       "Penkkipunnerrus": "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa",
       "Taukopenkki": "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa",
       "Vinopenkki": "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa",
+      "Vinopenkki tauolla": "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa",
       "Pystypunnerrus": "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa",
       "Lattiapunnerrus": "tanko kämmenen tyveen, ranne suorassa linjassa kyynärvarren kanssa",
       "Takakyykky": "ranne suorana, leveämpi ote; jos ei onnistu, vaihda",
@@ -493,6 +501,7 @@ const injuryRegions = <InjuryRegion>[
     {
       "Penkkipunnerrus": "kevennä, kapeampi ote, ei alas rintaan asti",
       "Vinopenkki": "kevennä, kapeampi ote, ei alas rintaan asti",
+      "Vinopenkki tauolla": "kevennä, kapeampi ote, ei alas rintaan asti",
       "Smith-vinopenkki": "kevennä, kapeampi ote, ei alas rintaan asti",
       "Käsipainopenkki": "kevennä, kapeampi ote, ei alas rintaan asti",
       "Vinokäsipainopenkki": "kevennä, kapeampi ote, ei alas rintaan asti",

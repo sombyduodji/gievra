@@ -138,11 +138,11 @@ double _rirNum(int? r) => switch (r) {
 
 /// Työmaksimi: kolmen parhaan e1RM:n mediaani viimeiseltä 28 päivältä (Epley + varaa),
 /// muuten ohjelmaan syötetty maksimi.
-double? workingE1rm(String exercise, DateTime date) {
+double? workingE1rm(String exercise, DateTime date, [int session = 1]) {
   final from = addDays(date, -28);
   final vals = <double>[];
   for (final w in store.workouts) {
-    if (w.date.isBefore(from) || !w.date.isBefore(dateOnly(date))) continue;
+    if (w.date.isBefore(from) || !earlierThan(w, date, session)) continue;
     for (final e in w.exercises.where((e) => e.name == exercise)) {
       for (final s in e.sets) {
         if (s.reps > 10 || s.kg <= 0) continue;
@@ -157,15 +157,15 @@ double? workingE1rm(String exercise, DateTime date) {
 }
 
 /// Ohjelman tavoitteen mukainen ehdotus.
-Suggestion? suggestForTarget(String exercise, DateTime date, Target t) =>
-    _afterFeedback(exercise, date, _suggestForTarget(exercise, date, t));
+Suggestion? suggestForTarget(String exercise, DateTime date, Target t, {int session = 1}) =>
+    _afterFeedback(exercise, date, _suggestForTarget(exercise, date, t, session), session);
 
-Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
+Suggestion? _suggestForTarget(String exercise, DateTime date, Target t, [int session = 1]) {
   final mu = measureOf(exercise);
-  if (mu != Measure.reps) return _suggestOther(exercise, date, mu);
+  if (mu != Measure.reps) return _suggestOther(exercise, date, mu, session);
   Suggestion? s;
   if (t.pct != null) {
-    final e1 = workingE1rm(exercise, date);
+    final e1 = workingE1rm(exercise, date, session);
     if (e1 != null) {
       s = Suggestion(
         _round(e1 * t.pct!, stepFor(exercise)),
@@ -174,7 +174,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
       );
     }
   } else {
-    final last = store.lastBefore(exercise, date);
+    final last = store.lastBefore(exercise, date, session);
     if (last != null) {
       final e = last.$2;
       final top = e.sets.map((x) => x.kg).reduce((a, b) => a > b ? a : b);
@@ -219,7 +219,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
         );
       }
     } else {
-      final e1 = workingE1rm(exercise, date);
+      final e1 = workingE1rm(exercise, date, session);
       if (e1 != null) {
         // %1RM = 1 / (1 + (toistot + varaa) / 30); kahvakuulassa lähin kevyempi kuulakoko.
         final raw = e1 / (1 + (t.lo + 2) / 30);
@@ -242,7 +242,7 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
   if (ret != null) {
     final (p, load, sets) = ret;
     // Tauon jälkeen ei nosteta: kevennys edellisen kerran painosta (tai ehdotuksesta, jos se on kevyempi).
-    final prev = store.lastBefore(exercise, date)?.$2.sets.where((x) => !x.warmup).map((x) => x.kg);
+    final prev = store.lastBefore(exercise, date, session)?.$2.sets.where((x) => !x.warmup).map((x) => x.kg);
     final base = prev == null || prev.isEmpty ? s.kg : math.min(s.kg, prev.reduce(math.max));
     return Suggestion(
       _roundDown(base * load, stepFor(exercise)),
@@ -265,8 +265,8 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t) {
 }
 
 /// Aika-, askel- ja matkaliikkeet: reilusti varaa -> enemmän (tai lisäpaino), muuten sama.
-Suggestion? _suggestOther(String exercise, DateTime date, Measure m) {
-  final last = store.lastBefore(exercise, date);
+Suggestion? _suggestOther(String exercise, DateTime date, Measure m, [int session = 1]) {
+  final last = store.lastBefore(exercise, date, session);
   if (last == null) return null;
   final s = last.$2.sets.last;
   final rir = last.$2.sets.map((x) => x.rir).whereType<int>().fold<int?>(null, (a, b) => a == null || b < a ? b : a);
@@ -302,12 +302,13 @@ Suggestion? _suggestOther(String exercise, DateTime date, Measure m) {
   return Suggestion(s.kg, s.reps, l10n.t('Toista edellinen.'));
 }
 
-Suggestion? suggestNext(String exercise, DateTime date) => _afterFeedback(exercise, date, _suggestNext(exercise, date));
+Suggestion? suggestNext(String exercise, DateTime date, {int session = 1}) =>
+    _afterFeedback(exercise, date, _suggestNext(exercise, date, session), session);
 
-Suggestion? _suggestNext(String exercise, DateTime date) {
+Suggestion? _suggestNext(String exercise, DateTime date, [int session = 1]) {
   final m = measureOf(exercise);
-  if (m != Measure.reps) return _suggestOther(exercise, date, m);
-  final last = store.lastBefore(exercise, date);
+  if (m != Measure.reps) return _suggestOther(exercise, date, m, session);
+  final last = store.lastBefore(exercise, date, session);
   if (last == null) return null;
   final (lastDate, e) = last;
   final top = e.sets.map((s) => s.kg).reduce((a, b) => a > b ? a : b);
@@ -427,11 +428,13 @@ List<SetEntry> warmupSets(String exercise, double work) {
 }
 
 /// Edellisen kerran palaute (raskaan treenin jälkeen kysytty): liian raskas -> kevyempi, rankka päivä -> ei nostoa.
-Suggestion? _afterFeedback(String exercise, DateTime date, Suggestion? s) {
+Suggestion? _afterFeedback(String exercise, DateTime date, Suggestion? s, [int session = 1]) {
   if (s == null || measureOf(exercise) != Measure.reps) return s;
-  final w = store.workouts
-      .where((w) => w.date.isBefore(date) && w.exercises.any((e) => e.name == exercise && e.workSets.isNotEmpty))
-      .firstOrNull;
+  final w = latestEarlier(
+    store.workouts.where((w) => w.exercises.any((e) => e.name == exercise && e.workSets.isNotEmpty)),
+    date,
+    session,
+  );
   if (w == null) return s;
   final top = w.exercises
       .firstWhere((e) => e.name == exercise)

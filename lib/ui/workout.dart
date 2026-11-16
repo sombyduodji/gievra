@@ -17,6 +17,7 @@ import '../theme.dart';
 import 'new_workout.dart';
 import 'picker.dart';
 import 'share.dart';
+import 'suggest_exercise.dart';
 import 'rest_banner.dart';
 import 'running_screen.dart';
 import 'watch.dart';
@@ -83,6 +84,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   void initState() {
     super.initState();
     tzWatch.addListener(_tzChanged);
+    _hadContent = !w.isEmpty;
     // Ajastin käynnistyy, kun tämän päivän uusi treeni avataan (ei jo kirjattuun treeniin).
     if (_isToday && w.started == null && w.minutes == null && w.exercises.every((e) => e.sets.isEmpty)) {
       w.started = DateTime.now();
@@ -116,10 +118,22 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     return m < 0 || m > 300 ? null : m; // yli 5 h: kello on unohtunut päälle
   }
 
+  /// Tyhjeni tässä näkymässä (ainoa sarja tai liike poistettiin) ja tiedosto on tallessa. Valmiiksi tyhjänä
+  /// avattua tiedostoa (vanha versio, käsin tehty) ei poisteta pelkästä katsomisesta.
+  bool _hadContent = false; // asetetaan initStatessa ja jokaisessa tallennuksessa
+  bool get _stored => _hadContent && store.onDay(w.date).any((x) => x.session == w.session);
+
   Future<void> _save() async {
+    if (_deleted) return; // myöhäinen tallennus ei tuo poistettua treeniä takaisin
     w.notes = _notes.text;
-    if (w.isEmpty) return;
     try {
+      // Tyhjäksi muuttunut tallennettu treeni (ainoa sarja tai liike poistettu): poistetaan tiedosto, muuten
+      // poistettu sarja palaisi etusivulle ja seuraavalla avauksella.
+      if (w.isEmpty) {
+        if (_stored) await store.delete(w.date, w.session);
+        return;
+      }
+      _hadContent = true;
       await store.save(w);
     } catch (e) {
       if (mounted) {
@@ -141,16 +155,48 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     await _log(entry);
   }
 
-  PlanItem? _planItem(String name) => widget.planDay?.items.where((i) => i.exercise == name).firstOrNull;
+  // Ohjelman liike myös vaihtoehdon nimellä (käyttäjä 16.11.: "penkki tai pysäytetty penkki").
+  PlanItem? _planItem(String name) => widget.planDay?.items.where((i) => i.covers(name)).firstOrNull;
 
   Future<void> _logPlanned(PlanItem it) async {
-    var entry = w.exercises.where((e) => e.name == it.exercise).firstOrNull;
+    var entry = w.exercises.where((e) => it.covers(e.name)).firstOrNull;
     if (entry == null) {
-      entry = ExerciseEntry(it.exercise);
+      final name = it.alts.isEmpty ? it.exercise : await _chooseAlt(it);
+      if (name == null || !mounted) return;
+      entry = ExerciseEntry(name);
       w.exercises.add(entry);
     }
     await _log(entry);
   }
+
+  /// Vaihtoehtoinen liike: kumpi tänään? Viimeksi tehty päivä näkyy, jotta vuorottelu on helppoa.
+  Future<String?> _chooseAlt(PlanItem it) => showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text(t('Minkä teet tänään?'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          ),
+          for (final n in it.choices)
+            ListTile(
+              title: ExName(n),
+              subtitle: Text(switch (store.lastBefore(n, w.date, w.session)) {
+                null => t('ei vielä tehty'),
+                final last => t('viimeksi {0}', [shortDate(last.$1)]),
+              }, style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pop(ctx, n),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 
   Future<void> _log(ExerciseEntry e) async {
     w.skipMoves.remove(e.name); // poistettu liike lisätty takaisin
@@ -162,6 +208,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       MaterialPageRoute(
         builder: (_) => SetLoggerScreen(
           date: w.date,
+          session: w.session,
           entry: e,
           onChanged: _save,
           target: it == null || p == null ? null : targetFor(p, it, w.date),
@@ -220,7 +267,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           context,
           w: w,
           series: hr.peek(_hrKey)?.series,
-          durationSec: _live && w.started != null && !w.fixedTime
+          // Sama ehto kuin tallennuksessa: yli 5 h (kello unohtunut päälle) ei näytetä kestona.
+          durationSec: _live && _elapsed != null && !w.fixedTime
               ? DateTime.now().difference(w.started!).inSeconds
               : w.durationSec,
           heavyStep: true,
@@ -308,7 +356,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     } else {
       hr.pause(_hrKey);
     }
-    if (!w.isEmpty && !_deleted) store.save(w);
+    if (!_deleted) {
+      if (!w.isEmpty) {
+        store.save(w);
+      } else if (_stored) {
+        store.delete(w.date, w.session);
+      }
+    }
     _notes.dispose();
     super.dispose();
   }
@@ -332,7 +386,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => _log(e),
+            onTap: () => rest.justClosed ? null : _log(e), // palautuspalkki sulkeutui juuri sormen alta
             onLongPress: () => _moveMenu(e.name),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 9, 8, 9),
@@ -380,7 +434,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             : null,
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
-          onTap: () => _log(e),
+          onTap: () => rest.justClosed ? null : _log(e), // palautuspalkki sulkeutui juuri sormen alta
           onLongPress: () => _moveMenu(e.name),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -463,7 +517,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       if (left > 0)
                         InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          onTap: () => _log(e),
+                          onTap: () => rest.justClosed ? null : _log(e), // palautuspalkki sulkeutui juuri sormen alta
                           child: DottedChip(text: '+ ${setsLabel(left)}', color: yellowText(context)),
                         ),
                     ],
@@ -495,15 +549,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             final tg = targetFor(settings.program!, it, w.date);
             final mu = measureOf(it.exercise);
             return Text(
-              '${tg.sets} × ${tg.reps}${mu == Measure.reps ? '' : ' ${t(mu.unit)}'}'
+              '${tg.text}${mu == Measure.reps ? '' : ' ${t(mu.unit)}'}'
               '${it.pct == null || it.kind != null ? '' : ' @ ${fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1)))} %'}'
-              ' · ${reserveTarget(mu, tg.rir)}${it.note != null ? '\n🩹 ${trNote(it.note!)}' : ''}',
+              ' · ${reserveTarget(mu, tg.rir)}'
+              '${it.alts.isEmpty ? '' : '\n${t('tai: {0}', [it.alts.map(exerciseLabel).join(', ')])}'}'
+              '${it.note != null ? '\n🩹 ${trNote(it.note!)}' : ''}',
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             );
           },
         ),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => _logPlanned(it),
+        onTap: () => rest.justClosed ? null : _logPlanned(it),
         onLongPress: () => _moveMenu(it.exercise),
       ),
     ),
@@ -515,7 +571,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final showPlan = !_locked && widget.planDay != null && settings.program != null;
     final planned = showPlan
         ? widget.planDay!.items
-              .where((i) => !w.skipMoves.contains(i.exercise) && !done.any((e) => e.name == i.exercise))
+              .where((i) => !w.skipMoves.contains(i.exercise) && !done.any((e) => i.covers(e.name)))
               .toList()
         : <PlanItem>[];
     final order = [...done.map((e) => e.name), ...planned.map((i) => i.exercise)];
@@ -610,7 +666,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                                     sets.isNotEmpty
                                         ? '${fmtSetsCompact(n, sets)}${unitOnce(n, sets) ? ' ${kgUnit(n, short: true)}' : ''}'
                                         : it != null && settings.program != null
-                                        ? '${targetFor(settings.program!, it, w.date).sets} × ${targetFor(settings.program!, it, w.date).reps}'
+                                        ? targetFor(settings.program!, it, w.date).text
                                         : t('ei vielä sarjoja'),
                                     style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                                   ),
@@ -773,7 +829,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       for (final g in [...w.supersets]) {
         if (g.remove(n) && g.length < 2) w.supersets.remove(g);
       }
-      if (_planItem(n) != null) w.skipMoves.add(n);
+      if (_planItem(n) case final it?) w.skipMoves.add(it.exercise);
     });
     await _save();
   }
@@ -892,7 +948,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                             ),
                             if (widget.planDay != null &&
                                 widget.planDay!.items.any(
-                                  (i) => !w.skipMoves.contains(i.exercise) && !done.any((e) => e.name == i.exercise),
+                                  (i) => !w.skipMoves.contains(i.exercise) && !done.any((e) => i.covers(e.name)),
                                 ))
                               Text(
                                 '(${t('osa liikkeistä jäi')})',
@@ -1088,10 +1144,18 @@ class _SavedScreenState extends State<SavedScreen> {
   /// painikkeisiin (esim. "Uusi treeni" samassa kohdassa), kun ikkuna on jo sulkeutunut (havaittu Samsungilla 15.11.).
   bool _armed = false;
   Timer? _armTimer;
+  Timer? _suggestTimer;
 
   @override
   void initState() {
     super.initState();
+    // Oman liikkeen ehdotus kerran, treenin jälkeen (ei kesken treenin, käyttäjä 16.11.). Vain jos treenissä on
+    // omia liikkeitä; ajastin perutaan, jos sivulta poistutaan ennen sitä.
+    if (!widget.history && widget.workout.exercises.any((e) => settings.customExercises.contains(e.name))) {
+      _suggestTimer = Timer(const Duration(milliseconds: 900), () {
+        if (mounted) maybeSuggestOwnExercises(context, widget.workout);
+      });
+    }
     _armTimer = Timer(const Duration(milliseconds: 450), () {
       if (mounted) setState(() => _armed = true);
     });
@@ -1100,6 +1164,7 @@ class _SavedScreenState extends State<SavedScreen> {
   @override
   void dispose() {
     _armTimer?.cancel();
+    _suggestTimer?.cancel();
     super.dispose();
   }
 
@@ -1596,11 +1661,13 @@ class _SavedScreenState extends State<SavedScreen> {
                           ),
                         // Ei, jos tämän kerran volyymi on 0 (vain aika-, matka- tai kertaliikkeitä: "→ 0 kg" näytti
                         // romahdukselta, testikierros 15.11.).
-                        if (c.history.length > 2 && c.volume > 0) ...[
+                        // Nollakerrat (liikunta tai vain kehonpainoliikkeet) pois rivistä: "0 → 630 → 160 → 0 → 400 kg"
+                        // näytti romahduksilta (testikierros 16.11.).
+                        if (c.history.where((h) => h.$2 > 0).length > 2 && c.volume > 0) ...[
                           const SizedBox(height: 8),
                           Text(
                             t('Volyymi viime kerroilla: {0} kg', [
-                              c.history.map((h) => fmtNum(h.$2.roundToDouble())).join(' → '),
+                              c.history.where((h) => h.$2 > 0).map((h) => fmtNum(h.$2.roundToDouble())).join(' → '),
                             ]),
                             style: sub,
                           ),
@@ -1697,7 +1764,11 @@ class _DurationDialogState extends State<_DurationDialog> {
             autofocus: true,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(labelText: t('Kesto (min)')),
+            // Tallenna on pois käytöstä väärällä arvolla: kerrotaan sallittu väli, ettei painike näytä rikkinäiseltä.
+            decoration: InputDecoration(
+              labelText: t('Kesto (min)'),
+              errorText: valid ? null : t('Sallittu {0}–{1}', ['1', '1440']),
+            ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),

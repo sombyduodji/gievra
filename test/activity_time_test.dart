@@ -52,6 +52,17 @@ void main() {
     expect(w.activity, 'Lumikenkäily');
   });
 
+  testWidgets('Aloita-tuplanapautus ei jätä kelloa tauolle ajassa 0:00', (tester) async {
+    // Testikierros 15.11. ilta: toinen napautus osui Tauko-painikkeeseen, ja Treeni valmis tallensi 45:00.
+    await open(tester, sport: 'Koripallo');
+    await tester.tap(find.text('Aloita'));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('swPause')));
+    await tester.pump();
+    expect(find.descendant(of: find.byKey(const ValueKey('swPause')), matching: find.text('Tauko')), findsOneWidget);
+    expect(find.text('Jatka'), findsNothing);
+  });
+
   testWidgets('Ajanotto: aloita, lopeta, alku ja loppu näkyvät; Syötä aika näyttää keston', (tester) async {
     final w = await open(tester, sport: 'Koripallo');
     expect(find.text('Ajanotto'), findsOneWidget);

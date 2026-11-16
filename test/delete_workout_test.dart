@@ -66,6 +66,42 @@ void main() {
     expect(file.existsSync(), isFalse, reason: 'dispose ei saa tallentaa poistettua treeniä');
   });
 
+  testWidgets('Ainoan sarjan poisto: tyhjäksi jäänyt treeni ei palaa sivulta poistuttaessa', (tester) async {
+    // Testikierros 15.11. ilta: ainoa sarja poistettiin, mutta tiedostoon jäi vanha sarja ja etusivulle
+    // "Jatka treeniä". Keksitty treeni.
+    final w = Workout(
+      date: dateOnly(DateTime.now()),
+      title: 'Treeni',
+      exercises: [
+        ExerciseEntry('Lattiapunnerrus', [SetEntry(20, 8)]),
+      ],
+    );
+    final file = File('${dir.path}/${store.fileName(w.date)}');
+    await tester.runAsync(() => store.save(w));
+    expect(file.existsSync(), isTrue);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => WorkoutScreen(workout: w))),
+            child: const Text('avaa'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('avaa'));
+    await tester.pumpAndSettle();
+    w.exercises.clear(); // sama kuin sarjan poisto sarjanäkymässä
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(store.onDay(w.date), isEmpty, reason: 'ei treeniä muistissa');
+    expect(file.existsSync(), isFalse, reason: 'tyhjä treeni poistuu levyltä');
+  });
+
   testWidgets('Päivän toisen treenin poisto: kysymys nimeää oikean tiedoston, ensimmäinen säilyy', (tester) async {
     final d = dateOnly(DateTime.now());
     final first = Workout(

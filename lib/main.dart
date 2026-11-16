@@ -26,6 +26,7 @@ import 'theme.dart';
 import 'ui/home.dart';
 import 'ui/intro.dart';
 import 'ui/onboarding.dart';
+import 'ui/tap_guard.dart';
 import 'time_zone.dart';
 
 Future<void> main() async {
@@ -97,6 +98,7 @@ Future<void> main() async {
 // Teemat rakennetaan kerran (ColorScheme.fromSeed on raskas).
 final _lightTheme = buildTheme(Brightness.light);
 final _darkTheme = buildTheme(Brightness.dark);
+final _tapGuard = NavTapGuard();
 
 class TreeniApp extends StatefulWidget {
   const TreeniApp({super.key});
@@ -141,6 +143,7 @@ class _TreeniAppState extends State<TreeniApp> {
     // Kielen vaihto rakentaa koko sovelluksen uudelleen.
     key: ValueKey(uiLang),
     navigatorKey: appNavigator,
+    navigatorObservers: [_tapGuard],
     scaffoldMessengerKey: appMessenger,
     title: AppInfo.fullName,
     debugShowCheckedModeBanner: false,
@@ -155,9 +158,15 @@ class _TreeniAppState extends State<TreeniApp> {
     // ListView-reunukset ohittavat MediaQueryn alareunan, joten kolmen painikkeen palkki peitti sivujen lopun
     // (sitä ei voinut vierittää esiin). Koko sovellukselle tila palkin yläpuolelle; palkin taakse sivun tausta.
     builder: (context, child) {
+      // TapGuard: lyhyt napautussuoja näkymän vaihtuessa (ks. ui/tap_guard.dart).
       final page = ColoredBox(
         color: Theme.of(context).scaffoldBackgroundColor,
-        child: SafeArea(top: false, left: false, right: false, child: child ?? const SizedBox.shrink()),
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: TapGuard(child: child ?? const SizedBox.shrink()),
+        ),
       );
       // Tekstin koko (Asetukset → Yleiset): Pieni = puhelimen oma koko sellaisenaan.
       final f = settings.textFactor;

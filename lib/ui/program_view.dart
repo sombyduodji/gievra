@@ -41,6 +41,43 @@ class ProgramView extends StatelessWidget {
     if (changed == true) onChanged!();
   }
 
+  /// Päivien lisäys ja poisto (käyttäjä 16.11.). Viikon kuorma lasketaan päivistä, joten treenipäiviä viikossa
+  /// seuraa päivien määrää, kun ne olivat samat.
+  void _setDays(int before) {
+    if (program.days == before) program.days = program.plan.length;
+  }
+
+  void _addDay() {
+    final before = program.plan.length;
+    var n = before + 1;
+    // Pysyvä nimi (tiedostossa, treenien vertailu) yksilöllinen, käyttäjän kielellä; nimeä voi muuttaa kynästä.
+    while (program.plan.any((d) => d.matches(t('Päivä {0}', [n])) || d.name == 'Päivä $n')) {
+      n++;
+    }
+    program.plan.add(PlanDay(t('Päivä {0}', [n]), []));
+    _setDays(before);
+    onChanged!();
+  }
+
+  Future<void> _removeDay(BuildContext context, PlanDay d) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Poistetaanko {0}?', [d.uiName])),
+        content: Text(t('Päivän liikkeet poistuvat ohjelmasta. Tehdyt treenit säilyvät.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Poista'))),
+        ],
+      ),
+    );
+    if (ok != true || program.plan.length <= 1) return;
+    final before = program.plan.length;
+    program.plan.remove(d);
+    _setDays(before);
+    onChanged!();
+  }
+
   Future<void> _addItem(BuildContext context, PlanDay d) async {
     final name = await Navigator.of(context)
         .push<String>(MaterialPageRoute(builder: (_) => const ExercisePickerScreen()));
@@ -62,6 +99,43 @@ class ProgramView extends StatelessWidget {
     onChanged!();
     if (context.mounted) await _editItem(context, d, it);
   }
+
+  Widget _itemRow(BuildContext context, PlanDay d, PlanItem i, TextStyle sub, ColorScheme cs) => InkWell(
+    borderRadius: BorderRadius.circular(8),
+    onTap: _editable ? () => _editItem(context, d, i) : null,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (i.group != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Text(
+                    '${i.group}${d.items.where((x) => x.group == i.group).toList().indexOf(i) + 1}',
+                    style: TextStyle(fontWeight: FontWeight.w700, color: cs.primary),
+                  ),
+                ),
+              Expanded(child: ExName(i.exercise)),
+              Text(switch (i.kind) {
+                'H' => t('raskas, viikon mukaan'),
+                'V' => t('volyymi, viikon mukaan'),
+                _ =>
+                  '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}'
+                      '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
+                      '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
+              }, style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (_editable) ...[const SizedBox(width: 6), Icon(Icons.edit, size: 15, color: cs.onSurfaceVariant)],
+            ],
+          ),
+          if (i.alts.isNotEmpty) Text(t('tai: {0}', [i.alts.map(exerciseLabel).join(', ')]), style: sub),
+          if (i.note != null) Text('🩹 ${trNote(i.note!)}', style: sub),
+        ],
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +166,12 @@ class ProgramView extends StatelessWidget {
         if (_editable)
           Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: Text(t('Napauta liikettä vaihtaaksesi sen tai muuttaaksesi sarjoja ja toistoja.'), style: sub),
+            child: Text(
+              t(
+                'Napauta liikettä vaihtaaksesi sen tai muuttaaksesi sarjoja ja toistoja. Järjestä vetämällä rivin vasemmasta reunasta.',
+              ),
+              style: sub,
+            ),
           ),
         for (final d in program.plan)
           Padding(
@@ -110,7 +189,7 @@ class ProgramView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(d.uiName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                              if (d.label != null) Text(d.name, style: sub),
+                              if (d.label != null) Text(trName(d.name), style: sub),
                             ],
                           ),
                         ),
@@ -126,49 +205,49 @@ class ProgramView extends StatelessWidget {
                               onChanged!();
                             },
                           ),
+                        if (_editable && program.plan.length > 1)
+                          IconButton(
+                            tooltip: t('Poista päivä'),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.delete_outline, size: 18, color: cs.onSurfaceVariant),
+                            onPressed: () => _removeDay(context, d),
+                          ),
                         Text(t('~{0} min', [estimateMinutes(d.items).round()]), style: sub),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    for (final i in d.items)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: _editable ? () => _editItem(context, d, i) : null,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  if (i.group != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 6),
-                                      child: Text(
-                                        '${i.group}${d.items.where((x) => x.group == i.group).toList().indexOf(i) + 1}',
-                                        style: TextStyle(fontWeight: FontWeight.w700, color: cs.primary),
-                                      ),
+                    // Muokkaustilassa liikkeiden järjestys vetämällä (käyttäjä 16.11.: ilman poistoa ja uudelleen lisäystä).
+                    if (_editable)
+                      ReorderableListView(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        buildDefaultDragHandles: false,
+                        onReorderItem: (from, to) {
+                          d.items.insert(to, d.items.removeAt(from));
+                          onChanged!();
+                        },
+                        children: [
+                          for (final (n, i) in d.items.indexed)
+                            Row(
+                              key: ObjectKey(i),
+                              children: [
+                                ReorderableDragStartListener(
+                                  index: n,
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                                    child: Semantics(
+                                      label: t('Siirrä: {0}', [exerciseLabel(i.exercise)]),
+                                      child: Icon(Icons.drag_indicator, size: 20, color: cs.onSurfaceVariant),
                                     ),
-                                  Expanded(child: ExName(i.exercise)),
-                                  Text(switch (i.kind) {
-                                    'H' => t('raskas, viikon mukaan'),
-                                    'V' => t('volyymi, viikon mukaan'),
-                                    _ =>
-                                      '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}'
-                                          '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
-                                          '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
-                                  }, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                  if (_editable) ...[
-                                    const SizedBox(width: 6),
-                                    Icon(Icons.edit, size: 15, color: cs.onSurfaceVariant),
-                                  ],
-                                ],
-                              ),
-                              if (i.note != null) Text('🩹 ${trNote(i.note!)}', style: sub),
-                            ],
-                          ),
-                        ),
-                      ),
+                                  ),
+                                ),
+                                Expanded(child: _itemRow(context, d, i, sub, cs)),
+                              ],
+                            ),
+                        ],
+                      )
+                    else
+                      for (final i in d.items) _itemRow(context, d, i, sub, cs),
                     if (_editable)
                       TextButton.icon(
                         onPressed: () => _addItem(context, d),
@@ -179,6 +258,11 @@ class ProgramView extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        if (_editable)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: OutlinedButton.icon(onPressed: _addDay, icon: const Icon(Icons.add), label: Text(t('Lisää päivä'))),
           ),
         const SizedBox(height: 10),
         Text(
@@ -239,10 +323,116 @@ class WeeklyLoadCard extends StatelessWidget {
   final String? doneLabel; // toteutuneen selite (oletus: tällä viikolla)
   const WeeklyLoadCard({super.key, required this.program, this.done, this.doneLabel});
 
+  static const _grouped = {'hauis', 'ojentaja', 'etureisi', 'takareisi', 'pakara', 'pohje'};
+
+  Widget _groupHeader(BuildContext context, String label) => Padding(
+    padding: const EdgeInsets.only(top: 8, bottom: 2),
+    child: Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    ),
+  );
+
+  /// Alarivi (olkapään tai selän osa): ohut palkki pääpalkin mittakaavassa, luku ja tehdyt sarjat.
+  Widget _subRow(BuildContext context, String label, double v, double? doneV, int hi, TextStyle small) => Padding(
+    padding: const EdgeInsets.only(bottom: 3),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              // Pitkä kaksisanainen nimi kahdelle riville, ettei se kutistu lukukelvottomaksi
+              // (testi 16.11.: saame "govda čielgedeahkki", suomi "leveä selkälihas").
+              child: Text(
+                label.length > 12 && label.contains(' ') ? label.replaceFirst(' ', '\n') : label,
+                maxLines: 2,
+                softWrap: false,
+                style: small.copyWith(height: 1.1),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ExcludeSemantics(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: hi <= 0 ? 0 : (v / hi).clamp(0.0, 1.0),
+                minHeight: 5,
+                color: Sami.green.withValues(alpha: .55),
+                backgroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: .10),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 84,
+          child: Text(
+            doneV == null ? fmtLoad(v) : '${fmtLoad(v)} · ${fmtLoad(doneV)}',
+            textAlign: TextAlign.end,
+            style: small,
+          ),
+        ),
+      ],
+    ),
+  );
+
+  /// Keskivartalo: harmaa tietorivi (ei suositusta). Palkin täysi pituus 10 sarjaa.
+  Widget _coreRow(BuildContext context, double v, double? doneV, TextStyle small) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 6),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(t('keskivartalo'), maxLines: 1, softWrap: false, style: const TextStyle(fontSize: 13)),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ExcludeSemantics(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: LinearProgressIndicator(
+                value: (v / 10).clamp(0.0, 1.0),
+                minHeight: 8,
+                color: cs.onSurfaceVariant,
+                backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 84,
+          child: Text(
+            doneV == null ? fmtLoad(v) : '${fmtLoad(v)} · ${fmtLoad(doneV)}',
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final load = weeklyLoad(program);
+    final stats = statsOf(program);
+    final sub = stats.sub;
+    final core = stats.weekly['vatsa'] ?? 0;
     final small = TextStyle(fontSize: 11, color: cs.onSurfaceVariant);
     // Palkit kuvina: sarjamäärät ovat tekstinä vieressä (ruudunlukija luki nimettömän arvon).
     Widget bar(double value, Color color, double height) => ExcludeSemantics(
@@ -294,7 +484,10 @@ class WeeklyLoadCard extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 8),
-          for (final m in load)
+          for (final m in load) ...[
+            // Ryhmät (käyttäjä 16.11.): käsivarret ja jalat otsikon alla, kuten olkapää ja selkä osineen.
+            if (m.muscle == 'hauis') _groupHeader(context, t('käsivarret')),
+            if (m.muscle == 'etureisi') _groupHeader(context, t('jalat')),
             Padding(
               padding: EdgeInsets.symmetric(vertical: done == null ? 4 : 5),
               child: Row(
@@ -304,8 +497,8 @@ class WeeklyLoadCard extends StatelessWidget {
                   SizedBox(
                     width: 90,
                     child: Padding(
-                      // Väli palkkiin: pisin nimi (saameksi "maŋŋeruoida") ei kosketa palkkia.
-                      padding: const EdgeInsetsDirectional.only(end: 6),
+                      // Väli palkkiin: pisin nimi (saameksi "maŋŋeruoida") ei kosketa palkkia. Ryhmän jäsenet sisennettyinä.
+                      padding: EdgeInsetsDirectional.only(start: _grouped.contains(m.muscle) ? 10 : 0, end: 6),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: AlignmentDirectional.centerStart,
@@ -330,14 +523,28 @@ class WeeklyLoadCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          '${fmtLoad(m.sets)} / ${m.lo}–${m.hi}',
-                          style: TextStyle(fontSize: done == null ? 13 : 12, fontWeight: FontWeight.w600),
+                        // Yhdellä rivillä, tarvittaessa pienempänä: suurella fontilla "11 / 4–20" katkesi
+                        // ajatusviivan kohdalta kahdelle riville (16.11. ilta).
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: Text(
+                            '${fmtLoad(m.sets)} / ${m.lo}–${m.hi}',
+                            maxLines: 1,
+                            softWrap: false,
+                            style: TextStyle(fontSize: done == null ? 13 : 12, fontWeight: FontWeight.w600),
+                          ),
                         ),
                         if (done != null)
-                          Text(
-                            _doneLabel(done![m.muscle] ?? 0, m.sets),
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: blueText(context)),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Text(
+                              _doneLabel(done![m.muscle] ?? 0, m.sets),
+                              maxLines: 1,
+                              softWrap: false,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: blueText(context)),
+                            ),
                           ),
                       ],
                     ),
@@ -345,6 +552,45 @@ class WeeklyLoadCard extends StatelessWidget {
                 ],
               ),
             ),
+            // Olkapään ja selän osat pieninä alariveinä (käyttäjä 16.11.): vain sarjamäärä, sama mittakaava kuin pääpalkissa.
+            for (final x in subMuscles[m.muscle] ?? const <String>[])
+              _subRow(context, t(x), sub[x] ?? 0, done?[x], m.hi, small),
+            // Tietorivit ryhmän lopussa: kyynärvarret käsivarsiin, lähentäjät jalkoihin (ei suositusta).
+            if (m.muscle == 'ojentaja')
+              _subRow(context, t('kyynärvarret'), sub['kyynärvarret'] ?? 0, done?['kyynärvarret'], m.hi, small),
+            if (m.muscle == 'pohje')
+              _subRow(
+                context,
+                t('lähentäjät'),
+                sub['lähentäjät'] ?? 0,
+                done?['lähentäjät'],
+                load.firstWhere((x) => x.muscle == 'etureisi', orElse: () => m).hi,
+                small,
+              ),
+          ],
+          // Keskivartalo omana rivinään: tieto, ei suositusrajaa eikä varoitusta.
+          Divider(height: 18, color: cs.outlineVariant),
+          _coreRow(context, core, done?['vatsa'], small),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              t(
+                'Keskivartalo: suorat liikkeet (esim. Pallof press, lankku, jalannosto roikkuen). Kyykky ja maastaveto '
+                'kuormittavat sitä myös, mutta niitä ei lasketa. Ei suositusrajaa.',
+              ),
+              style: small,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              t(
+                'Alarivit voivat yhteensä olla enemmän kuin pääpalkki: sama liike kuormittaa useaa osaa (esim. soutu '
+                'yläselkää ja leveää selkälihasta).',
+              ),
+              style: small,
+            ),
+          ),
           if (load.any((m) => m.level == LoadLevel.low && majorMuscles.contains(m.muscle)))
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -363,6 +609,14 @@ class WeeklyLoadCard extends StatelessWidget {
             ),
             style: small,
           ),
+          if (program.plan.any((d) => d.items.any((i) => i.alts.isNotEmpty)))
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                t('Tämä tai tuo -liikkeet: sarjat jaetaan vaihtoehtojen kesken tasan, eli oletuksena vuorottelet.'),
+                style: small,
+              ),
+            ),
           if (done != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -411,6 +665,19 @@ class _ItemSheetState extends State<_ItemSheet> {
     _changed = true;
   });
 
+  void _move(int by) => _set(() {
+    final items = widget.day.items;
+    final i = items.indexOf(it);
+    items.insert(i + by, items.removeAt(i));
+  });
+
+  Future<void> _pickAlt() async {
+    final name = await Navigator.of(context)
+        .push<String>(MaterialPageRoute(builder: (_) => const ExercisePickerScreen()));
+    if (name == null || !mounted || name == it.exercise || it.alts.contains(name)) return;
+    _set(() => it.alts.add(name));
+  }
+
   Future<void> _pickOther() async {
     final name = await Navigator.of(context)
         .push<String>(MaterialPageRoute(builder: (_) => const ExercisePickerScreen()));
@@ -455,6 +722,44 @@ class _ItemSheetState extends State<_ItemSheet> {
               ),
             ],
           ),
+          // Vaihtoehdot (käyttäjä 16.11.): treenissä valitaan, mikä tehdään tänään.
+          SectionLabel(t('Vaihtoehdot treenissä')),
+          Text(
+            t('Treenissä valitset, minkä näistä teet tänään. Sama tavoite, jokaisella oma historia ja painoehdotus.'),
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final a in it.alts)
+                InputChip(
+                  label: Text(exerciseLabel(a)),
+                  onDeleted: () => _set(() => it.alts.remove(a)),
+                  deleteButtonTooltipMessage: t('Poista vaihtoehto'),
+                ),
+              for (final x in same.where((x) => !it.alts.contains(x)).take(it.alts.isEmpty ? 4 : 2))
+                ActionChip(
+                  avatar: const Icon(Icons.add, size: 16),
+                  label: Text(exerciseLabel(x)),
+                  onPressed: () => _set(() => it.alts.add(x)),
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.search, size: 16),
+                label: Text(t('Muu vaihtoehto…')),
+                onPressed: _pickAlt,
+              ),
+            ],
+          ),
+          for (final a in it.alts.where((a) => family(slotOf(a)) != family(it.slot)))
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '⚠️ ${t('{0}: eri liikemalli kuin {1}. Viikon kuormassa sarjat jaetaan vaihtoehtojen kesken tasan (vuorottelu).', [exerciseLabel(a), exerciseLabel(it.exercise)])}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
           if (!main) ...[
             SectionLabel(t('Sarjat')),
             ValueStepper(
@@ -522,7 +827,7 @@ class _ItemSheetState extends State<_ItemSheet> {
                   ),
               ],
             ),
-          ] else
+          ] else if (main)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
@@ -568,6 +873,18 @@ class _ItemSheetState extends State<_ItemSheet> {
                 label: Text(t('Poista'), style: TextStyle(color: cs.error)),
               ),
               const Spacer(),
+              // Järjestys ilman vetämistä (ruudunlukija, tarkka siirto): ylös / alas päivän sisällä.
+              IconButton(
+                tooltip: t('Siirrä ylös'),
+                onPressed: widget.day.items.indexOf(it) > 0 ? () => _move(-1) : null,
+                icon: const Icon(Icons.arrow_upward),
+              ),
+              IconButton(
+                tooltip: t('Siirrä alas'),
+                onPressed: widget.day.items.indexOf(it) < widget.day.items.length - 1 ? () => _move(1) : null,
+                icon: const Icon(Icons.arrow_downward),
+              ),
+              const SizedBox(width: 4),
               FilledButton(onPressed: () => Navigator.pop(context, _changed), child: Text(t('Valmis'))),
             ],
           ),
@@ -630,13 +947,15 @@ Future<String?> askDayLabel(BuildContext context, PlanDay d) {
     t('Alavartalo'),
     t('Työntö'),
     t('Veto'),
-    'Jalat',
-    'Koko keho',
+    t('Jalat'),
+    t('Koko keho'),
   ];
+  // Oletusnimi näytetään käännettynä ("Full body C"), kuten muuallakin ohjelmassa.
+  final base = trName(d.name);
   return showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(t('Nimeä: {0}', [d.name])),
+      title: Text(t('Nimeä: {0}', [base])),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -645,7 +964,7 @@ Future<String?> askDayLabel(BuildContext context, PlanDay d) {
             TextField(
               controller: c,
               autofocus: false,
-              decoration: InputDecoration(hintText: d.name, helperText: t('Tyhjä = {0}', [d.name])),
+              decoration: InputDecoration(hintText: base, helperText: t('Tyhjä = {0}', [base])),
               onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
             ),
             const SizedBox(height: 12),

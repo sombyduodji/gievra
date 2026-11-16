@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../exercises.dart';
+import '../program_check.dart' show muscleAreas;
 import '../injuries.dart';
 import '../theme.dart';
 import '../l10n.dart';
+import 'exercise_guide.dart';
+import 'suggest_exercise.dart';
 import 'widgets.dart';
 
 /// Liikkeen valinta: haku, kategoriat ja omat liikkeet. Palauttaa liikkeen nimen.
@@ -36,6 +39,10 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     final c = TextEditingController(text: _q);
     var cat = _cat == 'Viimeksi' || _cat == 'Voimanosto' || _cat == ownCategory ? 'Koko keho' : _cat;
     var measure = Measure.reps;
+    // Lihakset viikon kuormaa varten (käyttäjä 16.11.): kategorian osat valmiina näkyvissä, muut "Muut lihakset".
+    final muscles = <String>{};
+    var allMuscles = false;
+    String label(String m) => m == 'vatsa' ? t('keskivartalo') : t(m);
     final v = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -59,9 +66,42 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                 runSpacing: 6,
                 children: [
                   for (final k in exerciseCategories)
-                    ChoiceChip(label: Text(k), selected: cat == k, onSelected: (_) => set(() => cat = k)),
+                    ChoiceChip(label: Text(t(k)), selected: cat == k, onSelected: (_) => set(() => cat = k)),
                 ],
               ),
+              const SizedBox(height: 14),
+              Text(t('Mitä lihaksia liike kuormittaa?')),
+              Text(
+                t('Valitse pääasialliset. Näkyvät viikon kuormassa.'),
+                style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 4),
+              for (final area in muscleAreas.entries)
+                if (allMuscles || area.key == cat || area.value.any(muscles.contains)) ...[
+                  if (allMuscles || area.key != cat)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(t(area.key), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final m in area.value)
+                        FilterChip(
+                          label: Text(label(m)),
+                          selected: muscles.contains(m),
+                          onSelected: (on) => set(() => on ? muscles.add(m) : muscles.remove(m)),
+                        ),
+                    ],
+                  ),
+                ],
+              if (!allMuscles)
+                TextButton(
+                  key: const ValueKey('allMuscles'),
+                  onPressed: () => set(() => allMuscles = true),
+                  child: Text(t('Muut lihakset…')),
+                ),
               const SizedBox(height: 14),
               Text(t('Mitataan')),
               Wrap(
@@ -89,7 +129,25 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     if (name == null || name.isEmpty || !mounted) return;
     settings.addCustomExercises({name: cat});
     if (measure != Measure.reps) settings.setMeasure(name, measure);
+    if (muscles.isNotEmpty) settings.setCustomMuscles(name, muscles.toList());
     Navigator.pop(context, name);
+  }
+
+  /// Oman liikkeen poisto luettelosta. Tehdyt treenit säilyvät (liikkeen nimi jää niihin).
+  Future<void> _deleteOwn(String n) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Poistetaanko oma liike {0}?', [n])),
+        content: Text(t('Liike poistuu valitsimesta. Tehdyt treenit säilyvät, eikä ohjelma muutu.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Poista'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => settings.removeCustomExercise(n));
   }
 
   Widget? _injuryLine(String n, ColorScheme cs) {
@@ -127,6 +185,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
         if (q.isEmpty || matchesSearch(n, q)) items.add((categoryOf(n) ?? ownCategory, n));
       }
     }
+    final big = MediaQuery.textScalerOf(context).scale(14) >= 21;
     return Scaffold(
       appBar: AppBar(title: BarTitle(Text(t('Valitse liike')))),
       body: Column(
@@ -146,7 +205,8 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
             ),
           ),
           SizedBox(
-            height: 52,
+            // Korkeus tekstikoon mukaan: suurella fontilla (puhelin 1,3 + Suuri) sirujen teksti leikkautui alareunasta.
+            height: 38 + MediaQuery.textScalerOf(context).scale(14),
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
@@ -176,9 +236,44 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                       decoration: BoxDecoration(color: groupColor(bodyGroupOf(n)), shape: BoxShape.circle),
                     ),
                     title: ExName(n),
-                    subtitle: _injuryLine(n, cs),
-                    trailing: Text(t(cat), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                    // Suurella tekstillä kategoria nimen alle: oikealla se kavensi nimeä niin, että nimi katkesi
+                    // sanan keskeltä ("Takakyykk-y"; Samsung, puhelin 1,3 + Suuri, 16.11. ilta).
+                    subtitle: big
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ?_injuryLine(n, cs),
+                              Text(t(cat), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                            ],
+                          )
+                        : _injuryLine(n, cs),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!big) Text(t(cat), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                        // Oma liike: ehdota Gievraan (käyttäjä 16.11.; treenin jälkeen kysytään vain kerran).
+                        if (settings.customExercises.contains(n))
+                          IconButton(
+                            tooltip: t('Ehdota Gievraan: {0}', [n]),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.lightbulb_outline, color: cs.onSurfaceVariant),
+                            onPressed: () => suggestExercises(context, [n]),
+                          ),
+                        // Ohje ja animaatio ennen valintaa (käyttäjä 16.11.).
+                        if (hasExerciseGuide(n))
+                          IconButton(
+                            tooltip: t('Näin teet: {0}', [exerciseLabel(n)]),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.play_circle_outline, color: cs.onSurfaceVariant),
+                            onPressed: () async {
+                              if (await showExerciseGuide(context, n) && context.mounted) Navigator.pop(context, n);
+                            },
+                          ),
+                      ],
+                    ),
                     onTap: () => Navigator.pop(context, n),
+                    // Oma liike: pitkä painallus poistaa sen luettelosta (käyttäjä 16.11.: poistoa ei ollut).
+                    onLongPress: settings.customExercises.contains(n) ? () => _deleteOwn(n) : null,
                   ),
                 ListTile(
                   leading: Icon(Icons.add, color: yellowText(context)),

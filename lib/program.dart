@@ -47,7 +47,12 @@ const slots = <String, Slot>{
   'PAK': Slot('Pakara', ['Hip thrust', 'Romanialainen maastaveto', 'Bulgarialainen askelkyykky']),
   'POH': Slot('Pohje', ['Pohjenousu seisten', 'Pohjenousu istuen']),
   'VTY': Slot('Vaakatyöntö', ['Penkkipunnerrus', 'Käsipainopenkki', 'Rintaprässi laitteessa'], compound: true),
-  'VIN': Slot('Vino työntö', ['Vinopenkki', 'Vinokäsipainopenkki', 'Rintaprässi laitteessa'], compound: true),
+  'VIN': Slot('Vino työntö', [
+    'Vinopenkki',
+    'Vinokäsipainopenkki',
+    'Rintaprässi laitteessa',
+    'Vinopenkki tauolla',
+  ], compound: true),
   'PTY': Slot('Pystytyöntö', ['Pystypunnerrus', 'Käsipainopystypunnerrus', 'Olkapääprässi laitteessa'], compound: true),
   'VVE': Slot('Vaakaveto', ['Kulmasoutu', 'Alatalja', 'Käsipainosoutu', 'Soutu laitteessa'], compound: true),
   'PVE': Slot('Pystyveto', ['Leuanveto', 'Ylätalja'], compound: true),
@@ -55,14 +60,25 @@ const slots = <String, Slot>{
   'OSI': Slot('Olkapää sivu', ['Vipunosto sivulle', 'Vipunosto taljassa']),
   'TAK': Slot('Takaolka', ['Face pull', 'Takaolkavipunosto']),
   'HAU': Slot('Hauis', ['Hauiskääntö tangolla', 'Vasarakääntö', 'Hauiskääntö taljassa']),
-  'OJE': Slot('Ojentaja', ['Ojentajapunnerrus taljassa', 'Ranskalainen punnerrus', 'Kapea penkki']),
+  'OJE': Slot('Ojentaja', [
+    'Ojentajapunnerrus taljassa',
+    'Ranskalainen punnerrus',
+    'Kapea penkki',
+    'Kapea taukopenkki',
+  ]),
   'KES': Slot('Keskivartalo', ['Pallof press', 'Jalannosto roikkuen', 'Kaapelirutistus']),
   'KAN': Slot('Kanto', ['Farmer walk', 'Kylkilankku', 'Farmer walk hex barilla']),
   'KK': Slot('Kilpakyykky', ['Takakyykky', 'Box-kyykky', 'Jalkaprässi'], compound: true),
   'KP': Slot('Kilpapenkki', ['Penkkipunnerrus', 'Lattiapunnerrus', 'Käsipainopenkki'], compound: true),
   'KM': Slot('Kilpamaastaveto', ['Maastaveto', 'Rack pull', 'Hip thrust'], compound: true),
   'KYV': Slot('Kyykkyvariaatio', ['Etukyykky', 'Hack-kyykky', 'Jalkaprässi'], compound: true),
-  'PEV': Slot('Penkkivariaatio', ['Taukopenkki', 'Kapea penkki', 'Vinopenkki'], compound: true),
+  'PEV': Slot('Penkkivariaatio', [
+    'Taukopenkki',
+    'Kapea penkki',
+    'Vinopenkki',
+    'Kapea taukopenkki',
+    'Vinopenkki tauolla',
+  ], compound: true),
   'MAV': Slot('Maastavetovariaatio', [
     'Romanialainen maastaveto',
     'Hip thrust',
@@ -718,6 +734,12 @@ class PlanItem {
 
   /// Supersarja tai kiertoharjoittelu: saman kirjaimen liikkeet vuorotellen, tauko vasta kierroksen jälkeen.
   String? group;
+
+  /// Vaihtoehtoiset liikkeet (käyttäjä 16.11.): treenissä valitaan, mikä tehdään tänään (esim. penkkipunnerrus tai
+  /// pysäytetty penkki). Sama tavoite (sarjat, toistot); jokaisella oma historia ja painoehdotus. Viikon kuormassa
+  /// sarjat jaetaan vaihtoehtojen kesken tasan (vuorottelu, ks. statsOf). Tiedostossa "tai: A; B".
+  List<String> alts;
+
   PlanItem(
     this.exercise,
     this.slot,
@@ -730,8 +752,15 @@ class PlanItem {
     this.note,
     this.pct,
     this.group,
-  });
+    List<String>? alts,
+  }) : alts = alts ?? [];
   bool get compound => slots[slot]?.compound ?? false;
+
+  /// Päävaihtoehto ja vaihtoehdot.
+  List<String> get choices => [exercise, ...alts];
+
+  /// Onko [name] tämä ohjelman liike (päävaihtoehto tai vaihtoehto).
+  bool covers(String name) => exercise == name || alts.contains(name);
 }
 
 class PlanDay {
@@ -761,6 +790,10 @@ class Program {
   String repStyle; // suositus / raskas / kevyt
   Set<String> equipment; // välinetoiveet (tyhjä = kaikki käy)
   String? kbFocus; // kahvakuulaohjelman painotus (kbFocuses), null = tavallinen ohjelma
+
+  /// Ohjelman oma nimi (ohjelmapohjan tai tallennetun ohjelman "name:"), null = tavoitteen mukaan
+  /// (testikierros 16.11.: pohja "Testipohja" näkyi käytössä nimellä "voima · 2 päivää viikossa").
+  String? name;
   Program({
     required this.goal,
     required this.experience,
@@ -774,6 +807,7 @@ class Program {
     this.repStyle = 'suositus',
     Set<String>? equipment,
     this.kbFocus,
+    this.name,
   }) : equipment = equipment ?? {},
        maxes = maxes ?? {},
        notes = notes ?? [],
@@ -782,17 +816,26 @@ class Program {
   bool get powerlifting => goal == 'voimanosto';
 
   /// Tiedostoon (ohjelma.md) aina suomeksi.
-  String get title => kbFocus != null
+  String get title => name != null
+      ? '$name · ${plan.length} päivää viikossa'
+      : kbFocus != null
       ? 'Kahvakuula: ${kbFocuses[kbFocus]?.$2 ?? kbFocus} · ${plan.length} päivää viikossa'
       : '${goals[goal] ?? goal} · ${plan.length} päivää viikossa';
 
   /// Käyttöliittymään käyttäjän kielellä.
-  String get displayTitle => l10n.t('{0} · {1} päivää viikossa', [
+  String get displayTitle => name == null ? kindTitle : _perWeek(name!);
+
+  /// "Nimi · 3 päivää viikossa"; yksi päivä yksikössä (testi 16.11.: "1 päivää viikossa", saame "1 beaivvi").
+  String _perWeek(String what) => plan.length == 1
+      ? l10n.t('{0} · 1 päivä viikossa', [what])
+      : l10n.t('{0} · {1} päivää viikossa', [what, plan.length]);
+
+  /// Tavoitteen mukainen kuvaus ilman omaa nimeä (tallennettujen ohjelmien alarivi, jossa nimi on jo otsikkona).
+  String get kindTitle => _perWeek(
     kbFocus != null
         ? l10n.t('Kahvakuula: {0}', [l10n.t(kbFocuses[kbFocus]?.$2 ?? kbFocus!)])
         : l10n.t(goals[goal] ?? goal),
-    plan.length,
-  ]);
+  );
 
   /// Ohjelmaviikko (0 = aloitusviikko).
   int weekOf(DateTime d) {
@@ -825,8 +868,12 @@ class Target {
   final double? pct; // % arvioidusta maksimista (voimanosto)
   final double loadFactor; // kevennysviikolla 0,9
   final String label;
+
   Target(this.sets, this.lo, this.hi, this.rir, this.restSec, this.label, {this.pct, this.loadFactor = 1});
   String get reps => lo == hi ? '$lo' : '$lo–$hi';
+
+  /// Näytettävä tavoite: "3 × 6–10".
+  String get text => '$sets × $reps';
 }
 
 Target targetFor(Program p, PlanItem it, DateTime date) {
@@ -1562,9 +1609,12 @@ String _pctText(double pct) => fileNum(double.parse((pct * 100).toStringAsFixed(
 
 String _min(int s) => s % 60 == 0 ? '${s ~/ 60} min' : '${fileNum(s / 60)} min';
 
-String programToMarkdown(Program p) {
-  final b = StringBuffer()
-    ..writeln('---')
+/// [name]: nimi tiedostoon (tallennettu ohjelma, pohja), muuten ohjelman oma nimi.
+String programToMarkdown(Program p, {String? name}) {
+  final n = (name ?? p.name)?.trim() ?? '';
+  final b = StringBuffer()..writeln('---');
+  if (n.isNotEmpty) b.writeln('name: ${n.replaceAll('\n', ' ')}');
+  b
     ..writeln('goal: ${p.goal}')
     ..writeln('experience: ${p.experience}')
     ..writeln('days: ${p.days}')
@@ -1600,6 +1650,7 @@ String programToMarkdown(Program p) {
       if (i.pct case final pct? when i.kind == null) b.write(' | @ ${_pctText(pct)} %');
       b.write(' | varaa ${i.rir} | tauko ${_min(i.restSec)} | ${i.slot}');
       if (i.group != null) b.write(' | supersarja ${i.group}');
+      if (i.alts.isNotEmpty) b.write(' | tai: ${i.alts.join('; ')}');
       if (i.note != null) b.write(' | huom: ${i.note}');
       b.writeln();
     }
@@ -1612,7 +1663,7 @@ String programToMarkdown(Program p) {
 const templateExtension = 'gmd';
 
 String programToTemplate(Program p, {String? name, String? author}) {
-  final md = programToMarkdown(p);
+  final md = programToMarkdown(p, name: name);
   final lines = md.split('\n');
   final out = <String>[];
   var inMeta = false;
@@ -1622,7 +1673,6 @@ String programToTemplate(Program p, {String? name, String? author}) {
       out.add(l);
       if (inMeta) {
         out.add('template: gievra-1');
-        if (name != null && name.trim().isNotEmpty) out.add('name: ${name.trim()}');
         if (author != null && author.trim().isNotEmpty) out.add('author: ${author.trim()}');
       }
       continue;
@@ -1659,6 +1709,7 @@ Program? parseProgram(String md) {
     deloadEvery: int.tryParse(meta['deloadEvery'] ?? '') ?? 6,
     repStyle: meta['reps'] ?? 'suositus',
     kbFocus: kbFocuses.containsKey(meta['kettlebell']) ? meta['kettlebell'] : null,
+    name: (meta['name'] ?? '').isEmpty ? null : meta['name'],
     equipment: {
       for (final x in (meta['equipment'] ?? '').split(','))
         if (equipmentChoices.containsKey(x.trim())) x.trim(),
@@ -1685,6 +1736,7 @@ Program? parseProgram(String md) {
       var rir = '1–3', rest = 120, slot = '';
       String? note, group;
       double? pct;
+      final alts = <String>[];
       for (final x in f.skip(1)) {
         final pm = RegExp(r'^@\s*(\d+(?:[.,]\d+)?)\s*%$').firstMatch(x);
         final gm = RegExp(r'^supersarja\s+([A-Z])$').firstMatch(x);
@@ -1707,12 +1759,22 @@ Program? parseProgram(String md) {
           sets = int.parse(m[1]!);
           lo = int.parse(m[2]!);
           hi = m[3] == null ? lo : int.parse(m[3]!);
+          // Käsin muokattu tai muualta tuotu tiedosto: "3 × 12–8" tai "0 × 0" kaatoi sarjanäkymän (clamp).
+          if (hi < lo) (lo, hi) = (hi, lo);
+          if (lo < 1) lo = 1;
+          if (hi < lo) hi = lo;
+          sets = sets.clamp(1, 20);
         } else if (x.startsWith('varaa ')) {
           rir = x.substring(6).trim();
         } else if (x.startsWith('tauko ')) {
           rest = ((parseNum(x.substring(6).replaceAll('min', '')) ?? 2) * 60).round();
         } else if (x.startsWith('huom:')) {
           note = x.substring(5).trim();
+        } else if (x.startsWith('tai:')) {
+          for (final a in x.substring(4).split(';')) {
+            final n = a.trim();
+            if (n.isNotEmpty && n != f[0] && !alts.contains(n)) alts.add(n);
+          }
         } else if (slots.containsKey(x)) {
           slot = x;
         }
@@ -1720,7 +1782,9 @@ Program? parseProgram(String md) {
       p.plan.last.items.add(
         PlanItem(
           f[0],
-          slot,
+          // Tuntematon tai puuttuva liikemalli (käsin kirjoitettu pohja, esim. "VT"): liikkeen oma, jotta viikon kuorma
+          // ja ohjelman tarkistus laskevat sen (testikierros 16.11.: laskettiin nollaksi).
+          slot.isEmpty ? slotOf(f[0]) : slot,
           sets,
           lo,
           hi,
@@ -1730,6 +1794,7 @@ Program? parseProgram(String md) {
           note: note,
           pct: kind == null ? pct : null,
           group: group,
+          alts: alts,
         ),
       );
     }

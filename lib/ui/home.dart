@@ -150,8 +150,7 @@ class _DayScreen extends StatelessWidget {
       ? [
           if (w.durationSec != null) (Icons.timer_outlined, fmtDurationSec(w.durationSec!)),
           if (w.distanceKm != null) (Icons.straighten, '${fmtNum(w.distanceKm!)} km'),
-          if (w.paceSecPerKm != null)
-            (Icons.speed, paceText(w.paceSecPerKm!, w.activity, short: true)),
+          if (w.paceSecPerKm != null) (Icons.speed, paceText(w.paceSecPerKm!, w.activity, short: true)),
           if (w.steps != null) (Icons.directions_walk, thousands(w.steps!)),
           if (w.hrAvg != null) (Icons.favorite_border, '${w.hrAvg}'),
         ]
@@ -1852,6 +1851,23 @@ class _InsightsCard extends StatelessWidget {
         ],
       ),
     );
+    // Ennätyksiä on, mutta vertailtavia liikkeitä ei vielä: lyhyt selitys tyhjän alueen sijaan (yötesti 16.11.).
+    List<Widget> progressRows() => ins.improving.isEmpty && ins.stalled.isEmpty
+        ? [
+            Text(
+              t(
+                'Odotetaan lisää treenejä. Vertailu näkyy, kun samaa liikettä on tehty viimeisten 4 viikon aikana '
+                'ja 2 kuukautta ennen sitä.',
+              ),
+              style: sub,
+            ),
+          ]
+        : [
+            Text(t('Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen'), style: sub),
+            const SizedBox(height: 4),
+            for (final p in ins.improving) row(p, true),
+            for (final p in ins.stalled) row(p, false),
+          ];
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Column(
@@ -1913,15 +1929,7 @@ class _InsightsCard extends StatelessWidget {
               onWeekTap: weekAct == null ? null : () => _WeekGoalBody.explain(context, weekAct),
               progress: !hasProgress
                   ? null
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t('Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen'), style: sub),
-                        const SizedBox(height: 4),
-                        for (final p in ins.improving) row(p, true),
-                        for (final p in ins.stalled) row(p, false),
-                      ],
-                    ),
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [...progressRows()]),
               progressTrailing: ins.prs30d > 0
                   ? Text(
                       ins.prs30d == 1 ? t('🏆 1 ennätys / 30 pv') : t('🏆 {0} ennätystä / 30 pv', [ins.prs30d]),
@@ -1948,10 +1956,7 @@ class _InsightsCard extends StatelessWidget {
                           ),
                       ],
                     ),
-                    Text(t('Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen'), style: sub),
-                    const SizedBox(height: 4),
-                    for (final p in ins.improving) row(p, true),
-                    for (final p in ins.stalled) row(p, false),
+                    ...progressRows(),
                   ],
                 ),
               ),

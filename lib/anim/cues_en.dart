@@ -159,6 +159,11 @@ const exerciseCuesEn = <String, List<String>>{
     "Lower the bar to the upper chest, just below the collarbones",
     "Shoulder blades together, elbows about 45° from your sides",
   ],
+  "Vinopenkki tauolla": [
+    "Bench at 30–45°, shoulder blades together",
+    "Lower the bar to the upper chest and pause for 1–2 s, stay tight",
+    "Press only once the bar has come to a complete stop",
+  ],
   "Käsipainopenkki": [
     "Dumbbells at the sides of the chest, palms facing your feet",
     "Lower deep, elbows about 45° from your sides",
@@ -720,6 +725,11 @@ const exerciseCuesEn = <String, List<String>>{
     "Shoulder-width grip",
     "Elbows close to your sides",
     "Bar to the lower chest, press to straight arms",
+  ],
+  "Kapea taukopenkki": [
+    "Shoulder-width grip, elbows close to your sides",
+    "Lower the bar to the lower chest and pause for 1–2 s, stay tight",
+    "Press to straight arms only once the bar has fully stopped",
   ],
   "Lonkan lähennys": [
     "Pads on the inside of the knees",

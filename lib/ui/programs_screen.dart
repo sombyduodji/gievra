@@ -22,7 +22,30 @@ class ProgramsScreen extends StatefulWidget {
 class _ProgramsScreenState extends State<ProgramsScreen> {
   late Future<List<(String, String, Program)>> _list = savedPrograms();
 
-  void _refresh() => setState(() => _list = savedPrograms());
+  void _refresh() {
+    if (mounted) setState(() => _list = savedPrograms());
+  }
+
+  // Ohjelma vaihtui muualta (esim. Avaa sovelluksella -pohja tämän näkymän päällä): Käytössä-rivi ja lista ajan
+  // tasalle (testikierros 16.11.: vanha ohjelma näkyi, kunnes näkymä avattiin uudelleen).
+  Program? _seen = settings.program;
+  void _onSettings() {
+    if (identical(settings.program, _seen)) return;
+    _seen = settings.program;
+    _refresh();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    settings.addListener(_onSettings);
+  }
+
+  @override
+  void dispose() {
+    settings.removeListener(_onSettings);
+    super.dispose();
+  }
 
   Future<String?> _askName(String initial, String title) {
     final c = TextEditingController(text: initial);
@@ -45,9 +68,14 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 
   Future<void> _rename(String path, String name, Program p) async {
     final n = await _askName(name, t('Nimeä ohjelma'));
-    if (n == null || n.isEmpty || n == name) return;
-    await files.delete(path);
+    if (n == null || n.isEmpty || n == name || !mounted) return;
+    // Toisen ohjelman nimi: kysytään ennen korvaamista. Uusi kirjoitetaan ensin ja vanha poistetaan vasta sitten,
+    // ettei epäonnistunut kirjoitus hävitä ohjelmaa.
+    if (!await confirmProgramOverwrite(context, n, keep: path)) return;
     await saveProgramAs(p, n);
+    // Vain kirjainkoko muuttui: Androidin jaettu tallennustila ei erota kirjainkokoa, joten uusi nimi kirjoitti
+    // saman tiedoston päälle, eikä vanhaa saa poistaa (yötesti 16.11.: ohjelma katosi).
+    if (savedProgramPath(n).toLowerCase() != path.toLowerCase()) await files.delete(path);
     _refresh();
   }
 
@@ -81,6 +109,18 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final cur = settings.program;
+    final saveAs = cur == null
+        ? null
+        : TextButton(
+            onPressed: () async {
+              final n = await _askName(cur.displayTitle.split(' · ').first, t('Tallenna nimellä'));
+              if (n == null || n.isEmpty || !context.mounted) return;
+              if (!await confirmProgramOverwrite(context, n)) return;
+              await saveProgramAs(cur, n);
+              _refresh();
+            },
+            child: Text(t('Tallenna nimellä')),
+          );
     return Scaffold(
       appBar: AppBar(title: BarTitle(Text(t('Ohjelmat')))),
       body: FutureBuilder(
@@ -96,17 +136,12 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.check_circle_outline),
                 title: Text(cur?.displayTitle ?? t('Treenaat vapaasti')),
-                trailing: cur == null
+                // Suurella tekstillä painike omalle rivilleen: otsikko ei rivity kolmelle riville sen vieressä
+                // (testikierros 16.11., saame).
+                subtitle: cur == null || !bigText(context)
                     ? null
-                    : TextButton(
-                        onPressed: () async {
-                          final n = await _askName(cur.displayTitle.split(' · ').first, t('Tallenna nimellä'));
-                          if (n == null || n.isEmpty) return;
-                          await saveProgramAs(cur, n);
-                          _refresh();
-                        },
-                        child: Text(t('Tallenna nimellä')),
-                      ),
+                    : Align(alignment: AlignmentDirectional.centerStart, child: saveAs!),
+                trailing: cur == null || bigText(context) ? null : saveAs!,
               ),
               SectionLabel(t('Tallennetut ohjelmat')),
               if (list.isEmpty)
@@ -118,7 +153,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                 Card(
                   child: ListTile(
                     title: Text(name),
-                    subtitle: Text(p.displayTitle, style: const TextStyle(fontSize: 12)),
+                    subtitle: Text(p.kindTitle, style: const TextStyle(fontSize: 12)),
                     onTap: () async {
                       await switchToSaved(context, path, p);
                       _refresh();

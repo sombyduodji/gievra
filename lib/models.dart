@@ -452,7 +452,8 @@ String workoutToMarkdown(Workout w) {
 }
 
 const _unitRe = r'(?:\s*(?:s|sek|sekuntia|askelta|askel|edestakaisin|m|metriä|toistoa|toisto|krt|kertaa)\b)?';
-final _setRe = RegExp(r'^(?:\d+[.)]|[-*])\s*(\d+(?:[.,]\d+)?)\s*kg\s*[×xX*]\s*(\d+)' + _unitRe + r'(.*)$');
+// "kg" valinnainen: käsin kirjoitettu "- 40 × 8" ohitettiin hiljaa (testikierros 16.11.).
+final _setRe = RegExp(r'^(?:\d+[.)]|[-*])\s*(\d+(?:[.,]\d+)?)\s*(?:kg\s*)?[×xX*]\s*(\d+)' + _unitRe + r'(.*)$');
 // Ilman painoa: "1. 45 s", "2. 20 askelta", "3. 8 toistoa" (käsin kirjoitettu kehonpainoliike)
 final _bwSetRe = RegExp(
   r'^(?:\d+[.)]|[-*])\s*(\d+)\s*(?:s|sek|sekuntia|askelta|askel|edestakaisin|m|metriä|toistoa|toisto|krt|kertaa)\b(.*)$',
@@ -608,6 +609,9 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
     } else if (section == notesHeading) {
       notes.add(t.startsWith(r'\#') ? line.replaceFirst(r'\#', '#') : line);
     } else {
+      // Liikunta-osion alla ei ole liikettä: sarjalta näyttävä rivi (käsin lisätty "- 400 m veto") ohitetaan.
+      // Ennen se kaatoi koko tiedoston luvun tai meni edellisen liikkeen sarjaksi.
+      if (section == activityHeading || w.exercises.isEmpty) continue;
       final m = _setRe.firstMatch(t);
       final bw = m == null ? _bwSetRe.firstMatch(t) : null;
       if (bw != null) {

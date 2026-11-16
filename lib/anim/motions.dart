@@ -267,14 +267,18 @@ final _skullcrusher = Motion(
   anchor: Anchor.hip,
   implement: Implement.barbell,
   props: const [_benchTop, _benchLegs, _benchLegs2],
-  start: const Pose(torso: -90, thigh: 75, shin: 5, arm: 165, fore: 165, anchorAt: Offset(.62, .6)),
-  end: const Pose(torso: -90, thigh: 75, shin: 5, arm: 165, fore: 40, anchorAt: Offset(.62, .6)),
+  // Olkavarsi hieman pään puolelle; kyynärpää koukistuu niin, että tanko laskee otsalle (pään suuntaan). Ennen
+  // kyynärvarsi kääntyi jalkojen puolelle eli kyynärpää taipui väärin päin (käyttäjä 16.11.). 195 → 315 kiertää
+  // pään kautta (270 = taakse).
+  start: const Pose(torso: -90, thigh: 75, shin: 5, arm: 195, fore: 195, anchorAt: Offset(.62, .6)),
+  end: const Pose(torso: -90, thigh: 75, shin: 5, arm: 195, fore: 315, anchorAt: Offset(.62, .6)),
 );
 final _overheadExt = Motion(
   anchor: Anchor.feet,
   implement: Implement.dumbbell,
-  start: const Pose(torso: 180, arm: 175, fore: 178, anchorAt: Offset(.5, _floor)),
-  end: const Pose(torso: 180, arm: 175, fore: 25, anchorAt: Offset(.5, _floor)),
+  // Paino laskee pään taakse (ei eteen): 178 → 335 kiertää taakse (270).
+  start: const Pose(torso: 180, arm: 180, fore: 178, anchorAt: Offset(.5, _floor)),
+  end: const Pose(torso: 180, arm: 180, fore: 335, anchorAt: Offset(.5, _floor)),
 );
 
 // --- Jalat ---------------------------------------------------------------
@@ -996,10 +1000,12 @@ final Map<String, Motion> exerciseMotions = {
   'Penkkipunnerrus': _bench,
   'Taukopenkki': _bench,
   'Kapea penkki': _closeGrip,
+  'Kapea taukopenkki': _closeGrip,
   'Lattiapunnerrus': _floorPress,
   'Käsipainopenkki': _dbBench,
   'Rintaprässi laitteessa': _benchPress(imp: Implement.machine),
   'Vinopenkki': _incline,
+  'Vinopenkki tauolla': _incline,
   'Smith-vinopenkki': _incline,
   'Vinokäsipainopenkki': _dbIncline,
   'Pystypunnerrus': _press,

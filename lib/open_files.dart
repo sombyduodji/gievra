@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_state.dart';
+import 'l10n.dart';
 import 'ui/import_export.dart';
 
 /// Sovelluksen navigaattori: avatut tiedostot tarvitsevat kontekstin tuontinäkymälle.
@@ -63,6 +64,18 @@ Future<void> _show(Object? message) => showOpened(message);
 
 /// Testeille julkinen: avaa tuontinäkymän kanavan viestistä.
 Future<void> showOpened(Object? message) async {
+  // Tiedosto, jota Gievra ei saanut luettua (lukuoikeus puuttuu, lähettäjä poisti sen): ilmoitus hiljaisuuden sijaan.
+  if (message is Map && message['error'] == true) {
+    for (var i = 0; i < 600; i++) {
+      final m = appMessenger.currentState;
+      if (m != null && m.mounted && settings.onboarded) {
+        m.showSnackBar(SnackBar(content: Text(t('Tiedostoa ei voitu avata.'))));
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    return;
+  }
   final file = await openedFromMessage(message);
   if (file == null) return;
   // Odotetaan, että aloitusnäkymä (nimi) on ohi ja navigaattori on olemassa.

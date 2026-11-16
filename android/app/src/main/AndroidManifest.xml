@@ -88,6 +88,16 @@
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
+        </activity>
+        <!-- Avaa sovelluksella / Jaa → Gievra: näkymätön läpikulku, joka välittää tiedoston käynnissä olevalle
+             MainActivitylle (yötesti 16.11.: muuten Android käynnisti toisen Gievran lähettäjän tehtävään). -->
+        <activity
+            android:name=".OpenFileActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <!-- "Avaa sovelluksella" tiedostonhallinnasta, sähköpostista tai viestistä: ohjelmapohja (.gmd), FitNotes-
                  varmuuskopio, Gievran varmuuskopio (.zip), .md-treenit. Tyypin tunnistaa sama koodi kuin Tuo tiedosto
                  -painikkeessa. Tiedostopääte tunnistetaan, kun polku on näkyvissä; muuten Gievra tarjoutuu tuntemattomille
@@ -105,6 +115,9 @@
                 <data android:scheme="content" android:mimeType="application/octet-stream" />
                 <data android:scheme="content" android:mimeType="text/markdown" />
                 <data android:scheme="content" android:mimeType="application/zip" />
+                <!-- Garmin Connectin CSV (Samsungin Omat tiedostot: text/comma-separated-values; yötesti 16.11.). -->
+                <data android:scheme="content" android:mimeType="text/csv" />
+                <data android:scheme="content" android:mimeType="text/comma-separated-values" />
             </intent-filter>
             <!-- Jaa → Gievra -->
             <intent-filter>

@@ -55,7 +55,11 @@ String _fmt(double v) => fmtNum((v * 2).round() / 2);
     msgs.add(l10n.t('⚠ Eri liikemalli: {0} → {1}.', [slotName(it.slot), slotName(newSlot)]));
     for (final m in {...before.keys, ...after.keys}) {
       final b = before[m] ?? 0, a = after[m] ?? 0;
-      if ((a - b).abs() >= .5) msgs.add('${a > b ? '↑' : '↓'} $m ${_fmt(b)} → ${_fmt(a)} sarjaa viikossa');
+      // Käännettynä (ennen suomeksi kaikilla kielillä, 16.11. ilta).
+      if ((a - b).abs() >= .5) {
+        final name = m == 'vatsa' ? l10n.t('keskivartalo') : l10n.t(m);
+        msgs.add('${a > b ? '↑' : '↓'} ${l10n.t('{0} {1} → {2} sarjaa viikossa', [name, _fmt(b), _fmt(a)])}');
+      }
     }
   }
   if (it.kind == 'H' || it.kind == 'V') {
@@ -88,6 +92,8 @@ String _fmt(double v) => fmtNum((v * 2).round() / 2);
 void applySwap(PlanItem it, String to) {
   final newSlot = family(slotOf(to)) == family(it.slot) ? it.slot : slotOf(to);
   final mOld = measureOf(it.exercise), mNew = measureOf(to);
+  // Vaihtoehdosta päävaihtoehto: entinen pää jää vaihtoehdoksi (samat vaihtoehdot treenissä).
+  if (it.alts.remove(to)) it.alts.insert(0, it.exercise);
   it
     ..exercise = to
     ..slot = newSlot
@@ -152,6 +158,10 @@ Program _clone(Program p) => Program(
   deloadEvery: p.deloadEvery,
   maxes: {...p.maxes},
   notes: [...p.notes],
+  repStyle: p.repStyle,
+  equipment: {...p.equipment},
+  kbFocus: p.kbFocus,
+  name: p.name,
   plan: [
     for (final d in p.plan)
       PlanDay(d.name, label: d.label, [
@@ -168,6 +178,7 @@ Program _clone(Program p) => Program(
             note: i.note,
             pct: i.pct,
             group: i.group,
+            alts: [...i.alts],
           ),
       ]),
   ],
@@ -177,11 +188,11 @@ Program cloneProgram(Program p) => _clone(p);
 
 // --- Viikkokuorma -----------------------------------------------------------
 
-const loadMuscles = ['rinta', 'selkä', 'olkapää', 'etureisi', 'takareisi', 'pakara', 'hauis', 'ojentaja'];
+const loadMuscles = ['rinta', 'selkä', 'olkapää', 'hauis', 'ojentaja', 'etureisi', 'takareisi', 'pakara', 'pohje'];
 
 /// Suositeltu sarjamäärä viikossa lihasryhmää kohden tavoitteen ja kokemuksen mukaan.
 (int, int) weeklyRange(Program p, String muscle) {
-  final small = muscle == 'hauis' || muscle == 'ojentaja';
+  final small = muscle == 'hauis' || muscle == 'ojentaja' || muscle == 'pohje';
   final (lo, hi) = switch ((p.goal, p.experience)) {
     ('lihaskasvu', 'aloittelija') => (6, 12),
     ('lihaskasvu', 'kokenut') => (12, 22),
@@ -233,7 +244,8 @@ Map<String, double> loggedSets(List<Workout> history, DateTime from, DateTime to
       final slot = slotOf(e.name);
       final top = e.sets.fold<double>(0, (a, s) => s.kg > a ? s.kg : a);
       final n = e.sets.where((s) => top == 0 || s.kg >= top * .6).length;
-      for (final m in _musclesOf(slot).entries) {
+      // Päälihakset, osat ja tietorivit samaan karttaan (avaimet eivät mene päällekkäin).
+      for (final m in loadOf(e.name, slot).entries) {
         out[m.key] = (out[m.key] ?? 0) + n * m.value;
       }
     }
@@ -244,6 +256,22 @@ Map<String, double> loggedSets(List<Workout> history, DateTime from, DateTime to
 // --- Palautumista huomioiva päivän valinta --------------------------------------
 
 /// Monivelliikkeiden suoraan kuormittamat lihasryhmät.
+/// Liikkeen raskaasti kuormittamat lihakset (moninivelliikkeet; sama raja kuin päivän ehdotuksessa).
+Set<String> heavyMusclesOf(String exercise) => _heavyMuscles([slotOf(exercise)]);
+
+/// Päivän [day] muissa salitreeneissä (sarjoja kirjattu) raskaasti kuormittuneet lihakset; [exceptSession]: nykyinen
+/// treeni, jota ei lasketa (käyttäjä 16.11.: varoitus myös vapaassa treenissä ja itse lisätyssä liikkeessä).
+Set<String> musclesTrainedToday(List<Workout> history, DateTime day, {int? exceptSession}) {
+  final d = dateOnly(day);
+  return _heavyMuscles(
+    history
+        .where((w) => dateOnly(w.date) == d && w.activity == null && w.session != exceptSession)
+        .expand((w) => w.exercises)
+        .where((e) => e.workSets.isNotEmpty)
+        .map((e) => slotOf(e.name)),
+  );
+}
+
 Set<String> _heavyMuscles(Iterable<String> slotsUsed) => {
   for (final s in slotsUsed)
     if (slots[s]?.compound ?? false)
