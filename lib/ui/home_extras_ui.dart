@@ -180,6 +180,14 @@ class NightHrData {
   static bool get available => !kIsWeb && !isDemo && Platform.isAndroid && settings.hcImport;
 
   static Future<void> refresh({bool force = false}) async {
+    if (isDemo) {
+      // Demo ja verkkoversio (kotisivun kuvat): keksityt yöt, tavallinen taso 52.
+      if (nights.value.isEmpty) {
+        final today = dateOnly(DateTime.now());
+        nights.value = {for (var i = 0; i < 30; i++) addDays(today, -i): 52 + (i * 7 % 5) - 2 + (i < 3 ? 1 : 0)};
+      }
+      return;
+    }
     if (!available || _busy) return;
     final now = DateTime.now();
     if (!force && _at != null && now.difference(_at!).inMinutes < 30) return;

@@ -77,12 +77,13 @@ USER = [
 # Kotisivun video (0.6.8): kohtaukset v1 … v6 (demossa ei karttoja: ne mainitaan lopussa) keksityillä esimerkkitiedoilla, tiedostot v1_fi.mp4 / v1_en.mp4.
 HOME = {
     "fi": [
-        ("v1", "Etusivu ja alapalkki",
-         "Alapalkissa Tänään, Ohjelma, Tilastot ja Lisää. Etusivulla Sali- ja Liikunta-valinta, päivän ehdotus "
-         "ja viikon renkaat. Ei tiliä eikä mainoksia: treenit ovat tavallisia tiedostoja omassa kansiossasi."),
+        ("v1", "Oma etusivu",
+         "Sali ja Liikunta yhdellä napautuksella, WHO:n suositukset renkaina ja kortit omassa järjestyksessä: "
+         "seuraava treeni, viikkoputki, palautuminen ja kehitys. Ei tiliä eikä mainoksia: treenit ovat "
+         "tavallisia tiedostoja omassa kansiossasi."),
         ("v2", "Salitreeni ohjelmasta",
-         "Ohjelman päivä ehdotetaan palautumisen mukaan. Lämmittelysarjat ja paino ovat valmiina, "
-         "palautusajastin kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
+         "Ohjelman päivä ehdotetaan palautumisen mukaan. Paino on valmiina, lämmittelysarjat omalla "
+         "painikkeella, palautusajastin kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
         ("v3", "Treeni jatkuu taustalla",
          "Takaisin kesken lenkin ei keskeytä mitään: ajanotto, GPS ja sykevyö jatkavat. Katso kalenteria tai "
          "vanhoja treenejä, ja palaa alapalkin yläpuolelta tai Jatka treeniä -painikkeesta."),
@@ -97,12 +98,13 @@ HOME = {
          "Sairas- tai lomatauolle viimeinen päivä tai tuleva loma etukäteen. Ei tee diagnoosia."),
     ],
     "en": [
-        ("v1", "Home screen and bottom bar",
-         "Today, Program, Stats and More in the bottom bar. A Gym and Activity choice on the home screen, "
-         "today's suggestion and week rings. No account, no ads: workouts are plain files in your own folder."),
+        ("v1", "Your own home screen",
+         "Gym and Activity in one tap, the WHO recommendations as rings and cards in your own order: next "
+         "workout, week streak, recovery and progress. No account, no ads: workouts are plain files in your "
+         "own folder."),
         ("v2", "Gym workout from your program",
-         "The program day is suggested based on your recovery. Warm-up sets and weights are filled in, the rest "
-         "timer tells you when to go again, and a set is saved by answering »Reps in reserve?«."),
+         "The program day is suggested based on your recovery. The weight is filled in, warm-up sets have their "
+         "own button, the rest timer tells you when to go again, and a set is saved by answering »Reps in reserve?«."),
         ("v3", "Workouts continue in the background",
          "Back during a walk stops nothing: the stopwatch, GPS and heart rate strap keep going. Check the "
          "calendar or past workouts, and return from the bar or the Continue workout button."),
