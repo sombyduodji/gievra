@@ -91,15 +91,16 @@ void main() {
   }
 
   testWidgets('yksi sarja yksikössä ja kesto sekunteina kuten treenin näkymässä (yötesti 17.11.)', (tester) async {
-    final w = Workout(
-      date: DateTime(2026, 11, 16),
-      title: 'Koko keho A',
-      exercises: [
-        ExerciseEntry('Penkkipunnerrus', [SetEntry(17.5, 10)]),
-      ],
-    )
-      ..minutes = 1
-      ..seconds = 33;
+    final w =
+        Workout(
+            date: DateTime(2026, 11, 16),
+            title: 'Koko keho A',
+            exercises: [
+              ExerciseEntry('Penkkipunnerrus', [SetEntry(17.5, 10)]),
+            ],
+          )
+          ..minutes = 1
+          ..seconds = 33;
     await tester.pumpWidget(MaterialApp(home: SingleChildScrollView(child: WorkoutShareCard(w))));
     expect(find.text('sarja'), findsOneWidget);
     expect(find.text('sarjaa'), findsNothing);

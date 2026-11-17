@@ -74,55 +74,47 @@ USER = [
      "Juoksulla on oma kehitysnäkymä: kilometrit ja vauhti viikoittain, kevyiden lenkkien vauhti ja "
      "syke sekä ennätykset. Salitreeneillä omat tilastonsa ja ennätykset."),
 ]
-# Kotisivun video (0.6): kohtaukset v1 … v7 keksityillä esimerkkitiedoilla, tiedostot v1_fi.mp4 / v1_en.mp4.
+# Kotisivun video (0.6.8): kohtaukset v1 … v6 (demossa ei karttoja: ne mainitaan lopussa) keksityillä esimerkkitiedoilla, tiedostot v1_fi.mp4 / v1_en.mp4.
 HOME = {
     "fi": [
-        ("v1", "Etusivu ja valikko",
-         "Salitreeni ja liikunta vierekkäin, viikkokalenteri ja viimeisimmät treenit. Valikossa kaksi osaa: "
-         "Treeni ja terveys sekä Tiedot ja laitteet. Ei tiliä eikä mainoksia: treenit ovat tavallisia "
-         "tiedostoja omassa kansiossasi."),
+        ("v1", "Etusivu ja alapalkki",
+         "Alapalkissa Tänään, Ohjelma, Tilastot ja Lisää. Etusivulla Sali- ja Liikunta-valinta, päivän ehdotus "
+         "ja viikon renkaat. Ei tiliä eikä mainoksia: treenit ovat tavallisia tiedostoja omassa kansiossasi."),
         ("v2", "Salitreeni ohjelmasta",
          "Ohjelman päivä ehdotetaan palautumisen mukaan. Lämmittelysarjat ja paino ovat valmiina, "
          "palautusajastin kertoo, milloin jatketaan, ja sarja tallentuu vastaamalla »jäikö varaa?«."),
-        ("v3", "GPS-lenkki kartalla",
-         "Reitti offline-kartalla, nousut, korkeusprofiili ja vauhti kilometreittäin. Reitin voi korjata "
-         "poluille. Syke, kalorit ja askeleet Health Connectista tai käsin."),
-        ("v4", "Offline-kartat",
-         "Lataa kunnat tai alue sijaintisi ympäriltä: Suomi, Pohjoismaat, Iso-Britannia, Espanja ja Irlanti, "
-         "korkeustiedot mukana. Kartat toimivat ilman verkkoa."),
-        ("v5", "Edistyminen ja tilastot",
-         "1, 3 tai 6 kuukautta tai oma aikaväli, esimerkiksi ensimmäisestä treenistä tähän päivään. Sali ja "
-         "kestävyys yhdessä tai erikseen, treenit viikoittain ja viikon kuorma lihasryhmittäin."),
-        ("v6", "Vammatila",
-         "20 kehon aluetta: vältettävät liikkeet ja hyvin siedetyt korvaavat, kipuasteikko ja punaiset liput. "
-         "Vammatila tai sairas- ja lomatauko näkyy etusivun ylälaidassa. Ei tee diagnoosia."),
-        ("v7", "Automaattinen varmuuskopio",
-         "Kun uusi versio käynnistyy ensimmäisen kerran, treenit pakataan varmuuskopioksi ennen kuin mitään "
-         "muutetaan. Asetukset › Tallennus: tallenna, jaa tai poista."),
+        ("v3", "Treeni jatkuu taustalla",
+         "Takaisin kesken lenkin ei keskeytä mitään: ajanotto, GPS ja sykevyö jatkavat. Katso kalenteria tai "
+         "vanhoja treenejä, ja palaa alapalkin yläpuolelta tai Jatka treeniä -painikkeesta."),
+        ("v4", "Kalorit renkaana",
+         "Kokonaiskulutus ja aktiiviset kalorit erikseen. Kävelyn kalorit lasketaan vauhdista ja pituudesta "
+         "tutkimukseen perustuen, myös ilman sykevyötä."),
+        ("v5", "Tilastot välilehdillä",
+         "Viikko, Kehitys, Ennätykset ja Kalenteri: treenit, viikon kuorma lihasryhmittäin, vertailu "
+         "edelliseen jaksoon ja arvioitu maksimi liikkeittäin."),
+        ("v6", "Vammatila ja tauko",
+         "20 kehon aluetta: vältettävät ja korvaavat liikkeet, kevyempi painoehdotus ja punaiset liput. "
+         "Sairas- tai lomatauolle viimeinen päivä tai tuleva loma etukäteen. Ei tee diagnoosia."),
     ],
     "en": [
-        ("v1", "Home screen and menu",
-         "Gym and activity side by side, the week calendar and recent workouts. The menu has two parts: "
-         "Training and health, and Data and devices. No account, no ads: workouts are plain files in your "
-         "own folder."),
+        ("v1", "Home screen and bottom bar",
+         "Today, Program, Stats and More in the bottom bar. A Gym and Activity choice on the home screen, "
+         "today's suggestion and week rings. No account, no ads: workouts are plain files in your own folder."),
         ("v2", "Gym workout from your program",
          "The program day is suggested based on your recovery. Warm-up sets and weights are filled in, the rest "
          "timer tells you when to go again, and a set is saved by answering »Reps in reserve?«."),
-        ("v3", "GPS run on the map",
-         "The route on an offline map, climbs, the elevation profile and pace per kilometre. The route can be "
-         "snapped to paths. Heart rate, calories and steps from Health Connect or by hand."),
-        ("v4", "Offline maps",
-         "Download municipalities or the area around you: Finland, the Nordic countries, the UK, Spain and "
-         "Ireland, with elevation data. Maps work without a network."),
-        ("v5", "Progress and statistics",
-         "1, 3 or 6 months or a custom period, for example from your first workout to today. Gym and cardio "
-         "together or separately, workouts per week and weekly volume per muscle group."),
-        ("v6", "Injury mode",
-         "20 body areas: exercises to avoid and well-tolerated alternatives, a pain scale and red flags. Injury "
-         "mode or a sick or holiday break shows at the top of the home screen. It does not diagnose."),
-        ("v7", "Automatic backup",
-         "When a new version starts for the first time, your workouts are backed up before anything is "
-         "changed. Settings › Storage: save, share or delete."),
+        ("v3", "Workouts continue in the background",
+         "Back during a walk stops nothing: the stopwatch, GPS and heart rate strap keep going. Check the "
+         "calendar or past workouts, and return from the bar or the Continue workout button."),
+        ("v4", "Calories as a ring",
+         "Total and active calories shown separately. Walking calories come from speed and height, based "
+         "on research, also without a heart rate strap."),
+        ("v5", "Stats in tabs",
+         "Week, Progress, Records and Calendar: workouts, weekly volume per muscle group, comparison with "
+         "the previous period and estimated max per exercise."),
+        ("v6", "Injury mode and breaks",
+         "20 body areas: exercises to avoid and alternatives, a lighter weight suggestion and red flags. A sick "
+         "or holiday break can have a last day or be marked in advance. It does not diagnose."),
     ],
 }
 SCENES = TRAINER
@@ -238,13 +230,15 @@ def main():
     card(f"{tmp}/end.png", [
         ("Try it in your browser or download for Android", 52, True, TEXT),
         ("The web demo lets you try everything and build your own training program. The app is free and open "
-         "source (GPL-3.0), with no account, ads or tracking. Also in Finnish and North Sámi.", 34, False, TEXT),
+         "source (GPL-3.0), with no account, ads or tracking. GPS with offline maps of the Nordic countries, the UK, "
+         "Spain and Ireland. Also in Finnish and North Sámi.", 34, False, TEXT),
         ("In development: feedback and ideas are very welcome.", 30, False, MUTED),
         ("sombyduodji.github.io/gievra/en · treeni@somby.fi", 36, True, (181, 36, 26)),
     ] if en else [
         ("Kokeile selaimessa tai lataa Androidille", 52, True, TEXT),
         ("Verkkodemossa voit kokeilla kaikkea ja tehdä oman treeniohjelman. Sovellus on maksuton ja avoin "
-         "(GPL-3.0), eikä siinä ole tiliä, mainoksia tai seurantaa.", 34, False, TEXT),
+         "(GPL-3.0), eikä siinä ole tiliä, mainoksia tai seurantaa. GPS ja offline-kartat Pohjoismaihin, "
+         "Iso-Britanniaan, Espanjaan ja Irlantiin.", 34, False, TEXT),
         ("Kehitysvaiheessa: palaute ja ideat ovat erittäin tervetulleita.", 30, False, MUTED),
         ("sombyduodji.github.io/gievra · treeni@somby.fi", 36, True, (181, 36, 26)),
     ] if user else [

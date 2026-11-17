@@ -39,29 +39,32 @@ void main() {
     expect(bad.toSet(), isEmpty, reason: bad.toSet().take(40).join('\n'));
   });
 
-  test('Vamma jälkikäteen (väliaikainen): välteltävä korvautuu tai jää näkyviin varoituksen kanssa; poisto palauttaa', () {
-    final noSub = <String>{}, badSub = <String>{};
-    for (final goal in goals.keys) {
-      for (final days in [2, 3, 4]) {
-        final p = generateProgram(goal: goal, experience: 'keski', days: days, minutes: 60, injuries: const []);
-        for (final id in ids) {
-          for (final d in p.plan) {
-            final adj = injuryAdjusted(d, [id]);
-            expect(injuryAdjusted(d, const []), same(d));
-            for (final (k, i) in adj.items.indexed) {
-              final st = injuryStatus(i.exercise, [id]);
-              if (st.avoid.isNotEmpty) noSub.add('$id: ${i.exercise}');
-              if (i.exercise != d.items[k].exercise && !known.contains(i.exercise)) badSub.add('$id: ${i.exercise}');
+  test(
+    'Vamma jälkikäteen (väliaikainen): välteltävä korvautuu tai jää näkyviin varoituksen kanssa; poisto palauttaa',
+    () {
+      final noSub = <String>{}, badSub = <String>{};
+      for (final goal in goals.keys) {
+        for (final days in [2, 3, 4]) {
+          final p = generateProgram(goal: goal, experience: 'keski', days: days, minutes: 60, injuries: const []);
+          for (final id in ids) {
+            for (final d in p.plan) {
+              final adj = injuryAdjusted(d, [id]);
+              expect(injuryAdjusted(d, const []), same(d));
+              for (final (k, i) in adj.items.indexed) {
+                final st = injuryStatus(i.exercise, [id]);
+                if (st.avoid.isNotEmpty) noSub.add('$id: ${i.exercise}');
+                if (i.exercise != d.items[k].exercise && !known.contains(i.exercise)) badSub.add('$id: ${i.exercise}');
+              }
             }
           }
         }
       }
-    }
-    expect(badSub, isEmpty, reason: badSub.join('\n'));
-    // Ilman korvaajaa jäävät näkyvät sarjanäkymässä varoituksena ja Valitse muu liike -painikkeella.
-    // ignore: avoid_print
-    if (noSub.isNotEmpty) print('Ilman korvaajaa (${noSub.length}):\n${noSub.join('\n')}');
-  });
+      expect(badSub, isEmpty, reason: badSub.join('\n'));
+      // Ilman korvaajaa jäävät näkyvät sarjanäkymässä varoituksena ja Valitse muu liike -painikkeella.
+      // ignore: avoid_print
+      if (noSub.isNotEmpty) print('Ilman korvaajaa (${noSub.length}):\n${noSub.join('\n')}');
+    },
+  );
 
   test('Kaksi vammaa yhtä aikaa: korvaaja ei ole kummankaan välteltävä', () {
     final bad = <String>{};

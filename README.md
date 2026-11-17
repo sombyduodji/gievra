@@ -20,7 +20,7 @@
   <a href="#palaute">Palaute</a>
 </p>
 
-<p align="center"><a href="https://sombyduodji.github.io/gievra/">▶ Katso esittelyvideo (2 min)</a></p>
+<p align="center"><a href="https://sombyduodji.github.io/gievra/">▶ Katso esittelyvideo (2½ min)</a></p>
 
 <p align="center">
   <img src="docs/screenshots/koti.png" width="200" alt="Etusivu">

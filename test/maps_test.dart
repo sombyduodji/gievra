@@ -451,7 +451,11 @@ void main() {
     test('Ilman luetteloa ja ilman kysyjää karttaa ei tuoda', () async {
       final maps = Directory('${tmp.path}/kartat')..createSync();
       final pm = File('test/fixtures/kartta-testi.pmtiles').readAsBytesSync();
-      final store = MapStore.instance..dirOverride = maps;
+      // Toisen testin luettelo ei saa jäädä voimaan (satunnaisjärjestys, siemen 90210).
+      final store = MapStore.instance
+        ..dirOverride = maps
+        ..catalog = null
+        ..forgetKnown();
       final file = '${tmp.path}/testi.pmtiles';
       File(file).writeAsBytesSync(pm);
       final r = await store.importFiles([file]);

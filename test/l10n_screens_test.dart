@@ -223,6 +223,9 @@ void main() {
         expect(b, isEmpty, reason: 'suomenkielistä tekstiä näkymässä "$where" ($lang)');
       }
 
+      // Toisen testin vammatila ei saa jäädä päälle (satunnaisjärjestys, siemenet 77 ja 90210).
+      setUp(() => settings.injuries = []);
+
       setUpAll(() async {
         TestWidgetsFlutterBinding.ensureInitialized();
         // Etusivun kortti muistaa valitun puolen: ilman tätä kuvakaappaustilassa MissingPluginException.
@@ -380,7 +383,11 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         await check(tester, 'tilastot treenien kanssa');
         for (final tab in ['progress', 'records', 'calendar']) {
-          await tester.pumpWidget(_TApp(home: StatsScreen(key: ValueKey(tab), tab: tab)));
+          await tester.pumpWidget(
+            _TApp(
+              home: StatsScreen(key: ValueKey(tab), tab: tab),
+            ),
+          );
           await tester.pump(const Duration(seconds: 1));
           await check(tester, 'tilastot $tab treenien kanssa');
         }

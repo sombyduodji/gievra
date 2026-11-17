@@ -187,8 +187,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.byType(SavedScreen), findsOneWidget);
-    expect(text, contains('0:01'));
-    expect(w.seconds, 1, reason: 'kysymyksiin kulunut aika ei lisäänny treeniin');
+    // Kuormitetulla koneella Valmis-napautus voi osua 2. sekunnille (siemen 77): olennaista on, että tallennettu
+    // aika on kysymyksessä näkynyt aika eikä kasva vastaamisen 2 sekunnin aikana.
+    final shownSec = int.parse(RegExp(r'0:0(\d)').firstMatch(text)!.group(1)!);
+    expect(shownSec, inInclusiveRange(1, 2));
+    expect(w.seconds, shownSec, reason: 'kysymyksiin kulunut aika ei lisäänny treeniin');
   });
 
   testWidgets(

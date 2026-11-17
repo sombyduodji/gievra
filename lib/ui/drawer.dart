@@ -257,37 +257,42 @@ class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: BarTitle(Text(isSami ? 'Eanet' : (isEnglish ? 'More' : 'Lisää')))),
-    body: ListenableBuilder(
-      listenable: Listenable.merge([settings, store]),
-      builder: (context, _) => ListView(
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          ...menuEntries(context, drawer: false),
-          // Ongelmailmoitus suoraan Lisää-välilehdellä (luonnos valilehdet).
-          ListTile(
-            key: const ValueKey('moreReport'),
-            leading: const Icon(Icons.bug_report_outlined),
-            title: Text(t('Ilmoita ongelmasta')),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen())),
-          ),
-          // Vapaaehtoinen tuki alimpana omana korttinaan (käyttäjä 16.11.).
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: Card(
-              color: Sami.yellow.withValues(alpha: .12),
-              child: ListTile(
-                key: const ValueKey('moreCoffee'),
-                leading: const Text('☕', style: TextStyle(fontSize: 22)),
-                title: Text(t('Tarjoa kahvit')),
-                subtitle: Text('Buy Me a Coffee · ${t('Vapaaehtoinen tuki kehitykselle')}'),
-                trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () => _open(AppInfo.coffee),
+  // Otsikko kuuntelee myös asetuksia: kielen vaihdon jälkeen otsikko jäi edelliselle kielelle (tarkistus 17.11.:
+  // "Lisää" englanninkielisessä näkymässä).
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: settings,
+    builder: (context, _) => Scaffold(
+      appBar: AppBar(title: BarTitle(Text(isSami ? 'Eanet' : (isEnglish ? 'More' : 'Lisää')))),
+      body: ListenableBuilder(
+        listenable: Listenable.merge([settings, store]),
+        builder: (context, _) => ListView(
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            ...menuEntries(context, drawer: false),
+            // Ongelmailmoitus suoraan Lisää-välilehdellä (luonnos valilehdet).
+            ListTile(
+              key: const ValueKey('moreReport'),
+              leading: const Icon(Icons.bug_report_outlined),
+              title: Text(t('Ilmoita ongelmasta')),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen())),
+            ),
+            // Vapaaehtoinen tuki alimpana omana korttinaan (käyttäjä 16.11.).
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Card(
+                color: Sami.yellow.withValues(alpha: .12),
+                child: ListTile(
+                  key: const ValueKey('moreCoffee'),
+                  leading: const Text('☕', style: TextStyle(fontSize: 22)),
+                  title: Text(t('Tarjoa kahvit')),
+                  subtitle: Text('Buy Me a Coffee · ${t('Vapaaehtoinen tuki kehitykselle')}'),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => _open(AppInfo.coffee),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
@@ -911,7 +916,7 @@ class _SettingsSection extends StatelessWidget {
               child: Text(
                 t(
                   'Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja muut lajit. Molemmat: '
-                  'etusivulla valinta Sali / Kestävyys.',
+                  'etusivulla valinta Sali / Liikunta.',
                 ),
                 style: sub,
               ),
@@ -1271,7 +1276,11 @@ Future<void> showAbout(BuildContext context) async {
       title: Column(
         children: [
           const Text(AppInfo.fullName, textAlign: TextAlign.center),
-          const Text(AppInfo.slogan, style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic)),
+          // Iskulause käännettynä (tarkistus 17.11.: oli suomeksi kaikilla kielillä).
+          Text(
+            t('Sinun treenisi, sinun tiedostosi.'),
+            style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
+          ),
           Text(
             t('Versio {0} ({1})', [info.version, platform]),
             style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),

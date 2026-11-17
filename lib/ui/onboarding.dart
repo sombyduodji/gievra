@@ -180,7 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     title: Text(bigText ? '⚖️ ${t('Seurataanko kehonpainoa?')}' : t('Seurataanko kehonpainoa?')),
                     subtitle: Text(
                       t(
-                        'Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai harvemmin. Näet painon kehityksen ja painoindeksin kohdassa Edistyminen ja tilastot.',
+                        'Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai harvemmin. Näet painon kehityksen ja painoindeksin Tilastot-välilehdellä.',
                       ),
                       style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                     ),
