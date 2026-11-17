@@ -9,19 +9,21 @@ import '../program_edit.dart' show loggedSets;
 import '../share_text.dart' show thousands;
 import '../running.dart';
 import '../stats.dart';
+import '../sports.dart' show sportOf;
 import '../theme.dart';
 import 'program_view.dart' show WeeklyLoadCard;
 import 'running_screen.dart';
 import 'widgets.dart';
 import 'steps_ui.dart';
+import 'stats_tabs.dart';
 import '../l10n.dart';
 
-/// ☰ → Edistyminen ja tilastot.
 /// Edistyminen ja tilastot. [kind]: aloitusnäkymä 'all' (kaikki), 'gym' tai 'cardio'.
 class StatsScreen extends StatefulWidget {
   final String? kind;
 
-  /// Avautuva välilehti: 'steps' = Askeleet (kun päivän askeleet ovat päällä), muuten Treenit.
+  /// Avautuva välilehti: 'steps' (Askeleet, kun päivän askeleet ovat päällä), 'progress', 'records' tai
+  /// 'calendar'; muuten Viikko (Kehitys, kun [kind] on annettu).
   final String? tab;
   const StatsScreen({super.key, this.kind, this.tab});
   @override
@@ -176,8 +178,12 @@ class _StatsScreenState extends State<StatsScreen> {
     return t('viikko {0}.{1}.–{2}.{3}.', [a.day, a.month, e.day, e.month]);
   }
 
+  // Alapalkin välilehtenä näkymä pysyy auki: päivittyy, kun treenit tai asetukset muuttuvat.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: Listenable.merge([settings, store]), builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     final ws = store.workouts;
@@ -305,8 +311,14 @@ class _StatsScreenState extends State<StatsScreen> {
               icon: const Icon(Icons.edit_calendar_outlined),
             )
           else ...[
-            IconButton(onPressed: () => setState(() => _offset++), icon: const Icon(Icons.chevron_left)),
+            // Nimet ruudunlukijalle (saavutettavuustarkistus 16.11.: painikkeilla ei ollut nimeä).
             IconButton(
+              tooltip: t('Edellinen jakso'),
+              onPressed: () => setState(() => _offset++),
+              icon: const Icon(Icons.chevron_left),
+            ),
+            IconButton(
+              tooltip: t('Seuraava jakso'),
               onPressed: _offset == 0 ? null : () => setState(() => _offset--),
               icon: const Icon(Icons.chevron_right),
             ),
@@ -336,7 +348,6 @@ class _StatsScreenState extends State<StatsScreen> {
     final workoutsBody = ListView(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
       children: [
-        const SamiBand(height: 4, pattern: false),
         // Juoksulla oma kehitysnäkymä (ei sekoitu salin edistymiseen).
         if (runsOf(ws).isNotEmpty)
           Padding(
@@ -421,7 +432,7 @@ class _StatsScreenState extends State<StatsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                tile('${r.sets}', t('sarjaa'), delta(r.sets, p.sets)),
+                tile('${r.sets}', r.sets == 1 ? t('sarja') : t('sarjaa'), delta(r.sets, p.sets)),
                 const SizedBox(width: 6),
                 tile(
                   r.volume == 0 ? '–' : _vol(r.volume),
@@ -451,34 +462,38 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
         if (kind != 'gym') ...[
           if (kind == 'all') const SizedBox(height: 6),
-          Row(
-            children: [
-              if (kind == 'cardio') ...[
-                tile('${r.activities}', t('kertaa'), delta(r.activities, p.activities)),
-                const SizedBox(width: 6),
+          // Samankorkuiset ruudut kuten yllä (ennen keskimmäinen ruutu nousi muita ylemmäs suurella tekstillä).
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (kind == 'cardio') ...[
+                  tile('${r.activities}', t('kertaa'), delta(r.activities, p.activities)),
+                  const SizedBox(width: 6),
+                  tile(
+                    r.minutes == 0 ? '–' : _hours(r.minutes),
+                    _timeLabel(r),
+                    delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 tile(
-                  r.minutes == 0 ? '–' : _hours(r.minutes),
-                  _timeLabel(r),
-                  delta(r.minutes / 60, p.minutes / 60, unit: ' h'),
+                  r.km == 0 ? '–' : '${fmtNum((r.km * 10).round() / 10)} km',
+                  t('matka'),
+                  delta(r.km, p.km, unit: ' km'),
                 ),
                 const SizedBox(width: 6),
+                tile(r.hrAvg == null ? '–' : '${r.hrAvg}', t('keskisyke'), ''),
+                if (kind == 'all') ...[const SizedBox(width: 6), tile(r.kcal == 0 ? '–' : '${r.kcal}', 'kcal', '')],
               ],
-              tile(
-                r.km == 0 ? '–' : '${fmtNum((r.km * 10).round() / 10)} km',
-                t('matka'),
-                delta(r.km, p.km, unit: ' km'),
-              ),
-              const SizedBox(width: 6),
-              tile(r.hrAvg == null ? '–' : '${r.hrAvg}', t('keskisyke'), ''),
-              if (kind == 'all') ...[const SizedBox(width: 6), tile(r.kcal == 0 ? '–' : '${r.kcal}', 'kcal', '')],
-            ],
+            ),
           ),
         ],
         if (kind == 'cardio' && r.kcal > 0)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              '🔥 ${t('Kalorit kellosta {0} kcal', [r.kcal])}${p.kcal > 0 ? ' ${t('(edellinen {0})', [p.kcal])}' : ''}',
+              '🔥 ${t('Kalorit {0} kcal', [r.kcal])}${p.kcal > 0 ? ' ${t('(edellinen {0})', [p.kcal])}' : ''}',
               style: sub,
             ),
           ),
@@ -537,7 +552,7 @@ class _StatsScreenState extends State<StatsScreen> {
             doneLabel: t('toteutunut, keskimäärin viikossa'),
           ),
         ],
-        if (settings.bodyTracker) _BodySection(from: _span == 'month' && !_custom ? addDays(b, -84) : a, to: b),
+        if (settings.bodyTracker) BodyWeightSection(from: _span == 'month' && !_custom ? addDays(b, -84) : a, to: b),
         if (tips.isNotEmpty) ...[
           SectionLabel(t('Huomiot ja ehdotukset')),
           for (final tip in tips)
@@ -571,11 +586,13 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           if (fs.byDay.isNotEmpty) ...[
             SectionLabel(t('Treeneittäin')),
-            for (final g in fs.byDay.reversed) _row(context, g),
+            // Lajit ja ohjelman päivät käyttöliittymän kielellä (ennen "Kävely" ja "Koko keho B" englanniksikin).
+            for (final g in fs.byDay.reversed)
+              _row(context, g, label: sportOf(g.label) != null ? sportName(g.label) : trName(g.label)),
           ],
           if (fs.byExercise.isNotEmpty) ...[
             SectionLabel(t('Raskaimmilta tuntuvat liikkeet')),
-            for (final g in fs.byExercise.take(5)) _row(context, g),
+            for (final g in fs.byExercise.take(5)) _row(context, g, label: exerciseLabel(g.label)),
           ],
         ],
         if (lifts.isNotEmpty) ...[
@@ -619,43 +636,56 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
       ],
     );
-    // Päivän askeleet päällä: Treenit- ja Askeleet-välilehdet, sama jakso molemmissa.
-    if (!stepsTabAvailable) {
-      return Scaffold(
-        appBar: AppBar(title: BarTitle(Text(t('Edistyminen ja tilastot')))),
-        body: workoutsBody,
-      );
-    }
+    // Välilehdet (ulkoasun kohennus 16.11.): Viikko, Kehitys (jakso, vertailu, voimakehitys, fiilis), Ennätykset,
+    // Kalenteri ja Askeleet (kun päivän askeleet ovat päällä; sama jakso kuin Kehityksessä).
+    final steps = stepsTabAvailable;
+    final tabs = <(String, Widget)>[
+      (t('Viikko'), const WeekStatsTab()),
+      (t('Kehitys'), workoutsBody),
+      (t('Ennätykset'), const RecordsTab()),
+      (t('Kalenteri'), const CalendarTab()),
+      if (steps) (t('Askeleet'), StepsStatsView(from: a, to: b, prevFrom: pa, prevTo: pb, header: periodControls)),
+    ];
+    final initial = switch (widget.tab) {
+      'steps' when steps => 4,
+      'progress' => 1,
+      'records' => 2,
+      'calendar' => 3,
+      _ => widget.kind != null ? 1 : 0,
+    };
+    final tabBar = TabBar(
+      key: const ValueKey('statsTabs'),
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      tabs: [for (final (label, _) in tabs) Tab(text: label)],
+    );
     return DefaultTabController(
-      length: 2,
-      initialIndex: widget.tab == 'steps' ? 1 : 0,
+      length: tabs.length,
+      initialIndex: initial,
       child: Scaffold(
         appBar: AppBar(
-          title: BarTitle(Text(t('Edistyminen ja tilastot'))),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: t('Treenit')),
-              Tab(text: t('Askeleet')),
-            ],
+          title: BarTitle(Text(t('Tilastot'))),
+          // Saamen nauha otsikon alla kaikilla välilehdillä (ennen vain Kehityksessä), välilehdet sen alla.
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(4 + tabBar.preferredSize.height),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [const SamiBand(height: 4, pattern: false), tabBar],
+            ),
           ),
         ),
-        body: TabBarView(
-          children: [
-            workoutsBody,
-            StepsStatsView(from: a, to: b, prevFrom: pa, prevTo: pb, header: periodControls),
-          ],
-        ),
+        body: TabBarView(children: [for (final (_, body) in tabs) body]),
       ),
     );
   }
 
-  Widget _row(BuildContext context, FeelingGroup g) {
+  Widget _row(BuildContext context, FeelingGroup g, {String? label}) {
     final f = feelingOf(g.avg.round());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Expanded(child: Text(g.label)),
+          Expanded(child: Text(label ?? g.label)),
           Text('${f?.$2 ?? ''} ${fmtDec(g.avg, 1)}', style: const TextStyle(fontWeight: FontWeight.w600)),
           SizedBox(
             width: 52,
@@ -773,15 +803,22 @@ class _Split extends StatelessWidget {
     final byTime = gymMinutes + cardioMinutes > 0;
     final g = byTime ? gymMinutes : gym, c = byTime ? cardioMinutes : cardio;
     final total = g + c;
-    Widget side(String icon, String label, int n, int mins, Color color, CrossAxisAlignment align) => Column(
-      crossAxisAlignment: align,
-      children: [
-        Text('$icon $label', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-        Text(
-          '${t('{0} krt', [n])}${mins > 0 ? ' · ${_hours(mins)}' : ''}',
-          style: TextStyle(fontWeight: FontWeight.w700, color: color),
+    // Pitkät arvot (paljon kertoja ja tunteja) pienenevät mahtumaan (ylivuoto 3 v:n historialla, tarkastus 16.11.).
+    Widget side(String icon, String label, int n, int mins, Color color, CrossAxisAlignment align) => Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: align == CrossAxisAlignment.start ? Alignment.centerLeft : Alignment.centerRight,
+        child: Column(
+          crossAxisAlignment: align,
+          children: [
+            Text('$icon $label', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            Text(
+              '${t('{0} krt', [n])}${mins > 0 ? ' · ${_hours(mins)}' : ''}',
+              style: TextStyle(fontWeight: FontWeight.w700, color: color),
+            ),
+          ],
         ),
-      ],
+      ),
     );
     return Container(
       padding: const EdgeInsets.all(12),
@@ -792,6 +829,7 @@ class _Split extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               side('🏋', t('Sali'), gym, gymMinutes, redText(context), CrossAxisAlignment.start),
+              const SizedBox(width: 12),
               side('🏃', t('Kestävyys'), cardio, cardioMinutes, greenText(context), CrossAxisAlignment.end),
             ],
           ),
@@ -936,9 +974,9 @@ String _monthShort(int m) {
 
 /// Kehonpaino jaksolta (vähintään 12 viikkoa): nykyinen paino, muutos, painoindeksi ja käyrä.
 /// Punnitusten korjaus: ☰ → Asetukset → Paino ja pituus.
-class _BodySection extends StatelessWidget {
+class BodyWeightSection extends StatelessWidget {
   final DateTime from, to;
-  const _BodySection({required this.from, required this.to});
+  const BodyWeightSection({super.key, required this.from, required this.to});
 
   @override
   Widget build(BuildContext context) {
@@ -951,7 +989,7 @@ class _BodySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionLabel(t('Kehonpaino')),
-          Text(t('Ei vielä punnituksia. Lisää paino etusivulta tai ☰ → Asetukset → Paino ja pituus.'), style: sub),
+          Text(t('Ei vielä punnituksia. Lisää paino etusivulta tai Lisää → Asetukset → Paino ja pituus.'), style: sub),
         ],
       );
     }
@@ -1022,7 +1060,7 @@ class _BodySection extends StatelessWidget {
         ],
         Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text(t('Punnitusten korjaus ja pituus: ☰ → Asetukset → Paino ja pituus.'), style: sub),
+          child: Text(t('Punnitusten korjaus ja pituus: Lisää → Asetukset → Paino ja pituus.'), style: sub),
         ),
       ],
     );

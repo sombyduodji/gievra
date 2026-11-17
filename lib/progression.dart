@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'app_state.dart';
+import 'injuries.dart' show injuryStatus, knownInjuries;
 import 'l10n.dart' as l10n;
 import 'exercises.dart';
 import 'models.dart';
@@ -158,7 +159,7 @@ double? workingE1rm(String exercise, DateTime date, [int session = 1]) {
 
 /// Ohjelman tavoitteen mukainen ehdotus.
 Suggestion? suggestForTarget(String exercise, DateTime date, Target t, {int session = 1}) =>
-    _afterFeedback(exercise, date, _suggestForTarget(exercise, date, t, session), session);
+    _injuryLighter(exercise, _afterFeedback(exercise, date, _suggestForTarget(exercise, date, t, session), session));
 
 Suggestion? _suggestForTarget(String exercise, DateTime date, Target t, [int session = 1]) {
   final mu = measureOf(exercise);
@@ -303,7 +304,29 @@ Suggestion? _suggestOther(String exercise, DateTime date, Measure m, [int sessio
 }
 
 Suggestion? suggestNext(String exercise, DateTime date, {int session = 1}) =>
-    _afterFeedback(exercise, date, _suggestNext(exercise, date, session), session);
+    _injuryLighter(exercise, _afterFeedback(exercise, date, _suggestNext(exercise, date, session), session));
+
+/// Vammatilan kevennys (käyttäjä 16.11.): kun vammatila merkitsee liikkeen (kevennä tai vältä), ehdotettu kuorma
+/// 30 % kevyemmäksi (ohjeiden "kevennä 30–50 %" varovainen pää), alaspäin lähimpään askeleeseen tai kuulaan.
+/// Toistot ennallaan; kivuton liikerata ensin.
+const injuryLoadFactor = .7;
+
+Suggestion? _injuryLighter(String exercise, Suggestion? s) {
+  if (s == null || s.kg <= 0 || measureOf(exercise) != Measure.reps) return s;
+  final st = injuryStatus(exercise, knownInjuries(settings.injuries));
+  if (!st.flagged) return s;
+  final target = s.kg * injuryLoadFactor;
+  final kg = kettlebellOnly(exercise)
+      ? kettlebellSizes.lastWhere((k) => k <= target, orElse: () => kettlebellSizes.first)
+      : _roundDown(target, stepFor(exercise));
+  if (kg >= s.kg) return s;
+  return Suggestion(
+    kg,
+    s.reps,
+    l10n.t('Vammatila: kuorma 30 % kevyempi ({0} → {1} kg). Kivuton liikerata ensin.', [fmtNum(s.kg), fmtNum(kg)]),
+    setsFactor: s.setsFactor,
+  );
+}
 
 Suggestion? _suggestNext(String exercise, DateTime date, [int session = 1]) {
   final m = measureOf(exercise);
@@ -334,6 +357,9 @@ Suggestion? _suggestNext(String exercise, DateTime date, [int session = 1]) {
       // toistot saavat laskea toistoalueen alarajalle.
       final low = math.min(minRir >= 3 ? math.max(floor, reps - 1) : floor, reps);
       (kg, r) = nextLoad(exercise, top, e1: e1, floor: low, maxReps: reps);
+      // Ilman lisäpainoa (0 kg, esim. punnerrus) arvioitua maksimia ei ole, ja toistoiksi tulisi 1 (testi 17.11.:
+      // 0 kg × 30 → "2,5 kg × 1"): toistot toistoalueen alarajalle.
+      if (top <= 0) r = math.max(r, low);
       // Iso hyppy (kahvakuula +4 kg, kevyt paino): jos toistot uudella painolla jäisivät alle toistoalueen,
       // ensin pienempi lisäys, jos sellainen on, muuten lisää toistoja samalla painolla (tuplaprogressio).
       // Raja on toistoalueen alaraja myös, kun varaa jäi reilusti (muuten reilu vara nostaisi myöhemmin kuin

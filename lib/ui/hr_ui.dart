@@ -100,7 +100,7 @@ class _HrScreenState extends State<HrScreen> {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 13, color: cs.onSurfaceVariant);
     return Scaffold(
-      appBar: AppBar(title: BarTitle(Text(t('Sykevyö')))),
+      appBar: AppBar(title: BarTitle(Text(t('Sykevyö'))), bottom: samiBarBand),
       body: ListenableBuilder(
         listenable: hr,
         builder: (context, _) {
@@ -547,7 +547,12 @@ class HrDetails extends StatelessWidget {
                   w.activity == null
                       ? t('kalorit: MET sykkeen mukaan (Compendium 2024)')
                       : t('kalorit sykkeestä (Keytel 2005)'),
-                if (w.kcalSource == 'nopeus' && w.kcal != null) t('kalorit matkasta ja ajasta (ACSM)'),
+                if (w.kcalSource == 'nopeus' && w.kcal != null)
+                  w.activity == 'Kävely'
+                      ? t('kalorit kävelyvauhdista (Ludlow & Weyand 2016)')
+                      : t('kalorit matkasta ja ajasta (ACSM)'),
+                // Kokonaiskulutus ja aktiiviset (käyttäjä 17.11.): ero kävelymattoon ja kelloihin selittyy tällä.
+                if (w.kcal != null && hrProfile() != null) t('aktiiviset kalorit = kokonaiskulutus − lepokulutus'),
               ].join(' · '),
               style: sub,
             ),

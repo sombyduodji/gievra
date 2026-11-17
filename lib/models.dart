@@ -665,3 +665,10 @@ Workout parseWorkout(String text, {DateTime? fallbackDate, int fallbackSession =
   }
   return w;
 }
+
+/// Päivä muodossa vvvv-kk-pp vain, jos se on olemassa: DateTime.parse hyväksyy mahdottoman päivän (2026-13-45) ja
+/// siirtää sen eteenpäin (14.2.2027), jolloin tiedostonimestä luettu treeni päätyi tulevaisuuteen (testi 17.11.).
+DateTime? strictDate(String s) {
+  final d = DateTime.tryParse(s);
+  return d != null && s.startsWith(isoDate(d)) ? d : null;
+}

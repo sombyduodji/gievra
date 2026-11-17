@@ -281,7 +281,7 @@ ImportResult readMdFiles(Map<String, String> files, {int repaired = 0, Map<Strin
     try {
       final w = parseWorkout(
         e.value,
-        fallbackDate: m == null ? null : DateTime.parse(m[1]!),
+        fallbackDate: m == null ? null : strictDate(m[1]!),
         fallbackSession: sessionFromName(base),
       );
       sets += w.exercises.fold(0, (a, x) => a + x.sets.length);
@@ -395,7 +395,7 @@ ImportResult readZip(List<int> bytes) {
       continue;
     }
     try {
-      final w = parseWorkout(text, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(base));
+      final w = parseWorkout(text, fallbackDate: strictDate(m[1]!), fallbackSession: sessionFromName(base));
       sets += w.exercises.fold(0, (a, e) => a + e.sets.length);
       // Palautus kirjoittaa tiedoston sellaisenaan (ei korjattua merkistöä: se kirjoitetaan uudelleen UTF-8:na).
       if (!decoded.$2) w.originalMd = text;

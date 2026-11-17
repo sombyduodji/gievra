@@ -241,4 +241,32 @@ void main() {
     store.workouts = [kb('Kahvakuulahauiskääntö', 16, 20, 1)];
     expect(suggestNext('Kahvakuulahauiskääntö', d)!.kg, 20);
   });
+
+  test('ilman lisäpainoa (0 kg) ehdotus ei putoa yhteen toistoon', () {
+    Workout one(String ex, int reps, int rir) => Workout(
+      date: DateTime(2026, 11, 6),
+      exercises: [
+        ExerciseEntry(ex, [SetEntry(0, reps, rir: rir), SetEntry(0, reps, rir: rir)]),
+      ],
+    );
+    Suggestion next(String ex, int reps, int rir) {
+      store.workouts
+        ..clear()
+        ..add(one(ex, reps, rir));
+      return suggestNext(ex, DateTime(2026, 11, 8))!;
+    }
+
+    // Punnerrus 0 kg × 30, muutama varastossa: ennen "2,5 kg × 1".
+    var s = next('Punnerrus', 30, 1);
+    expect(s.kg, 2.5);
+    expect(s.reps, greaterThanOrEqualTo(5));
+    // Reilusti varaa: toistot lähes ennallaan.
+    s = next('Takakyykky', 8, 3);
+    expect(s.kg, 5);
+    expect(s.reps, 7);
+    // Alle ylärajan: sama paino, toisto lisää (ennallaan).
+    s = next('Punnerrus', 8, 1);
+    expect((s.kg, s.reps), (0, 9));
+    store.workouts.clear();
+  });
 }

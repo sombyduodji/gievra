@@ -119,7 +119,8 @@ void main() {
     ];
     final w = Workout(date: day, title: 'Kävely', activity: 'Kävely', distanceKm: 2)
       ..started = t0.toLocal()
-      ..seconds = 1500 // 5 min taukoa
+      ..seconds =
+          1500 // 5 min taukoa
       ..minutes = 25
       ..routeGpx = routeToGpx(segs, name: 'Kävely', type: 'Kävely', raw: segs, rawDistance: 2000);
     await open(tester, w);

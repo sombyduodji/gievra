@@ -124,7 +124,7 @@ void main() {
   testWidgets('Kävely sykkeellä: Reipas esivalittu (arvio sykkeestä), kasvon napautus palauttaa fiiliksen', (
     tester,
   ) async {
-    late FinishResult? r;
+    FinishResult? r;
     final w = walk(s: hrSeries(125, 1800));
     tester.view.physicalSize = const Size(412 * 3, 2600 * 3);
     tester.view.devicePixelRatio = 3;
@@ -145,7 +145,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Giitu! Kävely tehty'), findsOneWidget);
     expect(find.text('✦ arvio sykkeestä'), findsOneWidget);
+    // Fiilis yhtenä ruutuna (16.11.): napautus avaa valitsimen, erillinen Tallenna.
+    await tester.tap(find.byKey(const ValueKey('feelingTile')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('face_4')));
+    await tester.pumpAndSettle();
+    expect(r, isNull, reason: 'kasvo ei tallenna heti');
+    await tester.tap(find.byKey(const ValueKey('finishSave')));
     await tester.pumpAndSettle();
     expect((r!.feeling, r!.intensity), (4, 'reipas'));
   });
@@ -203,9 +209,12 @@ void main() {
     );
     await tester.tap(find.text('avaa'));
     await tester.pumpAndSettle();
-    expect(find.text('🏆 1 ennätys!'), findsOneWidget);
+    expect(find.text('🏆 1'), findsOneWidget);
+    expect(find.text('ennätys'), findsOneWidget);
     expect(find.text('⬆ Takakyykky +5 kg'), findsOneWidget);
     expect(find.text('Rasitus'), findsNothing, reason: 'salissa ei rasitusta');
+    await tester.tap(find.byKey(const ValueKey('feelingTile')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('face_2')));
     await tester.pumpAndSettle();
     expect(find.text('Mikä tuntui raskaalta?'), findsOneWidget);
@@ -272,6 +281,8 @@ void main() {
             scale: scale,
           );
           if (kind != 'kävely') {
+            await tester.tap(find.byKey(const ValueKey('feelingTile')));
+            await tester.pumpAndSettle();
             await tester.tap(find.byKey(const ValueKey('face_1')));
             await tester.pumpAndSettle();
           }

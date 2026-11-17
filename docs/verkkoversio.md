@@ -4,7 +4,7 @@ Sama sovellus käännettynä selaimeen (Flutter web). Verkossa se on **demo**:
 
 - esimerkkitreenit (neljä viikkoa, kolmen päivän ohjelma), etusivu, kalenteri, tilastot ja treenin kirjaus toimivat
 - mitään ei tallenneta: ei tiedostoja, ei selaimen muistia; sivun päivitys palauttaa demon alkuun
-- **ohjelmatyökalu**: ☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma → Tallenna pohja lataa ohjelmapohjan
+- **ohjelmatyökalu**: Ohjelma-välilehti → Tee uusi ohjelma → Tallenna pohja lataa ohjelmapohjan
   (`.gmd`), jonka voi lähettää toiselle ja tuoda sovellukseen
 - pois päältä verkossa: treenikansio, tuonti ja varmuuskopio, synkronointi, vikailmoitus, FitNotes (SQLite)
 

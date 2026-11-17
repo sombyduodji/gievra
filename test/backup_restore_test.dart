@@ -133,28 +133,31 @@ void main() {
     expect(File(p.join(b.path, 'asetukset.md')).readAsStringSync(), 'oma');
   });
 
-  test('Palautus kirjoittaa tiedostot tavulleen: käsin kirjoitetut ja tuntemattomat rivit säilyvät (päivätesti 14.11.)',
-      () async {
-    await _fill(a);
-    // Käsin kirjoitettu treeni: kehonpainoliike "toistoa"-muodossa, oma rivi, jota jäsennin ei tunne.
-    const hand = '# Treeni\n\n## Leuanveto\n1. 8 toistoa\n2. 7 toistoa\nOma huomio: ote leveä\n\n## Takakyykky\n'
-        '1. 100 kg × 5\n';
-    await files.write('2026/2026-11-03.md', hand);
-    // Punnitukset uusin ensin (käyttäjän oma järjestys).
-    const body = '---\nheight: 180 cm\n---\n- 2026-11-03: 82,0 kg\n- 2026-11-01: 82,4 kg\n';
-    await files.write(bodyFileName, body);
-    await store.reload();
-    final hw = store.workouts.firstWhere((w) => w.date == DateTime(2026, 11, 3));
-    expect(hw.exercises.first.sets.map((s) => (s.kg, s.reps)), [(0.0, 8), (0.0, 7)], reason: '"toistoa" luetaan');
-    final before = {for (final r in _rel(a)) r: File(p.join(a.path, r)).readAsBytesSync()};
-    final zip = await exportZip();
-    _fresh(b);
-    await applyImport(readZip(zip));
-    for (final e in before.entries) {
-      if (e.key == settingsFileName || e.key == programFileName) continue; // ladataan ja kirjoitetaan asetuksina
-      expect(File(p.join(b.path, e.key)).readAsBytesSync(), e.value, reason: '${e.key} muuttui palautuksessa');
-    }
-  });
+  test(
+    'Palautus kirjoittaa tiedostot tavulleen: käsin kirjoitetut ja tuntemattomat rivit säilyvät (päivätesti 14.11.)',
+    () async {
+      await _fill(a);
+      // Käsin kirjoitettu treeni: kehonpainoliike "toistoa"-muodossa, oma rivi, jota jäsennin ei tunne.
+      const hand =
+          '# Treeni\n\n## Leuanveto\n1. 8 toistoa\n2. 7 toistoa\nOma huomio: ote leveä\n\n## Takakyykky\n'
+          '1. 100 kg × 5\n';
+      await files.write('2026/2026-11-03.md', hand);
+      // Punnitukset uusin ensin (käyttäjän oma järjestys).
+      const body = '---\nheight: 180 cm\n---\n- 2026-11-03: 82,0 kg\n- 2026-11-01: 82,4 kg\n';
+      await files.write(bodyFileName, body);
+      await store.reload();
+      final hw = store.workouts.firstWhere((w) => w.date == DateTime(2026, 11, 3));
+      expect(hw.exercises.first.sets.map((s) => (s.kg, s.reps)), [(0.0, 8), (0.0, 7)], reason: '"toistoa" luetaan');
+      final before = {for (final r in _rel(a)) r: File(p.join(a.path, r)).readAsBytesSync()};
+      final zip = await exportZip();
+      _fresh(b);
+      await applyImport(readZip(zip));
+      for (final e in before.entries) {
+        if (e.key == settingsFileName || e.key == programFileName) continue; // ladataan ja kirjoitetaan asetuksina
+        expect(File(p.join(b.path, e.key)).readAsBytesSync(), e.value, reason: '${e.key} muuttui palautuksessa');
+      }
+    },
+  );
 
   test('Nykyinen varmuuskopio: kaikki tiedostot mukana ja palautuvat uuteen asennukseen', () async {
     await _fill(a);

@@ -32,9 +32,20 @@ void main() {
     // Suomenkielisiä Flutterin tekstejä ei jää näkyviin (näppäimistön näppäimiä lukuun ottamatta).
     final fi = ['Ohita', 'Siirrä', 'Tallenna', 'Jatka', 'Tänään', 'Valitse', 'Lisenssit', 'sivu'];
     final shown = [
-      l.modalBarrierDismissLabel, w.reorderItemDown, w.selectAllButtonLabel, l.saveButtonLabel, l.continueButtonLabel,
-      l.currentDateLabel, l.timePickerHourModeAnnouncement, l.licensesPageTitle, l.nextPageTooltip,
-      l.scrimOnTapHint('x'), l.dialogLabel, l.alertDialogLabel, l.popupMenuLabel, l.bottomSheetLabel,
+      l.modalBarrierDismissLabel,
+      w.reorderItemDown,
+      w.selectAllButtonLabel,
+      l.saveButtonLabel,
+      l.continueButtonLabel,
+      l.currentDateLabel,
+      l.timePickerHourModeAnnouncement,
+      l.licensesPageTitle,
+      l.nextPageTooltip,
+      l.scrimOnTapHint('x'),
+      l.dialogLabel,
+      l.alertDialogLabel,
+      l.popupMenuLabel,
+      l.bottomSheetLabel,
     ];
     for (final s in shown) {
       for (final w in fi) {

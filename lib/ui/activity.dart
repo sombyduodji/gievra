@@ -25,13 +25,15 @@ import 'maps_screen.dart';
 import 'record_screen.dart';
 import 'share.dart';
 import 'watch.dart';
+import 'hc_update.dart';
 import 'sport_picker.dart';
 import 'widgets.dart';
 import 'finish_sheet.dart';
 import 'workout.dart';
 import '../l10n.dart';
-import '../heart_rate.dart' show hr, applyHeartRate, HrStats;
+import '../heart_rate.dart' show hr, applyHeartRate, HrStats, activeKcal, hrProfile, repairWalkKcal;
 import 'hr_ui.dart';
+import 'kcal_card.dart';
 
 /// Urheilu tai liikunta: laji, kesto, matka (kestävyyslajit), rasitus, fiilis ja muistiinpanot.
 class ActivityScreen extends StatefulWidget {
@@ -96,6 +98,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// Ajanotto tarjotaan uudelle, tänään tehtävälle liikunnalle.
   // Ei Health Connectista lisätylle: liikunta on jo tehty, aika tuli kellosta.
   bool get _canStopwatch =>
+      AwayActivity.mayUse(this) &&
       w.date == dateOnly(DateTime.now()) &&
       !_hasRoute &&
       w.hcId == null &&
@@ -103,8 +106,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   /// Ajanoton tila pudotusvalikon ilmoitukseen (käynnissä tai tauolla; lopetettu tai tallennettu = ei ilmoitusta).
   void _syncOngoing({bool clear = false}) {
+    if (!AwayActivity.mayUse(this)) return; // toisen liikunnan ajanotto käynnissä taustalla
     final sport = w.activity;
     final active = _swStart != null || _swAcc > Duration.zero;
+    // Ilmoituksen Tauko / Jatka toimii ajanoton ollessa käynnissä tai tauolla.
+    Ongoing.togglePause = clear || sport == null || !active ? null : _swPauseTap;
     Ongoing.activity = clear || sport == null || !active
         ? null
         : OngoingActivity(
@@ -121,6 +127,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     setState(() {
       if (_swStart == null) {
         _swStart = DateTime.now();
+        AwayActivity.owner = this;
         hr.begin(_hrKey); // sykevyö (jos valittu) mukaan ajanotosta
         if (!_swUsed) w.started = _swStart;
         _swUsed = true;
@@ -250,6 +257,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
     w.minutes ??= 45;
     if (widget.recoverGps) WidgetsBinding.instance.addPostFrameCallback((_) => _record(recover: true));
     _restoreDraft(widget.draft);
+    if (widget.draft != null || widget.recoverGps) {
+      AwayActivity.owner = this;
+      AwayActivity.setAway(false);
+    }
     if (_swStart != null || _swAcc > Duration.zero) WidgetsBinding.instance.addPostFrameCallback((_) => _syncOngoing());
     _checkMaps();
     _loadRoute();
@@ -293,7 +304,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   Future<void> _saveDraft() async {
-    if (_saved || w.activity == null) return;
+    if (_saved || w.activity == null || !AwayActivity.mayUse(this)) return;
     // Koskematon kirjaus (laji vain valittu tai tallennettu avattu katsottavaksi) ei ole luonnos: muuten Androidin
     // sulkema sovellus palasi lajin näkymään ja Takaisin kysyi "Tallennetaanko liikunta?", vaikka mitään ei tehty.
     if (!_dirty) {
@@ -311,6 +322,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   /// GPS tarjotaan uudelle, tänään tehtävälle matkalajille Androidissa (ei verkkodemossa).
   bool get _canGps =>
+      AwayActivity.mayUse(this) &&
       (ActivityScreen.debugGps ?? (!kIsWeb && !isDemo && Platform.isAndroid)) &&
       (sportOf(w.activity)?.distance ?? false) &&
       w.date == dateOnly(DateTime.now()) &&
@@ -700,11 +712,18 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _record({bool recover = false}) async {
     final sport = recover ? (await GpsRecorder.pendingSport() ?? w.activity!) : w.activity!;
     if (!mounted) return;
+    AwayActivity.owner = this;
     final r = await Navigator.of(context).push<RouteResult>(
       MaterialPageRoute(
         builder: (_) => RecordScreen(sport: sport, recover: recover),
       ),
     );
+    // Takaisin kesken GPS-tallennuksen: tämäkin näkymä taustalle (palkki avaa molemmat uudelleen).
+    if (r == null && AwayActivity.gps != null && mounted) {
+      _away = true;
+      Navigator.of(context).pop();
+      return;
+    }
     final hs = hr.take('gps');
     // Kesken jäänyt reitti hylättiin (tallentimen tila poistettu): lajin sivu avattiin vain sitä varten, joten
     // luonnos pois ja etusivulle. Muuten sovellus palasi seuraavalla käynnistyksellä tyhjään lajin sivuun.
@@ -903,7 +922,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
         w: w,
         askIntensity: _live,
         intensity: _live ? w.intensity : null,
-        series: (hr.peek(_hrKey) ?? _gpsHr)?.series,
+        series: ((AwayActivity.mayUse(this) ? hr.peek(_hrKey) : null) ?? _gpsHr)?.series,
         // Käynnissä olevan ajanoton aika (ei oletus 45:00, joka on vasta ajanoton pysäytyksen jälkeen oikea).
         durationSec: swSecs > 0 ? swSecs : _sec,
       );
@@ -913,8 +932,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
     if (_swStart != null || _swAcc > Duration.zero) _swStop(doneAt);
     // Sykevyö (ajanotto tai GPS): käyrä, keskisyke, maksimi ja kalorit.
-    final hs = await hr.end(_hrKey) ?? _gpsHr;
+    // Toisen liikunnan ajanotto taustalla: sen sykkeet eivät kuulu tähän (esim. vanhan kävelyn muokkaus kesken lenkin).
+    final hs = (AwayActivity.mayUse(this) ? await hr.end(_hrKey) : null) ?? _gpsHr;
     if (hs != null) applyHeartRate(w, hs);
+    // Kävely ilman sykevyötä tai muokattu matka / aika: kalorit vauhdista (käyttäjä 17.11.).
+    repairWalkKcal(w, hrProfile());
     w.notes = _notes.text;
     if (!isRun(w.activity)) w.runType = null;
     w.title = w.activity ?? 'Liikunta'; // tiedostoon aina suomeksi
@@ -929,13 +951,37 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   void dispose() {
     _swTick?.cancel();
-    hr.end(_hrKey); // tallentamatta poistuttu: sykkeet pois
-    // Kirjauksesta poistuttiin itse (takaisin) tai se tallennettiin: luonnosta ei tarvita.
     _draftTick?.cancel();
-    ActivityDraft.clear();
-    _syncOngoing(clear: true); // luonnos ja ajanotto päättyvät sivulta poistuttaessa
+    if (_away) {
+      // Takaisin kesken ajanoton: ajanotto, sykkeet, luonnos ja ilmoitus jatkavat; alapalkin palkki palauttaa tänne.
+      if (AwayActivity.gps == null) Ongoing.togglePause = null; // GPS:n Tauko / Jatka jää tallentimelle
+      AwayActivity.setAway(true);
+      Ongoing.refresh();
+    } else if (AwayActivity.mayUse(this)) {
+      hr.end(_hrKey); // tallentamatta poistuttu: sykkeet pois
+      // Kirjauksesta poistuttiin itse (takaisin) tai se tallennettiin: luonnosta ei tarvita.
+      ActivityDraft.clear();
+      _syncOngoing(clear: true); // luonnos ja ajanotto päättyvät sivulta poistuttaessa
+      if (identical(AwayActivity.owner, this)) AwayActivity.owner = null;
+    }
     _notes.dispose();
     super.dispose();
+  }
+
+  /// Ajanotto käynnissä tai tauolla (ei pysäytetty Lopeta-painikkeella).
+  bool get _swActive => (_swStart != null || _swAcc > Duration.zero) && !_swDone;
+
+  /// Poistuttiin Takaisin-painikkeella ajanoton jatkuessa (ks. [AwayActivity]).
+  bool _away = false;
+
+  /// Takaisin kesken ajanoton: ei kysymystä eikä hylkäystä (käyttäjä 17.11.: Hylkää oli Peruuta-painikkeen vieressä
+  /// ja hävitti käynnissä olevan lenkin). Liikunta jatkuu taustalla.
+  void _leaveRunning() {
+    if (_away) return;
+    _away = true;
+    // Luonnos talteen ennen sulkemista; ei odoteta tiedostoa (näkymä sulkeutuu heti).
+    unawaited(_saveDraft());
+    Navigator.of(context).pop();
   }
 
   /// Ajan kirjaus: valinta Ajanotto / Syötä aika (vain uudelle, tänään tehtävälle), sitten valitun tilan kortti.
@@ -1212,6 +1258,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     final speed = _speedSports.contains(w.activity);
     final km = w.distanceKm ?? 0;
+    final active = activeKcal(w, hrProfile());
     final stats = <(String, String, String)>[
       (_durText, '', t('Aika')),
       if (km > 0) (fmtNum((km * 100).round() / 100), 'km', t('Matka')),
@@ -1223,7 +1270,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
         ),
       if (km > 0 && w.speedKmh != null && speed) (fmtNum((w.speedKmh! * 10).round() / 10), 'km/h', t('keskinopeus')),
       if ((w.steps ?? 0) > 0) (thousands(w.steps!), '', t('askeleet')),
-      if ((w.kcal ?? 0) > 0) ('${w.kcal}', 'kcal', t('kalorit')),
+      // Kalorit renkaana tilastoruutujen alla, kun aktiiviset voidaan laskea (käyttäjä 17.11.); muuten ruutuna.
+      if ((w.kcal ?? 0) > 0 && active == null) ('${w.kcal}', 'kcal', t('kalorit')),
       if (w.hrAvg != null) (t('ka {0}', [w.hrAvg]), '', t('Syke')),
       if (w.strideM case final m?) (fmtNum((m * 100).round() / 100), 'm', t('askelpituus')),
     ];
@@ -1302,6 +1350,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     ],
                   ),
                 ),
+              ),
+            if ((w.kcal ?? 0) > 0 && active != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: KcalRing(total: w.kcal!, active: active),
               ),
             if (sources.isNotEmpty)
               Padding(
@@ -1461,7 +1514,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       // Tallentamaton kirjaus: takaisin kysyy ensin (ei hiljaista hukkaa, ei käynnissä olevan ajanoton katoamista).
       canPop: _locked || _saved || w.activity == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _confirmLeave();
+        if (didPop) return;
+        _swActive && AwayActivity.mayUse(this) ? _leaveRunning() : _confirmLeave();
       },
       child: Scaffold(
         // Treeni valmis aina alareunassa (kuten salitreenissä); ei lajin tai kirjaustavan valinnassa eikä lukittuna.
@@ -1505,6 +1559,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
           children: _guard([
             const SamiBand(height: 4, pattern: false),
+            PauseReminder(),
             if (w.activity == null) ...[
               SportPicker(
                 onPick: (s) => setState(() {
@@ -1653,6 +1708,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       },
                     ),
                   ]),
+                // Health Connect: tallennettuun liikuntaan uutta kellolta (rivi vain, kun uutta on).
+                if (!_live && store.onDay(w.date).any((x) => x.session == w.session && x.activity != null))
+                  if (HcUpdateRow.wanted(w))
+                    HcUpdateRow(
+                      key: ValueKey('hc_${w.date}_${w.session}'),
+                      w: w,
+                      onApplied: () async {
+                        await store.save(w);
+                        if (mounted) setState(() {});
+                      },
+                    ),
                 // Sykevyön käyrä ja sykealueet.
                 if (!_live) HrDetails(w),
                 // Rasitus ja fiilis yhdessä kortissa sykkeen jälkeen (ennen kellon tiedot ja syke olivat välissä).

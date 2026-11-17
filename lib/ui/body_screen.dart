@@ -6,6 +6,7 @@ import '../body.dart';
 import '../models.dart';
 import '../theme.dart';
 import 'widgets.dart';
+import 'stats_screen.dart' show BodyWeightSection;
 import '../l10n.dart';
 
 /// Kysyy painon (kg) tai pituuden (cm). Pilkku ja piste käyvät; väärä arvo näyttää virheen eikä sulje.
@@ -105,6 +106,12 @@ class BodyScreen extends StatelessWidget {
                   if (v != null) await settings.setBody(b.copy()..heightCm = v.round());
                 },
               ),
+              // Paino ja muutos sekä kuvaaja viimeiseltä 3 kuukaudelta (sama kuin Tilastot › Kehitys).
+              if (list.isNotEmpty)
+                BodyWeightSection(
+                  from: addDays(dateOnly(DateTime.now()), -90),
+                  to: addDays(dateOnly(DateTime.now()), 1),
+                ),
               SectionLabel(t('Punnitukset')),
               if (list.isEmpty)
                 Text(t('Ei vielä punnituksia. Lisää paino etusivulta tai tästä.'), style: sub)
@@ -122,7 +129,8 @@ class BodyScreen extends StatelessWidget {
                     onDismissed: (_) => settings.setWeight(d, null),
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(longDateYear(d)),
+                      // Lyhyt päiväys: pitkä viikonpäivineen rivittyi kolmelle riville (Samsung 16.11.).
+                      title: Text(numDate(d, year: true)),
                       subtitle: b.heightCm == null
                           ? null
                           : Text('${t('painoindeksi')} ${fmtNum(bmi(kg, b.heightCm!))}'),

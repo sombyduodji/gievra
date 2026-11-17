@@ -250,6 +250,12 @@ class GpsRecorder extends ChangeNotifier {
       RecState.recording => OngoingActivity(sport, since: now().subtract(elapsed)),
     };
     Ongoing.gpsLine = state == RecState.idle ? null : ongoingLine;
+    // Ilmoituksen Tauko / Jatka (vain tallennettaessa tai tauolla).
+    Ongoing.togglePause = switch (state) {
+      RecState.recording => () => unawaited(pause()),
+      RecState.paused => () => unawaited(resume()),
+      _ => null,
+    };
     unawaited(Ongoing.refresh());
   }
 

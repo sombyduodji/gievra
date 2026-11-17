@@ -21,7 +21,7 @@ import '../open_files.dart' show OpenedFile;
 import '../save_verified.dart';
 import '../theme.dart';
 import 'bug_report.dart';
-import 'program_template.dart' show importTemplate;
+import 'program_template.dart' show importTemplate, templateMaxBytes;
 import 'widgets.dart';
 import '../l10n.dart';
 
@@ -114,7 +114,14 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       case ImportKind.md:
         await _preview(readMdBytes({name: bytes}));
       case ImportKind.template:
-        if (mounted) await importTemplate(context, text: utf8.decode(bytes, allowMalformed: true));
+        // Pohja on pieni tekstitiedosto: yli 1 Mt ei ole pohja (sama raja kuin pohjan valitsimessa; yötesti 17.11.:
+        // avattu tai tuotu .gmd jäsennettiin aiemmin 500 Mt:iin asti).
+        if (mounted) {
+          await importTemplate(
+            context,
+            text: bytes.length > templateMaxBytes ? '' : utf8.decode(bytes, allowMalformed: true),
+          );
+        }
       case ImportKind.mapPack:
         _snack(t('Tämä on karttapaketti: tuo se Kartat-sivulla (Tuo tiedostosta).'));
       case ImportKind.gievraCsv:

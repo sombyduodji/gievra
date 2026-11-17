@@ -16,7 +16,7 @@ import 'durable_write.dart';
 import 'models.dart';
 import 'program.dart';
 import 'exercises.dart';
-import 'heart_rate.dart' show hrProfile, repairLowCoverageKcal;
+import 'heart_rate.dart' show hrProfile, repairLowCoverageKcal, repairWalkKcal;
 
 final settings = Settings();
 final store = WorkoutStore();
@@ -111,10 +111,36 @@ DateTime? _validDate(String s) {
 class Pause {
   final DateTime start;
   DateTime? end;
-  final String reason; // 'sairas' | 'loma'
+  final String reason; // 'sairas' | 'loma' | 'vamma'
   Pause(this.start, this.reason, [this.end]);
-  bool get sick => reason == 'sairas';
-  int get days => (end ?? dateOnly(DateTime.now())).difference(start).inDays + 1;
+
+  /// Sairaus tai vamma: paluu varovaisemmin (vamma kolmantena syynä, käyttäjä 16.11.).
+  bool get sick => reason == 'sairas' || reason == 'vamma';
+  bool get injury => reason == 'vamma';
+
+  /// Päättymispäivä voi olla etukäteen tiedossa (loma 16.–22.11.): tauko on päällä alkupäivästä päättymispäivään
+  /// asti ja päättyy itsestään (käyttäjä 16.11.). Ilman päättymispäivää jatkuu, kunnes käyttäjä lopettaa sen.
+  bool activeOn(DateTime d) {
+    final x = dateOnly(d);
+    if (stopped && !x.isBefore(dateOnly(DateTime.now()))) return false;
+    return !x.isBefore(start) && (end == null || !x.isAfter(end!));
+  }
+
+  /// Lopetettu käsin tänään (viimeinen päivä tänään): ei enää päällä, vaikka päivä kuuluu taukoon.
+  bool stopped = false;
+
+  /// Päivä [d] tauon aikana (myös mennyt tauko, kalenteri).
+  bool covers(DateTime d) {
+    final x = dateOnly(d);
+    return !x.isBefore(start) && (end == null || !x.isAfter(end!));
+  }
+
+  /// Taukopäiviä tähän mennessä (enintään päättymispäivään).
+  int get days {
+    final today = dateOnly(DateTime.now());
+    final last = end != null && end!.isBefore(today) ? end! : today;
+    return last.difference(start).inDays + 1;
+  }
 }
 
 /// Treenityyli: aloituskyselyn vastaukset ja itse valitut liikkeet (asetukset.md, ## Treenityyli).
@@ -140,6 +166,9 @@ class TrainingStyle {
 }
 
 class Settings extends ChangeNotifier {
+  /// Päivä tai vuorokaudenaika vaihtui sovelluksen ollessa auki (DayWatch): näkymät rakentuvat uudelleen.
+  void dayChanged() => notifyListeners();
+
   // l10n: data
   static const defaultEquipment = [
     Equipment('🚶', 'Kävelymatto'),
@@ -286,7 +315,13 @@ class Settings extends ChangeNotifier {
 
   /// Treeniohjelma (ohjelma.md). null = treenataan vapaasti.
   Program? program;
-  Pause? get activePause => pauses.where((p) => p.end == null).firstOrNull;
+  Pause? get activePause => pauses.where((p) => p.activeOn(DateTime.now())).firstOrNull;
+
+  /// Tuleva tauko (alkaa myöhemmin, esim. loma ensi viikolla).
+  Pause? get upcomingPause => pauses.where((p) => p.start.isAfter(dateOnly(DateTime.now()))).firstOrNull;
+
+  /// Tauko, jonka aikana päivä [d] oli (kalenteri ja päivänäkymä).
+  Pause? pauseOn(DateTime d) => pauses.where((p) => p.covers(d)).firstOrNull;
 
   /// Omien liikkeiden kategoriat (nimi -> kategoria). Puuttuva = "Omat".
   Map<String, String> customCategory = {};
@@ -895,8 +930,24 @@ class Settings extends ChangeNotifier {
     save ? _persist() : notifyListeners();
   }
 
-  void startPause(String reason, DateTime start) {
-    pauses = [...pauses.where((p) => p.end != null), Pause(dateOnly(start), reason)];
+  /// Uusi tauko. [end] = viimeinen taukopäivä, jos tiedossa (tauko päättyy itsestään). Päällekkäiset tauot ja
+  /// avoin tauko korvautuvat uudella.
+  void startPause(String reason, DateTime start, [DateTime? end]) {
+    final s = dateOnly(start), e = end == null ? null : dateOnly(end);
+    // Avoin uusi tauko korvaa vain avoimen tai alkupäivän kattavan tauon (tuleva loma säilyy); päättyvä korvaa
+    // kaikki, joiden päivät osuvat sen päiville.
+    bool overlaps(Pause p) => p.end == null || (e == null ? p.covers(s) : (!p.end!.isBefore(s) && !p.start.isAfter(e)));
+    pauses = [...pauses.where((p) => !overlaps(p)), Pause(s, reason, e)]..sort((a, b) => a.start.compareTo(b.start));
+    _persist();
+  }
+
+  /// Tauon muokkaus jälkikäteen (syy, alku- ja päättymispäivä; null = jatkuu, kunnes lopetetaan).
+  void updatePause(Pause old, String reason, DateTime start, DateTime? end) {
+    final s = dateOnly(start), e = end == null ? null : dateOnly(end);
+    final others = pauses.where((p) => !identical(p, old));
+    bool overlaps(Pause p) => (p.end == null || !p.end!.isBefore(s)) && (e == null || !p.start.isAfter(e));
+    pauses = [...others.where((p) => !overlaps(p)), Pause(s, reason, e != null && e.isBefore(s) ? s : e)]
+      ..sort((a, b) => a.start.compareTo(b.start));
     _persist();
   }
 
@@ -912,6 +963,8 @@ class Settings extends ChangeNotifier {
       return;
     }
     p.end = end;
+    // Viimeinen päivä tänään tai myöhemmin: lopetettu käsin, ei enää päällä (päivä näkyy silti taukona).
+    if (!end.isBefore(dateOnly(DateTime.now()))) p.stopped = true;
     _persist();
   }
 
@@ -1136,7 +1189,7 @@ class WorkoutStore extends ChangeNotifier {
         final text = decodeLegacyText(await f.readAsBytes());
         if (text == null) continue;
         final m = _workoutName.firstMatch(p.basename(rel))!;
-        parseWorkout(text, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(p.basename(rel)));
+        parseWorkout(text, fallbackDate: strictDate(m[1]!), fallbackSession: sessionFromName(p.basename(rel)));
         final bak = File('${f.path}.bak');
         if (!await bak.exists()) await f.copy(bak.path);
         await f.writeAsString(text);
@@ -1174,7 +1227,7 @@ class WorkoutStore extends ChangeNotifier {
           continue;
         }
         try {
-          list.add(parseWorkout(e.value, fallbackDate: DateTime.parse(m[1]!), fallbackSession: sessionFromName(base)));
+          list.add(parseWorkout(e.value, fallbackDate: strictDate(m[1]!), fallbackSession: sessionFromName(base)));
         } catch (err) {
           // Rikkinäinen tai vieras tiedosto: ei näytetä historiassa, mutta etusivu kertoo siitä ja syyn.
           failed[e.key] = unreadableReason(utf8.encode(e.value), error: err);
@@ -1187,7 +1240,8 @@ class WorkoutStore extends ChangeNotifier {
     // Vanhojen kävelyjen ja juoksujen kalorit, kun sykettä oli vain osalta ajasta (ks. repairLowCoverageKcal).
     final profile = hrProfile();
     for (final w in list) {
-      repairLowCoverageKcal(w, profile);
+      // Kävely nopeudesta (käyttäjä 17.11.); muistissa, tiedosto korjautuu seuraavassa tallennuksessa.
+      if (!repairWalkKcal(w, profile)) repairLowCoverageKcal(w, profile);
     }
     workouts = list;
     unreadable = Map.fromEntries(failed.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));

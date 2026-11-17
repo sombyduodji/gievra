@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../gps_filter.dart';
 import '../gps_recorder.dart';
+import '../ongoing.dart';
 import '../l10n.dart';
 import '../heart_rate.dart' show hr;
 import 'hr_ui.dart';
@@ -34,7 +35,12 @@ class RecordScreen extends StatefulWidget {
 }
 
 class _RecordScreenState extends State<RecordScreen> {
-  late final GpsRecorder rec = widget.recorder ?? GpsRecorder();
+  /// Taustalta palattu tallennus (käyttäjä poistui Takaisin-painikkeella kesken lenkin): tallennin jatkaa sellaisenaan.
+  late final GpsRecorder? _resumed = widget.recorder == null ? AwayActivity.takeGps() : null;
+  late final GpsRecorder rec = widget.recorder ?? _resumed ?? GpsRecorder();
+
+  /// Poistuttiin Takaisin-painikkeella tallennuksen jatkuessa: tallennin jää [AwayActivity.gps]:iin.
+  bool _away = false;
   String? _error;
   bool _permissionError = false;
   bool _busy = true;
@@ -100,6 +106,11 @@ class _RecordScreenState extends State<RecordScreen> {
     final title = t('{0} käynnissä', [sportName(widget.sport)]);
     final text = t('Etsitään GPS-signaalia…');
     final channel = t('Käynnissä oleva treeni');
+    if (_resumed != null) {
+      await hr.begin(_hrKey);
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
     try {
       if (widget.recorder == null) {
         final st = await Permission.locationWhenInUse.request();
@@ -135,7 +146,11 @@ class _RecordScreenState extends State<RecordScreen> {
     _countTimer?.cancel();
     _guardTimer?.cancel();
     rec.removeListener(_changed);
-    if (widget.recorder == null) rec.dispose();
+    if (_away) {
+      // Tallennin on jo AwayActivity.gps:ssä (_leaveRunning): palvelu, paikannukset, syke ja ilmoitus jatkavat.
+    } else if (widget.recorder == null) {
+      rec.dispose();
+    }
     super.dispose();
   }
 
@@ -167,6 +182,16 @@ class _RecordScreenState extends State<RecordScreen> {
     await _hrDrop();
     await rec.discard();
     if (mounted) Navigator.of(context).pop();
+  }
+
+  /// Takaisin kesken tallennuksen (käyttäjä 17.11.): ei kysymystä; lenkki jatkuu taustalla, ja alapalkin palkki
+  /// palauttaa tänne. Lopeta-painike kysyy edelleen tallennuksesta.
+  void _leaveRunning() {
+    if (_away || _leaving) return;
+    _away = true;
+    // Ennen sulkemista: liikuntanäkymä tarkistaa tallentimen heti, kun tämä näkymä palaa (ennen dispose-metodia).
+    AwayActivity.gps = rec;
+    Navigator.of(context).pop();
   }
 
   /// Takaisin-painike tai Lopeta: tallennetaanko, hylätäänkö vai jatketaanko.
@@ -222,7 +247,8 @@ class _RecordScreenState extends State<RecordScreen> {
     return PopScope(
       canPop: _error != null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _askStop();
+        if (didPop) return;
+        rec.state == RecState.recording || rec.state == RecState.paused ? _leaveRunning() : _askStop();
       },
       child: Scaffold(
         appBar: AppBar(title: BarTitle(Text('📍 ${sportName(widget.sport)}'))),

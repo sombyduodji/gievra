@@ -122,8 +122,14 @@ class MainActivity : FlutterActivity() {
     private fun openIntent(intent: Intent?): Intent? {
         if (intent == null) return null
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return null
-        @Suppress("DEPRECATION")
-        return intent.getParcelableExtra<Intent>(EXTRA_OPEN) ?: intent
+        // Rikkinäiset tai tuntemattomat lisätiedot (BadParcelableException, yötesti 17.11.): ei kaadeta käynnissä
+        // olevaa treeniä, vaan avataan ilman tiedostoa.
+        return try {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra<Intent>(EXTRA_OPEN) ?: intent
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /// Avattu tai jaettu tiedosto ("Avaa sovelluksella", "Jaa → Gievra"). Tiedosto kopioidaan välimuistiin ja Dart saa
@@ -131,22 +137,30 @@ class MainActivity : FlutterActivity() {
     /// Jaettu pelkkä teksti välitetään tekstinä. Vain content://. Yli 500 Mt:n kopiointi lopetetaan (Dart ilmoittaa).
     private fun fileFromIntent(launch: Intent?): Map<String, Any?>? {
         val intent = openIntent(launch) ?: return null
-        val uri: Uri? = when (intent.action) {
-            Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+        val failed = mapOf<String, Any?>("error" to true)
+        val uri: Uri? = try {
+            when (intent.action) {
+                Intent.ACTION_VIEW -> intent.data
+                Intent.ACTION_SEND -> {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                }
+                else -> null
             }
-            else -> null
+        } catch (_: Exception) {
+            return failed // rikkinäiset lisätiedot (yötesti 17.11.)
         }
         if (uri == null) {
             if (intent.action != Intent.ACTION_SEND) return null
-            return intent.getStringExtra(Intent.EXTRA_TEXT)?.let { mapOf("text" to it) }
+            return try {
+                intent.getStringExtra(Intent.EXTRA_TEXT)?.let { mapOf("text" to it) }
+            } catch (_: Exception) {
+                failed
+            }
         }
         // Vain content://: file://-osoitteella toinen sovellus voisi saada Gievran (kaikkien tiedostojen lupa)
         // lukemaan tiedoston, johon sillä itsellään ei ole oikeutta.
         // Tiedosto, jota ei voi lukea: Dart näyttää ilmoituksen (aiemmin etusivu aukesi ilman selitystä).
-        val failed = mapOf<String, Any?>("error" to true)
         if (uri.scheme != "content") return failed
         return try {
             var name: String? = null
@@ -409,7 +423,12 @@ class MainActivity : FlutterActivity() {
             }
         }
         // Käynnissä oleva treeni pudotusvalikossa (OngoingNote.kt).
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/ongoing").setMethodCallHandler { call, result ->
+        val ongoingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/ongoing")
+        // Ilmoituksen palautuspainikkeet Dartille (pääsäikeessä).
+        NoteActionReceiver.onAction = { a ->
+            runOnUiThread { ongoingChannel.invokeMethod("noteAction", a) }
+        }
+        ongoingChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "show" -> {
                     call.argument<String>("publicTitle")?.let { OngoingNote.publicTitle = it }

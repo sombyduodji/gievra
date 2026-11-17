@@ -22,17 +22,29 @@ class OpenFileActivity : Activity() {
             // (testikierros 16.11.): jos Gievra ei ollut käynnissä, tehtävän pohja-aikomukseksi jäi aiemmin VIEW +
             // tiedosto. Silloin Takaisin-poistumisen jälkeen kuvake teki toisen Gievra-kortin Viimeisimpiin, ja vanha
             // kortti avasi tiedoston tuonnin uudelleen (ja toisen MainActivityn ensimmäisen rinnalle).
-            val uri: Uri? = when (src.action) {
-                Intent.ACTION_VIEW -> src.data
-                else -> {
-                    @Suppress("DEPRECATION")
-                    src.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            // Toisen sovelluksen lisätiedot voivat olla rikki tai tuntematonta tyyppiä (BadParcelableException
+            // Android 12:ssa ja vanhemmissa, yötesti 17.11.): silloin ei kaaduta, vaan avataan ilman tiedostoa.
+            val uri: Uri? = try {
+                when (src.action) {
+                    Intent.ACTION_VIEW -> src.data
+                    else -> {
+                        @Suppress("DEPRECATION")
+                        src.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    }
                 }
+            } catch (_: Exception) {
+                null
+            }
+            val inner: Intent = try {
+                Intent(src).apply { setClipData(null) }
+            } catch (_: Exception) {
+                // Lisätietoja ei voitu kopioida: välitetään pelkkä toiminto ja osoite.
+                Intent(src.action).apply { if (uri != null && src.action == Intent.ACTION_VIEW) data = uri }
             }
             val fwd = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 setClass(this@OpenFileActivity, MainActivity::class.java)
-                putExtra(MainActivity.EXTRA_OPEN, Intent(src).apply { setClipData(null) })
+                putExtra(MainActivity.EXTRA_OPEN, inner)
                 // Lukuoikeus siirtyy MainActivitylle leikepöytätiedon osoitteen mukana (tämän aktiviteetin oma lupa
                 // päättyy sen sulkeutuessa).
                 if (uri != null) clipData = ClipData.newRawUri("", uri)

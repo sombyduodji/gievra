@@ -26,7 +26,7 @@ void main() {
     await tester.pump();
     expect(find.byType(LockButton), findsOneWidget);
     expect(find.byKey(const ValueKey('addExercise')), findsNothing);
-    expect(find.text('Treeni valmis!'), findsNothing);
+    expect(find.text('Lopeta treeni'), findsNothing);
 
     // Napautus liikkeeseen: kysymys, Peruuta pitää lukutilan.
     await tester.tap(find.text('Takakyykky'));
@@ -43,7 +43,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(LockButton), findsNothing);
     expect(find.byKey(const ValueKey('addExercise')), findsOneWidget);
-    expect(find.text('Treeni valmis!'), findsOneWidget);
+    expect(find.text('Lopeta treeni'), findsOneWidget);
   });
 
   testWidgets('Keskeneräinen treeni ei ole lukittu', (tester) async {
@@ -72,18 +72,22 @@ void main() {
     await tester.pump();
     expect(find.text('Miltä tuntui?'), findsNothing, reason: 'kysytään vasta lopussa');
     final add = tester.getRect(find.byKey(const ValueKey('addExercise')));
-    final finish = tester.getRect(find.text('Treeni valmis!'));
+    final finish = tester.getRect(find.text('Lopeta treeni'));
     expect(add.bottom, lessThan(finish.top));
     expect(finish.bottom, greaterThan(tester.view.physicalSize.height / tester.view.devicePixelRatio - 80));
-    await tester.tap(find.text('Treeni valmis!'));
+    await tester.tap(find.text('Lopeta treeni'));
     // Tallennus kirjoittaa tiedoston: oikeaa aikaa ennen ponnahdusikkunaa.
-    for (var k = 0; k < 20 && find.text('Miltä tuntui?').evaluate().isEmpty; k++) {
+    for (var k = 0; k < 20 && find.byKey(const ValueKey('feelingTile')).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
     await tester.pumpAndSettle();
-    expect(find.text('Miltä tuntui?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('feelingTile')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Hyvä'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('finishSave')));
     for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));

@@ -21,7 +21,7 @@ void main() {
     expect((Settings()..applyMarkdown(md)).trainMode, 'cardio');
   });
 
-  testWidgets('Etusivu: Molemmat-tilassa Sali ja Liikunta rinnakkain (käytetympi leveämpi), muuten yksi painike', (
+  testWidgets('Etusivu: Molemmat-tilassa Sali | Liikunta -valitsin (käytetympi ensin), muuten yksi kortti', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1200, 3000);
@@ -41,19 +41,16 @@ void main() {
     ];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    // Molemmat: iso painike on se laji, jota on tehty enemmän viimeisen 14 päivän aikana (tässä liikunta), toinen
-    // pienempi painike (Sali); muut lajit omalla sivulla, tämän päivän lenkki rivinä.
-    // Rinnakkain jaettu painike (14.11.): Sali vasemmalla, Liikunta oikealla; käytetympi leveämpi.
-    double wOf(String k) => tester.getSize(find.byKey(ValueKey(k))).width;
-    expect(find.text('Liikunta'), findsOneWidget);
-    expect(find.text('Sali'), findsOneWidget);
-    expect(wOf('splitActivity'), greaterThan(wOf('splitGym')));
-    // Ei Viimeksi-alariviä (käyttäjä 15.11.): viimeisimmän lajin emoji Liikunta-puolella.
-    expect(find.text('Viimeksi: Juoksu'), findsNothing);
-    expect(find.descendant(of: find.byKey(const ValueKey('splitActivity')), matching: find.text('🏃')), findsOneWidget);
-    expect(find.text('Aloita salitreeni'), findsNothing);
-    expect(find.text('Pyöräily'), findsNothing); // lajit omalla sivulla, ei pikavalintoina
-    // Salitreenejä enemmän: sali on iso painike ja liikunta pieni.
+    // Molemmat (ulkoasun kohennus 16.11.): Sali | Liikunta -valitsin; oletuksena se, jota on tehty enemmän viimeisen
+    // 14 päivän aikana (tässä liikunta). Liikuntakortissa käytetyimmät lajit siruina ja Aloita valitulla lajilla.
+    expect(find.byKey(const ValueKey('modeGym')), findsOneWidget);
+    expect(find.byKey(const ValueKey('modeActivity')), findsOneWidget);
+    expect(find.byKey(const ValueKey('homeStartActivity')), findsOneWidget);
+    expect(find.text('Aloita: Juoksu'), findsOneWidget);
+    expect(find.byKey(const ValueKey('homeStartGym')), findsNothing);
+    // Tämän päivän lenkki rivinä liikuntakortissa.
+    expect(find.textContaining('6 km', findRichText: true), findsWidgets);
+    // Salitreenejä enemmän: sali ensin.
     store.workouts = [
       Workout(date: DateTime.now().subtract(const Duration(days: 2)), title: 'Treeni')
         ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)])),
@@ -64,23 +61,17 @@ void main() {
     settings.setTrainMode('cardio');
     settings.setTrainMode('both');
     await tester.pump();
-    expect(find.text('Sali'), findsOneWidget);
-    expect(find.text('Liikunta'), findsOneWidget);
-    expect(wOf('splitGym'), greaterThan(wOf('splitActivity')));
-    store.workouts = [
-      Workout(date: DateTime.now(), title: 'Juoksu', activity: 'Juoksu', distanceKm: 6, seconds: 1800, minutes: 30),
-    ];
-    settings.setTrainMode('cardio');
-    settings.setTrainMode('both');
+    expect(find.byKey(const ValueKey('homeStartGym')), findsOneWidget);
+    // Valitsin vaihtaa kortin.
+    await tester.tap(find.byKey(const ValueKey('modeActivity')));
     await tester.pump();
-    // Tämän päivän lenkki rivinä (ja tilastokortin Juoksu-puolella).
-    expect(find.textContaining('6 km', findRichText: true), findsWidgets);
-    // Pelkkä sali: ei valintaa, vanha etusivu.
+    expect(find.byKey(const ValueKey('homeStartActivity')), findsOneWidget);
+    // Pelkkä sali: ei valitsinta.
     settings.setTrainMode('gym');
     await tester.pump();
-    expect(find.text('Liikunta'), findsNothing);
+    expect(find.byKey(const ValueKey('modeGym')), findsNothing);
     expect(find.text('Aloita liikunta'), findsNothing);
-    expect(find.text('Aloita salitreeni'), findsOneWidget);
+    expect(find.byKey(const ValueKey('homeStartGym')), findsOneWidget);
     // Pelkkä kestävyys: ei valintaa, kestävyysnäkymä.
     settings.setTrainMode('cardio');
     await tester.pump();

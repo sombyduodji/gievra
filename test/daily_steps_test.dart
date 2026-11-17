@@ -165,7 +165,7 @@ void main() {
     await tester.tap(find.textContaining('askelta tänään', findRichText: true).hitTestable().first);
     await tester.pumpAndSettle();
     expect(find.byType(StatsScreen), findsOneWidget);
-    expect(find.text('Treenit'), findsOneWidget);
+    expect(find.text('Kehitys'), findsOneWidget);
     expect(find.text('Askeleet'), findsWidgets);
     expect(find.byType(StepsStatsView), findsOneWidget);
     expect(find.textContaining(RegExp(r'^11.204$')), findsWidgets);
@@ -221,7 +221,9 @@ void main() {
     settings.dailySteps = false;
     await tester.pumpWidget(const MaterialApp(home: StatsScreen()));
     await tester.pump();
-    expect(find.byType(TabBar), findsNothing);
+    // Tilastojen muut välilehdet näkyvät, Askeleet ei.
+    expect(find.text('Kehitys'), findsOneWidget);
+    expect(find.text('Askeleet'), findsNothing);
   });
 
   testWidgets('Ensimmäinen käynnistys kysyy päivän askeleista (Android)', (tester) async {

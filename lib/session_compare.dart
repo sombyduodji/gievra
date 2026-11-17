@@ -114,5 +114,10 @@ String fmtDuration(int minutes) =>
     minutes < 60 ? '$minutes min' : '${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')} min';
 
 /// Treenin kesto näytettäväksi: tarkka aika (ajanotto, GPS: m:ss tai h:mm:ss) tai kirjatut minuutit.
+/// Kesto yhteenvetoihin (etusivu, listat): sekunnit pyöristettyinä minuuteiksi (käyttäjä 16.11.). Liikunnassa,
+/// jossa aika on tarkka (ajanotto), näytetään tarkka aika kuten ennen.
+String? durationRounded(Workout w) =>
+    w.activity == null && w.seconds != null ? fmtDuration(minutesFromSeconds(w.seconds!)) : durationText(w);
+
 String? durationText(Workout w) =>
     w.seconds != null ? fmtDurationSec(w.seconds!) : (w.minutes == null ? null : fmtDuration(w.minutes!));

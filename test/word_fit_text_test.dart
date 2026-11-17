@@ -12,7 +12,10 @@ void main() {
           child: Directionality(
             textDirection: TextDirection.ltr,
             child: Center(
-              child: SizedBox(width: width, child: WordFitText(s, width: width, style: const TextStyle(fontSize: 15))),
+              child: SizedBox(
+                width: width,
+                child: WordFitText(s, width: width, style: const TextStyle(fontSize: 15)),
+              ),
             ),
           ),
         ),

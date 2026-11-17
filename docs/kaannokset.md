@@ -1,7 +1,7 @@
 # Käännökset (pohjoissaame)
 
 Gievran käyttöliittymä on suomeksi ja kokeellisesti pohjoissaameksi (davvisámegiella). Kielen voi
-vaihtaa ensimmäisellä käynnistyksellä tai ☰ → Asetukset → Kieli · Giella. Valinta on laitekohtainen.
+vaihtaa ensimmäisellä käynnistyksellä tai Lisää → Asetukset → Kieli · Giella. Valinta on laitekohtainen.
 
 ## Mitä käännetään ja mitä ei
 

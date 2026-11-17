@@ -18,7 +18,8 @@ void main() {
     settings.themeMode = ThemeMode.system;
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
+    // ☰-valikon tilalla alapalkin Lisää-välilehti (ulkoasun kohennus 16.11.).
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('mainNav')), matching: find.text('Lisää')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Asetukset'));
     await tester.pumpAndSettle();
@@ -74,7 +75,8 @@ void main() {
     settings.introDone = true;
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
+    // ☰-valikon tilalla alapalkin Lisää-välilehti (ulkoasun kohennus 16.11.).
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('mainNav')), matching: find.text('Lisää')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Asetukset'));
     await tester.pumpAndSettle();
@@ -115,7 +117,8 @@ void main() {
     settings.introDone = true;
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
+    // ☰-valikon tilalla alapalkin Lisää-välilehti (ulkoasun kohennus 16.11.).
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('mainNav')), matching: find.text('Lisää')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Asetukset'));
     await tester.pumpAndSettle();

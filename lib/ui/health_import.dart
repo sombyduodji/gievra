@@ -3,6 +3,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../theme.dart' show samiBarBand;
+
 import '../app_state.dart';
 import '../health.dart';
 import '../l10n.dart';
@@ -16,8 +18,11 @@ import 'widgets.dart';
 // Gievrassa. Harjoitus avautuu valmiiksi täytettynä liikuntasivuna, jonka käyttäjä tarkistaa ja tallentaa
 // (Treeni valmis!). Ei massatuontia: yksi kerrallaan.
 
-/// Etusivun painike (Android, asetus päällä).
-class HealthImportButton extends StatelessWidget {
+/// Etusivun Health Connect -rivi (Android, asetus päällä; ulkoasun kohennus 16.11.): kaksi riviä ("HEALTH CONNECT"
+/// ja "n uutta harjoitusta") ja näkyy vain, kun viimeisen 7 päivän aikana on harjoituksia, joita ei ole vielä
+/// Gievrassa. Napautus avaa tuonnin uusimman tällaisen päivän kohdalta. Jos tarkistus ei onnistu (esim. lupa
+/// puuttuu), rivi näyttää vanhan kehotuksen.
+class HealthImportButton extends StatefulWidget {
   const HealthImportButton({super.key});
 
   static bool get visible => settings.hcImport && !kIsWeb && !isDemo && Platform.isAndroid;
@@ -25,46 +30,114 @@ class HealthImportButton extends StatelessWidget {
   /// Health Connect on käytettävissä tällä laitteella (Android, ei demo); ei vaadi tuontiasetusta.
   static bool get available => !kIsWeb && !isDemo && Platform.isAndroid;
 
+  /// Uudet harjoitukset: (määrä, uusin päivä); null = ei vielä tarkistettu tai tarkistus epäonnistui.
+  static final found = ValueNotifier<(int, DateTime?)?>(null);
+  static bool _checking = false;
+  static bool failed = false;
+
+  /// Tarkistus: avatessa, etusivun alas vetäessä ja treenien muuttuessa.
+  static Future<void> refresh() async {
+    if (!visible || _checking) return;
+    _checking = true;
+    try {
+      final today = dateOnly(DateTime.now());
+      var n = 0;
+      DateTime? latest;
+      for (var i = 0; i < 7; i++) {
+        final d = addDays(today, -i);
+        final (fresh, _) = newHealthSessions(await HealthConnect.sessions(d), store.workouts);
+        if (fresh.isNotEmpty) {
+          n += fresh.length;
+          latest ??= d;
+        }
+      }
+      failed = false;
+      found.value = (n, latest);
+    } catch (_) {
+      failed = true;
+      found.value = null;
+    } finally {
+      _checking = false;
+    }
+  }
+
+  @override
+  State<HealthImportButton> createState() => _HealthImportButtonState();
+}
+
+class _HealthImportButtonState extends State<HealthImportButton> {
+  int _rev = -1;
+
   @override
   Widget build(BuildContext context) {
-    // Yhtä leveä kuin yläpuolen Sali/Liikunta-painikkeet, samat kulmat, mutta matalampi ja hillitty vihreä
-    // (liikunnan väri): toissijainen toiminto.
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = dark ? const Color(0xFF173A22) : const Color(0xFFDCEFD8);
-    final fg = dark ? const Color(0xFFA8E0B4) : const Color(0xFF0B4F24);
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Material(
-        color: bg,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HealthImportScreen())),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.favorite_border, color: fg, size: 20),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    t('Lisää tehty liikunta Health Connectista'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: fg, fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
+    // Treenit muuttuivat (tuonti tai tallennus): tarkistetaan uudelleen.
+    if (_rev != store.rev) {
+      _rev = store.rev;
+      WidgetsBinding.instance.addPostFrameCallback((_) => HealthImportButton.refresh());
+    }
+    return ValueListenableBuilder(
+      valueListenable: HealthImportButton.found,
+      builder: (context, v, _) {
+        final n = v?.$1 ?? 0;
+        if (!HealthImportButton.failed && n == 0) return const SizedBox.shrink();
+        final dark = Theme.of(context).brightness == Brightness.dark;
+        final bg = dark ? const Color(0xFF16261C) : const Color(0xFFDCEFD8);
+        final fg = dark ? const Color(0xFFA8E0B4) : const Color(0xFF0B4F24);
+        final cs = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Material(
+            color: bg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: fg.withValues(alpha: .35)),
+            ),
+            child: InkWell(
+              key: const ValueKey('hcRow'),
+              borderRadius: BorderRadius.circular(16),
+              onTap: () =>
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => HealthImportScreen(day: v?.$2))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                child: Row(
+                  children: [
+                    Icon(Icons.sync, color: fg, size: 22),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'HEALTH CONNECT',
+                            style: TextStyle(fontSize: 10.5, letterSpacing: .6, color: cs.onSurfaceVariant),
+                          ),
+                          Text(
+                            n == 0
+                                ? t('Lisää tehty liikunta Health Connectista')
+                                : n == 1
+                                ? t('1 uusi harjoitus')
+                                : t('{0} uutta harjoitusta', [n]),
+                            style: TextStyle(color: fg, fontSize: 15, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: fg),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
 class HealthImportScreen extends StatefulWidget {
-  const HealthImportScreen({super.key});
+  /// Avautuva päivä (etusivun rivi: uusin päivä, jolla on uutta); oletuksena tänään.
+  final DateTime? day;
+  const HealthImportScreen({super.key, this.day});
   @override
   State<HealthImportScreen> createState() => _HealthImportScreenState();
 }
@@ -72,7 +145,7 @@ class HealthImportScreen extends StatefulWidget {
 enum _State { loading, unavailable, noPermission, ready, error }
 
 class _HealthImportScreenState extends State<HealthImportScreen> {
-  DateTime _day = dateOnly(DateTime.now());
+  late DateTime _day = dateOnly(widget.day ?? DateTime.now());
   _State _state = _State.loading;
   List<HealthCandidate> _fresh = const [];
   int _done = 0;
@@ -266,7 +339,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
     final sub = TextStyle(fontSize: 13, color: cs.onSurfaceVariant);
     final today = dateOnly(DateTime.now());
     return Scaffold(
-      appBar: AppBar(title: BarTitle(Text(t('Lisää tehty liikunta')))),
+      appBar: AppBar(title: BarTitle(Text(t('Lisää tehty liikunta'))), bottom: samiBarBand),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [

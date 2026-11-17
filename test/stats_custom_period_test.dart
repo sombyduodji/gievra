@@ -114,7 +114,8 @@ void main() {
     for (final l in ['1 kk', '3 kk', '6 kk', 'Oma']) {
       expect(find.text(l), findsOneWidget, reason: l);
     }
-    expect(find.text('Viikko'), findsNothing);
+    // Viikko on oma välilehtensä, ei jakson vaihtoehto.
+    expect(find.descendant(of: find.byType(SegmentedButton<String>), matching: find.text('Viikko')), findsNothing);
     expect(find.text('Vuosi'), findsNothing);
     final seg = tester.widget<SegmentedButton<String>>(find.byType(SegmentedButton<String>).last);
     expect(seg.selected, {'month'});

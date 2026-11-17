@@ -23,6 +23,16 @@ import 'dart:math' as math;
 // Gievran oma valinta, ei julkaistu. Compendiumin suosituksen mukaan MET kerrotaan henkilön omalla
 // lepoaineenvaihdunnalla ("corrected METs") eikä vakiolla 3,5 ml/kg/min.
 //
+// KÄVELY, kun vauhti tiedetään (matka ja aika; käyttäjä 17.11.: kävelymatolla 2,5 km/h syke 97 antoi Keytelillä
+// 525 kcal, kävelymatto noin kolmanneksen siitä): Ludlow LW, Weyand PG 2016, "Energy expenditure during level human
+// walking: seeking a simple and accurate predictive solution", J Appl Physiol 120(5):481–494,
+// doi:10.1152/japplphysiol.00864.2015. Johdettu 127 julkaistusta mittauksesta (25 ryhmää, 0,4–1,9 m/s):
+//   VO2 = VO2lepo + 3,85 + 5,97 · V² / pituus   (ml O2/kg/min; V m/s; pituus m), keskivirhe noin 1,2 ml/kg/min
+// (ACSM:n kävely-yhtälöllä 4,5; se aliarvioi lähes kaikki mittaukset). Lepotaso omasta Mifflin–St Jeor
+// -arviosta; 1 l O2 ≈ 5 kcal. Kokonaiskulutus kuten muissakin Gievran arvioissa ja Health Connectin
+// TotalCaloriesBurned-tiedossa. Tasamaa: ylämäet eivät näy (kävelymatoilla ei yleensä kallistusta).
+// Keytelin yhtälö on johdettu 35–80 %:n VO2max-tasoilta; hidas kävely jää sen alle, ja tulos oli noin kolminkertainen.
+//
 // LEPOAINEENVAIHDUNTA: Mifflin MD, St Jeor ST ym. 1990, Am J Clin Nutr 51:241–247 (paino, pituus, ikä, sukupuoli):
 //   miehet 10·paino + 6,25·pituus − 5·ikä + 5, naiset … − 161 (kcal/vrk).
 // MAKSIMISYKE ilman omaa mittausta: Tanaka H ym. 2001, J Am Coll Cardiol 37(1):153–156: 208 − 0,7·ikä.
@@ -170,6 +180,22 @@ class HrProfile {
     final mPerMin = km * 1000 / minutes;
     final vo2 = 3.5 + (run ? 0.2 : 0.1) * mPerMin;
     return (vo2 * weightKg / 1000 * 5 * minutes * _adj).round();
+  }
+
+  /// Lepo-VO2 (ml/kg/min) omasta lepoaineenvaihdunnasta (Mifflin–St Jeor; 1 l O2 ≈ 5 kcal).
+  double restVo2(DateTime d) => restKcalPerMin(d) / 5 / weightKg * 1000;
+
+  /// Kävelyn nopeusalue, jolta Ludlow & Weyand 2016 -yhtälö on johdettu (m/s).
+  static const walkMinMs = .4, walkMaxMs = 1.9;
+
+  /// Kävely matkasta ja ajasta (Ludlow & Weyand 2016, ks. tiedoston alku): kokonaiskulutus kcal, tai null, jos
+  /// vauhti on yhtälön alueen ulkopuolella (esim. väärä matka) tai pituus puuttuu.
+  int? kcalWalk({required double km, required int seconds, required DateTime date}) {
+    if (seconds <= 0 || km <= 0 || heightCm <= 0) return null;
+    final v = km * 1000 / seconds;
+    if (v < walkMinMs || v > walkMaxMs) return null;
+    final vo2 = restVo2(date) + 3.85 + 5.97 * v * v / (heightCm / 100);
+    return (vo2 * weightKg / 1000 * 5 * seconds / 60 * _adj).round();
   }
 
   /// Sali: Compendiumin MET sykevyön keskisykkeen mukaan (ks. tiedoston alku).

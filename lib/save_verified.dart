@@ -11,14 +11,18 @@ typedef SaveOutcome = ({bool saved, bool verified});
 /// Tallentaa [bytes] käyttäjän valitsemaan paikkaan ja tarkistaa, että tiedosto on varmasti kirjoitettu (luetaan
 /// takaisin ja verrataan). null = käyttäjä perui. Androidissa oma tallennus (Kotlin: SAF + SHA-256), muualla
 /// tiedostovalitsin ja takaisinluku polusta.
-Future<SaveOutcome?> saveVerified(Uint8List bytes, {required String fileName, required String mime, String? title}) async {
+Future<SaveOutcome?> saveVerified(
+  Uint8List bytes, {
+  required String fileName,
+  required String mime,
+  String? title,
+}) async {
   if (Platform.isAndroid) {
     final tmp = File(p.join((await getTemporaryDirectory()).path, 'tallennus-$fileName'));
     await tmp.writeAsBytes(bytes, flush: true);
     try {
-      final r = await const MethodChannel(
-        'fi.somby.gievra/save',
-      ).invokeMapMethod<String, bool>('saveVerified', {'path': tmp.path, 'name': fileName, 'mime': mime});
+      final r = await const MethodChannel('fi.somby.gievra/save')
+          .invokeMapMethod<String, bool>('saveVerified', {'path': tmp.path, 'name': fileName, 'mime': mime});
       if (r == null) return null;
       return (saved: r['saved'] ?? false, verified: r['verified'] ?? false);
     } finally {

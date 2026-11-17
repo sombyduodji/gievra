@@ -24,6 +24,7 @@ import '../ongoing.dart';
 import '../time_zone.dart';
 import '../session_compare.dart';
 import '../program.dart';
+import '../program_edit.dart' show suggestDay;
 import '../theme.dart';
 import 'drawer.dart';
 import 'dumbbell_review.dart';
@@ -32,10 +33,14 @@ import '../daily_steps.dart';
 import 'whats_new_dialog.dart';
 import 'battery_ui.dart';
 import 'injury_screen.dart';
-import '../injuries.dart' show injuryById, injuryShortName, knownInjuries;
+import '../injuries.dart' show injuryById, injuryShortName, knownInjuries, injuryAdjusted;
 import 'health_import.dart';
+import '../health.dart' show HealthConnect, newHealthSessions;
+import '../heart_rate.dart' show hr;
+import 'hr_ui.dart' show HrScreen;
 import 'intro.dart';
 import 'program_screen.dart';
+import 'running_bar.dart';
 import 'body_screen.dart';
 import 'bug_report.dart';
 import 'new_workout.dart';
@@ -65,12 +70,48 @@ Insights _insights() {
   return _ins!;
 }
 
+/// Avaa kesken olevan liikunnan: GPS-tallennus (taustalla tai Androidin sulkema) tai liikuntaluonnos (ajanotto,
+/// lomake). Käynnistyksessä ja alapalkin "käynnissä" -palkista. False = ei mitään avattavaa.
+Future<bool> openPendingActivity(BuildContext context) async {
+  final sport = await GpsRecorder.pendingSport();
+  final d = await ActivityDraft.load();
+  if (!context.mounted) return false;
+  if (sport != null) {
+    final today = dateOnly(DateTime.now());
+    final same = d != null && d.$1.activity == sport;
+    final w = same
+        ? d.$1
+        : Workout(
+            date: today,
+            title: sport,
+            activity: sport,
+            session: store.onDay(today).isEmpty ? 1 : store.nextSession(today),
+          );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ActivityScreen(workout: w, recoverGps: true, draft: same ? d.$2 : null),
+      ),
+    );
+    return true;
+  }
+  if (d == null) return false;
+  final (w, extra) = d;
+  // Samalle päivälle tallennettu treeni samalla numerolla: luonnos on jo tallennettu.
+  if (store.onDay(w.date).any((x) => x.session == w.session && x.activity == w.activity)) {
+    await ActivityDraft.clear();
+    return false;
+  }
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => ActivityScreen(workout: w, draft: extra),
+    ),
+  );
+  return true;
+}
+
 /// Avaa päivän treenin: yksi treeni muokattavaksi, useampi valittavaksi, muuten uusi.
 void openDate(BuildContext context, DateTime d) {
-  // Treenin aloitus päättää tauon (sairaus/loma): paluuehdotukset alkavat tästä.
-  if (settings.activePause != null && !dateOnly(d).isBefore(settings.activePause!.start)) {
-    settings.endPause(addDays(d, -1));
-  }
+  // Tauko ei pääty treeniin (käyttäjä 16.11.): treeni ja liikunta ovat sallittuja, vain muistutus näkyy.
   final ws = store.onDay(d);
   if (ws.length > 1) {
     _chooseSession(context, d, ws);
@@ -91,7 +132,7 @@ void _open(BuildContext context, DateTime d, Workout? w, {bool newSession = fals
           : w != null && (w.minutes != null || w.feeling != null)
           ? SavedScreen(workout: w, history: true)
           : w != null
-          ? WorkoutScreen(workout: w.copy(), planDay: day)
+          ? WorkoutScreen(workout: w.copy(), planDay: day == null ? null : injuryAdjusted(day, settings.injuries))
           : NewWorkoutScreen(date: d, newSession: newSession),
     ),
   );
@@ -131,7 +172,7 @@ class _DayPagerState extends State<_DayPager> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: BarTitle(Text(_day == _today ? t('Tänään') : longDateYear(_day)))),
+    appBar: AppBar(title: BarTitle(Text(_day == _today ? t('Tänään') : longDateYear(_day))), bottom: samiBarBand),
     body: PageView.builder(
       controller: _pages,
       itemCount: _origin + _ahead + 1,
@@ -171,7 +212,7 @@ class _DayScreen extends StatelessWidget {
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     final today = dateOnly(DateTime.now());
     return ListenableBuilder(
-      listenable: Listenable.merge([store, dailySteps]),
+      listenable: Listenable.merge([store, dailySteps, settings]),
       builder: (context, _) {
         // Aikajärjestyksessä (aloitusaika); ilman aikaa olevat tallennusjärjestyksessä loppuun.
         final ws = [...store.onDay(day)]
@@ -216,7 +257,34 @@ class _DayScreen extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
           children: [
-            const SamiBand(height: 4, pattern: false),
+            // Päivä tauon aikana: tauon tiedot ja muokkaus (päivät, syy) suoraan kalenterista (käyttäjä 16.11.).
+            if (settings.pauseOn(day) case final pz?)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Material(
+                  color: Sami.blue.withValues(alpha: .14),
+                  borderRadius: BorderRadius.circular(14),
+                  child: ListTile(
+                    key: const ValueKey('dayPause'),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    leading: Text(pz.injury ? '🩹' : (pz.sick ? '🤒' : '🏖'), style: const TextStyle(fontSize: 22)),
+                    title: Text(
+                      pz.injury ? t('Vammatauko') : (pz.sick ? t('Sairastauko') : t('Loma')),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      pz.end == null
+                          ? t('alkoi {0}, jatkuu', [shortDate(pz.start)])
+                          : '${shortDate(pz.start)}–${shortDate(pz.end!)}',
+                    ),
+                    trailing: Text(
+                      t('Muokkaa'),
+                      style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+                    ),
+                    onTap: () => showPauseDialog(context, edit: pz),
+                  ),
+                ),
+              ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -269,6 +337,14 @@ class _DayScreen extends StatelessWidget {
             for (final w in ws)
               Card(
                 margin: const EdgeInsets.only(bottom: 10),
+                clipBehavior: Clip.antiAlias,
+                // Vasen reuna lajin värillä (sali punainen, liikunta vihreä; luonnos paiva).
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(
+                    color: (w.activity != null ? greenText(context) : redText(context)).withValues(alpha: .5),
+                  ),
+                ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
                   onTap: () => _open(context, day, w),
@@ -351,6 +427,8 @@ class _DayScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            // Health Connectin harjoitukset, joita ei vielä ole Gievrassa (tämän päivän osalta).
+            if (!day.isAfter(today) && HealthImportButton.visible) _DayHealthRow(day: day),
             if (!day.isAfter(today)) ...[
               const SizedBox(height: 8),
               // Molemmat: sama nuolipari kuin etusivulla, tasan 50/50 (lisätään tälle päivälle, ei suositusta).
@@ -414,9 +492,6 @@ class _DayScreen extends StatelessWidget {
 /// Uusi treeni päivälle: ensimmäinen tai saman päivän seuraava (vvvv-kk-pp-2.md …).
 /// [gymOnly]: salinäkymästä aloitettu, joten tyyppivalintaa (sali / liikunta) ei näytetä.
 void _startNew(BuildContext context, DateTime d, {bool gymOnly = false}) {
-  if (settings.activePause != null && !dateOnly(d).isBefore(settings.activePause!.start)) {
-    settings.endPause(addDays(d, -1));
-  }
   Navigator.of(context).push(
     MaterialPageRoute(
       builder: (_) => NewWorkoutScreen(date: d, newSession: store.onDay(d).isNotEmpty, gymOnly: gymOnly),
@@ -445,7 +520,7 @@ Future<void> _chooseSession(BuildContext context, DateTime d, List<Workout> ws) 
               title: Text(w.activity != null ? sportName(w.activity!) : trName(w.title)),
               subtitle: Text(
                 [
-                  ?durationText(w),
+                  ?durationRounded(w),
                   if (w.distanceKm != null) '${fmtNum(w.distanceKm!)} km',
                   if (w.activity == null) setsLabel(w.exercises.fold<int>(0, (a, e) => a + e.workSets.length)),
                   if (feelingOf(w.feeling) != null) feelingOf(w.feeling)!.$2,
@@ -476,6 +551,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Kalenteri: oletuksena vain tämä viikko (vähemmän tilaa), kuukausi avautuu napista.
   bool _monthView = false;
 
+  /// Sali | Liikunta -valitsin (null = automaattinen: kesken oleva tai käytetympi ensin).
+  bool? _gymMode;
+
+  /// Liikuntakortin valittu laji (null = viimeksi tehty).
+  String? _sport;
+
   @override
   void initState() {
     super.initState();
@@ -500,6 +581,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       tzWatch.check();
+      dayWatch.check();
       _refreshSteps();
     } else if (state == AppLifecycleState.paused) {
       dailySteps.stopTimer();
@@ -634,46 +716,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // palautus avautui kahdesti ja sijaintilupaa kysyttiin kahdesti (päivätesti 14.11.).
     if (_resumeDone) return;
     _resumeDone = true;
-    final sport = await GpsRecorder.pendingSport();
-    final d = await ActivityDraft.load();
-    if (!mounted) return;
-    if (sport != null) {
-      final today = dateOnly(DateTime.now());
-      final same = d != null && d.$1.activity == sport;
-      final w = same
-          ? d.$1
-          : Workout(
-              date: today,
-              title: sport,
-              activity: sport,
-              session: store.onDay(today).isEmpty ? 1 : store.nextSession(today),
-            );
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ActivityScreen(workout: w, recoverGps: true, draft: same ? d.$2 : null),
-        ),
-      );
-      return;
-    }
-    if (d == null) return;
-    final (w, extra) = d;
-    // Samalle päivälle tallennettu treeni samalla numerolla: luonnos on jo tallennettu.
-    if (store.onDay(w.date).any((x) => x.session == w.session && x.activity == w.activity)) {
-      await ActivityDraft.clear();
-      return;
-    }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ActivityScreen(workout: w, draft: extra),
-      ),
-    );
+    await openPendingActivity(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListenableBuilder(
-      listenable: Listenable.merge([settings, store, autoBackup]),
+      listenable: Listenable.merge([settings, store, autoBackup, AwayActivity.changes]),
       builder: (context, _) {
         final now = DateTime.now();
         final today = dateOnly(now);
@@ -694,18 +744,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            // Matalampi palkki: viiva lähemmäs tervehdystä; suurella tekstillä korkeampi, ettei teksti leikkaudu.
+            toolbarHeight: (MediaQuery.textScalerOf(context).scale(22) + 22).clamp(44.0, 80.0),
+            // Ohut saamen viiva heti tervehdyksen alla (käyttäjä 16.11.: tiiviimpi, tekstit ja viiva ennallaan).
+            bottom: const PreferredSize(
+              preferredSize: Size.fromHeight(8),
+              child: Padding(padding: EdgeInsets.fromLTRB(18, 0, 18, 4), child: SamiBand(height: 4, pattern: false)),
+            ),
+            actions: [
+              // Päivämäärä ohjeen vieressä (luonnos etusivu4).
+              Center(
+                // Päiväys enintään 1,3-kertaisena: 2-kertaisella järjestelmäfontilla se vei tilan tervehdykseltä.
+                child: MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.3,
+                  child: Text(shortDate(now), style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                ),
+              ),
+              IconButton(
+                key: const ValueKey('homeHelpButton'),
+                tooltip: t('Ohje'),
+                icon: const Icon(Icons.help_outline),
+                onPressed: () => showHomeHelp(context),
+              ),
+            ],
           ),
-          drawer: const AppDrawer(),
           body: RefreshIndicator(
-            onRefresh: store.reload,
+            // Alas vetäminen: treenit, askeleet ja Health Connect (ennen vain treenit).
+            onRefresh: () async {
+              await store.reload();
+              if (stepsTabAvailable) await dailySteps.refresh();
+              await HealthImportButton.refresh();
+            },
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
+              padding: const EdgeInsets.fromLTRB(18, 2, 18, 32),
               children: [
-                const SizedBox(height: 4),
-                const SamiBand(),
                 // Vammatila ja tauko näkyvät heti ylhäällä, kun ne ovat päällä.
                 if (knownInjuries(settings.injuries).isNotEmpty) _InjuryBanner(),
                 if (settings.activePause != null) _PauseBanner(),
+                if (settings.activePause == null && settings.upcomingPause != null) _UpcomingPauseBanner(),
                 // Treenitiedostot, joita ei voitu lukea: ennen ne puuttuivat historiasta ilman selitystä.
                 if (store.unreadable.isNotEmpty) _UnreadableBanner(),
                 // Päivityksen jälkeinen automaattinen varmuuskopio: edistyminen ja mahdollinen virhe.
@@ -730,7 +806,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     emoji: '⚠️',
                     title: autoBackup.error!,
                     detail: t(
-                      'Yritetään uudelleen seuraavalla käynnistyksellä. Tee varmuuskopio itse: ☰ → Tuonti, vienti ja varmuuskopio.',
+                      'Yritetään uudelleen seuraavalla käynnistyksellä. Tee varmuuskopio itse: Lisää → Tuonti, vienti ja varmuuskopio.',
                     ),
                     onTap: () => autoBackup.dismissError(),
                   ),
@@ -764,7 +840,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Text(
                           t(
                             '🧪 Demo selaimessa: esimerkkitreenit, mitään ei tallenneta. Kokeile treenin kirjausta, '
-                            'tilastoja ja ohjelman tekoa (☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma → Tallenna pohja). '
+                            'tilastoja ja ohjelman tekoa (Ohjelma → Tee uusi ohjelma → Tallenna pohja). '
                             'Oikea sovellus tallentaa treenit .md-tiedostoina omaan kansioosi.',
                           ),
                           style: const TextStyle(fontSize: 13),
@@ -784,81 +860,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
-                if (settings.trainMode == 'cardio')
+                // Treeni käynnissä (liikunta taustalla tai keskeneräinen salitreeni): yksi Jatka-kortti aloitusten tilalla
+                // (käyttäjä 17.11.); aloitukset palaavat, kun treeni on valmis.
+                if (RunningBar.active(now)) ...[
+                  const SizedBox(height: 14),
+                  const RunningBar(big: true),
+                  if (HealthImportButton.visible) HealthImportButton(),
+                  const SizedBox(height: 6),
+                  const WeightTodayCard(),
+                ] else if (settings.trainMode == 'cardio')
                   _CardioHome()
-                else if (both) ...[
-                  // Molemmat: yksi Tänään-kortti. Iso painike on sali, jos tänään on keskeneräinen salitreeni tai
-                  // salitreenejä on tehty vähintään yhtä usein kuin liikuntaa viimeisen 14 päivän aikana; muuten
-                  // liikunta. Ohjelman päivää ei oteta huomioon. Toinen on pienempi painike (ei näkymän vaihtoa).
-                  const SizedBox(height: 18),
+                else ...[
+                  const SizedBox(height: 14),
                   Builder(
                     builder: (context) {
                       final acts = store.onDay(today).where((w) => w.activity != null).toList();
-                      final gymFirst = _gymFirst(today, hasToday);
-                      void gym() => hasToday
-                          ? (open.length == 1
-                                ? _open(context, open.single.date, open.single)
-                                : _chooseSession(context, today, open))
-                          : _startNew(context, today, gymOnly: true);
-                      void activity() => _CardioHome._add(context, null);
-                      final gymLabel = hasToday ? t('Jatka treeniä') : t('Aloita salitreeni');
+                      final gymMode = !both || (_gymMode ?? _gymFirst(today, hasToday));
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _TodayCard(
-                            today: today,
-                            actions: [
-                              _SplitCta(
-                                gymWide: gymFirst,
-                                gymOpen: hasToday,
-                                activityIcon: _lastSportIcon(),
-                                gymSemantics: gymLabel,
-                                onGym: gym,
-                                onActivity: activity,
-                              ),
-                            ],
-                            done: [...todays.where((w) => !open.contains(w)), ...acts],
-                          ),
+                          if (both) ...[
+                            _ModeSwitch(gym: gymMode, onChanged: (g) => setState(() => _gymMode = g)),
+                            const SizedBox(height: 12),
+                          ],
+                          if (gymMode)
+                            _GymCard(today: today, open: open, done: todays.where((w) => !open.contains(w)).toList())
+                          else
+                            _ActivityCard(
+                              today: today,
+                              sport: _sport,
+                              onSport: (s) => setState(() => _sport = s),
+                              done: acts,
+                            ),
                           if (HealthImportButton.visible) HealthImportButton(),
+                          if (store.error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(store.error!, style: TextStyle(color: cs.error)),
+                            ),
                           const SizedBox(height: 6),
                           const WeightTodayCard(),
-                          _InsightsCard(),
                         ],
                       );
                     },
                   ),
-                ] else ...[
-                  const SizedBox(height: 18),
-                  // Iso painike: jatka keskeneräistä tai aloita uusi. Ohjelman ehdotus näkyy alarivillä;
-                  // seuraavassa näkymässä päivän voi vielä vaihtaa.
-                  _TodayCard(
-                    today: today,
-                    actions: [
-                      _Cta(
-                        label: hasToday
-                            ? (open.length == 1
-                                  ? t('Jatka: {0}', [trName(open.single.title)])
-                                  : t('Jatka tämän päivän treeniä'))
-                            : t('Aloita salitreeni'),
-                        icon: hasToday ? Icons.play_arrow_rounded : Icons.add_rounded,
-                        onTap: () => hasToday
-                            ? (open.length == 1
-                                  ? _open(context, open.single.date, open.single)
-                                  : _chooseSession(context, today, open))
-                            : _startNew(context, today, gymOnly: true),
-                      ),
-                    ],
-                    // Tämän päivän valmiit treenit tiiviinä riveinä (avautuvat lukutilaan).
-                    done: todays.where((w) => !open.contains(w)).toList(),
-                  ),
-                  if (store.error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(store.error!, style: TextStyle(color: cs.error)),
-                    ),
-                  const SizedBox(height: 14),
-                  const WeightTodayCard(),
-                  _InsightsCard(),
                 ],
                 const SizedBox(height: 14),
                 Card(
@@ -867,7 +912,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     // Päivän askeleet päivittyvät kalenteriin ilman koko etusivun uudelleenrakennusta.
                     child: ListenableBuilder(
                       listenable: dailySteps,
-                      builder: (context, _) => _Calendar(
+                      builder: (context, _) => MonthCalendar(
                         month: _month,
                         week: !_monthView,
                         onToggle: () => setState(() {
@@ -879,6 +924,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
+                if (settings.trainMode != 'cardio') _InsightsCard(),
                 _OverviewLink(),
                 const SizedBox(height: 6),
                 if (store.workouts.isNotEmpty) _Recent(),
@@ -1147,7 +1193,7 @@ class _TodayRow extends StatelessWidget {
     final name = w.activity != null ? sportName(w.activity!) : trName(w.title);
     final info = [
       if (w.distanceKm != null) '${fmtNum((w.distanceKm! * 100).round() / 100)} km',
-      ?durationText(w),
+      ?durationRounded(w),
       if (w.activity == null && w.exercises.isNotEmpty)
         setsLabel(w.exercises.fold<int>(0, (a, e) => a + e.sets.where((s) => !s.warmup).length)),
     ].join(' · ');
@@ -1270,14 +1316,14 @@ class _CtaLabel extends StatelessWidget {
 /// Urheilun ja liikunnan väri kalenterissa.
 const sportColor = Color(0xFF2BA6A6);
 
-class _Calendar extends StatelessWidget {
+class MonthCalendar extends StatelessWidget {
   final DateTime month;
   final void Function(int) onShift;
 
-  /// Vain tämä viikko (tiivis); [onToggle] vaihtaa viikon ja kuukauden välillä.
+  /// Vain tämä viikko (tiivis); [onToggle] vaihtaa viikon ja kuukauden välillä (null: ei vaihtoa, esim. Tilastot).
   final bool week;
-  final VoidCallback onToggle;
-  const _Calendar({required this.month, required this.onShift, this.week = false, required this.onToggle});
+  final VoidCallback? onToggle;
+  const MonthCalendar({super.key, required this.month, required this.onShift, this.week = false, this.onToggle});
 
   /// ISO-viikkonumero.
   static int weekNumber(DateTime d) {
@@ -1286,16 +1332,12 @@ class _Calendar extends StatelessWidget {
     return thursday.difference(jan1).inDays ~/ 7 + 1;
   }
 
-  List<Color> _dots(Workout w) {
-    final groups = {for (final e in w.exercises.where((e) => e.sets.isNotEmpty)) bodyGroupOf(e.name)};
-    return [
-      if (groups.contains(BodyGroup.legs)) Sami.red,
-      if (groups.contains(BodyGroup.upper)) Sami.blue,
-      if (w.warmup != null || groups.contains(BodyGroup.core)) Sami.green,
-      if (w.activity != null) sportColor,
-      if (w.exercises.any((e) => e.sets.any((s) => s.pr))) Sami.yellow,
-    ];
-  }
+  /// Päivän pisteet (ulkoasun kohennus 16.11.): punainen = salitreeni, vihreä = liikunta, keltainen = ennätys.
+  List<Color> _dots(Workout w) => [
+    if (w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty)) Sami.redLight,
+    if (w.activity != null) Sami.greenLight,
+    if (w.exercises.any((e) => e.sets.any((s) => s.pr))) Sami.yellow,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1320,9 +1362,15 @@ class _Calendar extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                t('Viikko {0}', [weekNumber(today)]),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SeCaption('Vahkku ${weekNumber(today)}'),
+                  Text(
+                    t('Viikko {0}', [weekNumber(today)]),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ],
               ),
               const Spacer(),
               TextButton.icon(
@@ -1363,6 +1411,57 @@ class _Calendar extends StatelessWidget {
                 ),
             ],
           ),
+          // Viikon yhteenveto: salikerrat, liikuntaminuutit ja tämän päivän askeleet päivitysaikoineen.
+          Builder(
+            builder: (context) {
+              final a = weekActivity(store.workouts, today);
+              final gym = {
+                for (final ws in byDate.values)
+                  for (final w in ws)
+                    if (w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty)) w.date,
+              }.length;
+              final steps = stepsTabAvailable ? dailySteps.at(today) : null;
+              final at = dailySteps.lastRefresh;
+              final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 10,
+                  runSpacing: 2,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '● ',
+                            style: TextStyle(color: redText(context)),
+                          ),
+                          TextSpan(text: t('sali {0}', [gym])),
+                          if (settings.sports) ...[
+                            const TextSpan(text: '  '),
+                            TextSpan(
+                              text: '● ',
+                              style: TextStyle(color: greenText(context)),
+                            ),
+                            TextSpan(text: t('{0}/{1} min', [a.moderateEq, whoMinutes])),
+                          ],
+                        ],
+                      ),
+                      style: sub,
+                    ),
+                    if (steps != null)
+                      Text(
+                        at == null
+                            ? '👣 ${thousands(steps)}'
+                            : '👣 ${thousands(steps)} · ${t('klo {0}', ['${at.hour}.${at.minute.toString().padLeft(2, '0')}'])}',
+                        style: sub,
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       );
     }
@@ -1380,6 +1479,8 @@ class _Calendar extends StatelessWidget {
           workout: byDay[d]?.first,
           dots: byDay[d] == null ? const [] : {for (final w in byDay[d]!) ..._dots(w)}.toList(),
           steps: stepsTabAvailable ? dailySteps.at(DateTime(month.year, month.month, d)) : null,
+          // Taukopäivät sinisellä pohjalla (myös etukäteen merkitty loma).
+          pause: settings.pauseOn(DateTime(month.year, month.month, d)) != null,
           onTap: DateTime(month.year, month.month, d).isAfter(today)
               ? null
               : () => showDay(context, DateTime(month.year, month.month, d)),
@@ -1409,14 +1510,17 @@ class _Calendar extends StatelessWidget {
             IconButton.filledTonal(onPressed: () => onShift(1), icon: const Icon(Icons.chevron_right)),
           ],
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: onToggle,
-            icon: const Icon(Icons.view_week_outlined, size: 18),
-            label: Text(t('Vain tämä viikko')),
-          ),
-        ),
+        if (onToggle != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onToggle,
+              icon: const Icon(Icons.view_week_outlined, size: 18),
+              label: Text(t('Vain tämä viikko')),
+            ),
+          )
+        else
+          const SizedBox(height: 8),
         GridView.count(
           crossAxisCount: 7,
           shrinkWrap: true,
@@ -1431,11 +1535,10 @@ class _Calendar extends StatelessWidget {
           runSpacing: 4,
           children: [
             for (final (c, l) in [
-              (Sami.red, t('Jalat')),
-              (Sami.blue, t('Ylävartalo')),
-              (Sami.green, t('Kardio / keskivartalo')),
-              if (settings.sports) (sportColor, t('Liikunta')),
+              (Sami.redLight, t('Sali')),
+              if (settings.sports) (Sami.greenLight, t('Liikunta')),
               (Sami.yellow, t('Ennätys')),
+              if (settings.pauses.isNotEmpty) (Sami.blue.withValues(alpha: .45), t('Tauko')),
             ])
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1479,7 +1582,18 @@ class _DayCell extends StatelessWidget {
 
   /// Päivän askeleet (päivän askeleet päällä): rengas päivämäärän ympärillä.
   final int? steps;
-  const _DayCell({required this.day, required this.isToday, this.workout, required this.dots, this.onTap, this.steps});
+
+  /// Päivä on tauon aikana.
+  final bool pause;
+  const _DayCell({
+    required this.day,
+    required this.isToday,
+    this.workout,
+    required this.dots,
+    this.onTap,
+    this.steps,
+    this.pause = false,
+  });
 
   /// Askelrenkaan väri (kalenteri ja selite) ja täysi rengas: sama kuin etusivun kortin tavoiteviiva.
   static const stepsColor = stepsGoalColor;
@@ -1488,63 +1602,72 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final cell = InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: workout != null ? cs.surfaceContainerHigh : null,
-          borderRadius: BorderRadius.circular(10),
-          border: isToday ? Border.all(color: Sami.yellow, width: 2) : null,
-        ),
-        // Sisältö pienenee tarvittaessa (päivä ja pisteet kapeassa solussa).
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Päivämäärä; askeleet rengas sen ympärillä (kuin akkukuvake, täysi = 10 000, tarkka luku päivän näkymässä).
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: CustomPaint(
-                  painter: (steps ?? 0) > 0 ? _StepsRing((steps! / stepsFull).clamp(.04, 1.0), stepsColor) : null,
-                  // Suuri järjestelmän fontti: kaksinumeroinen päivä pienenee renkaan sisään (ennen "10" → "1").
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '$day',
-                        maxLines: 1,
-                        softWrap: false,
-                        style: TextStyle(fontSize: 12, color: onTap == null ? cs.onSurfaceVariant : cs.onSurface),
-                      ),
-                    ),
-                  ),
+    final ring = SizedBox(
+      width: 30,
+      height: 30,
+      child: CustomPaint(
+        painter: _StepsRing(((steps ?? 0) / stepsFull).clamp(0.0, 1.0), stepsColor, width: 3),
+        // Suuri järjestelmän fontti: kaksinumeroinen päivä pienenee renkaan sisään (ennen "10" → "1").
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '$day',
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                  color: onTap == null ? cs.onSurfaceVariant : cs.onSurface,
                 ),
               ),
-              if (dots.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (final c in dots)
-                        Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.symmetric(horizontal: 1),
-                          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-                        ),
-                    ],
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
     );
-    return cell;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      // Sisältö pienenee tarvittaessa (päivä ja pisteet kapeassa solussa).
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Tänään: keltainen kehä askelrenkaan ympärillä (luonnos viikko-askeleet B).
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: isToday || pause
+                  ? BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: pause ? Sami.blue.withValues(alpha: .38) : null,
+                      border: isToday ? Border.all(color: Sami.yellow, width: 2) : null,
+                    )
+                  : null,
+              child: ring,
+            ),
+            SizedBox(
+              height: 9,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final c in dots)
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.fromLTRB(1, 3, 1, 0),
+                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1730,7 +1853,6 @@ List<Workout> latestWorkouts(List<Workout> ws, int n) {
 class _Recent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
@@ -1738,68 +1860,77 @@ class _Recent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(t('Viimeksi'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-            for (final w in latestWorkouts(store.workouts, 3))
-              InkWell(
-                onTap: () => _open(context, w.date, w),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: [
-                      // Kuvake: sali (käsipaino) tai lajin oma merkki; väri kertoo lajin (punainen sali, vihreä liikunta).
-                      Container(
-                        width: 36,
-                        height: 36,
-                        margin: const EdgeInsets.only(right: 12),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: (w.activity != null ? Sami.green : Sami.red).withValues(alpha: .16),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: w.activity != null
-                            ? Text(sportOf(w.activity)?.icon ?? '🏃', style: const TextStyle(fontSize: 18))
-                            : Icon(Icons.fitness_center_rounded, size: 20, color: redText(context)),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              w.activity != null ? sportName(w.activity!) : trName(w.title),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              w.activity != null
-                                  // Liikunta: matka ja aika (ennen tyhjä rivi, vaikka tiedot tunnetaan).
-                                  ? [
-                                      if ((w.distanceKm ?? 0) > 0)
-                                        '${fmtNum(double.parse(w.distanceKm!.toStringAsFixed(2)))} km',
-                                      if (w.seconds != null)
-                                        fmtDurationSec(w.seconds!)
-                                      else if (w.minutes != null)
-                                        fmtDuration(w.minutes!),
-                                    ].join(' · ')
-                                  : w.exercises
-                                        .where((e) => e.sets.isNotEmpty)
-                                        .map((e) => exerciseLabel(e.name))
-                                        .join(' · '),
-                              maxLines: linesFor(context, 1),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(shortDate(w.date), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-              ),
+            for (final w in latestWorkouts(store.workouts, 3)) WorkoutRow(w),
           ],
         ),
       ),
     );
   }
 }
+
+/// Treeni yhtenä rivinä (kuvake lajin värillä, nimi, liikkeet tai matka ja aika, päivä); napautus avaa treenin.
+class WorkoutRow extends StatelessWidget {
+  final Workout w;
+  const WorkoutRow(this.w, {super.key});
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => _open(context, w.date, w),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            // Kuvake: sali (käsipaino) tai lajin oma merkki; väri kertoo lajin (punainen sali, vihreä liikunta).
+            Container(
+              width: 36,
+              height: 36,
+              margin: const EdgeInsets.only(right: 12),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: (w.activity != null ? Sami.green : Sami.red).withValues(alpha: .16),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: w.activity != null
+                  ? Text(sportOf(w.activity)?.icon ?? '🏃', style: const TextStyle(fontSize: 18))
+                  : Icon(Icons.fitness_center_rounded, size: 20, color: redText(context)),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    w.activity != null ? sportName(w.activity!) : trName(w.title),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    w.activity != null
+                        // Liikunta: matka ja aika (ennen tyhjä rivi, vaikka tiedot tunnetaan).
+                        ? [
+                            if ((w.distanceKm ?? 0) > 0) '${fmtNum(double.parse(w.distanceKm!.toStringAsFixed(2)))} km',
+                            if (w.seconds != null)
+                              fmtDurationSec(w.seconds!)
+                            else if (w.minutes != null)
+                              fmtDuration(w.minutes!),
+                          ].join(' · ')
+                        : w.exercises.where((e) => e.sets.isNotEmpty).map((e) => exerciseLabel(e.name)).join(' · '),
+                    maxLines: linesFor(context, 1),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            Text(shortDateY(w.date), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Avaa tallennetun treenin (sali: yhteenveto, liikunta: liikuntanäkymä).
+void openWorkout(BuildContext context, Workout w) => _open(context, w.date, w);
 
 /// Edistyminen ja kevennysviikkovinkki (pois päältä asetuksista).
 class _InsightsCard extends StatelessWidget {
@@ -2046,13 +2177,19 @@ class _PauseBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = settings.activePause!;
-    final title = p.sick ? t('🤒  Sairastat – parane pian!') : t('🏖  Lomalla – nauti!');
+    final title = p.injury
+        ? t('🩹  Vammatauko – parane pian!')
+        : p.sick
+        ? t('🤒  Sairastat – parane pian!')
+        : t('🏖  Lomalla – nauti!');
     return _ModeBanner(
       color: p.sick ? Sami.red : Sami.blue,
       // Emoji rivin alkuun, otsikosta ilman sitä.
-      emoji: p.sick ? '🤒' : '🏖',
+      emoji: p.injury ? '🩹' : (p.sick ? '🤒' : '🏖'),
       title: title.replaceFirst(RegExp(r'^[^\p{L}]+', unicode: true), ''),
-      detail: t('Alkoi {0}.{1}.{2}', [p.start.day, p.start.month, p.start.year]),
+      detail: p.end == null
+          ? t('Alkoi {0}.{1}.{2}', [p.start.day, p.start.month, p.start.year])
+          : t('{0}–{1} · {2}. päivä', [shortDate(p.start), shortDate(p.end!), p.days]),
       onTap: () => showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -2068,6 +2205,11 @@ class _PauseBanner extends StatelessWidget {
                   [shortDate(p.start), p.days],
                 ),
               ),
+              if (p.end != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(t('Päättyy itsestään {0} jälkeen.', [shortDate(p.end!)])),
+                ),
               if (p.sick)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -2076,7 +2218,15 @@ class _PauseBanner extends StatelessWidget {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('Sulje'))),
+            // Päivien tai syyn muutos (käyttäjä 16.11.: "voi muokata päiviä myöhemmin").
+            TextButton(
+              key: const ValueKey('pauseEdit'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                showPauseDialog(context, edit: p);
+              },
+              child: Text(t('Muokkaa')),
+            ),
             // Vahingossa aloitettu tauko pois kokonaan.
             TextButton(
               onPressed: () {
@@ -2095,6 +2245,23 @@ class _PauseBanner extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Tuleva tauko (loma ensi viikolla): näkyy etusivulla, napautus muokkaa.
+class _UpcomingPauseBanner extends StatelessWidget {
+  const _UpcomingPauseBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = settings.upcomingPause!;
+    return _ModeBanner(
+      color: Sami.blue,
+      emoji: p.injury ? '🩹' : (p.sick ? '🤒' : '🏖'),
+      title: t('Tauko tulossa'),
+      detail: p.end == null ? t('alkaa {0}', [shortDate(p.start)]) : '${shortDate(p.start)}–${shortDate(p.end!)}',
+      onTap: () => showPauseDialog(context, edit: p),
     );
   }
 }
@@ -2199,6 +2366,11 @@ class _CardioHome extends StatelessWidget {
   const _CardioHome();
 
   static void _add(BuildContext context, String? sport) {
+    // Liikunta jo käynnissä taustalla: palataan siihen (kaksi ajanottoa kerralla sekoittaisi luonnoksen ja sykkeet).
+    if (AwayActivity.away) {
+      openPendingActivity(context);
+      return;
+    }
     final today = dateOnly(DateTime.now());
     final w = Workout(
       date: today,
@@ -2308,6 +2480,466 @@ class WeightTodayCard extends StatelessWidget {
             const SizedBox(width: 4),
             TextButton(onPressed: () => settings.skipBodyToday(isoDate(today)), child: Text(t('Ohita'))),
           ],
+        ),
+      );
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Ulkoasun kohennus (16.11., luonnokset docs/facelift): Sali | Liikunta -valitsin, ehdotuskortti, liikuntakortti
+// ja etusivun ?-ohje.
+
+/// Sali | Liikunta -valitsin etusivun ylälaidassa (molemmat-tilassa). Valinta vaihtaa vain alla olevan kortin.
+class _ModeSwitch extends StatelessWidget {
+  final bool gym;
+  final ValueChanged<bool> onChanged;
+  const _ModeSwitch({required this.gym, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    Widget seg(bool isGym) {
+      final on = gym == isGym;
+      return Expanded(
+        child: Material(
+          color: on ? (isGym ? Sami.red : Sami.green) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            key: ValueKey(isGym ? 'modeGym' : 'modeActivity'),
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => onChanged(isGym),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(isGym ? '🏋️' : _lastSportIcon(), style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
+                    Text(
+                      isGym ? t('Sali') : t('Liikunta'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: on ? Colors.white : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(16)),
+      child: Row(children: [seg(true), seg(false)]),
+    );
+  }
+}
+
+/// Pieni saamenkielinen otsikko keltaisena suomen/englannin otsikon yllä (aina päällä fi/en-kielissä, käyttäjä 16.11.).
+class _SeCaption extends StatelessWidget {
+  final String se;
+  const _SeCaption(this.se);
+  @override
+  Widget build(BuildContext context) => isSami
+      ? const SizedBox.shrink()
+      : Text(
+          se.toUpperCase(),
+          style: TextStyle(fontSize: 10.5, letterSpacing: .6, fontWeight: FontWeight.w600, color: yellowText(context)),
+        );
+}
+
+/// Kortti, jonka vasen reuna on värillinen (sali punainen, liikunta vihreä).
+class _EdgeCard extends StatelessWidget {
+  final Color edge;
+  final Widget child;
+  const _EdgeCard({required this.edge, required this.child});
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: EdgeInsets.zero,
+    clipBehavior: Clip.antiAlias,
+    child: Container(
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: edge, width: 4)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: child,
+    ),
+  );
+}
+
+/// Iso aloituspainike korttiin.
+class _StartButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final Key? buttonKey;
+  const _StartButton({required this.label, required this.color, required this.onTap, this.buttonKey});
+  @override
+  Widget build(BuildContext context) => FilledButton(
+    key: buttonKey,
+    style: FilledButton.styleFrom(
+      backgroundColor: color,
+      foregroundColor: Colors.white,
+      minimumSize: const Size.fromHeight(52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+    ),
+    onPressed: onTap,
+    // Kuvake eikä ▶-merkki: Samsung näytti merkin keltaisena emojina.
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [const Icon(Icons.play_arrow_rounded, size: 26), const SizedBox(width: 6), Text(label, maxLines: 1)],
+      ),
+    ),
+  );
+}
+
+/// Salikortti: kesken oleva treeni (Jatka) tai ohjelman ehdotus tälle päivälle. Aloita avaa treenin valinnan, jossa
+/// päivän voi vaihtaa (ehdotus ei sido).
+class _GymCard extends StatelessWidget {
+  final DateTime today;
+  final List<Workout> open;
+  final List<Workout> done;
+  const _GymCard({required this.today, required this.open, required this.done});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: AppText.caption, color: cs.onSurfaceVariant);
+    final p = settings.program;
+    final children = <Widget>[];
+    if (open.isNotEmpty) {
+      final w = open.length == 1 ? open.single : null;
+      children.addAll([
+        const _SeCaption('Joatkka'),
+        Text(t('KESKEN'), style: sub.copyWith(letterSpacing: .6)),
+        const SizedBox(height: 2),
+        Text(
+          w != null ? trName(w.title) : t('Jatka tämän päivän treeniä'),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+        ),
+        if (w != null) ...[
+          const SizedBox(height: 4),
+          Text(setsLabel(w.exercises.fold<int>(0, (a, e) => a + e.workSets.length)), style: sub),
+        ],
+        const SizedBox(height: 12),
+        _StartButton(
+          buttonKey: const ValueKey('homeContinue'),
+          label: w != null ? t('Jatka: {0}', [trName(w.title)]) : t('Jatka tämän päivän treeniä'),
+          color: Sami.red,
+          onTap: () => w != null ? _open(context, w.date, w) : _chooseSession(context, today, open),
+        ),
+      ]);
+    } else if (settings.activePause != null) {
+      // Tauolla ei ehdotuksia eikä muistutuksia (käyttäjä 16.11.); treenata voi silti.
+      children.addAll([
+        const _SeCaption('Bottu'),
+        Text(t('TAUOLLA'), style: sub.copyWith(letterSpacing: .3)),
+        const SizedBox(height: 2),
+        Text(t('Ei ehdotuksia tauon aikana'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(t('Voit silti treenata: valitse päivä tai vapaa treeni seuraavassa näkymässä.'), style: sub),
+        const SizedBox(height: 12),
+        _StartButton(
+          buttonKey: const ValueKey('homeStartGym'),
+          label: t('Treenaa silti'),
+          color: Sami.blue,
+          onTap: () => _startNew(context, today, gymOnly: true),
+        ),
+      ]);
+    } else if (p != null && p.plan.isNotEmpty) {
+      final (day, why) = suggestDay(p, store.workouts, today);
+      final names = [for (final i in day.items) exerciseLabel(i.exercise)];
+      // Arvio viiden minuutin tarkkuudella (ennen 58.75 min).
+      final mins = (estimateMinutes(day.items) / 5).round() * 5;
+      children.addAll([
+        const _SeCaption('Evttohus'),
+        Text(t('EHDOTUS TÄLLE PÄIVÄLLE · noin {0} min', [mins]), style: sub.copyWith(letterSpacing: .3)),
+        const SizedBox(height: 2),
+        Text(day.uiName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [for (final n in names.take(2)) _Chip(n), if (names.length > 2) _Chip('+${names.length - 2}')],
+        ),
+        if (why != null) ...[const SizedBox(height: 8), Text('💡 $why', style: sub)],
+        const SizedBox(height: 6),
+        Text(t('Päivän voi vaihtaa seuraavassa näkymässä.'), style: sub.copyWith(fontSize: 11.5)),
+        const SizedBox(height: 10),
+        _StartButton(
+          buttonKey: const ValueKey('homeStartGym'),
+          label: t('Aloita treeni'),
+          color: Sami.red,
+          onTap: () => _startNew(context, today, gymOnly: true),
+        ),
+      ]);
+    } else {
+      children.addAll([
+        const _SeCaption('Evttohus'),
+        Text(t('EHDOTUS TÄLLE PÄIVÄLLE'), style: sub.copyWith(letterSpacing: .3)),
+        const SizedBox(height: 2),
+        Text(t('Vapaa treeni'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(t('Valitset liikkeet seuraavassa näkymässä, ilman ohjelmaa.'), style: sub),
+        const SizedBox(height: 12),
+        _StartButton(
+          buttonKey: const ValueKey('homeStartGym'),
+          label: t('Aloita salitreeni'),
+          color: Sami.red,
+          onTap: () => _startNew(context, today, gymOnly: true),
+        ),
+      ]);
+    }
+    if (done.isNotEmpty) {
+      children.addAll([const SizedBox(height: 8), for (final w in done) _TodayRow(w)]);
+    }
+    return _EdgeCard(
+      edge: Sami.red,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String text;
+  final bool selected;
+  final VoidCallback? onTap;
+  const _Chip(this.text, {this.selected = false, this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final c = greenText(context);
+    return Material(
+      color: cs.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: selected ? BorderSide(color: c, width: 2) : BorderSide.none,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text(text, style: const TextStyle(fontSize: 13)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Liikuntakortti: lajit siruina (käytetyimmät ensin, viimeisin valittuna), Aloita valitulla lajilla. Muu… avaa
+/// koko lajivalitsimen. Aloita ei vielä käynnistä mitään: liikuntasivulla valitaan GPS tai ajanotto.
+class _ActivityCard extends StatelessWidget {
+  final DateTime today;
+  final String? sport;
+  final ValueChanged<String> onSport;
+  final List<Workout> done;
+  const _ActivityCard({required this.today, required this.sport, required this.onSport, required this.done});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: AppText.caption, color: cs.onSurfaceVariant);
+    final history = [for (final w in store.workouts) w.activity];
+    final used = sportsByUse(history, among: sports.where((s) => !s.retired)).take(4).toList();
+    final sel =
+        sport ?? latestWorkouts(store.workouts.where((w) => w.activity != null).toList(), 1).firstOrNull?.activity;
+    final selSport = sportOf(sel);
+    final week = weekActivity(store.workouts, today);
+    return _EdgeCard(
+      edge: greenText(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SeCaption('Lihkadeapmi'),
+          Text(
+            settings.activePause != null
+                ? t('LIIKUNTA · tauolla, ei viikkotavoitetta')
+                : t('LIIKUNTA · viikolla {0}/{1} min', [week.moderateEq, whoMinutes]),
+            style: sub.copyWith(letterSpacing: .3),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final s in used)
+                _Chip('${s.icon} ${sportName(s.name)}', selected: s.name == sel, onTap: () => onSport(s.name)),
+              _Chip(t('Muu…'), onTap: () => _CardioHome._add(context, null)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            t('Valittu laji avautuu seuraavaan näkymään; siellä valitset GPS:n, ajanoton tai jo tehdyn.'),
+            style: sub.copyWith(fontSize: 11.5),
+          ),
+          // Sykevyö valittuna: tila sirussa ennen aloitusta (yhdistetty ja syke, tai ei yhteyttä); napautus avaa vyön.
+          if (hr.address != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: ListenableBuilder(
+                listenable: hr,
+                builder: (context, _) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: ActionChip(
+                    key: const ValueKey('homeHrChip'),
+                    avatar: Icon(
+                      Icons.favorite,
+                      size: 16,
+                      color: hr.bpm != null ? redText(context) : cs.onSurfaceVariant,
+                    ),
+                    label: Text(
+                      hr.bpm != null
+                          ? '${hr.name ?? t('Sykevyö')} · ${hr.bpm}'
+                          : '${hr.name ?? t('Sykevyö')} · ${t('yhdistyy, kun aloitat')}',
+                    ),
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HrScreen())),
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          _StartButton(
+            buttonKey: const ValueKey('homeStartActivity'),
+            label: selSport == null ? t('Aloita liikunta') : t('Aloita: {0}', [sportName(selSport.name)]),
+            color: const Color(0xFF00843D),
+            onTap: () => _CardioHome._add(context, selSport?.name),
+          ),
+          if (done.isNotEmpty) ...[const SizedBox(height: 8), for (final w in done) _TodayRow(w)],
+        ],
+      ),
+    );
+  }
+}
+
+/// Etusivun ?-ohje: valitsin, kortit, viikon merkit ja askeleet (käyttäjä 16.11.: yksi ? koko etusivulle).
+void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  isScrollControlled: true,
+  builder: (ctx) {
+    final cs = Theme.of(ctx).colorScheme;
+    final sub = TextStyle(fontSize: 13.5, color: cs.onSurfaceVariant, height: 1.35);
+    Widget sec(String title, String body) => Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 4),
+          Text(body, style: sub),
+        ],
+      ),
+    );
+    Widget dot(Color c, {bool hollow = false}) => Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: hollow ? null : c,
+        border: hollow ? Border.all(color: c, width: 2) : null,
+      ),
+    );
+    Widget mark(Widget w, String text) => Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          SizedBox(width: 26, child: Center(child: w)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: sub)),
+        ],
+      ),
+    );
+    return SafeArea(
+      child: SingleChildScrollView(
+        key: const ValueKey('homeHelp'),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t('Etusivu'), style: Theme.of(ctx).textTheme.titleLarge),
+            sec(
+              t('Sali ja Liikunta'),
+              t(
+                'Valitse kumpi, ja Aloita avaa sen. Salikortti on ehdotus: treenin valinnassa voit vaihtaa päivää tai '
+                'treenata vapaasti. Liikunnan sirut ovat käytetyimmät lajisi; Muu… avaa kaikki lajit.',
+              ),
+            ),
+            sec(t('Viikon merkit'), ''),
+            mark(
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CustomPaint(painter: _StepsRing(.7, _DayCell.stepsColor, width: 3)),
+              ),
+              t('Rengas täyttyy askelista; täysi = {0} askelta.', [thousands(stepsGoal)]),
+            ),
+            mark(dot(redText(ctx)), t('Salitreeni tehty')),
+            mark(dot(greenText(ctx)), t('Liikuntaa tehty')),
+            mark(
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Sami.yellow, width: 2),
+                ),
+              ),
+              t('Tänään · napauta päivää nähdäksesi sen treenit'),
+            ),
+            sec(
+              t('Askeleet ja Health Connect'),
+              t(
+                'Askeleet ja kellon harjoitukset tulevat Health Connectista. Ne päivittyvät, kun avaat sovelluksen, ja '
+                '15 minuutin välein sen ollessa auki. Vedä etusivua alas päivittääksesi heti.',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Päiväsivun Health Connect -rivi: päivän harjoitukset, joita ei vielä ole Gievrassa; napautus avaa tuonnin.
+class _DayHealthRow extends StatelessWidget {
+  final DateTime day;
+  const _DayHealthRow({required this.day});
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<int>(
+    future: HealthConnect.sessions(day).then((all) => newHealthSessions(all, store.workouts).$1.length),
+    builder: (context, snap) {
+      final n = snap.data ?? 0;
+      if (n == 0) return const SizedBox.shrink();
+      final fg = greenText(context);
+      return Card(
+        key: const ValueKey('dayHcRow'),
+        margin: const EdgeInsets.only(bottom: 10),
+        color: Sami.green.withValues(alpha: .12),
+        child: ListTile(
+          leading: Icon(Icons.sync, color: fg),
+          title: Text(
+            'HEALTH CONNECT',
+            style: TextStyle(fontSize: 11, letterSpacing: .6, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          subtitle: Text(
+            n == 1 ? t('1 uusi harjoitus') : t('{0} uutta harjoitusta', [n]),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: fg),
+          ),
+          trailing: Icon(Icons.chevron_right, color: fg),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => HealthImportScreen(day: day))),
         ),
       );
     },

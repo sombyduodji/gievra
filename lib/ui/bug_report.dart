@@ -214,7 +214,10 @@ class _BugReportScreenState extends State<BugReportScreen> {
     ('program', '📋', t('Ohjelma tai ehdotus näyttää väärältä')),
     ('crash', '💥', t('Sovellus kaatuu tai jumittuu')),
     ('gps', '📍', t('GPS, kartat tai korkeustiedot')),
-    ('health', '❤️', t('Health Connect -tuonti')),
+    ('health', '⌚', t('Health Connect -tuonti')),
+    ('hr', '❤️', t('Sykevyö tai syke')),
+    ('steps', '👣', t('Askeleet')),
+    ('ui', '🎨', t('Ulkoasu, teksti tai näkymä')),
     ('lang', '🌐', t('Käännösvirhe tai väärä kieli')),
     ('other', '💬', t('Muu ongelma tai ehdotus')),
   ];
@@ -235,6 +238,14 @@ class _BugReportScreenState extends State<BugReportScreen> {
     ),
     'health' => t('Kerro, mikä sovellus tai kello tallentaa tiedot Health Connectiin ja mitä jäi tuomatta.'),
     'lang' => t('Kirjoita väärä teksti ja oikea muoto. Lisää kuvakaappaus näkymästä.'),
+    'hr' => t(
+      'Kerro vyön malli ja mitä tapahtui (yhteys, lukemat, palautus sykkeen mukaan). Valitse alta treenin '
+      'sykkeet (-syke.md), jos ongelma koskee lukemia.',
+    ),
+    'steps' => t(
+      'Kerro, minkä päivän askeleet näyttivät väärältä ja mikä sovellus tai sormus ne tallentaa. Valitse alta askeleet.',
+    ),
+    'ui' => t('Kuvakaappaus auttaa eniten. Tekstikoko, teema ja näytön koko ovat mukana automaattisesti.'),
     _ => null,
   };
 
@@ -322,6 +333,11 @@ class _BugReportScreenState extends State<BugReportScreen> {
         settings.hcImport ? t('päällä') : t('pois'),
         yesNo(hr.address != null),
       ]),
+      t('Askeleet {0} · palautusajastin {1} · ilmoitus {2}', [
+        yesNo(settings.dailySteps),
+        yesNo(settings.restTimer),
+        yesNo(settings.ongoingNote),
+      ]),
       if (maps.isNotEmpty) t('{0} · korkeus karttojen kanssa {1}', [maps, yesNo(settings.elevWithMaps)]),
     ].join('\n');
   }
@@ -375,34 +391,103 @@ class _BugReportScreenState extends State<BugReportScreen> {
     }
   }
 
+  Widget _fileTile(_Attachment a, ColorScheme cs) => CheckboxListTile(
+    dense: true,
+    contentPadding: EdgeInsets.zero,
+    value: a.on,
+    onChanged: (v) => setState(() => a.on = v ?? false),
+    title: Text(a.name),
+    subtitle: a.warning == null ? null : Text(a.warning!, style: TextStyle(fontSize: 12, color: cs.error)),
+    secondary: Icon(
+      a.name.toLowerCase().endsWith('.md')
+          ? Icons.description_outlined
+          : a.name.toLowerCase().endsWith('.gpx')
+          ? Icons.route_outlined
+          : Icons.image_outlined,
+      size: 20,
+    ),
+  );
+
+  Widget _group(String title, List<Widget> children, ColorScheme cs) => Card(
+    margin: const EdgeInsets.only(top: 10),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: .4, color: cs.onSurfaceVariant),
+          ),
+          ...children,
+        ],
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    // Liitteet ryhmittäin (ulkoasun kohennus 16.11.): treenit, asetukset ja ohjelma, terveystiedot (oletuksena pois)
+    // ja omat lisäykset. Näkyy heti, mitä lähtee.
+    bool isWorkout(_Attachment a) => RegExp(r'^\d{4}-').hasMatch(a.name) || a.name.endsWith('.gpx');
+    final health = _files.where((a) => a.warning != null).toList();
+    final workouts = _files.where((a) => a.warning == null && isWorkout(a)).toList();
+    final setup = _files
+        .where((a) => a.warning == null && (a.name == 'asetukset.md' || a.name == 'ohjelma.md'))
+        .toList();
+    final own = _files.where((a) => !health.contains(a) && !workouts.contains(a) && !setup.contains(a)).toList();
+    final chosen = _files.where((a) => a.on).length;
     return Scaffold(
       appBar: AppBar(title: BarTitle(Text(t('Ilmoita ongelmasta')))),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t('Mukana: {0} liitettä ja laitetiedot. Näet kaiken sähköpostissa ennen lähetystä.', [chosen]),
+                textAlign: TextAlign.center,
+                style: sub,
+              ),
+              const SizedBox(height: 6),
+              FilledButton.icon(
+                key: const ValueKey('reportSend'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                onPressed: _busy ? null : _send,
+                icon: const Icon(Icons.send),
+                label: Text(t('Avaa sähköposti ja lähetä')),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         children: [
           const SamiBand(height: 4, pattern: false),
           SectionLabel(t('Mikä ei toimi?')),
-          RadioGroup<String>(
-            groupValue: _type,
-            onChanged: (v) => setState(() => _type = v ?? _type),
-            child: Column(
-              children: [
-                for (final (id, icon, label) in _types)
-                  RadioListTile<String>(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    value: id,
-                    title: Text('$icon  $label'),
-                  ),
-              ],
-            ),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final (id, icon, label) in _types)
+                ChoiceChip(
+                  key: ValueKey('reportType_$id'),
+                  // Ilman valintamerkkiä: pitkä teksti ei katkea (Samsung 16.11.: "…disappea").
+                  showCheckmark: false,
+                  label: Text('$icon  $label', softWrap: true),
+                  selected: _type == id,
+                  onSelected: (_) => setState(() => _type = id),
+                ),
+            ],
           ),
           if (_hint != null)
             Container(
+              margin: const EdgeInsets.only(top: 10),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(12)),
               child: Row(
@@ -436,32 +521,23 @@ class _BugReportScreenState extends State<BugReportScreen> {
             ),
             style: sub,
           ),
-          for (final a in _files)
-            CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              value: a.on,
-              onChanged: (v) => setState(() => a.on = v ?? false),
-              title: Text(a.name),
-              subtitle: a.warning == null ? null : Text(a.warning!, style: TextStyle(fontSize: 12, color: cs.error)),
-              secondary: Icon(
-                a.name.toLowerCase().endsWith('.md')
-                    ? Icons.description_outlined
-                    : a.name.toLowerCase().endsWith('.gpx')
-                    ? Icons.route_outlined
-                    : Icons.image_outlined,
-                size: 20,
-              ),
-            ),
-          if (store.workouts.length > _shown)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _more,
-                icon: const Icon(Icons.expand_more, size: 18),
-                label: Text(t('Näytä vanhempia treenejä ({0} lisää)', [store.workouts.length - _shown])),
-              ),
-            ),
+          if (workouts.isNotEmpty)
+            _group(t('TREENIT'), [
+              for (final a in workouts) _fileTile(a, cs),
+              if (store.workouts.length > _shown)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _more,
+                    icon: const Icon(Icons.expand_more, size: 18),
+                    label: Text(t('Näytä vanhempia treenejä ({0} lisää)', [store.workouts.length - _shown])),
+                  ),
+                ),
+            ], cs),
+          if (setup.isNotEmpty) _group(t('ASETUKSET JA OHJELMA'), [for (final a in setup) _fileTile(a, cs)], cs),
+          if (health.isNotEmpty)
+            _group(t('TERVEYSTIEDOT (OLETUKSENA POIS)'), [for (final a in health) _fileTile(a, cs)], cs),
+          if (own.isNotEmpty) _group(t('OMAT LISÄYKSET'), [for (final a in own) _fileTile(a, cs)], cs),
           if (_zippable >= 2)
             CheckboxListTile(
               dense: true,
@@ -472,8 +548,10 @@ class _BugReportScreenState extends State<BugReportScreen> {
               subtitle: Text(t('{0} tiedostoa yhteen liitteeseen; kuvakaappaukset erikseen.', [_zippable]), style: sub),
               secondary: const Icon(Icons.folder_zip_outlined, size: 20),
             ),
+          const SizedBox(height: 6),
           Wrap(
             spacing: 8,
+            runSpacing: 6,
             children: [
               OutlinedButton.icon(
                 onPressed: () => _pick(images: false),
@@ -495,13 +573,7 @@ class _BugReportScreenState extends State<BugReportScreen> {
             ),
             style: sub,
           ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: _busy ? null : _send,
-            icon: const Icon(Icons.send),
-            label: Text(t('Avaa sähköposti ja lähetä')),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             t(
               'Viesti lähtee omasta sähköpostistasi osoitteeseen {0}. Mukana on myös sovelluksen versio, puhelimen '

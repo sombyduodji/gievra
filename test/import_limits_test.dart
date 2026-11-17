@@ -7,7 +7,9 @@ import 'package:treenipaivakirja/import_export.dart';
 // Tuonnin rajat: valtava tiedosto tai zip-pommi ei kaada sovellusta, mutta oikeat (isotkin) varmuuskopiot mahtuvat.
 void main() {
   test('Zip-pommi: 101 Mt nollia (pakattuna ~0,1 Mt) hylätään ennen purkua', () {
-    final zip = ZipEncoder().encode(Archive()..addFile(ArchiveFile.bytes('Treenit/2026/reitti.gpx', Uint8List(101 * 1024 * 1024))));
+    final zip = ZipEncoder().encode(
+      Archive()..addFile(ArchiveFile.bytes('Treenit/2026/reitti.gpx', Uint8List(101 * 1024 * 1024))),
+    );
     expect(zip.length, lessThan(1024 * 1024));
     expect(() => readZip(zip), throwsA(isA<FormatException>()));
   });

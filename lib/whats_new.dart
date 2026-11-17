@@ -13,6 +13,48 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.8',
+    Icons.dashboard_outlined,
+    'Uusi ulkoasu',
+    'Alapalkki: Tänään, Ohjelma, Tilastot ja Lisää. Etusivulla Sali- ja Liikunta-valinta, päivän ehdotus ja viikon renkaat.',
+  ),
+  NewFeature(
+    '0.6.8',
+    Icons.directions_walk,
+    'Treeni jatkuu taustalla',
+    'Takaisin kesken liikunnan ei enää kysy tallennusta: ajanotto, GPS ja sykevyö jatkavat. Alapalkin yläpuolelta ja etusivun Jatka treeniä -painikkeesta palaat treeniin.',
+  ),
+  NewFeature(
+    '0.6.8',
+    Icons.local_fire_department_outlined,
+    'Kalorit renkaana',
+    'Kokonaiskulutus ja aktiiviset kalorit erikseen. Kävelyn kalorit lasketaan vauhdista ja pituudesta, myös ilman sykevyötä.',
+  ),
+  NewFeature(
+    '0.6.8',
+    Icons.insights,
+    'Tilastot välilehdillä',
+    'Viikko, Kehitys, Ennätykset, Kalenteri ja Askeleet omina välilehtinään. Paino ja pituus kuvaajalla.',
+  ),
+  NewFeature(
+    '0.6.8',
+    Icons.healing,
+    'Vammatila ja tauko',
+    'Vammatila keventää merkittyjen liikkeiden painoehdotusta ja tarjoaa korvaavan liikkeen. Tauolle voi valita viimeisen päivän tai merkitä tulevan loman etukäteen.',
+  ),
+  NewFeature(
+    '0.6.8',
+    Icons.notifications_none,
+    'Ohjaus ilmoituksesta',
+    'Palautukseen −15 s, +15 s ja Ohita, liikuntaan Tauko ja Jatka. Palautuksen voi mitata ajalla tai sykkeellä.',
+  ),
+  NewFeature(
+    '0.6.8',
+    Icons.search,
+    'Haku asetuksissa',
+    'Asetuksista löytää haulla. Health Connectin tiedot päivitetään tieto kerrallaan, ja päivityksen voi perua.',
+  ),
+  NewFeature(
     '0.6.7.2',
     Icons.swap_horiz,
     'Tämä tai tuo -liikkeet',

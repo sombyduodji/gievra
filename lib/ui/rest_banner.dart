@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../app_state.dart' show settings;
+
+import '../heart_rate.dart' show hr;
+
 import '../rest.dart';
 import '../theme.dart';
 import '../exercises.dart' show exerciseLabel;
@@ -95,6 +99,32 @@ class RestBanner extends StatelessWidget {
                   ],
                 ),
               ],
+              // Aika | Syke -valitsin (ulkoasun kohennus 16.11.): vain kun sykevyö kerää sykettä. Valinta muistetaan
+              // ja vaihtaa käynnissä olevan palautuksen heti (aika: suositus, kulunut aika vähennetään).
+              if (hr.address != null && hr.recording)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, right: 8),
+                  child: SegmentedButton<bool>(
+                    key: const ValueKey('restModeSwitch'),
+                    showSelectedIcon: false,
+                    style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                    segments: [
+                      ButtonSegment(value: false, label: Text('⏱ ${t('Aika')}')),
+                      ButtonSegment(value: true, label: Text('❤ ${t('Syke')}')),
+                    ],
+                    selected: {byHr},
+                    onSelectionChanged: (v) {
+                      final was = rest.elapsed, fn = rest.nextFn, text = rest.nextText;
+                      settings.setRestByHr(v.first);
+                      rest.start(rest.planned, rest.exercise);
+                      // Seuraava sarja säilyy vaihdossa.
+                      rest
+                        ..nextFn = fn
+                        ..nextText = text;
+                      if (!rest.byHr && was > 0) rest.adjust(-was);
+                    },
+                  ),
+                ),
               // Sykevyö: syke, suunta ja valmius seuraavaan sarjaan.
               const HrRecovery(),
               // Seuraava sarja omalla rivillään koko leveydeltä (painikkeiden vieressä teksti katkeaisi).

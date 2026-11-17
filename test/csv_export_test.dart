@@ -126,6 +126,18 @@ void main() {
         f.name: f.text,
     };
     expect(files.keys, ['salisarjat.csv', 'liikunta.csv', 'salitreenit.csv', 'syke.csv']);
+    // Muilla kielillä samanmuotoiset nimet: pienet kirjaimet ja väliviivat (ennen "heart rate.csv", "gym_workouts").
+    for (final l in ['en', 'se']) {
+      debugSetCatalog(l, parsePo(File('assets/l10n/$l.po').readAsStringSync()));
+      final names = [
+        for (final f in buildCsvExport(hrWs, body, CsvExportOptions(from: DateTime(2000), to: DateTime(2030)))) f.name,
+      ];
+      debugSetCatalog('fi', const {});
+      for (final n in names) {
+        expect(n, matches(RegExp(r'^[^\s_A-Z]+\.csv$')), reason: '$l: $n');
+      }
+      if (l == 'en') expect(names, ['gym-sets.csv', 'activities.csv', 'gym-workouts.csv', 'heart-rate.csv']);
+    }
     expect(files['salitreenit.csv'], contains('2026-11-03;Koko keho A;55:00;121;158;250;Sykevyö;Sykevyö;'));
     expect(files['liikunta.csv'], contains(';150;;300;Käsin syötetty;Älykello;'));
     expect(files['syke.csv'], contains('Päivä;Treeni;Kellonaika;Syke\n'));

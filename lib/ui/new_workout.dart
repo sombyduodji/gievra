@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../program_edit.dart';
 import '../app_state.dart';
+import '../exercises.dart' show exerciseLabel;
+import '../injuries.dart' show injuryAdjusted;
 import '../models.dart';
 import '../program.dart';
 import '../theme.dart';
@@ -64,9 +66,86 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
     }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => WorkoutScreen(workout: w, planDay: _day),
+        builder: (_) =>
+            WorkoutScreen(workout: w, planDay: _day == null ? null : injuryAdjusted(_day!, settings.injuries)),
       ),
     );
+  }
+
+  /// Aloita päivän kortista: lämmittely alapaneelina (laite siruina, kesto, Ohita), sitten treeni.
+  Future<void> _askWarmup(PlanDay? day) async {
+    setState(() => _day = day);
+    final eq = settings.equipment;
+    if (eq.isEmpty) return _start(false);
+    final r = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(day?.uiName ?? t('Vapaa treeni'), style: Theme.of(ctx).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                Text(t('Lämmittely'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (var i = 0; i < eq.length; i++)
+                      ChoiceChip(
+                        key: ValueKey('warmupEq$i'),
+                        label: Text('${eq[i].icon} ${t(eq[i].name)}'),
+                        selected: i == _selected,
+                        onSelected: (_) => set(() => _selected = i),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: Text(t('Kesto'))),
+                    ValueStepper(
+                      value: '$_minutes',
+                      unit: 'min',
+                      onMinus: () => set(() => _minutes = (_minutes - 1).clamp(1, 600)),
+                      onPlus: () => set(() => _minutes = (_minutes + 1).clamp(1, 600)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const ValueKey('skipWarmup'),
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ohita lämmittely'), maxLines: 1)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton(
+                        key: const ValueKey('startWarmup'),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Aloita lämmittely'), maxLines: 1)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (r == null || !mounted) return;
+    _start(r);
   }
 
   void _addEq() {
@@ -144,19 +223,21 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
               ],
               if (settings.program != null) ...[
                 SectionLabel(t('Mitä treenataan?')),
+                // Haitari (ulkoasun kohennus 16.11., luonnos valinta3): avattu päivä punaisella kehyksellä, ehdotus
+                // vain pienellä ★:lla. Aloita avaa lämmittelyn valinnan.
                 for (final d in settings.program!.plan)
-                  DayCard(
+                  _DayAccordion(
                     day: d,
-                    selected: _day == d,
+                    open: _day == d,
                     suggested: _sugg?.$1 == d,
+                    tip: _sugg?.$1 == d ? _sugg?.$2 : null,
                     doneThisWeek: store.workouts.any(
                       (w) =>
                           !w.date.isBefore(addDays(_date, 1 - _date.weekday)) &&
                           w.date.isBefore(_date) &&
                           d.matches(w.dayKey),
                     ),
-                    // Samana päivänä jo tehty (sarjoja kirjattu): ehdotus on silloin ohjelman seuraava päivä.
-                    // Keskeneräinen (ei kestoa eikä fiilistä) ei ole tehty: "kesken" (ennen "tehty tänään ✓", yötesti 15.11.).
+                    // Samana päivänä jo tehty (sarjoja kirjattu) tai kesken (ei kestoa eikä fiilistä).
                     doneToday: store.workouts.any(
                       (w) =>
                           w.date == _date &&
@@ -172,7 +253,8 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                           w.minutes == null &&
                           w.feeling == null,
                     ),
-                    onTap: () => setState(() => _day = d),
+                    onTap: () => setState(() => _day = _day == d ? null : d),
+                    onStart: () => _askWarmup(d),
                     onRename: () async {
                       final v = await askDayLabel(context, d);
                       if (v == null) return;
@@ -181,35 +263,28 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                       if (mounted) setState(() {});
                     },
                   ),
-                DayCard(
-                  day: PlanDay(t('Vapaa treeni'), []),
-                  subtitle: t('Valitse liikkeet itse, ilman ohjelmaa'),
-                  selected: _day == null,
-                  onTap: () => setState(() => _day = null),
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        t('✎ nimeää päivän (esim. maanantai tai veto).'),
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: () async {
-                        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProgramScreen()));
-                        if (mounted) setState(() {});
-                      },
-                      icon: const Icon(Icons.tune, size: 18),
-                      label: Text(t('Muokkaa liikkeitä')),
-                    ),
-                  ],
-                ),
-                if (_sugg?.$2 != null && _day != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('💡 ${_sugg!.$2}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                Card(
+                  margin: const EdgeInsets.only(top: 2, bottom: 8),
+                  child: ListTile(
+                    key: const ValueKey('freeWorkout'),
+                    leading: const Icon(Icons.add),
+                    title: Text(t('Vapaa treeni')),
+                    subtitle: Text(t('Valitse liikkeet itse, ilman ohjelmaa')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _askWarmup(null),
                   ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProgramScreen()));
+                      if (mounted) setState(() {});
+                    },
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: Text(t('Muokkaa liikkeitä')),
+                  ),
+                ),
               ],
               // Vapaa treeni (tai ei ohjelmaa): samana päivänä jo kuormittuneet lihakset (käyttäjä 16.11.).
               if (_day == null && _todayMuscles.isNotEmpty)
@@ -220,104 +295,106 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                     style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                   ),
                 ),
-              const SizedBox(height: 22),
-              Text(t('Lisätäänkö lämmittely?'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 10),
-              if (!_warmup)
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: Sami.green, foregroundColor: Colors.white),
-                        onPressed: () => setState(() => _warmup = true),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Lisää lämmittely'), maxLines: 1)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _start(false),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ohita →'), maxLines: 1)),
-                      ),
-                    ),
-                  ],
-                )
-              else ...[
-                Row(
-                  children: [
-                    Expanded(child: SectionLabel(t('Laite'))),
-                    TextButton.icon(
-                      onPressed: () => setState(() => _editing = !_editing),
-                      icon: Icon(_editing ? Icons.check : Icons.edit, size: 18),
-                      label: Text(_editing ? t('Valmis') : t('Muokkaa')),
-                    ),
-                  ],
-                ),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 1.6,
-                  children: [
-                    for (var i = 0; i < eq.length; i++)
-                      _EquipmentTile(
-                        eq: eq[i],
-                        selected: i == _selected,
-                        editing: _editing,
-                        onTap: () => setState(() => _selected = i),
-                        onRemove: () {
-                          settings.setEquipment([...eq]..removeAt(i));
-                          if (_selected >= eq.length - 1) _selected = 0;
-                        },
-                      ),
-                  ],
-                ),
-                if (_editing)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _newEq,
-                            decoration: InputDecoration(
-                              hintText: t('Uusi laite, esim. Airbike'),
-                              border: OutlineInputBorder(),
-                            ),
-                            onSubmitted: (_) => _addEq(),
-                          ),
+              if (settings.program == null) ...[
+                const SizedBox(height: 22),
+                Text(t('Lisätäänkö lämmittely?'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 10),
+                if (!_warmup)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(backgroundColor: Sami.green, foregroundColor: Colors.white),
+                          onPressed: () => setState(() => _warmup = true),
+                          child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Lisää lämmittely'), maxLines: 1)),
                         ),
-                        const SizedBox(width: 8),
-                        FilledButton(onPressed: _addEq, child: Text(t('Lisää'))),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _start(false),
+                          child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ohita →'), maxLines: 1)),
+                        ),
+                      ),
+                    ],
+                  )
+                else ...[
+                  Row(
+                    children: [
+                      Expanded(child: SectionLabel(t('Laite'))),
+                      TextButton.icon(
+                        onPressed: () => setState(() => _editing = !_editing),
+                        icon: Icon(_editing ? Icons.check : Icons.edit, size: 18),
+                        label: Text(_editing ? t('Valmis') : t('Muokkaa')),
+                      ),
+                    ],
                   ),
-                SectionLabel(t('Kesto')),
-                ValueStepper(
-                  value: '$_minutes',
-                  unit: 'min',
-                  onMinus: () => setState(() => _minutes = (_minutes - 1).clamp(1, 600)),
-                  onPlus: () => setState(() => _minutes = (_minutes + 1).clamp(1, 600)),
-                  onTap: () async {
-                    final v = await askNumber(
-                      context,
-                      t('Kesto (min)'),
-                      _minutes.toDouble(),
-                      decimals: false,
-                      min: 1,
-                      max: 600,
-                    );
-                    if (v != null && v >= 1) setState(() => _minutes = v.round());
-                  },
-                ),
-                const SizedBox(height: 18),
-                FilledButton(
-                  onPressed: eq.isEmpty ? null : () => _start(true),
-                  child: Text(t('Aloita treeni →'), style: TextStyle(fontSize: 16)),
-                ),
-                TextButton(onPressed: () => _start(false), child: Text(t('Ohita lämmittely'))),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 1.6,
+                    children: [
+                      for (var i = 0; i < eq.length; i++)
+                        _EquipmentTile(
+                          eq: eq[i],
+                          selected: i == _selected,
+                          editing: _editing,
+                          onTap: () => setState(() => _selected = i),
+                          onRemove: () {
+                            settings.setEquipment([...eq]..removeAt(i));
+                            if (_selected >= eq.length - 1) _selected = 0;
+                          },
+                        ),
+                    ],
+                  ),
+                  if (_editing)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _newEq,
+                              decoration: InputDecoration(
+                                hintText: t('Uusi laite, esim. Airbike'),
+                                border: OutlineInputBorder(),
+                              ),
+                              onSubmitted: (_) => _addEq(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(onPressed: _addEq, child: Text(t('Lisää'))),
+                        ],
+                      ),
+                    ),
+                  SectionLabel(t('Kesto')),
+                  ValueStepper(
+                    value: '$_minutes',
+                    unit: 'min',
+                    onMinus: () => setState(() => _minutes = (_minutes - 1).clamp(1, 600)),
+                    onPlus: () => setState(() => _minutes = (_minutes + 1).clamp(1, 600)),
+                    onTap: () async {
+                      final v = await askNumber(
+                        context,
+                        t('Kesto (min)'),
+                        _minutes.toDouble(),
+                        decimals: false,
+                        min: 1,
+                        max: 600,
+                      );
+                      if (v != null && v >= 1) setState(() => _minutes = v.round());
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton(
+                    onPressed: eq.isEmpty ? null : () => _start(true),
+                    child: Text(t('Aloita treeni →'), style: TextStyle(fontSize: 16)),
+                  ),
+                  TextButton(onPressed: () => _start(false), child: Text(t('Ohita lämmittely'))),
+                ],
               ],
             ],
           );
@@ -372,6 +449,120 @@ class _EquipmentTile extends StatelessWidget {
                 child: IconButton(icon: const Icon(Icons.close, size: 18), onPressed: onRemove),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Päivä haitarina: kiinni nimi, ehdotus-★, kesto, liikemäärä; auki liikkeet sarjoineen, vinkki ja Aloita.
+class _DayAccordion extends StatelessWidget {
+  final PlanDay day;
+  final bool open, suggested, doneThisWeek, doneToday, openToday;
+  final String? tip;
+  final VoidCallback onTap, onStart, onRename;
+  const _DayAccordion({
+    required this.day,
+    required this.open,
+    required this.suggested,
+    required this.doneThisWeek,
+    this.doneToday = false,
+    this.openToday = false,
+    required this.tip,
+    required this.onTap,
+    required this.onStart,
+    required this.onRename,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: AppText.caption, color: cs.onSurfaceVariant);
+    final mins = (estimateMinutes(day.items) / 5).round() * 5;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: open ? Sami.redLight : Colors.transparent, width: 2),
+      ),
+      child: InkWell(
+        key: ValueKey('day_${day.name}'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(day.uiName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                            if (suggested)
+                              Text('★ ${t('ehdotus')}', style: TextStyle(fontSize: 12, color: yellowText(context))),
+                            if (openToday)
+                              Text(t('kesken'), style: TextStyle(fontSize: 12, color: yellowText(context)))
+                            else if (doneToday)
+                              Text(t('tehty tänään ✓'), style: TextStyle(fontSize: 12, color: greenText(context)))
+                            else if (doneThisWeek)
+                              Text('✓ ${t('tehty tällä viikolla')}', style: sub),
+                          ],
+                        ),
+                        Text(t('~{0} min · {1} liikettä', [mins, day.items.length]), style: sub),
+                      ],
+                    ),
+                  ),
+                  IconButton(tooltip: t('Nimeä päivä'), icon: const Icon(Icons.edit, size: 18), onPressed: onRename),
+                  Icon(open ? Icons.expand_less : Icons.expand_more, color: cs.onSurfaceVariant),
+                ],
+              ),
+              if (open) ...[
+                const Divider(height: 16),
+                for (final i in day.items)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8, bottom: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            [exerciseLabel(i.exercise), ...i.alts.map(exerciseLabel)].join(' ${t('tai')} '),
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        Text('${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}', style: sub),
+                      ],
+                    ),
+                  ),
+                if (tip != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, right: 8),
+                    child: Text('💡 $tip', style: sub),
+                  ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilledButton.icon(
+                    key: ValueKey('startDay_${day.name}'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Sami.red,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    onPressed: onStart,
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Aloita: {0}', [day.uiName]), maxLines: 1)),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

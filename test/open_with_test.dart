@@ -117,6 +117,23 @@ void main() {
     expect(find.text('Tiedostoa ei voitu avata.'), findsOneWidget);
   });
 
+  // Yötesti 17.11.: viisi epäonnistunutta avausta peräkkäin jonoutti viisi samaa ilmoitusta (20 s).
+  testWidgets('Toistuvat epäonnistuneet avaukset: yksi ilmoitus, ei jonoa', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(navigatorKey: appNavigator, scaffoldMessengerKey: appMessenger, home: const Scaffold()),
+    );
+    for (var i = 0; i < 3; i++) {
+      await showOpened({'error': true});
+      await tester.pump();
+    }
+    expect(find.text('Tiedostoa ei voitu avata.'), findsOneWidget);
+    // Ilmoitus näkyy 4 s (+ animaatiot); jonossa olisi seuraava samanlainen.
+    for (var k = 0; k < 70; k++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Tiedostoa ei voitu avata.'), findsNothing);
+  });
+
   testWidgets('.md-treeni: yksi uusi treeni yksikössä', (tester) async {
     const md =
         '---\ndate: 2019-03-04\ntitle: Testitreeni\ntags: [treeni]\n---\n\n# Testitreeni\n\n'

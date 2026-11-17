@@ -12,6 +12,7 @@ import '../models.dart';
 import '../theme.dart';
 import 'finish_sheet.dart';
 import '../l10n.dart';
+import '../injuries.dart' show injuryStatus, injuryById, injuryShortName, knownInjuries;
 
 const fiMonths = [
   'Tammikuu',
@@ -127,6 +128,14 @@ String numDate(DateTime d, {bool year = false}) =>
 String shortDate(DateTime d) => isEnglish
     ? '${uiWeekdaysShort[d.weekday - 1]} ${d.month}/${d.day}'
     : '${uiWeekdaysShort[d.weekday - 1]} ${d.day}.${d.month}.';
+
+/// Kuten [shortDate], mutta vuosi mukaan, kun päivä ei ole tältä vuodelta (ennätykset ja historia: "ma 22.12."
+/// viime vuodelta näytti tämän vuoden päivältä, käyttäjä 16.11.).
+String shortDateY(DateTime d) => d.year == DateTime.now().year
+    ? shortDate(d)
+    : isEnglish
+    ? '${shortDate(d)}/${d.year}'
+    : '${shortDate(d)}${d.year}';
 
 /// Iso +/- -säädin. Arvoa napauttamalla voi kirjoittaa luvun.
 class ValueStepper extends StatelessWidget {
@@ -916,4 +925,98 @@ class WordFitText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(text, style: fitted(context, text, style, width), textAlign: textAlign);
+}
+
+/// Tauko päällä treenin tai liikunnan aikana: ystävällinen muistutus (ei estä, ei lopeta taukoa; käyttäjä 16.11.).
+class PauseReminder extends StatelessWidget {
+  const PauseReminder({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: settings, builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
+    final p = settings.activePause;
+    if (p == null) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    final title = p.injury
+        ? t('🩹 Vammatauko päällä · {0}. päivä', [p.days])
+        : p.sick
+        ? t('🤒 Sairastauko päällä · {0}. päivä', [p.days])
+        : t('🏖 Loma päällä · {0}. päivä', [p.days]);
+    return Container(
+      key: const ValueKey('pauseReminder'),
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Sami.blue.withValues(alpha: .14),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: blueText(context).withValues(alpha: .5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.w700, color: blueText(context)),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            p.end == null
+                ? t('Treenaa ja liiku kevyesti. Tauko jatkuu, kunnes lopetat sen itse.')
+                : t('Treenaa ja liiku kevyesti. Tauko päättyy {0} jälkeen.', [shortDate(p.end!)]),
+            style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Treenilistan vammatilan muistutus (luonnos vamma-ohjeet 3): keltainen rivi, kun vammatila on päällä.
+class InjuryReminder extends StatelessWidget {
+  const InjuryReminder({super.key});
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: settings,
+    builder: (context, _) {
+      final ids = knownInjuries(settings.injuries);
+      if (ids.isEmpty) return const SizedBox.shrink();
+      final names = {for (final id in ids) injuryShortName(t(injuryById(id)!.name))}.join(', ');
+      return Container(
+        key: const ValueKey('injuryReminder'),
+        margin: const EdgeInsets.only(top: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Sami.yellow.withValues(alpha: .14),
+          borderRadius: BorderRadius.circular(14),
+          border: const Border(left: BorderSide(color: Sami.yellow, width: 4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t('🩹 Vammatila: {0}', [names]),
+              style: TextStyle(fontWeight: FontWeight.w700, color: yellowText(context)),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              t('Merkityt liikkeet: 🩹 kevennä, ⚠️ vältä. Kipu yli 3–5/10? Lopeta liike tai vaihda se.'),
+              style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+/// Liikkeen vammatilamerkintä listariville: "⚠️ vältä" tai "🩹 kevennä" (null, jos vammatila ei koske liikettä).
+String? injuryMark(String exercise) {
+  final st = injuryStatus(exercise, knownInjuries(settings.injuries));
+  if (st.avoid.isNotEmpty) {
+    return '⚠️ ${t('vältä')}${st.substitute != null ? ' · ${t('korvaava: {0}', [exerciseLabel(st.substitute!)])}' : ''}';
+  }
+  return st.modify.isNotEmpty ? '🩹 ${t('kevennä (vammatila)')}' : null;
 }

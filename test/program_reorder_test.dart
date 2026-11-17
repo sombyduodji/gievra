@@ -67,11 +67,7 @@ void main() {
   testWidgets('Vetämällä kahvasta', (tester) async {
     final p = program();
     await pump(tester, p, () {});
-    await tester.scrollUntilVisible(
-      find.text('Hauiskääntö tangolla'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(find.text('Hauiskääntö tangolla'), 300, scrollable: find.byType(Scrollable).first);
     final handles = find.byIcon(Icons.drag_indicator);
     expect(handles, findsNWidgets(3));
     final g = await tester.startGesture(tester.getCenter(handles.at(2)));

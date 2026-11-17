@@ -8,8 +8,9 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   tearDown(() => settings.setSwimPer100(false));
 
-  Workout swim() => Workout(date: DateTime(2026, 11, 15), title: 'Uinti', activity: 'Uinti', distanceKm: 1.5)
-    ..seconds = 1680; // 28:00 → 18:40 /km, 1:52 /100 m
+  Workout swim() =>
+      Workout(date: DateTime(2026, 11, 15), title: 'Uinti', activity: 'Uinti', distanceKm: 1.5)
+        ..seconds = 1680; // 28:00 → 18:40 /km, 1:52 /100 m
 
   test('oletus min/km; asetuksella uinti min/100 m, muut lajit ennallaan', () {
     expect(swim().pace, '18:40 min/km');

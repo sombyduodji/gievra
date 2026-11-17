@@ -61,6 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bigText = MediaQuery.textScalerOf(context).scale(14) > 18;
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       body: SafeArea(
@@ -69,7 +70,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const Center(child: AppLogo(size: 84)),
             const SizedBox(height: 28),
-            const SamiBand(),
+            // Ohut suora saamen viiva kuten muualla (ulkoasun kohennus 16.11.).
+            const SamiBand(height: 4, pattern: false),
             const SizedBox(height: 20),
             const Text('Kieli · Giella', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 6),
@@ -117,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 hintText: t('Nimi tai lempinimi (valinnainen)'),
-                hintMaxLines: linesFor(context, 1),
+                hintMaxLines: 2,
                 filled: true,
                 fillColor: cs.surfaceContainer,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -147,44 +149,51 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
-            if (stepsSupported) ...[
-              SectionLabel(t('Seurataanko päivän askeleita?')),
-              SegmentedButton<bool>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(value: true, label: Text(t('Kyllä'))),
-                  ButtonSegment(value: false, label: Text(t('Ei nyt'))),
-                ],
-                selected: {_steps},
-                onSelectionChanged: (v) => setState(() => _steps = v.first),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  t(
-                    'Askeleet päivittäin Health Connectista (puhelin, älysormus tai -kello) ilman päällekkäisyyksiä. '
-                    'Näkyvät etusivulla ja tilastoissa. Voit muuttaa tätä myöhemmin asetuksista.',
+            // Seuranta yhdessä kortissa kytkimin (luonnos aloitus 3): luvat kysytään vasta kytkiessä.
+            SectionLabel(t('Mitä seurataan?')),
+            Card(
+              margin: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  if (stepsSupported)
+                    SwitchListTile(
+                      key: const ValueKey('onbSteps'),
+                      // Suurella tekstillä kuvake otsikon alkuun: vasemman reunan kuvake ja kytkin kavensivat
+                      // tekstin kahden sanan riveiksi (saame, Suuri, emulaattori 16.11.).
+                      secondary: bigText ? null : const Text('👣', style: TextStyle(fontSize: 22)),
+                      title: Text(
+                        bigText ? '👣 ${t('Seurataanko päivän askeleita?')}' : t('Seurataanko päivän askeleita?'),
+                      ),
+                      subtitle: Text(
+                        t(
+                          'Askeleet päivittäin Health Connectista (puhelin, älysormus tai -kello) ilman päällekkäisyyksiä. '
+                          'Näkyvät etusivulla ja tilastoissa. Voit muuttaa tätä myöhemmin asetuksista.',
+                        ),
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                      ),
+                      value: _steps,
+                      onChanged: (v) => setState(() => _steps = v),
+                    ),
+                  SwitchListTile(
+                    key: const ValueKey('onbBody'),
+                    secondary: bigText ? null : const Text('⚖️', style: TextStyle(fontSize: 22)),
+                    title: Text(bigText ? '⚖️ ${t('Seurataanko kehonpainoa?')}' : t('Seurataanko kehonpainoa?')),
+                    subtitle: Text(
+                      t(
+                        'Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai harvemmin. Näet painon kehityksen ja painoindeksin kohdassa Edistyminen ja tilastot.',
+                      ),
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    ),
+                    value: _body,
+                    onChanged: (v) => setState(() => _body = v),
                   ),
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                ),
+                ],
               ),
-            ],
-            SectionLabel(t('Seurataanko kehonpainoa?')),
-            SegmentedButton<bool>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(value: true, label: Text(t('Kyllä'))),
-                ButtonSegment(value: false, label: Text(t('Ei nyt'))),
-              ],
-              selected: {_body},
-              onSelectionChanged: (v) => setState(() => _body = v.first),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                t(
-                  'Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai harvemmin. Näet painon kehityksen ja painoindeksin kohdassa Edistyminen ja tilastot.',
-                ),
+                t('Tiedot pysyvät puhelimessa. Mitään ei lähetetä minnekään.'),
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
@@ -233,8 +242,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ],
             const SizedBox(height: 24),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Sami.red,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
               onPressed: _done,
-              child: Text(t('Aloitetaan'), style: TextStyle(fontSize: 16)),
+              child: Text(t('Aloitetaan'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
             ),
           ],
         ),

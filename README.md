@@ -47,8 +47,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 
 - valmiina neljän viikon esimerkkitreenit: näet etusivun, kalenterin, tilastot ja treenin kirjauksen
 - mitään ei tallenneta: kokeile vapaasti, sivun päivitys palauttaa demon alkuun
-- **tee oma treeniohjelma**: *Tee oma treeniohjelma* -painike etusivulla (tai ☰ → Ohjelma ja tavoitteet →
-  Tee uusi ohjelma), lopuksi *Tallenna pohja*. Saat
+- **tee oma treeniohjelma**: *Tee oma treeniohjelma* -painike etusivulla (tai Ohjelma-välilehti →
+  Tee ohjelma), lopuksi *Tallenna pohja*. Saat
   ohjelmapohjan (`.gmd`), jonka voit tuoda puhelimen sovellukseen tai lähettää kaverille
 - verkkoversio ei ota yhteyttä Googleen tai muihin palveluihin: fontit ja emojit tulevat samalta palvelimelta
 
@@ -217,7 +217,7 @@ painoja. Vammatila ei korvaa lääkärin tai fysioterapeutin arviota.
 **Palaute on enemmän kuin tervetullutta!** Virheet, puuttuvat liikkeet, oudon näköiset liikeohjeet, ideat ja
 käännöskorjaukset:
 
-- sovelluksessa: ☰ → *Ilmoita ongelmasta* (vinkit siitä, mitä liittää; liitteeksi treenitiedostot, tuontitiedostot ja
+- sovelluksessa: Lisää → *Ilmoita ongelmasta* (vinkit siitä, mitä liittää; liitteeksi treenitiedostot, tuontitiedostot ja
   kuvakaappaukset; mukana puhelimen malli ja asetukset, ei sijaintia) tai *Lähetä palautetta*. Kirjoittaa voi suomeksi,
   saameksi tai englanniksi.
 - sähköposti: [treeni@somby.fi](mailto:treeni@somby.fi)
@@ -227,7 +227,7 @@ käännöskorjaukset:
 
 Gievra on vapaa ohjelma [GNU GPL v3.0](LICENSE) -lisenssillä: saat käyttää, tutkia, muokata ja jakaa sitä,
 kunhan muokatut versiot jaetaan samalla lisenssillä. Sovelluksen käyttämien kirjastojen ja fonttien lisenssit
-näkyvät sovelluksessa (☰ → Tietoa → Avoin lähdekoodi ja lisenssit).
+näkyvät sovelluksessa (Lisää → Tietoa, palaute ja tuki → Avoin lähdekoodi ja lisenssit).
 
 **Kuvat:** treeni-ilmoituksen taustakuvat (`note_bg_*.png`) on piirretty Gievraa varten skriptillä
 [`tools/make_note_bg.py`](tools/make_note_bg.py) (ei kolmannen osapuolen kuvia), ja ne ovat sovelluksen kanssa

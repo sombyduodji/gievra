@@ -5,10 +5,9 @@ import 'package:treenipaivakirja/ongoing.dart';
 // Päivätesti 14.11.: yli puolenyön jatkuva salitreeni pysyy käynnissä (ilmoitus, etusivun Jatka), ja sen kesto
 // tallentuu. Keksityt treenit.
 void main() {
-  Workout gym(DateTime date, DateTime started) =>
-      Workout(date: date, title: 'Treeni')
-        ..started = started
-        ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(60, 5)]));
+  Workout gym(DateTime date, DateTime started) => Workout(date: date, title: 'Treeni')
+    ..started = started
+    ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(60, 5)]));
 
   test('23:55 aloitettu treeni on käynnissä vielä 00:20 seuraavana päivänä', () {
     final w = gym(DateTime(2026, 11, 14), DateTime(2026, 11, 14, 23, 55));

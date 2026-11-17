@@ -1,3 +1,4 @@
+import 'program.dart' show PlanDay;
 import 'injury_data.dart';
 
 export 'injury_data.dart';
@@ -112,3 +113,11 @@ List<String> mergeInjuryNotes(List<String> notes) {
   }
   return out;
 }
+
+/// Ohjelman päivä vammatilan mukaan (väliaikaiset korvaukset; ohjelma ei muutu).
+PlanDay injuryAdjusted(PlanDay day, List<String> injuries) => injuries.isEmpty
+    ? day
+    : day.withSubstitutes((e) {
+        final st = injuryStatus(e, injuries);
+        return (avoid: st.avoid, substitute: st.substitute);
+      });

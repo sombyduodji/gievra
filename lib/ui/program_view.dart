@@ -466,7 +466,7 @@ class WeeklyLoadCard extends StatelessWidget {
                 children: [
                   for (final (c, l) in [
                     (Sami.green, t('suunniteltu')),
-                    (Sami.blue, doneLabel ?? t('toteutunut tällä viikolla')),
+                    (blueText(context), doneLabel ?? t('toteutunut tällä viikolla')),
                   ])
                     Row(
                       mainAxisSize: MainAxisSize.min,

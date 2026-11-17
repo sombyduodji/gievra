@@ -221,3 +221,6 @@ class AppLogo extends StatelessWidget {
   Widget build(BuildContext context) =>
       Image.asset('assets/logo_app.png', width: size, height: size, filterQuality: FilterQuality.medium);
 }
+
+/// Ohut saamen nauha otsikkopalkin alareunaan (AppBar.bottom), sama kaikissa näkymissä.
+const samiBarBand = PreferredSize(preferredSize: Size.fromHeight(4), child: SamiBand(height: 4, pattern: false));

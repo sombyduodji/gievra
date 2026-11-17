@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -17,6 +17,10 @@ class NavTapGuard extends NavigatorObserver {
       : const Duration(milliseconds: 300);
   static DateTime Function() clock = DateTime.now;
   static DateTime? _changed;
+
+  /// Testejä varten: edellisen testin näkymänvaihto ei saa niellä seuraavan testin ensimmäistä napautusta.
+  @visibleForTesting
+  static void debugReset() => _changed = null;
 
   /// Onko näkymä vaihtunut juuri (kosketukset niellään)?
   static bool get active {

@@ -18,7 +18,8 @@ class ExercisePickerScreen extends StatefulWidget {
 }
 
 class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
-  String _cat = 'Voimanosto';
+  // Viimeksi tehdyt ensin, kun niitä on (ulkoasun kohennus 16.11.); muuten Voimanosto.
+  late String _cat = _recent.isNotEmpty ? 'Viimeksi' : 'Voimanosto';
   String _q = '';
 
   Map<String, List<String>> get _all => allExercises();
@@ -187,11 +188,14 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
     }
     final big = MediaQuery.textScalerOf(context).scale(14) >= 21;
     return Scaffold(
-      appBar: AppBar(title: BarTitle(Text(t('Valitse liike')))),
+      appBar: AppBar(
+        title: BarTitle(Text(t('Valitse liike'))),
+        bottom: const PreferredSize(preferredSize: Size.fromHeight(4), child: SamiBand(height: 4, pattern: false)),
+      ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
             child: TextField(
               autofocus: false,
               decoration: InputDecoration(
@@ -216,6 +220,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ChoiceChip(
+                        showCheckmark: false,
                         label: Text(t(c)),
                         selected: q.isEmpty && c == _cat,
                         onSelected: (_) => setState(() => _cat = c),
@@ -275,13 +280,25 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
                     // Oma liike: pitkä painallus poistaa sen luettelosta (käyttäjä 16.11.: poistoa ei ollut).
                     onLongPress: settings.customExercises.contains(n) ? () => _deleteOwn(n) : null,
                   ),
-                ListTile(
-                  leading: Icon(Icons.add, color: yellowText(context)),
-                  title: Text(
-                    _q.isEmpty ? t('Luo oma liike') : t('Luo oma liike "{0}"', [_q]),
-                    style: TextStyle(color: yellowText(context)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+                  child: Material(
+                    color: Sami.yellow.withValues(alpha: .12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: Sami.yellow.withValues(alpha: .6)),
+                    ),
+                    child: ListTile(
+                      key: const ValueKey('createOwn'),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      leading: Icon(Icons.add, color: yellowText(context)),
+                      title: Text(
+                        _q.isEmpty ? t('Luo oma liike') : t('Luo oma liike "{0}"', [_q]),
+                        style: TextStyle(color: yellowText(context), fontWeight: FontWeight.w600),
+                      ),
+                      onTap: _create,
+                    ),
                   ),
-                  onTap: _create,
                 ),
               ],
             ),

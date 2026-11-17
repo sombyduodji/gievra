@@ -34,7 +34,13 @@ String makeFitnotesDb(Directory dir) {
 
 void main() {
   late Directory tmp;
-  setUp(() => tmp = Directory.systemTemp.createTempSync('treeni'));
+  setUp(() {
+    tmp = Directory.systemTemp.createTempSync('treeni');
+    // Satunnaisessa järjestyksessä toinen testi saattoi jättää omia liikkeitä (satunnaisjärjestysajo 16.11.).
+    settings
+      ..customExercises = []
+      ..customCategory = {};
+  });
   tearDown(() => tmp.deleteSync(recursive: true));
 
   test('FitNotes: liikkeet suomeksi, ennätykset, kehonpaino, kardio muistiinpanoihin', () async {

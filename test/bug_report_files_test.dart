@@ -50,7 +50,8 @@ void main() {
       '# Treeni\nduration: 50 min\nkcal: 321\nhr_avg: 128\nhr_max: 165\nhr_source: syke\n'
       'hr_series: 5 17:32:10 112 115 0 118\n\n## Takakyykky\n- 100 kg × 5\n',
     );
-    await File(p.join(dir.path, 'asetukset.md')).writeAsString('text_size: normal\nbirth_year: 1980\nsex: mies\nhr_recovery: 55\nkcal_adjust: -10\n');
+    await File(p.join(dir.path, 'asetukset.md'))
+        .writeAsString('text_size: normal\nbirth_year: 1980\nsex: mies\nhr_recovery: 55\nkcal_adjust: -10\n');
     final a = {for (final x in await defaultReportAttachments()) x.$1: x};
     final w = await File(a['2026-10-15.md']!.$2).readAsString();
     expect(w, contains('Takakyykky'));

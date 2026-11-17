@@ -379,6 +379,11 @@ void main() {
         await tester.pumpWidget(const _TApp(home: StatsScreen()));
         await tester.pump(const Duration(seconds: 1));
         await check(tester, 'tilastot treenien kanssa');
+        for (final tab in ['progress', 'records', 'calendar']) {
+          await tester.pumpWidget(_TApp(home: StatsScreen(key: ValueKey(tab), tab: tab)));
+          await tester.pump(const Duration(seconds: 1));
+          await check(tester, 'tilastot $tab treenien kanssa');
+        }
         store.workouts = [];
       });
 
@@ -532,6 +537,9 @@ void main() {
       final screens = <String, Widget Function()>{
         'etusivu': () => const HomeScreen(),
         'tilastot': () => const StatsScreen(),
+        'tilastot kehitys': () => const StatsScreen(tab: 'progress'),
+        'tilastot ennätykset': () => const StatsScreen(tab: 'records'),
+        'tilastot kalenteri': () => const StatsScreen(tab: 'calendar'),
         'uusi treeni': () => NewWorkoutScreen(date: day),
         'salitreeni': () => WorkoutScreen(
           workout: Workout(date: day, title: 'Treeni')

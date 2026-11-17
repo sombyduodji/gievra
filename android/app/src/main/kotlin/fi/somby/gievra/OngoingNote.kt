@@ -43,6 +43,8 @@ object OngoingNote {
         val restEndMs: Long,
         val line2: String,
         val restStartMs: Long = 0L,
+        /** Palautuksen painikkeet (Dartin kielellä): −15 s, +15 s, Ohita; tyhjä = ei painikkeita. */
+        val actions: List<String> = emptyList(),
     ) {
         companion object {
             fun from(m: Map<*, *>?): Live? = m?.let {
@@ -57,6 +59,7 @@ object OngoingNote {
                     (it["restEnd"] as? Number)?.toLong() ?: 0L,
                     it["line2"] as? String ?: "",
                     (it["restStart"] as? Number)?.toLong() ?: 0L,
+                    (it["actions"] as? List<*>)?.mapNotNull { a -> a as? String } ?: emptyList(),
                 )
             }
         }
@@ -144,6 +147,24 @@ object OngoingNote {
             // Android 12+ vaatii järjestelmän kehyksen; vanhemmissa kuva täyttää koko ilmoituksen.
             if (Build.VERSION.SDK_INT >= 31) b.setStyle(NotificationCompat.DecoratedCustomViewStyle())
             b.setShowWhen(false)
+            // Palautuksen aikana painikkeet suoraan ilmoituksesta (ulkoasun kohennus 16.11.): −15 s, +15 s, Ohita.
+            if (live.actions.size == 1) {
+                // Liikunta: Tauko / Jatka.
+                val pi = PendingIntent.getBroadcast(
+                    ctx, ID + 20, Intent(ctx, NoteActionReceiver::class.java).setAction(NoteActionReceiver.TOGGLE),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+                b.addAction(0, live.actions[0], pi)
+            }
+            if (live.actions.size == 3) {
+                for ((i, key) in listOf(NoteActionReceiver.MINUS, NoteActionReceiver.PLUS, NoteActionReceiver.SKIP).withIndex()) {
+                    val pi = PendingIntent.getBroadcast(
+                        ctx, ID + 10 + i, Intent(ctx, NoteActionReceiver::class.java).setAction(key),
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+                    b.addAction(0, live.actions[i], pi)
+                }
+            }
         }
         return b.build()
     }
@@ -275,5 +296,27 @@ object OngoingNote {
 class OngoingRestoreReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         if (OngoingNote.active) OngoingNote.restore(ctx)
+    }
+}
+
+/** Ilmoituksen palautuspainikkeet: välitetään Dartille (sovellus käynnissä); muuten ei tehdä mitään. */
+class NoteActionReceiver : BroadcastReceiver() {
+    companion object {
+        const val MINUS = "fi.somby.gievra.REST_MINUS"
+        const val PLUS = "fi.somby.gievra.REST_PLUS"
+        const val SKIP = "fi.somby.gievra.REST_SKIP"
+        const val TOGGLE = "fi.somby.gievra.ACTIVITY_TOGGLE"
+        @Volatile var onAction: ((String) -> Unit)? = null
+    }
+
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val a = when (intent.action) {
+            MINUS -> "minus"
+            PLUS -> "plus"
+            SKIP -> "skip"
+            TOGGLE -> "toggle"
+            else -> return
+        }
+        onAction?.invoke(a)
     }
 }

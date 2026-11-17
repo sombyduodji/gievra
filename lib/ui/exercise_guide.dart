@@ -62,7 +62,7 @@ Future<bool> showExerciseGuide(BuildContext context, String name, {bool pickButt
               t(
                 '⚠️ Kokeellinen: animaatio ja vinkit ovat suuntaa antavia eikä niitä ole vielä tarkistanut '
                 'ammattilainen. Varmista oikea tekniikka valmentajalta tai fysioterapeutilta ennen kuin '
-                'nostat raskaita painoja. Jos ohje näyttää oudolta, kerro siitä: ☰ → Ilmoita ongelmasta.',
+                'nostat raskaita painoja. Jos ohje näyttää oudolta, kerro siitä: Lisää → Ilmoita ongelmasta.',
               ),
               style: sub,
             ),

@@ -657,7 +657,18 @@ class _IntroScreenState extends State<IntroScreen> {
         title: BarTitle(Text(t('Ohjelma {0}/{1}', [_i + 1, _pages]))),
         automaticallyImplyLeading: !widget.firstRun,
         actions: [
-          TextButton(onPressed: _skip, child: Text(widget.firstRun ? t('Ohita – treenaan vapaasti') : t('Peruuta'))),
+          // Suurella tekstillä lyhyt "Ohita": pitkä teksti kutisti otsikon "Ohjelma 1/8" lähes näkymättömäksi.
+          TextButton(
+            key: const ValueKey('introSkip'),
+            onPressed: _skip,
+            child: Text(
+              !widget.firstRun
+                  ? t('Peruuta')
+                  : MediaQuery.textScalerOf(context).scale(14) > 16
+                  ? t('Ohita')
+                  : t('Ohita – treenaan vapaasti'),
+            ),
+          ),
         ],
       ),
       body: Column(

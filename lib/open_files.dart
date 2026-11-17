@@ -69,7 +69,11 @@ Future<void> showOpened(Object? message) async {
     for (var i = 0; i < 600; i++) {
       final m = appMessenger.currentState;
       if (m != null && m.mounted && settings.onboarded) {
-        m.showSnackBar(SnackBar(content: Text(t('Tiedostoa ei voitu avata.'))));
+        // Toistuvat epäonnistuneet avaukset eivät jonouta ilmoituksia peräkkäin (yötesti 17.11.: viisi avausta
+        // näytti saman ilmoituksen 20 s ajan näkymästä toiseen).
+        m
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(t('Tiedostoa ei voitu avata.'))));
         return;
       }
       await Future<void>.delayed(const Duration(milliseconds: 500));

@@ -60,6 +60,9 @@ Future<void> exportTemplate(BuildContext context, Program p) async {
   }
 }
 
+/// Ohjelmapohjan enimmäiskoko: pohja on pieni tekstitiedosto.
+const templateMaxBytes = 1000000;
+
 /// Ohjelmapohjan tuonti tiedostosta tai (Androidilla) "Avaa sovelluksella" -toiminnosta saadusta tekstistä.
 /// Palauttaa true, jos pohja otettiin käyttöön.
 /// [activate] false: pohja tallennetaan vain ohjelmaluetteloon (☰ → Asetukset → Ohjelmat).
@@ -68,7 +71,7 @@ Future<bool> importTemplate(BuildContext context, {String? text, bool activate =
     final files = await FilePicker.pickFiles(dialogTitle: t('Valitse ohjelmapohja (.gmd)'));
     if (files.isEmpty) return false;
     // Pohja on pieni tekstitiedosto: yli 1 Mt ei ole pohja (sama raja kuin avatuilla ja jaetuilla tiedostoilla).
-    text = await files.first.xFile.length() > 1000000
+    text = await files.first.xFile.length() > templateMaxBytes
         ? ''
         : utf8.decode(await files.first.xFile.readAsBytes(), allowMalformed: true);
   }
@@ -174,7 +177,7 @@ Future<bool> askSaveCurrent(BuildContext context) async {
         children: [
           Text(
             t(
-              'Voit vaihtaa siihen myöhemmin takaisin: ☰ → Ohjelma ja tavoitteet → Tallennetut ohjelmat. '
+              'Voit vaihtaa siihen myöhemmin takaisin: Ohjelma → Tallennetut ohjelmat. '
               'Treenisi säilyvät joka tapauksessa.',
             ),
             style: const TextStyle(fontSize: 13),

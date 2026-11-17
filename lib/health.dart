@@ -230,12 +230,7 @@ HrSeries? hrSeriesFromHealth(List<(DateTime, int)> samples) {
   final interval = const [5, 10, 15, 30, 60].firstWhere((v) => median <= v, orElse: () => 60);
   final t0 = xs.first.$1;
   final start = DateTime(t0.year, t0.month, t0.day, t0.hour, t0.minute, t0.second);
-  return HrSeries.fromSamples(
-    xs,
-    interval: interval,
-    start: start,
-    end: xs.last.$1.add(const Duration(seconds: 1)),
-  );
+  return HrSeries.fromSamples(xs, interval: interval, start: start, end: xs.last.$1.add(const Duration(seconds: 1)));
 }
 
 /// Kanava Android-puolelle (HealthBridge.kt).
@@ -482,6 +477,8 @@ Workout workoutFromHealth(HealthCandidate c, String sport, {required int session
       );
   w.started = c.start;
   w.minutes = (c.duration.inSeconds / 60).round().clamp(1, 600);
+  // Kellon tarkka kesto sekunteina (yhteenvedot pyöristävät minuuteiksi).
+  w.seconds = c.duration.inSeconds.clamp(1, 600 * 60);
   w.watchTime = true;
   w.hcId = c.id ?? 'hc-${c.start.millisecondsSinceEpoch}';
   applyCandidate(w, c);

@@ -23,7 +23,13 @@ void main() {
     settings
       ..program = null
       ..pauses = []
-      ..restTimer = false;
+      ..restTimer = false
+      ..restByHr = false
+      ..injuries = [];
+    rest.stop();
+    // Edellisen testin suljettu palkki ei saa niellä seuraavan testin napautusta (1 s:n suoja).
+    rest.closedAt = null;
+    RestTimer.clock = DateTime.now;
     debugSetCatalog('fi', const {});
   });
 

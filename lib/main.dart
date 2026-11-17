@@ -23,7 +23,7 @@ import 'sami_material.dart';
 import 'sync/sync_service.dart';
 import 'ongoing.dart';
 import 'theme.dart';
-import 'ui/home.dart';
+import 'ui/shell.dart';
 import 'ui/intro.dart';
 import 'ui/onboarding.dart';
 import 'ui/tap_guard.dart';
@@ -60,6 +60,7 @@ Future<void> main() async {
   hr.addListener(Ongoing.refresh); // syke ilmoitukseen (enintään 5 s välein)
   rest.addListener(Ongoing.refresh); // palautuksen lähtölaskenta ja seuraava sarja
   unawaited(Ongoing.refresh());
+  Ongoing.listenActions();
   // Aikavyöhyke vaihtui (matka): treenit ja asetukset uudelleen tiedostoista, jotta päivät täsmäävät taas.
   tzWatch.addListener(() async {
     try {
@@ -70,6 +71,8 @@ Future<void> main() async {
       // Kansio ei hetkeksi luettavissa: seuraava käynnistys tai muutos lukee sen uudelleen.
     }
   });
+  // Päivä tai tervehdyksen vuorokaudenaika vaihtui (sovellus auki yön yli): tänään, viikko ja tervehdys ajan tasalle.
+  dayWatch.addListener(settings.dayChanged);
   tzWatch.start();
   // ignore: avoid_print
   if (timing) print('STARTUP asetukset $tSettings ms, treenit ${tStore - tSettings} ms (${store.workouts.length})');
@@ -112,13 +115,7 @@ class TreeniApp extends StatefulWidget {
 class _TreeniAppState extends State<TreeniApp> {
   late Object _key;
 
-  Object _rootKey() => (
-    settings.themeMode,
-    uiLang,
-    settings.onboarded,
-    settings.introDone,
-    settings.textSize,
-  );
+  Object _rootKey() => (settings.themeMode, uiLang, settings.onboarded, settings.introDone, settings.textSize);
 
   void _changed() {
     final k = _rootKey();
@@ -195,7 +192,7 @@ class _StartGate extends StatelessWidget {
         ? const OnboardingScreen()
         : !settings.introDone
         ? const IntroScreen(firstRun: true)
-        : const HomeScreen(),
+        : const MainShell(),
   );
 }
 
@@ -227,4 +224,3 @@ class AppTextScaler extends TextScaler {
   @override
   int get hashCode => Object.hash(phone, factor);
 }
-

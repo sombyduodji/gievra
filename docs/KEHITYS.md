@@ -8,12 +8,12 @@ Nextcloudin, Seafilen, ownCloudin tai Driven kautta. Flutter: Android ensin, my�
 
 ## Tiedostot
 
-Treenikansio (valitaan ☰ → Asetukset → Treenikansio):
+Treenikansio (valitaan Lisää → Asetukset → Treenikansio):
 
 ```
 Treenit/
   asetukset.md          nimi, teema, painon lisäys, vinkit, laitteet, omat liikkeet, mittaustavat, vammat, tauot
-  ohjelma.md            treeniohjelma (aloituskysely tai ☰ → Ohjelma ja tavoitteet), muokattavissa käsin
+  ohjelma.md            treeniohjelma (aloituskysely tai Ohjelma-välilehti), muokattavissa käsin
   2026/
     2026-11-06.md       yksi tiedosto päivää kohden
 ```
@@ -60,7 +60,7 @@ Lukija sietää käsin kirjoitettua: `- 100kg x 5` käy myös, tuntemattomat riv
   Kehonpaino-ohjelma toimii ilman salia: vain kehonpainoliikkeitä (lähde StrengthLog).
 - Sarjat isoilla +/- -säätimillä, edellinen kerta näkyvissä, ennätykset 🏆, automaattinen tallennus.
 - Edistyminen (arvioitu 1RM) ja kevennysviikkovinkit, pois päältä asetuksista (`lib/insights.dart`).
-- Aloituskysely (ohitettavissa, uudelleen ☰-valikosta): tavoite, kokemus, välineet (vapaat painot, laitteet,
+- Aloituskysely (ohitettavissa, uudelleen Ohjelma-välilehdeltä): tavoite, kokemus, välineet (vapaat painot, laitteet,
   kahvakuulat, kehonpaino), päivät, kesto, toistoalue (suositus / raskaampi / kevyempi), vammat → ohjelma
   (`lib/program.dart`, lähteet `docs/tutkimus/ohjelmat.md`).
 - Aloituskysely voi lähteä treenihistoriasta (`lib/history_profile.dart`): tuo FitNotes, varmuuskopio tai .md,
@@ -100,7 +100,7 @@ Lukija sietää käsin kirjoitettua: `- 100kg x 5` käy myös, tuntemattomat riv
 - Valinnainen Google Drive -synkronointi (`lib/sync/`): tallennukset ja tuonnit lähtevät heti, käynnistyksessä
   haetaan PC:n tai toisen puhelimen muutokset viimeisiltä N päivältä, ristiriidat talteen. Käyttöönotto
   (Google Cloud -rekisteröinti): `docs/google-drive.md`.
-- ☰-valikko: asetukset, ohjelmat, Tietoa, palaute, vikailmoitus, Osallistu ja tue.
+- Alapalkki: Tänään, Ohjelma, Tilastot ja Lisää (asetukset, kartat, tuonti ja vienti, Tietoa, vikailmoitus, tue).
 
 ## Kehitys
 

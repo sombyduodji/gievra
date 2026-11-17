@@ -7,9 +7,10 @@ import '../heart_rate.dart' show hrProfile;
 import '../hr_calc.dart';
 import '../l10n.dart';
 import '../models.dart';
-import '../session_compare.dart' show fmtDuration;
 import '../sports.dart';
 import '../theme.dart';
+import '../session_compare.dart' show workVolume;
+import '../share_text.dart' show thousands;
 import 'widgets.dart';
 
 /// Treeni valmis -ikkunan tulos: fiilis 1–5 tai [feelingSkipped] (Ohita) ja rasitus (jos kysyttiin).
@@ -89,15 +90,31 @@ class _FinishSheetState extends State<FinishSheet> {
       if (e.workSets.isNotEmpty) e.name,
   ];
 
-  void _pickFeeling(int v) {
-    if (widget.heavyStep && v <= 2 && _moves.isNotEmpty) {
-      setState(() {
-        _feeling = v;
-        _heavyStage = true;
-      });
-      return;
-    }
-    Navigator.pop(context, FinishResult(v, _intensity));
+  /// Fiiliksen valinta (ulkoasun kohennus 16.11.): ei tallenna heti, vaan erillinen Tallenna. Raskas/Tahmea avaa
+  /// samaan ikkunaan "Mikä tuntui raskaalta?".
+  void _pickFeeling(int v) => setState(() {
+    _feeling = v;
+    _heavyStage = widget.heavyStep && v <= 2 && _moves.isNotEmpty;
+  });
+
+  /// Fiilis-ruudun napautus: pieni valitsin viidellä kasvolla.
+  Future<void> _askFeeling() async {
+    final v = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('Miltä tuntui?')),
+        content: SizedBox(
+          width: 360,
+          child: FaceRow(value: _feeling, onTap: (v) => Navigator.pop(ctx, v)),
+        ),
+      ),
+    );
+    if (v != null && mounted) _pickFeeling(v);
+  }
+
+  void _save() {
+    if (_heavyStage) return _heavyDone();
+    Navigator.pop(context, FinishResult(_feeling ?? feelingSkipped, _intensity));
   }
 
   void _heavyDone() {
@@ -137,26 +154,42 @@ class _FinishSheetState extends State<FinishSheet> {
               _effortRow(dark),
               const SizedBox(height: 18),
             ],
-            _title(t('Miltä tuntui?'), t('Millainen olo'), sub),
-            const SizedBox(height: 12),
-            _faces(cs, dark),
             if (_heavyStage) ..._heavySection(cs, sub, dark),
-            if (!_heavyStage)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(t('Fiilis tallentaa treenin'), style: sub)),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, FinishResult(feelingSkipped, _intensity)),
+            const SizedBox(height: 16),
+            // Erillinen tallennus (käyttäjä 16.11.): fiilis on valinnainen; Ohita tallentaa ilman sitä.
+            Row(
+              children: [
+                if (!_heavyStage && _feeling == null)
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, FinishResult(feelingSkipped, _intensity)),
+                    child: Text(
+                      t('Ohita'),
+                      style: TextStyle(color: redText(context), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const ValueKey('finishSave'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF00843D),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: _save,
+                    icon: const Icon(Icons.save_outlined),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
                       child: Text(
-                        t('Ohita'),
-                        style: TextStyle(color: redText(context), fontWeight: FontWeight.w600),
+                        widget.w?.activity != null ? t('Tallenna liikunta') : t('Tallenna treeni'),
+                        maxLines: 1,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
+            ),
           ],
         ),
       ),
@@ -165,67 +198,107 @@ class _FinishSheetState extends State<FinishSheet> {
 
   Widget _header(Workout w, ColorScheme cs, TextStyle sub, bool dark) {
     final name = w.activity != null ? sportName(w.activity!) : trName(w.title);
-    final icon = w.activity != null ? (sportOf(w.activity)?.icon ?? '🏃') : '💪';
     final dur = widget.durationSec ?? w.durationSec;
     final s = widget.series ?? w.hrSeries;
     final hasHr = s != null && dur != null && s.coverage(dur) >= .5 && s.avg != null;
-    final parts = <String>[
-      if (w.activity == null) setsLabel(w.exercises.fold(0, (a, e) => a + e.workSets.length)),
-      if (w.activity != null && (w.distanceKm ?? 0) > 0) '${fmtNum((w.distanceKm! * 100).round() / 100)} km',
-      // Alle minuutin salitreenissä ei "0 min".
-      if (dur != null && (w.activity != null || dur >= 60))
-        w.activity == null ? fmtDuration((dur / 60).round()) : fmtDurationSec(dur),
+    // Arvoruudut (luonnos loppu2): kesto tarkkana, sarjat tai matka, syke tai vauhti, ennätykset ja fiilis.
+    final (prs, best) = w.activity == null ? gymHighlights(w, store.workouts) : (0, null);
+    final tiles = <(String, String)>[
+      if (dur != null && dur > 0) (fmtDurationSec(dur), t('kesto')),
+      // Yksikkö: "1 sarja", ei "1 sarjaa" (tarkastus 16.11.).
+      if (w.activity == null)
+        () {
+          final n = w.exercises.fold(0, (a, e) => a + e.workSets.length);
+          return ('$n', n == 1 ? t('sarja') : t('sarjaa'));
+        }(),
+      if (w.activity == null && workVolume(w) > 0) ('${thousands(workVolume(w).round())} kg', t('volyymi')),
+      if (w.activity != null && (w.distanceKm ?? 0) > 0)
+        ('${fmtNum((w.distanceKm! * 100).round() / 100)} km', t('matka')),
       if (hasHr)
-        t('ka {0}', [s.avg])
+        ('❤ ${s.avg}', t('syke ka.'))
       else if (w.activity != null && (w.distanceKm ?? 0) > 0 && dur != null && (sportOf(w.activity)?.steps ?? false))
-        paceText(dur / w.distanceKm!, w.activity, short: true),
+        (paceText(dur / w.distanceKm!, w.activity, short: true), t('vauhti')),
+      if (w.activity == null && prs > 0) ('🏆 $prs', prs == 1 ? t('ennätys') : t('ennätystä')),
     ];
-    final chips = <Widget>[];
-    if (w.activity == null) {
-      final (prs, best) = gymHighlights(w, store.workouts);
-      final gold = dark ? const Color(0xFF3A3214) : const Color(0xFFFFF4C2);
-      final green = dark ? const Color(0xFF12301F) : const Color(0xFFE3F3E9);
-      if (prs > 0) chips.add(_chip('🏆 ${prs > 1 ? t('{0} ennätystä!', [prs]) : t('1 ennätys!')}', gold));
-      if (best != null) chips.add(_chip('⬆ ${exerciseLabel(best.$1)} +${fmtNum(best.$2)} kg', green));
-    }
+    final face = feelingOf(_feeling);
+    Widget tile(Widget value, String label, {VoidCallback? onTap, bool dashed = false, Key? key}) => Material(
+      key: key,
+      color: dashed ? Colors.transparent : cs.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: dashed ? BorderSide(color: cs.outline, width: 1.5) : BorderSide.none,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FittedBox(fit: BoxFit.scaleDown, child: value),
+              const SizedBox(height: 2),
+              Text(label, maxLines: 2, textAlign: TextAlign.center, style: sub.copyWith(fontSize: 11)),
+            ],
+          ),
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)),
-              child: FittedBox(child: Text(icon, style: const TextStyle(fontSize: 26))),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t('Giitu! {0} tehty', [name]),
-                    maxLines: 2,
-                    style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, height: 1.2),
-                  ),
-                  if (parts.isNotEmpty) Text(parts.join(' · '), style: sub.copyWith(fontSize: 13.5)),
-                ],
-              ),
-            ),
-          ],
+        Text(
+          t('Giitu! {0} tehty', [name]),
+          maxLines: 2,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, height: 1.2),
         ),
-        if (chips.isNotEmpty) ...[const SizedBox(height: 12), Wrap(spacing: 8, runSpacing: 8, children: chips)],
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, c) {
+            // Suurella tekstillä kaksi saraketta, ettei pitkä sana (esim. saameksi) katkea.
+            final cols = c.maxWidth < 300 || MediaQuery.textScalerOf(context).scale(10) > 15 ? 2 : 3;
+            final wTile = (c.maxWidth - 8 * (cols - 1)) / cols;
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (v, l) in tiles)
+                  SizedBox(
+                    width: wTile,
+                    child: tile(
+                      Text(v, maxLines: 1, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                      l,
+                    ),
+                  ),
+                SizedBox(
+                  width: wTile,
+                  child: tile(
+                    key: const ValueKey('feelingTile'),
+                    Text(
+                      face?.$2 ?? '🙂',
+                      style: TextStyle(fontSize: 20, color: face == null ? cs.onSurfaceVariant : null),
+                    ),
+                    face == null ? t('fiilis · valitse') : t('fiilis: {0}', [t(face.$3).toLowerCase()]),
+                    dashed: face == null,
+                    onTap: _askFeeling,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        // Suurin painonnousu tiiviinä rivinä ruutujen alla.
+        if (best != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '⬆ ${exerciseLabel(best.$1)} +${fmtNum(best.$2)} kg',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: greenText(context)),
+            ),
+          ),
       ],
     );
   }
-
-  Widget _chip(String text, Color bg) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(99)),
-    child: Text(text, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-  );
 
   Widget _title(String title, String subtitle, TextStyle sub, {Widget? badge}) => Row(
     crossAxisAlignment: CrossAxisAlignment.end,
@@ -260,8 +333,6 @@ class _FinishSheetState extends State<FinishSheet> {
   );
 
   Widget _effortRow(bool dark) => EffortScale(value: _intensity, onChanged: (v) => setState(() => _intensity = v));
-
-  Widget _faces(ColorScheme cs, bool dark) => FaceRow(value: _feeling, onTap: _pickFeeling);
 
   /// Päivän syiden kuvakkeet (ruudukon laatoissa).
   static const _reasonIcons = {
@@ -369,32 +440,38 @@ class _FinishSheetState extends State<FinishSheet> {
       Divider(height: 28, color: cs.outlineVariant),
       _title(t('Mikä tuntui raskaalta?'), t('Valitse liikkeet, jotka tuntuivat liian raskailta'), sub),
       const SizedBox(height: 12),
-      _grid([
-        for (final m in _moves)
-          _tile(
-            key: ValueKey('heavy_$m'),
-            label: exerciseLabel(m),
-            on: _heavy.contains(m),
-            accent: red,
-            onBg: red.withValues(alpha: dark ? .16 : .1),
-            onTap: () => setState(() => _heavy.contains(m) ? _heavy.remove(m) : _heavy.add(m)),
-          ),
-      ], [for (final m in _moves) exerciseLabel(m)]),
+      _grid(
+        [
+          for (final m in _moves)
+            _tile(
+              key: ValueKey('heavy_$m'),
+              label: exerciseLabel(m),
+              on: _heavy.contains(m),
+              accent: red,
+              onBg: red.withValues(alpha: dark ? .16 : .1),
+              onTap: () => setState(() => _heavy.contains(m) ? _heavy.remove(m) : _heavy.add(m)),
+            ),
+        ],
+        [for (final m in _moves) exerciseLabel(m)],
+      ),
       const SizedBox(height: 20),
       _title(t('Vaikuttiko jokin muu?'), t('Valinnainen'), sub),
       const SizedBox(height: 12),
-      _grid([
-        for (final r in dayReasonChoices)
-          _tile(
-            key: ValueKey('reason_$r'),
-            label: t(r),
-            icon: _reasonIcons[r],
-            on: _reasons.contains(r),
-            accent: yellow,
-            onBg: Sami.yellow.withValues(alpha: dark ? .16 : .22),
-            onTap: () => setState(() => _reasons.contains(r) ? _reasons.remove(r) : _reasons.add(r)),
-          ),
-      ], [for (final r in dayReasonChoices) t(r)]),
+      _grid(
+        [
+          for (final r in dayReasonChoices)
+            _tile(
+              key: ValueKey('reason_$r'),
+              label: t(r),
+              icon: _reasonIcons[r],
+              on: _reasons.contains(r),
+              accent: yellow,
+              onBg: Sami.yellow.withValues(alpha: dark ? .16 : .22),
+              onTap: () => setState(() => _reasons.contains(r) ? _reasons.remove(r) : _reasons.add(r)),
+            ),
+        ],
+        [for (final r in dayReasonChoices) t(r)],
+      ),
       const SizedBox(height: 20),
       SizedBox(
         width: double.infinity,

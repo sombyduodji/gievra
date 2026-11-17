@@ -775,6 +775,36 @@ class PlanDay {
   /// Käyttöliittymään käyttäjän kielellä.
   String get uiName => (label?.trim().isNotEmpty ?? false) ? label!.trim() : l10n.trName(name);
   bool matches(String key) => key == name || key == label;
+
+  /// Vammatila väliaikaisesti (käyttäjä 16.11.): vältettävät liikkeet korvataan tälle treenille, mutta tallennettu
+  /// ohjelma ei muutu. Kun vammatila poistetaan, alkuperäiset liikkeet palaavat. [status]: liikkeen vammatila
+  /// (vältettävät alueet ja korvaava liike).
+  PlanDay withSubstitutes(({List<String> avoid, String? substitute}) Function(String exercise) status) {
+    var changed = false;
+    final out = <PlanItem>[
+      for (final i in items)
+        () {
+          final st = status(i.exercise);
+          if (st.avoid.isEmpty || st.substitute == null || st.substitute == i.exercise) return i;
+          changed = true;
+          return PlanItem(
+            st.substitute!,
+            i.slot,
+            i.sets,
+            i.lo,
+            i.hi,
+            i.rir,
+            i.restSec,
+            kind: i.kind,
+            note: i.note,
+            pct: i.pct,
+            group: i.group,
+            alts: [...i.alts.where((a) => status(a).avoid.isEmpty)],
+          );
+        }(),
+    ];
+    return changed ? PlanDay(name, out, label: label) : this;
+  }
 }
 
 class Program {

@@ -13,8 +13,8 @@ import 'package:treenipaivakirja/ui/home.dart';
 
 import 'test_fonts.dart';
 
-// Etusivun Sali/Liikunta rinnakkain (nuolet lomittain, 14.11.): teksti ei katkea millään kielellä, puhelimen
-// leveydellä tai tekstikoolla. Oikea fontti (Roboto), koska testifontti on leveämpi kuin puhelimen.
+// Etusivun Sali | Liikunta (ulkoasun kohennus 16.11.) ja päivänäkymän Sali/Liikunta-pari: teksti ei katkea millään
+// kielellä, puhelimen leveydellä tai tekstikoolla. Oikea fontti (Roboto), koska testifontti on leveämpi kuin puhelimen.
 void main() {
   final po = {
     for (final l in ['en', 'se']) l: parsePo(File('assets/l10n/$l.po').readAsStringSync()),
@@ -51,6 +51,7 @@ void main() {
   for (final lang in ['fi', 'en', 'se']) {
     for (final (w, scale) in [(360.0, 1.0), (360.0, 1.3), (412.0, 1.0), (412.0, 1.3), (360.0, 2.0), (412.0, 2.0)]) {
       for (final st in states.entries) {
+        // Ulkoasun kohennus 16.11.: etusivulla Sali | Liikunta -valitsin ja yksi kortti isolla aloituspainikkeella.
         testWidgets('$lang ${w.round()} dp ${(scale * 100).round()} %: ${st.key}', (tester) async {
           SharedPreferences.setMockInitialValues({});
           tester.view.physicalSize = Size(w * 3, 2400 * 3);
@@ -74,15 +75,22 @@ void main() {
             ),
           );
           await tester.pump();
-          checkPieces(tester);
-          // Suomeksi ja englanniksi kuvakkeet mahtuvat aina normaalikoossa (saame: pitkä sana voi viedä emojin).
-          if (lang != 'se' && scale == 1.0) {
-            expectIcons(
-              tester,
-              emoji: st.key == 'salitreeni kesken' ? '🏃' : '🚶',
-              open: st.key == 'salitreeni kesken',
-            );
-          }
+          expect(find.byKey(const ValueKey('modeGym')), findsOneWidget);
+          expect(find.byKey(const ValueKey('modeActivity')), findsOneWidget);
+          // Oletusvalinta: kesken oleva tai käytetympi.
+          final gymFirst = st.key != 'liikunta käytetympi';
+          final start = st.key == 'salitreeni kesken'
+              ? 'homeContinue'
+              : gymFirst
+              ? 'homeStartGym'
+              : 'homeStartActivity';
+          expect(find.byKey(ValueKey(start)), findsOneWidget, reason: start);
+          noCutText(tester);
+          // Valitsimen vaihto vaihtaa kortin.
+          await tester.tap(find.byKey(ValueKey(gymFirst ? 'modeActivity' : 'modeGym')));
+          await tester.pump();
+          expect(find.byKey(ValueKey(gymFirst ? 'homeStartActivity' : 'homeStartGym')), findsOneWidget);
+          noCutText(tester);
           await tester.pumpWidget(const SizedBox());
         });
       }
@@ -125,9 +133,7 @@ void main() {
   }
 
   for (final lang in ['fi', 'se']) {
-    testWidgets('$lang fontti 2,0: ei alarivejä (ohjelman päivä näkyy vasta Sali-näkymässä), yhteenveto kokonaan', (
-      tester,
-    ) async {
+    testWidgets('$lang fontti 2,0: ehdotuskortti ohjelman päivällä, teksti ei katkea', (tester) async {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(360 * 3, 2400 * 3);
       tester.view.devicePixelRatio = 3;
@@ -157,19 +163,20 @@ void main() {
         ),
       );
       await tester.pump();
-      final gymPiece = find.byKey(const ValueKey('splitGym'));
+      // Ehdotuskortti: ohjelman päivä näkyy otsikkona (ulkoasun kohennus 16.11.).
       final names = settings.program!.plan.map((d) => d.uiName).toSet();
-      final shown = find.descendant(
-        of: gymPiece,
-        matching: find.byWidgetPredicate((w) => w is Text && names.contains(w.data)),
-      );
-      expect(shown, findsNothing, reason: 'ei alariviä (käyttäjä 15.11.)');
-      // Yhteenveto ei katkea ("…").
-      for (final p in tester.renderObjectList<RenderParagraph>(find.byType(RichText))) {
-        expect(p.didExceedMaxLines, isFalse, reason: p.text.toPlainText());
-      }
+      expect(find.byWidgetPredicate((w) => w is Text && names.contains(w.data)), findsWidgets);
+      expect(find.byKey(const ValueKey('homeStartGym')), findsOneWidget);
+      noCutText(tester);
       debugSetCatalog('fi', const {});
     });
+  }
+}
+
+/// Mikään teksti ei katkea ("…" tai rivit loppuvat).
+void noCutText(WidgetTester tester) {
+  for (final p in tester.renderObjectList<RenderParagraph>(find.byType(RichText))) {
+    expect(p.didExceedMaxLines, isFalse, reason: p.text.toPlainText());
   }
 }
 

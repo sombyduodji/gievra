@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'app_state.dart';
+import 'drafts.dart';
+import 'gps_recorder.dart';
 import 'heart_rate.dart';
 import 'hr_calc.dart';
 import 'l10n.dart';
@@ -57,6 +59,31 @@ class Ongoing {
   static DateTime? _liveAt;
   static Timer? _tick;
   static bool _asked = false;
+
+  /// Liikunnan Tauko / Jatka ilmoituksesta: ajanotto- tai GPS-näkymä asettaa (null = ei painiketta).
+  static void Function()? togglePause;
+
+  /// Ilmoituksen painikkeet (OngoingNote.kt → noteAction): palautuksen −15 s, +15 s ja Ohita, liikunnan Tauko / Jatka.
+  static void listenActions() => _ch.setMethodCallHandler((call) async {
+    if (call.method != 'noteAction') return;
+    if (call.arguments == 'toggle') {
+      if (AwayActivity.togglePauseAway) {
+        await AwayActivity.togglePause();
+        return;
+      }
+      togglePause?.call();
+      return;
+    }
+    if (!rest.running) return;
+    switch (call.arguments) {
+      case 'minus':
+        rest.adjust(-15);
+      case 'plus':
+        rest.adjust(15);
+      case 'skip':
+        rest.stop();
+    }
+  });
 
   /// Sykkeen ja lukujen päivitysväli ilmoituksessa.
   static const liveEvery = Duration(seconds: 5);
@@ -135,6 +162,7 @@ class Ongoing {
     if (gym != null) {
       // Palautus: lähtölaskenta ja seuraava sarja; muuten viimeisin liike ja sen sarjat.
       if (rest.running && rest.byHr) {
+        m['actions'] = ['−15 s', '+15 s', t('Ohita')];
         // Sykkeen mukaan: kello laskee ylöspäin, tavoitteena palautumisraja.
         final target = hr.recoveryBpm(now);
         m['line'] = target == null ? t('Palautus') : t('Palautus · syke alle {0}', [target]);
@@ -144,6 +172,8 @@ class Ongoing {
         m['line'] = t('Palautus');
         m['restEnd'] = now.add(Duration(seconds: rest.remaining)).millisecondsSinceEpoch;
         m['line2'] = rest.next ?? '';
+        // Painikkeet ilmoituksessa (ulkoasun kohennus 16.11.).
+        m['actions'] = ['−15 s', '+15 s', t('Ohita')];
       } else if (rest.over) {
         // Palautus päättyi (ponnahdus on jo poistunut): tila näkyy tässä, kunnes seuraava sarja alkaa.
         m['line'] = rest.byHr ? t('✓ Palautunut') : t('✓ Tauko ohi');
@@ -164,6 +194,11 @@ class Ongoing {
       }
     } else if (gps != null) {
       m['line'] = gpsLine?.call() ?? '';
+    }
+    // Liikunta: Tauko / Jatka ilmoituksesta (ulkoasun kohennus 16.11.); ei Lopeta, ettei se osu vahingossa.
+    if (gym == null && (togglePause != null || AwayActivity.togglePauseAway)) {
+      final a = gps ?? activity;
+      if (a != null && a.note == null) m['actions'] = [a.paused ? t('Jatka') : t('Tauko')];
     }
     return m;
   }
@@ -213,5 +248,82 @@ class Ongoing {
         'live': l,
       });
     } catch (_) {}
+  }
+}
+
+/// Liikunnan ajanotto, jonka näkymästä poistuttiin Takaisin-painikkeella (käyttäjä 17.11.): ajanotto, sykevyö ja
+/// ilmoitus jatkavat, ja alapalkin yläpuolella näkyy palkki, josta liikuntaan palataan. Tila on luonnoksessa
+/// ([ActivityDraft]), joten se säilyy, vaikka Android sulkisi sovelluksen.
+///
+/// Vain yksi liikuntanäkymä kerrallaan omistaa käynnissä olevan ajanoton ([owner]): muut avatut liikunnat
+/// (esim. vanhan kävelyn katselu kesken lenkin) eivät kirjoita luonnosta, eivätkä ne poista sitä, ilmoitusta tai
+/// sykkeitä sulkeutuessaan.
+class AwayActivity {
+  /// Muuttuu, kun liikunta siirtyy taustalle tai sen tila muuttuu ilmoituksen Tauko / Jatka -painikkeesta.
+  static final changes = ValueNotifier<int>(0);
+
+  /// Ajanotto käynnissä tai tauolla, eikä sen näkymä ole auki.
+  static bool get away => _away;
+  static bool _away = false;
+
+  /// Näkymä, joka omistaa käynnissä olevan ajanoton (null = ei ajanottoa).
+  static Object? owner;
+
+  /// Saako [who] kirjoittaa luonnoksen, ilmoituksen ja sykkeet (ei toisen näkymän ajanottoa kesken).
+  static bool mayUse(Object who) => owner == null || identical(owner, who);
+
+  /// Taustalle jäänyt GPS-tallennus (paikannuspalvelu ja tallennin jatkavat; RecordScreen ottaa sen takaisin).
+  static GpsRecorder? gps;
+
+  /// Ottaa taustalle jääneen GPS-tallentimen (null = ei ole).
+  static GpsRecorder? takeGps() {
+    final g = gps;
+    gps = null;
+    return g;
+  }
+
+  static void setAway(bool v) {
+    if (_away == v) return;
+    _away = v;
+    // GPS-tallennuksen Tauko / Jatka kulkee sen omalla tallentimella (Ongoing.togglePause), ajanoton luonnoksen kautta.
+    togglePauseAway = v && gps == null;
+    // Kutsutaan näkymän initState- ja dispose-metodeista: palkki päivittyy vasta, kun puu ei ole lukittu.
+    scheduleMicrotask(() => changes.value++);
+  }
+
+  @visibleForTesting
+  static void debugReset() {
+    owner = null;
+    _away = false;
+    togglePauseAway = false;
+    gps = null;
+  }
+
+  /// Ilmoituksen Tauko / Jatka näkymän ollessa kiinni: luonnoksen ajanotto tauolle tai jatkumaan.
+  static bool togglePauseAway = false;
+
+  static Future<void> togglePause() async {
+    if (!_away) return;
+    final d = await ActivityDraft.load();
+    if (d == null) return;
+    final (w, extra) = d;
+    final now = Ongoing.now();
+    final start = DateTime.tryParse(extra['swStart'] as String? ?? '');
+    var acc = Duration(milliseconds: (extra['swAccMs'] as int?) ?? 0);
+    final e = Map<String, Object?>.from(extra);
+    if (start != null) {
+      acc += now.difference(start);
+      e.remove('swStart');
+      e['swAccMs'] = acc.inMilliseconds;
+    } else {
+      e['swStart'] = now.toIso8601String();
+    }
+    await ActivityDraft.save(w, extra: e);
+    final sport = w.activity;
+    if (sport != null) {
+      Ongoing.activity = OngoingActivity(sport, since: start == null ? now.subtract(acc) : null, elapsed: acc);
+    }
+    changes.value++;
+    await Ongoing.refresh();
   }
 }

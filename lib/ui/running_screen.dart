@@ -117,9 +117,9 @@ class RunningScreen extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               dense: true,
               leading: const Text('🏆', style: TextStyle(fontSize: 20)),
-              title: Text('${_distName(b.km)}  ${fmtDurationSec(b.sec)}'),
+              title: Text('${distName(b.km)}  ${fmtDurationSec(b.sec)}'),
               subtitle: Text(
-                '${fmtPace(b.run.paceSecPerKm!)} min/km · ${shortDate(b.run.date)} · ${km(b.run.distanceKm!)} km',
+                '${fmtPace(b.run.paceSecPerKm!)} min/km · ${shortDateY(b.run.date)} · ${km(b.run.distanceKm!)} km',
                 style: sub,
               ),
             ),
@@ -145,7 +145,7 @@ class RunningScreen extends StatelessWidget {
     );
   }
 
-  static String _distName(double km) => switch (km) {
+  static String distName(double km) => switch (km) {
     5.0 => '5 km',
     10.0 => '10 km',
     21.0975 => t('Puolimaraton'),

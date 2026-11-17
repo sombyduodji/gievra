@@ -152,8 +152,9 @@ class WorkoutShareCard extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (w.minutes != null) _stat(fmtDuration(w.minutes!), t('kesto')),
-            _stat('$sets', t('sarjaa')),
+            // Sama kesto kuin treenin näkymässä (sekunnit, jos tallessa; yötesti 17.11.: kuvassa "1 min", näkymässä 0:33).
+            if (durationText(w) case final d?) _stat(d, t('kesto')),
+            _stat('$sets', t(sets == 1 ? 'sarja' : 'sarjaa')),
             if (vol > 0) _stat('${thousands(vol.round())} kg', t('volyymi')),
             if (feel != null) _stat(feel.$2, t(feel.$3)),
           ],
@@ -272,7 +273,7 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
     final image = await boundary.toImage(pixelRatio: 3);
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
-    final dir = Directory(p.join((await getTemporaryDirectory()).path, 'share'))..createSync(recursive: true);
+    final dir = await shareDir();
     final f = File(p.join(dir.path, widget.fileName));
     await f.writeAsBytes(data!.buffer.asUint8List(), flush: true);
     return f;
@@ -300,7 +301,7 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: BarTitle(Text(t('Jaa kuvana')))),
+    appBar: AppBar(title: BarTitle(Text(t('Jaa kuvana'))), bottom: samiBarBand),
     body: SafeArea(
       child: Column(
         children: [
@@ -364,7 +365,8 @@ Future<void> shareProgram(BuildContext context, Program program) async {
   );
   if (choice == null || !context.mounted) return;
   final name = program.displayTitle.split(' · ').first;
-  final safe = name.replaceAll(RegExp(r'[^\p{L}\p{N} _-]', unicode: true), '').trim();
+  // Enintään 80 merkkiä: pitkä nimi (saamen kirjaimet 2 tavua) ylitti tiedostonimen 255 tavun rajan (yötesti 17.11.).
+  final safe = name.replaceAll(RegExp(r'[^\p{L}\p{N} _-]', unicode: true), '').characters.take(80).toString().trim();
   final base = safe.isEmpty ? 'gievra' : safe;
   if (choice == 'image') {
     await Navigator.of(context).push(
@@ -374,8 +376,26 @@ Future<void> shareProgram(BuildContext context, Program program) async {
     );
     return;
   }
-  final dir = Directory(p.join((await getTemporaryDirectory()).path, 'share'))..createSync(recursive: true);
+  final dir = await shareDir();
   final f = File(p.join(dir.path, '$base.$templateExtension'));
   await f.writeAsBytes(utf8.encode(programToTemplate(program, name: name)), flush: true);
   await SharePlus.instance.share(ShareParams(files: [XFile(f.path, mimeType: 'application/octet-stream')]));
+}
+
+/// Jaettavien kuvien ja pohjien kansio välimuistissa. Yli tunnin vanhat aiemmat jaot poistetaan (yötesti 17.11.:
+/// treenikuvat sykkeineen jäivät välimuistiin); tuoreet jätetään, koska vastaanottava sovellus voi vielä lukea niitä.
+Future<Directory> shareDir({DateTime? now}) async {
+  final dir = Directory(p.join((await getTemporaryDirectory()).path, 'share'))..createSync(recursive: true);
+  cleanShareDir(dir, now: now);
+  return dir;
+}
+
+@visibleForTesting
+void cleanShareDir(Directory dir, {DateTime? now}) {
+  final limit = (now ?? DateTime.now()).subtract(const Duration(hours: 1));
+  for (final f in dir.listSync().whereType<File>()) {
+    try {
+      if (f.lastModifiedSync().isBefore(limit)) f.deleteSync();
+    } catch (_) {}
+  }
 }

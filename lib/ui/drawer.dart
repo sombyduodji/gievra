@@ -91,13 +91,153 @@ class ActiveBadge extends StatelessWidget {
   );
 }
 
+/// Valikon kohdat: ☰-valikko ([drawer]) tai alapalkin Lisää-välilehti (ulkoasun kohennus 16.11.).
+List<Widget> menuEntries(BuildContext context, {bool drawer = true}) {
+  final cs = Theme.of(context).colorScheme;
+  final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+  void go({required WidgetBuilder builder}) =>
+      drawer ? _go(context, builder: builder) : Navigator.of(context).push(MaterialPageRoute(builder: builder));
+  return [
+    Padding(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+      child: Row(
+        children: [
+          const AppLogo(size: 48),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(AppInfo.fullName, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                InkWell(
+                  onTap: () => showAbout(context),
+                  child: Text(
+                    t('Tekijä: {0}', [AppInfo.author]),
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    const Padding(padding: EdgeInsets.symmetric(horizontal: 18), child: SamiBand(height: 4, pattern: false)),
+    const SizedBox(height: 8),
+    _cap(context, t('Treeni ja terveys')),
+    if (drawer)
+      ListTile(
+        leading: const Icon(Icons.event_note),
+        title: Text(t('Ohjelma ja tavoitteet')),
+        subtitle: Text(settings.program?.displayTitle ?? t('Treenaat vapaasti'), style: sub),
+        onTap: () => go(builder: (_) => const ProgramScreen()),
+      ),
+    if (drawer)
+      ListTile(
+        leading: const Icon(Icons.insights),
+        title: Text(t('Edistyminen ja tilastot')),
+        subtitle: Text(t('Sali, juoksu ja askeleet: jaksot, vertailu, fiilis ja voimakehitys'), style: sub),
+        onTap: () => go(builder: (_) => const StatsScreen()),
+      ),
+    ListTile(
+      leading: const Icon(Icons.healing),
+      title: Text(t('Vammatila')),
+      // Kuvaus myös pois päältä, jotta vammatila löytyy; "Käytössä" alarivillä, ettei otsikko rivity.
+      subtitle: knownInjuries(settings.injuries).isEmpty
+          ? Text(t('Kipu tai vamma: vältettävät liikkeet ja korvaavat'), style: sub)
+          : _withBadge(
+              Text(
+                knownInjuries(settings.injuries).length == 1
+                    ? t('1 alue valittuna')
+                    : t('{0} aluetta valittuna', [knownInjuries(settings.injuries).length]),
+                style: sub,
+              ),
+            ),
+      onTap: () => go(builder: (_) => InjuryScreen(initial: settings.injuries)),
+    ),
+    ListTile(
+      leading: Icon(settings.activePause == null ? Icons.bedtime_outlined : Icons.play_circle_outline),
+      title: Text(settings.activePause == null ? t('Tauko: sairas tai loma') : t('Lopeta tauko')),
+      subtitle: settings.activePause == null
+          ? null
+          : _withBadge(
+              Text(
+                settings.activePause!.injury
+                    ? t('Vammatauolla')
+                    : settings.activePause!.sick
+                    ? t('Sairauslomalla')
+                    : t('Lomalla'),
+                style: sub,
+              ),
+            ),
+      onTap: () {
+        // Valikon konteksti poistuu valikon mukana: dialogit navigaattorin kontekstilla.
+        final nav = Navigator.of(context);
+        if (drawer) nav.pop();
+        settings.activePause == null ? showPauseDialog(nav.context) : stopPause(nav.context);
+      },
+    ),
+    // Kartat, synkronointi ja tiedostot (ei selainversiossa).
+    if (!isDemo) ...[
+      const Divider(indent: 18, endIndent: 18),
+      _cap(context, t('Tiedot ja laitteet')),
+      if (Platform.isAndroid)
+        ListTile(
+          leading: const Icon(Icons.map_outlined),
+          title: Text(t('Kartat')),
+          subtitle: Text(t('Offline-kartat GPS-reiteille: lataa alue tai kunnat'), style: sub),
+          onTap: () => go(builder: (_) => const MapsScreen()),
+        ),
+      // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
+      if (syncReleased)
+        ListenableBuilder(
+          listenable: sync,
+          builder: (context, _) => ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: Text(t('Synkronointi')),
+            subtitle: Text(
+              sync.enabled ? 'Google Drive · ${sync.status ?? ''}' : t('Pois päältä (valinnainen)'),
+              style: sub,
+            ),
+            onTap: () => go(builder: (_) => const SyncScreen()),
+          ),
+        ),
+      // Ohjelmapohjan (.gmd) tuonti: Tuo tiedosto, sekä Ohjelma ja tavoitteet.
+      ListTile(
+        leading: const Icon(Icons.import_export),
+        title: Text(t('Tuonti, vienti ja varmuuskopio')),
+        onTap: () => go(builder: (_) => const ImportExportScreen()),
+      ),
+    ],
+    const Divider(indent: 18, endIndent: 18),
+    ListTile(
+      leading: const Icon(Icons.settings_outlined),
+      title: Text(t('Asetukset')),
+      onTap: () => go(builder: (_) => const SettingsScreen()),
+    ),
+    ListTile(
+      leading: const Icon(Icons.info_outline),
+      title: Text(t('Tietoa, palaute ja tuki')),
+      onTap: () => go(builder: (_) => const AboutScreen()),
+    ),
+    FutureBuilder(
+      future: _packageInfo,
+      builder: (context, snap) => Padding(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+        child: Text(
+          snap.hasData ? t('Versio {0}', [snap.data!.version]) : '',
+          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+        ),
+      ),
+    ),
+  ];
+}
+
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     // Suurella tekstillä leveämpi valikko: pitkät saamen sanat (esim. "Roasmmohuvvan") katkesivat keskeltä.
     final w = MediaQuery.sizeOf(context).width;
     return Drawer(
@@ -105,143 +245,97 @@ class AppDrawer extends StatelessWidget {
       child: SafeArea(
         child: ListenableBuilder(
           listenable: Listenable.merge([settings, store]),
-          builder: (context, _) => ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
-                child: Row(
-                  children: [
-                    const AppLogo(size: 48),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(AppInfo.fullName, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-                          InkWell(
-                            onTap: () => showAbout(context),
-                            child: Text(
-                              t('Tekijä: {0}', [AppInfo.author]),
-                              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 18), child: SamiBand(height: 4, pattern: false)),
-              const SizedBox(height: 8),
-              _cap(context, t('Treeni ja terveys')),
-              ListTile(
-                leading: const Icon(Icons.event_note),
-                title: Text(t('Ohjelma ja tavoitteet')),
-                subtitle: Text(settings.program?.displayTitle ?? t('Treenaat vapaasti'), style: sub),
-                onTap: () => _go(context, builder: (_) => const ProgramScreen()),
-              ),
-              ListTile(
-                leading: const Icon(Icons.insights),
-                title: Text(t('Edistyminen ja tilastot')),
-                subtitle: Text(t('Sali, juoksu ja askeleet: jaksot, vertailu, fiilis ja voimakehitys'), style: sub),
-                onTap: () => _go(context, builder: (_) => const StatsScreen()),
-              ),
-              ListTile(
-                leading: const Icon(Icons.healing),
-                title: Text(t('Vammatila')),
-                // Kuvaus myös pois päältä, jotta vammatila löytyy; "Käytössä" alarivillä, ettei otsikko rivity.
-                subtitle: knownInjuries(settings.injuries).isEmpty
-                    ? Text(t('Kipu tai vamma: vältettävät liikkeet ja korvaavat'), style: sub)
-                    : _withBadge(
-                        Text(
-                          knownInjuries(settings.injuries).length == 1
-                              ? t('1 alue valittuna')
-                              : t('{0} aluetta valittuna', [knownInjuries(settings.injuries).length]),
-                          style: sub,
-                        ),
-                      ),
-                onTap: () => _go(context, builder: (_) => InjuryScreen(initial: settings.injuries)),
-              ),
-              ListTile(
-                leading: Icon(settings.activePause == null ? Icons.bedtime_outlined : Icons.play_circle_outline),
-                title: Text(settings.activePause == null ? t('Tauko: sairas tai loma') : t('Lopeta tauko')),
-                subtitle: settings.activePause == null
-                    ? null
-                    : _withBadge(Text(settings.activePause!.sick ? t('Sairauslomalla') : t('Lomalla'), style: sub)),
-                onTap: () {
-                  // Valikon konteksti poistuu valikon mukana: dialogit navigaattorin kontekstilla.
-                  final nav = Navigator.of(context);
-                  nav.pop();
-                  settings.activePause == null ? showPauseDialog(nav.context) : stopPause(nav.context);
-                },
-              ),
-              // Kartat, synkronointi ja tiedostot (ei selainversiossa).
-              if (!isDemo) ...[
-                const Divider(indent: 18, endIndent: 18),
-                _cap(context, t('Tiedot ja laitteet')),
-                if (Platform.isAndroid)
-                  ListTile(
-                    leading: const Icon(Icons.map_outlined),
-                    title: Text(t('Kartat')),
-                    subtitle: Text(t('Offline-kartat GPS-reiteille: lataa alue tai kunnat'), style: sub),
-                    onTap: () => _go(context, builder: (_) => const MapsScreen()),
-                  ),
-                // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
-                if (syncReleased)
-                  ListenableBuilder(
-                    listenable: sync,
-                    builder: (context, _) => ListTile(
-                      leading: const Icon(Icons.cloud_sync_outlined),
-                      title: Text(t('Synkronointi')),
-                      subtitle: Text(
-                        sync.enabled ? 'Google Drive · ${sync.status ?? ''}' : t('Pois päältä (valinnainen)'),
-                        style: sub,
-                      ),
-                      onTap: () => _go(context, builder: (_) => const SyncScreen()),
-                    ),
-                  ),
-                // Ohjelmapohjan (.gmd) tuonti: Tuo tiedosto, sekä Ohjelma ja tavoitteet.
-                ListTile(
-                  leading: const Icon(Icons.import_export),
-                  title: Text(t('Tuonti, vienti ja varmuuskopio')),
-                  onTap: () => _go(context, builder: (_) => const ImportExportScreen()),
-                ),
-              ],
-              const Divider(indent: 18, endIndent: 18),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: Text(t('Asetukset')),
-                onTap: () => _go(context, builder: (_) => const SettingsScreen()),
-              ),
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: Text(t('Tietoa, palaute ja tuki')),
-                onTap: () => _go(context, builder: (_) => const AboutScreen()),
-              ),
-              FutureBuilder(
-                future: _packageInfo,
-                builder: (context, snap) => Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-                  child: Text(
-                    snap.hasData ? t('Versio {0}', [snap.data!.version]) : '',
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          builder: (context, _) => ListView(padding: EdgeInsets.zero, children: menuEntries(context)),
         ),
       ),
     );
   }
 }
 
+/// Alapalkin Lisää-välilehti: samat kohdat kuin ☰-valikossa, Ohjelma ja Tilastot omina välilehtinään.
+class MoreScreen extends StatelessWidget {
+  const MoreScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: BarTitle(Text(isSami ? 'Eanet' : (isEnglish ? 'More' : 'Lisää')))),
+    body: ListenableBuilder(
+      listenable: Listenable.merge([settings, store]),
+      builder: (context, _) => ListView(
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          ...menuEntries(context, drawer: false),
+          // Ongelmailmoitus suoraan Lisää-välilehdellä (luonnos valilehdet).
+          ListTile(
+            key: const ValueKey('moreReport'),
+            leading: const Icon(Icons.bug_report_outlined),
+            title: Text(t('Ilmoita ongelmasta')),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BugReportScreen())),
+          ),
+          // Vapaaehtoinen tuki alimpana omana korttinaan (käyttäjä 16.11.).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Card(
+              color: Sami.yellow.withValues(alpha: .12),
+              child: ListTile(
+                key: const ValueKey('moreCoffee'),
+                leading: const Text('☕', style: TextStyle(fontSize: 22)),
+                title: Text(t('Tarjoa kahvit')),
+                subtitle: Text('Buy Me a Coffee · ${t('Vapaaehtoinen tuki kehitykselle')}'),
+                trailing: const Icon(Icons.open_in_new, size: 18),
+                onTap: () => _open(AppInfo.coffee),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 enum SettingsGroup { general, training, rest, body, storage }
 
 /// Asetukset omana näkymänään: ryhmät, joista kukin avaa oman sivun.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  /// Haettavat asetukset ryhmittäin (otsikot käännettyinä haun hetkellä; käyttäjä 16.11.: haku asetuksiin).
+  static List<(SettingsGroup, String)> get searchIndex => [
+    for (final k in [
+      'Nimesi',
+      'Kieli · Giella',
+      'Teema',
+      'Tekstin koko',
+      'Liikkeiden nimet',
+      'Vammatilan ohjeet ja liikevinkit',
+    ])
+      (SettingsGroup.general, k),
+    for (final k in [
+      'Mitä treenaat?',
+      'Painon lisäys (kg)',
+      'Levyt ja tanko',
+      'Lämmittelylaitteet',
+      'Vinkit ja edistyminen',
+    ])
+      (SettingsGroup.training, k),
+    for (final k in ['Palautusajastin', 'Ilmoitusääni', 'Ilmoitus käynnissä olevasta treenistä'])
+      (SettingsGroup.rest, k),
+    for (final k in [
+      'Syntymävuosi ja sukupuoli',
+      'Kehonpainon seuranta',
+      'Paino ja pituus',
+      'Sykemittari ja älykello',
+      'Sykealueet ja kalorit',
+      'Sykevyö',
+      'Päivän askeleet',
+      'Lisää tehty liikunta Health Connectista',
+    ])
+      (SettingsGroup.body, k),
+    if (!isDemo) (SettingsGroup.storage, 'Treenikansio (.md)'),
+  ];
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
 
   static String title(SettingsGroup g) => switch (g) {
     SettingsGroup.general => t('Yleiset'),
@@ -250,10 +344,31 @@ class SettingsScreen extends StatelessWidget {
     SettingsGroup.body => t('Keho ja laitteet'),
     SettingsGroup.storage => t('Tallennus'),
   };
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String _q = '';
+
+  void _open(SettingsGroup g) => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: BarTitle(Text(SettingsScreen.title(g))), bottom: samiBarBand),
+        body: ListView(padding: const EdgeInsets.only(top: 8, bottom: 24), children: [_SettingsSection(g)]),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final sub = TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant);
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final q = _q.trim().toLowerCase();
+    final hits = q.isEmpty
+        ? const <(SettingsGroup, String)>[]
+        : [
+            for (final (g, k) in SettingsScreen.searchIndex)
+              if (t(k).toLowerCase().contains(q) || SettingsScreen.title(g).toLowerCase().contains(q)) (g, k),
+          ];
     final groups = [
       (
         SettingsGroup.general,
@@ -268,25 +383,50 @@ class SettingsScreen extends StatelessWidget {
       if (!isDemo) (SettingsGroup.storage, Icons.folder_outlined, t('Treenikansio (.md)')),
     ];
     return Scaffold(
-      appBar: AppBar(title: BarTitle(Text(t('Asetukset')))),
+      appBar: AppBar(
+        title: BarTitle(Text(t('Asetukset'))),
+        bottom: const PreferredSize(preferredSize: Size.fromHeight(4), child: SamiBand(height: 4, pattern: false)),
+      ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          for (final (g, icon, text) in groups)
-            ListTile(
-              leading: Icon(icon),
-              title: Text(title(g)),
-              subtitle: Text(text, style: sub),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: BarTitle(Text(title(g)))),
-                    body: ListView(padding: const EdgeInsets.only(top: 8, bottom: 24), children: [_SettingsSection(g)]),
-                  ),
-                ),
+          // Haku (luonnos tilastot-asetukset): osumat avaavat oikean ryhmän.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              key: const ValueKey('settingsSearch'),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: t('Hae asetuksista…'),
+                filled: true,
+                fillColor: cs.surfaceContainer,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
               ),
+              onChanged: (v) => setState(() => _q = v),
             ),
+          ),
+          if (q.isNotEmpty) ...[
+            if (hits.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(t('Ei osumia.'), style: sub),
+              ),
+            for (final (g, k) in hits)
+              ListTile(
+                leading: const Icon(Icons.subdirectory_arrow_right),
+                title: Text(t(k)),
+                subtitle: Text(SettingsScreen.title(g), style: sub),
+                onTap: () => _open(g),
+              ),
+          ] else
+            for (final (g, icon, text) in groups)
+              ListTile(
+                leading: Icon(icon),
+                title: Text(SettingsScreen.title(g)),
+                subtitle: Text(text, style: sub),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _open(g),
+              ),
         ],
       ),
     );
@@ -303,7 +443,7 @@ class AboutScreen extends StatelessWidget {
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     void push({required WidgetBuilder builder}) => Navigator.of(context).push(MaterialPageRoute(builder: builder));
     return Scaffold(
-      appBar: AppBar(title: BarTitle(Text(t('Tietoa, palaute ja tuki')))),
+      appBar: AppBar(title: BarTitle(Text(t('Tietoa, palaute ja tuki'))), bottom: samiBarBand),
       body: FutureBuilder(
         future: _packageInfo,
         builder: (context, snap) {
@@ -933,6 +1073,26 @@ class _SettingsSection extends StatelessWidget {
               ),
           ],
           if (group == SettingsGroup.body) ...[
+            _cap(context, t('Keho')),
+            // Syntymävuosi ja sukupuoli ensimmäisenä (käyttäjä 16.11.): tarkempi maksimisyke ja kalorit.
+            MergeSemantics(
+              child: ListTile(
+                key: const ValueKey('birthSexSettings'),
+                leading: const Icon(Icons.cake_outlined),
+                title: Text(t('Syntymävuosi ja sukupuoli')),
+                subtitle: Text(
+                  settings.birthYear == null
+                      ? t('Valinnainen: tarkempi maksimisyke ja kalorit')
+                      : [
+                          '${settings.birthYear}',
+                          if (settings.sex != null) settings.sex == 'mies' ? t('mies') : t('nainen'),
+                        ].join(' · '),
+                  style: sub,
+                ),
+                trailing: const Icon(Icons.edit_outlined),
+                onTap: () => askHrProfile(context),
+              ),
+            ),
             SwitchListTile(
               title: Text(t('Kehonpainon seuranta')),
               subtitle: Text(
@@ -960,6 +1120,7 @@ class _SettingsSection extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BodyScreen())),
               ),
+            _cap(context, t('Syke')),
             SwitchListTile(
               title: Text(t('Sykemittari ja älykello')),
               subtitle: Text(
@@ -1416,59 +1577,224 @@ void removePauseUndo(BuildContext context, Pause pause) {
     );
 }
 
-Future<void> showPauseDialog(BuildContext context) async {
-  var reason = 'sairas';
-  var start = dateOnly(DateTime.now());
+/// Tauon aloitus tai muokkaus ([edit]). Päättymispäivä on valinnainen: lomalla viimeinen päivä etukäteen, jolloin
+/// tauko päättyy itsestään; sairastaessa usein auki ja lopetetaan käsin (käyttäjä 16.11.). Alkupäivä voi olla
+/// tulevaisuudessa (loma ensi viikolla).
+Future<void> showPauseDialog(BuildContext context, {Pause? edit}) async {
+  var reason = edit?.reason ?? 'sairas';
+  var start = edit?.start ?? dateOnly(DateTime.now());
+  DateTime? end = edit?.end;
+  final today = dateOnly(DateTime.now());
+  String d(DateTime x) => '${x.day}.${x.month}.${x.year}';
+  // Päivärivi: nimi vasemmalla yhdellä rivillä, arvo oikealla (pienenee tarvittaessa), koko rivi napautettava.
+  Widget dateRow(
+    Key key,
+    IconData icon,
+    String label,
+    String value,
+    VoidCallback onTap, {
+    bool muted = false,
+    VoidCallback? onClear,
+  }) => Builder(
+    builder: (ctx) {
+      final cs = Theme.of(ctx).colorScheme;
+      return InkWell(
+        key: key,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(14, 12, onClear == null ? 14 : 4, 12),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: cs.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Text(label, maxLines: 1, softWrap: false),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: muted ? cs.onSurfaceVariant : cs.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+              if (onClear != null)
+                IconButton(
+                  key: const ValueKey('pauseEndClear'),
+                  tooltip: t('Ei päättymispäivää'),
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: onClear,
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set) => AlertDialog(
-        title: Text(t('Tauko treenaamisesta')),
+        title: Text(edit == null ? t('Tauko treenaamisesta') : t('Muokkaa taukoa')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SegmentedButton<String>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(value: 'sairas', label: Text(t('🤒 Sairas'))),
-                ButtonSegment(value: 'loma', label: Text(t('🏖 Loma'))),
+            // Syyt kolmena samankokoisena ruutuna rivissä (emoji sanan päällä): sirut rivittyivät epätasaisesti ja
+            // päivämääräpainikkeet olivat eri levyisiä (käyttäjä 16.11.: "sekava").
+            Row(
+              children: [
+                for (final (i, (v, l)) in [
+                  ('sairas', t('🤒 Sairas')),
+                  ('loma', t('🏖 Loma')),
+                  ('vamma', t('🩹 Vamma')),
+                ].indexed) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: Material(
+                      key: ValueKey('pause_$v'),
+                      color: reason == v
+                          ? Sami.yellow.withValues(alpha: .22)
+                          : Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(color: reason == v ? yellowText(ctx) : Colors.transparent, width: 1.5),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => set(() => reason = v),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                          child: Column(
+                            children: [
+                              Text(l.split(' ').first, style: const TextStyle(fontSize: 24)),
+                              const SizedBox(height: 2),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  l.split(' ').skip(1).join(' '),
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    fontWeight: reason == v ? FontWeight.w700 : FontWeight.w500,
+                                    color: reason == v ? yellowText(ctx) : Theme.of(ctx).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
-              selected: {reason},
-              onSelectionChanged: (v) => set(() => reason = v.first),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.calendar_today, size: 18),
-              label: Text(t('Alkoi {0}.{1}.{2}', [start.day, start.month, start.year])),
-              onPressed: () async {
-                final d = await pickDate(ctx, initial: start, first: DateTime(2000), last: DateTime.now());
-                if (d != null && ctx.mounted) set(() => start = dateOnly(d));
-              },
+            // Päivät kahtena samanlaisena rivinä yhdessä kehyksessä: nimi vasemmalla, päivä oikealla.
+            Material(
+              color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(14),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  dateRow(
+                    const ValueKey('pauseStart'),
+                    Icons.calendar_today,
+                    start.isAfter(today) ? t('Alkaa') : t('Alkoi'),
+                    d(start),
+                    () async {
+                      final x = await pickDate(ctx, initial: start, first: DateTime(2000), last: addDays(today, 365));
+                      if (x != null && ctx.mounted) {
+                        set(() {
+                          start = dateOnly(x);
+                          if (end != null && end!.isBefore(start)) end = start;
+                        });
+                      }
+                    },
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Theme.of(ctx).colorScheme.outlineVariant.withValues(alpha: .5),
+                  ),
+                  // Viimeinen taukopäivä (valinnainen).
+                  dateRow(
+                    const ValueKey('pauseEnd'),
+                    Icons.event_available,
+                    t('Päättyy'),
+                    end == null ? t('lopetan itse') : d(end!),
+                    () async {
+                      final x = await pickDate(
+                        ctx,
+                        initial: end ?? (start.isAfter(today) ? start : today),
+                        first: start,
+                        last: addDays(start, 730),
+                      );
+                      if (x != null && ctx.mounted) set(() => end = dateOnly(x));
+                    },
+                    muted: end == null,
+                    onClear: end == null ? null : () => set(() => end = null),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
+            if (end != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  t('Tauko päättyy itsestään {0} jälkeen. Voit muuttaa päiviä myöhemmin etusivulta tai kalenterista.', [
+                    d(end!),
+                  ]),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
             Text(
-              reason == 'sairas'
+              // Tauko jatkuu, kunnes käyttäjä lopettaa sen; treeni ja liikunta ovat silti sallittuja (käyttäjä 16.11.).
+              reason == 'loma'
                   ? t(
-                      'Lepää ja parane. Tauko päättyy, kun kirjaat seuraavan treenin. Sen jälkeen sovellus '
-                      'ehdottaa noin kahden viikon ajan kevyempiä kuormia ja vähemmän sarjoja tauon pituuden '
-                      'mukaan.',
+                      'Treenata ja liikkua voi silti; sovellus vain muistuttaa tauosta. Lyhyt loma ei juuri vaikuta '
+                      'voimaan; pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä kuormia.',
                     )
                   : t(
-                      'Tauko päättyy, kun kirjaat seuraavan treenin. Lyhyt loma ei juuri vaikuta voimaan; '
-                      'pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä kuormia.',
+                      'Lepää ja parane. Kävely ja treeni ovat silti sallittuja; sovellus vain muistuttaa tauosta. '
+                      'Tauon jälkeen noin kaksi viikkoa kevyempiä kuormia ja vähemmän sarjoja tauon pituuden mukaan.',
                     ),
               style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
             ),
+            if (end == null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  t('Tauko jatkuu, kunnes lopetat sen.'),
+                  style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                ),
+              ),
             // Aiemmat tauot: vahingossa lisätyn voi poistaa (uusimmat ensin).
-            if (settings.pauses.any((pause) => pause.end != null)) ...[
+            if (edit == null && settings.pauses.any((pause) => pause.end != null && pause.end!.isBefore(today))) ...[
               const SizedBox(height: 12),
               Text(t('Aiemmat tauot'), style: const TextStyle(fontWeight: FontWeight.w600)),
-              for (final pause in settings.pauses.where((pause) => pause.end != null).toList().reversed.take(3))
+              for (final pause
+                  in settings.pauses
+                      .where((pause) => pause.end != null && pause.end!.isBefore(today))
+                      .toList()
+                      .reversed
+                      .take(3))
                 Row(
                   children: [
                     Expanded(
-                      child: Text('${pause.sick ? '🤒' : '🏖'} ${shortDate(pause.start)}–${shortDate(pause.end!)}'),
+                      child: Text(
+                        '${pause.injury ? '🩹' : (pause.sick ? '🤒' : '🏖')} ${shortDate(pause.start)}–${shortDate(pause.end!)}',
+                      ),
                     ),
                     IconButton(
                       tooltip: t('Poista tauko'),
@@ -1485,12 +1811,21 @@ Future<void> showPauseDialog(BuildContext context) async {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Aloita tauko'))),
+          FilledButton(
+            key: const ValueKey('pauseSave'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(edit == null ? t('Aloita tauko') : t('Tallenna')),
+          ),
         ],
       ),
     ),
   );
-  if (ok == true) settings.startPause(reason, start);
+  if (ok != true) return;
+  if (edit == null) {
+    settings.startPause(reason, start, end);
+  } else {
+    settings.updatePause(edit, reason, start, end);
+  }
 }
 
 /// Treenikansion vaihto: jos nykyisessä kansiossa on tiedostoja, kysytään kopioidaanko ne uuteen.

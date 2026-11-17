@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -118,6 +119,12 @@ void applyHeartRate(Workout w, HrStats s) {
   final minutes = w.durationSec == null ? series.length.inMinutes : (w.durationSec! / 60).round();
   // Kävely tai juoksu, jonka sykettä on alle puolelta ajasta (vyö katkesi, puhelin taskussa): matkasta ja ajasta
   // (kaverin kävely 14.11.: syke 100 s 68 minuutista, kalorit sykkeestä vain 7).
+  // Kävely, kun vauhti tiedetään: nopeusyhtälö (sykkeestä hitaalla kävelyllä noin kolminkertainen, käyttäjä 17.11.).
+  if (walkKcal(w, p) case final k?) {
+    w.kcal = k;
+    w.kcalSource = 'nopeus';
+    return;
+  }
   if (_lowCoverageWalk(w, series)) {
     w.kcal = p.kcalFromSpeed(run: isRun(w.activity), km: w.distanceKm!, seconds: w.durationSec!);
     w.kcalSource = 'nopeus';
@@ -135,6 +142,38 @@ bool _lowCoverageWalk(Workout w, HrSeries series) {
       (w.distanceKm ?? 0) > 0 &&
       dur != null &&
       series.coverage(dur) < .5;
+}
+
+/// Aktiiviset kalorit: kokonaiskulutus miinus oma lepokulutus (Mifflin–St Jeor) treenin ajalta, kuten Apple
+/// Watchin "aktiiviset" (käyttäjä 17.11.: kävelymatto ja kellot näyttävät usein vain aktiiviset, Gievra
+/// kokonaiskulutuksen kuten Health Connectin TotalCaloriesBurned). Null, jos kaloreita, kestoa tai profiilia ei ole.
+int? activeKcal(Workout w, HrProfile? p) {
+  final total = w.kcal;
+  final sec = w.durationSec;
+  if (p == null || total == null || total <= 0 || sec == null || sec <= 0) return null;
+  final rest = p.restKcalPerMin(w.date) * sec / 60;
+  return math.max(0, (total - rest).round());
+}
+
+/// Kävelyn kalorit matkasta ja ajasta (Ludlow & Weyand 2016) tai null (ei kävely, matka tai aika puuttuu, vauhti
+/// yhtälön alueen ulkopuolella). Vain laji Kävely: sauvakävely, retkeily ja juoksu kuormittavat eri tavalla.
+int? walkKcal(Workout w, HrProfile? p) {
+  final km = w.distanceKm, sec = w.durationSec;
+  if (p == null || w.activity != 'Kävely' || km == null || sec == null) return null;
+  return p.kcalWalk(km: km, seconds: sec, date: w.date);
+}
+
+/// Kävelyn kalorit Ludlow & Weyand -yhtälöllä, kun vauhti tiedetään: sykkeestä tai vanhalla ACSM-yhtälöllä
+/// lasketut sekä kävelyt ilman kaloreita (ilman sykevyötä, käyttäjä 17.11.). Myös matka, joka tuli Health Connectista
+/// tallennuksen jälkeen. Kellon ja käsin kirjattuja ei muuteta. Palauttaa true, jos muuttui.
+bool repairWalkKcal(Workout w, HrProfile? p) {
+  final none = w.kcal == null && w.kcalSource == null;
+  if (!none && w.kcalSource != 'syke' && w.kcalSource != 'nopeus') return false;
+  final k = walkKcal(w, p);
+  if (k == null || (k == w.kcal && w.kcalSource == 'nopeus')) return false;
+  w.kcal = k;
+  w.kcalSource = 'nopeus';
+  return true;
 }
 
 /// Vanha tallennus (ennen 0.6.6): sykkeestä lasketut kalorit kävelylle tai juoksulle, jonka sykettä on alle puolelta

@@ -123,7 +123,8 @@ void main() {
     // Molemmat, ei treenejä: sali on iso painike (tasatilanne), liikunta pienempi vieressä.
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
-    tester.state<ScaffoldState>(find.byType(Scaffold).first).openDrawer();
+    // ☰-valikon tilalla alapalkin More-välilehti (ulkoasun kohennus 16.11.).
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('mainNav')), matching: find.text('More')));
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsOneWidget);
     await tester.tap(find.text('Settings'));

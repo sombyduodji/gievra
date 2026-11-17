@@ -126,7 +126,7 @@ List<CsvFile> buildCsvExport(
     if (rows.isNotEmpty) {
       out.add(
         CsvFile(
-          '${t('salisarjat')}.csv',
+          _fileName(t('salisarjat')),
           _table([
             t('Päivä'),
             t('Treeni'),
@@ -169,7 +169,7 @@ List<CsvFile> buildCsvExport(
     if (rows.isNotEmpty) {
       out.add(
         CsvFile(
-          '${t('liikunta')}.csv',
+          _fileName(t('liikunta')),
           _table([
             t('Päivä'),
             t('Laji'),
@@ -211,7 +211,7 @@ List<CsvFile> buildCsvExport(
     if (rows.any((r) => r.skip(2).take(4).any((v) => v != null && v != ''))) {
       out.add(
         CsvFile(
-          '${t('salitreenit')}.csv',
+          _fileName(t('salitreenit')),
           _table([
             t('Päivä'),
             t('Treeni'),
@@ -244,7 +244,11 @@ List<CsvFile> buildCsvExport(
   ];
   if (hrRows.isNotEmpty) {
     out.add(
-      CsvFile('${t('syke')}.csv', _table([t('Päivä'), t('Treeni'), t('Kellonaika'), t('Syke')], hrRows), hrRows.length),
+      CsvFile(
+        _fileName(t('syke')),
+        _table([t('Päivä'), t('Treeni'), t('Kellonaika'), t('Syke')], hrRows),
+        hrRows.length,
+      ),
     );
   }
 
@@ -255,7 +259,11 @@ List<CsvFile> buildCsvExport(
     ];
     if (rows.isNotEmpty) {
       out.add(
-        CsvFile('${t('punnitukset')}.csv', _table([t('Päivä'), t('Paino (kg)'), t('Pituus (cm)')], rows), rows.length),
+        CsvFile(
+          _fileName(t('punnitukset')),
+          _table([t('Päivä'), t('Paino (kg)'), t('Pituus (cm)')], rows),
+          rows.length,
+        ),
       );
     }
   }
@@ -266,8 +274,12 @@ List<CsvFile> buildCsvExport(
       for (final d in days) [isoDate(d), steps[d]],
     ];
     if (rows.isNotEmpty) {
-      out.add(CsvFile('${t('askeleet')}.csv', _table([t('Päivä'), t('Askeleet')], rows), rows.length));
+      out.add(CsvFile(_fileName(t('askeleet')), _table([t('Päivä'), t('Askeleet')], rows), rows.length));
     }
   }
   return out;
 }
+
+/// Tiedostonimi samaan muotoon kaikilla kielillä (käyttäjä 16.11.): pienet kirjaimet, välit ja alaviivat
+/// väliviivoiksi ("heart rate" → heart-rate.csv, "gym_workouts" → gym-workouts.csv).
+String _fileName(String word) => '${word.trim().toLowerCase().replaceAll(RegExp(r'[\s_]+'), '-')}.csv';

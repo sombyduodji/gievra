@@ -135,6 +135,7 @@
             android:value="2" />
         <receiver android:name=".RestAlarmReceiver" android:exported="false" />
         <receiver android:name=".OngoingRestoreReceiver" android:exported="false" />
+        <receiver android:name=".NoteActionReceiver" android:exported="false" />
         <service android:name=".GpsService" android:exported="false" android:foregroundServiceType="location|connectedDevice" />
         <service android:name=".WorkoutService" android:exported="false" android:foregroundServiceType="specialUse|connectedDevice">
             <property

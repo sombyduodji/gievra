@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../exercises.dart' show exerciseLabel;
 import '../injuries.dart';
-import '../program.dart';
 import '../theme.dart';
 import 'widgets.dart';
 import '../l10n.dart';
@@ -56,37 +55,9 @@ class _InjuryScreenState extends State<InjuryScreen> {
       Navigator.pop(context, ids);
       return;
     }
+    // Väliaikaiset korvaukset (käyttäjä 16.11.): ohjelmaa ei luoda uudelleen (ennen omat muutokset katosivat).
+    // Treeni käyttää korvaavia liikkeitä niin kauan kuin vammatila on päällä; poisto palauttaa alkuperäiset.
     settings.setInjuries(ids);
-    final p = settings.program;
-    if (p != null) {
-      final redo = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(t('Päivitetäänkö ohjelma?')),
-          content: Text(t('Ohjelman liikkeet valitaan uudelleen vammojen mukaan. Aloituspäivä ja viikko säilyvät.')),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Ei'))),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('Päivitä'))),
-          ],
-        ),
-      );
-      if (redo == true) {
-        await settings.setProgram(
-          generateProgram(
-            goal: p.goal,
-            experience: p.experience,
-            days: p.days,
-            minutes: p.minutes,
-            injuries: ids,
-            maxes: p.maxes,
-            start: p.start,
-            repStyle: p.repStyle,
-            equipment: p.equipment,
-            kbFocus: p.kbFocus,
-          ),
-        );
-      }
-    }
     if (mounted) Navigator.pop(context);
   }
 

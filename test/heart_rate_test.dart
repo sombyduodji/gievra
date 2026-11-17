@@ -12,6 +12,7 @@ import 'package:treenipaivakirja/rest.dart';
 import 'package:treenipaivakirja/body.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/models.dart';
+import 'package:treenipaivakirja/session_compare.dart' show durationRounded;
 import 'package:treenipaivakirja/ui/hr_ui.dart';
 import 'package:treenipaivakirja/ui/workout.dart';
 
@@ -61,6 +62,13 @@ void main() {
     hrDeviceMemory = {};
     debugSetCatalog('fi', const {});
     store.workouts = [];
+    // Satunnaisessa järjestyksessä aiempi testi saattoi jättää omat tiedot (satunnaisjärjestysajo 16.11.): aloitetaan tyhjästä.
+    settings
+      ..birthYear = null
+      ..sex = null
+      ..maxHr = null
+      ..hrProfileAsked = false
+      ..body = BodyLog();
     fake = FakeHr();
     hr.source = fake;
     hr.error = null;
@@ -257,7 +265,7 @@ void main() {
     },
   );
 
-  test('Kävely, jonka sykettä vain 2 %: kalorit matkasta ja ajasta (ACSM), ei 100 s:n sykkeestä (kaveri 14.11.)', () {
+  test('Kävely, jonka sykettä vain 2 %: kalorit matkasta ja ajasta, ei 100 s:n sykkeestä (kaveri 14.11.)', () {
     settings
       ..birthYear = 1978
       ..sex = 'mies'
@@ -277,9 +285,10 @@ void main() {
       ..seconds = 4066
       ..started = DateTime(2026, 11, 14, 12, 38, 55);
     applyHeartRate(w, HrStats(86, 95, 20, series));
-    // ACSM: 95 m/min → VO2 13,0 ml/kg/min × 84,4 kg × 5 kcal/l × 67,8 min ≈ 372.
+    // Kävely vauhdista (Ludlow & Weyand 2016, 17.11.): 1,58 m/s → lepo 2,82 + 3,85 + 5,97·1,58²/1,77 = 15,1 ml/kg/min
+    // × 84,4 kg × 5 kcal/l × 67,8 min ≈ 433 (ACSM antoi 372).
     expect(w.kcalSource, 'nopeus');
-    expect(w.kcal, inInclusiveRange(360, 385));
+    expect(w.kcal, inInclusiveRange(425, 440));
     expect((w.hrAvg, w.hrMax), (86, 95), reason: 'mitattu syke säilyy');
     // Kattava syke (yli puolet): kalorit sykkeestä kuten ennen.
     final full = Workout(date: DateTime(2026, 11, 14), title: 'Kävely', activity: 'Kävely', distanceKm: 0.2)
@@ -681,7 +690,7 @@ void main() {
     // Kaloriarvio näkyy vasta, kun sitä on kertynyt (alussa 0 kcal piilossa).
     expect(find.byKey(const ValueKey('hrStripKcal')), findsNothing);
     // Lopetus: fiilis ohitetaan, syke treeniin.
-    await tester.tap(find.textContaining('Treeni valmis'));
+    await tester.tap(find.textContaining('Lopeta treeni'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ohita'));
     for (var i = 0; i < 3; i++) {
@@ -747,7 +756,7 @@ void main() {
       ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)]));
     await tester.pumpWidget(MaterialApp(home: WorkoutScreen(workout: w)));
     await tester.pump();
-    await tester.tap(find.textContaining('Treeni valmis'));
+    await tester.tap(find.textContaining('Lopeta treeni'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ohita'));
     for (var i = 0; i < 3; i++) {
@@ -756,6 +765,11 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
     expect(w.minutes, 2);
+    // Tarkka kesto tallentuu sekunteina (käyttäjä 16.11.); yhteenveto pyöristää minuuteiksi.
+    expect(w.seconds, inInclusiveRange(115, 117));
+    expect(durationRounded(w), '2 min');
+    expect(workoutToMarkdown(w), contains('time: 1:5'));
+    expect(parseWorkout(workoutToMarkdown(w)).seconds, w.seconds, reason: 'luetaan takaisin');
     await tester.pumpWidget(const SizedBox());
   });
 

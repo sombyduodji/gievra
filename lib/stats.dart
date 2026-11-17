@@ -284,11 +284,10 @@ List<String> feelingSuggestions(List<Workout> ws, DateTime today) {
   }
   for (final g in s.byDay.where((g) => g.n >= 3 && overall - g.avg >= .7).take(2)) {
     out.add(
-      l10n.t(
-        '{0} tuntuu raskaimmalta ({1}). Vähennä sarja tai kaksi tai vaihda jokin liike (☰ → '
-        'Ohjelma ja tavoitteet).',
-        [l10n.trName(g.label), _f(g.avg)],
-      ),
+      l10n.t('{0} tuntuu raskaimmalta ({1}). Vähennä sarja tai kaksi tai vaihda jokin liike (Ohjelma).', [
+        l10n.trName(g.label),
+        _f(g.avg),
+      ]),
     );
   }
   final ex = s.byExercise.where((g) => g.n >= 4 && overall - g.avg >= .8).take(2).toList();

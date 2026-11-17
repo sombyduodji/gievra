@@ -10,6 +10,7 @@ void main() {
     now = DateTime(2026, 11, 15, 12);
     NavTapGuard.clock = () => now;
     NavTapGuard.duration = const Duration(milliseconds: 300);
+    NavTapGuard.debugReset();
   });
   tearDown(() {
     NavTapGuard.clock = DateTime.now;
@@ -81,7 +82,9 @@ void main() {
     expect(under, 2);
   });
 
-  testWidgets('kello taaksepäin näkymän vaihdon jälkeen: kosketukset eivät jää nielluiksi (yötesti 16.11.)', (tester) async {
+  testWidgets('kello taaksepäin näkymän vaihdon jälkeen: kosketukset eivät jää nielluiksi (yötesti 16.11.)', (
+    tester,
+  ) async {
     var n = 0;
     await tester.pumpWidget(
       MaterialApp(
@@ -92,7 +95,9 @@ void main() {
             body: TextButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => Scaffold(body: TextButton(onPressed: () => n++, child: const Text('nappi'))),
+                  builder: (_) => Scaffold(
+                    body: TextButton(onPressed: () => n++, child: const Text('nappi')),
+                  ),
                 ),
               ),
               child: const Text('avaa'),

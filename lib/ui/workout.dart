@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../rest.dart';
 import '../app_state.dart';
+import '../injuries.dart' show injuryAdjusted;
 import '../models.dart';
 import '../program.dart';
 import '../running.dart';
@@ -26,8 +27,10 @@ import 'move_feedback.dart';
 import 'widgets.dart';
 import 'finish_sheet.dart';
 import 'hr_ui.dart';
+import 'kcal_card.dart';
 import 'health_import.dart' show HealthImportButton;
-import '../heart_rate.dart' show hr, applyHeartRate;
+import 'hc_update.dart';
+import '../heart_rate.dart' show hr, applyHeartRate, activeKcal, hrProfile;
 import '../l10n.dart';
 import '../time_zone.dart';
 
@@ -187,7 +190,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               title: ExName(n),
               subtitle: Text(switch (store.lastBefore(n, w.date, w.session)) {
                 null => t('ei vielä tehty'),
-                final last => t('viimeksi {0}', [shortDate(last.$1)]),
+                final last => t('viimeksi {0}', [shortDateY(last.$1)]),
               }, style: TextStyle(fontSize: 12, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pop(ctx, n),
@@ -218,6 +221,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         ),
       ),
     );
+    // Vammatilan vaihto: alkuperäinen pois tästä treenistä (ohjelma ei muutu) ja korvaaja tilalle.
+    if (result is ExerciseSwap && e.sets.isEmpty) {
+      final to =
+          result.to ??
+          (mounted
+              ? await Navigator.of(context)
+                    .push<String>(MaterialPageRoute(builder: (_) => const ExercisePickerScreen()))
+              : null);
+      if (to == null || !mounted) {
+        if (e.sets.isEmpty) w.exercises.remove(e);
+        setState(() {});
+        return;
+      }
+      w.exercises.remove(e);
+      if (it != null) w.skipMoves.add(e.name);
+      final next = w.exercises.where((x) => x.name == to).firstOrNull ?? (ExerciseEntry(to));
+      if (!w.exercises.contains(next)) w.exercises.add(next);
+      await _save();
+      setState(() {});
+      await _log(next);
+      return;
+    }
     // Tyhjät liikkeet pois; supersarjan jäsenet näkyvät ryhmäkortissa silti (ryhmä on treenin tiedoissa).
     w.exercises.removeWhere((x) => x.sets.isEmpty && x != e);
     if (e.sets.isEmpty) w.exercises.remove(e);
@@ -262,15 +287,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     try {
       // Fiilis ensin ponnahdusikkunassa (Ohita jatkaa ilman; takaisin peruu lopetuksen eikä muuta mitään).
       // Treeni valmis -ikkuna: yhteenveto, nostot ja fiilis; Raskas/Tahmea kysyy samassa ikkunassa liikkeet.
+      // Kesto lopetusnapautuksen hetkellä (ei vasta Tallenna-napautuksesta: ikkunassa voi viipyä).
+      final endSec = _live && _elapsed != null && !w.fixedTime ? DateTime.now().difference(w.started!).inSeconds : null;
       if (w.feeling == null) {
         final r = await showFinishSheet(
           context,
           w: w,
           series: hr.peek(_hrKey)?.series,
           // Sama ehto kuin tallennuksessa: yli 5 h (kello unohtunut päälle) ei näytetä kestona.
-          durationSec: _live && _elapsed != null && !w.fixedTime
-              ? DateTime.now().difference(w.started!).inSeconds
-              : w.durationSec,
+          durationSec: endSec ?? w.durationSec,
           heavyStep: true,
         );
         if (r == null || !mounted) return;
@@ -278,9 +303,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       }
       rest.stop(); // treeni valmis: ei palautusmuistutusta
       // Kellon tai käsin asetettu kesto voittaa ajastimen.
-      // Pyöristys (ei katkaisu): 1:55 → 2 min, ei 1 min; kesto tarvitaan myös kaloreihin.
-      if (_live && _elapsed != null && !w.fixedTime) {
-        w.minutes = minutesFromSeconds(DateTime.now().difference(w.started!).inSeconds);
+      // Tarkka kesto sekunteina (käyttäjä 16.11.: tallennetaan ja lasketaan tarkasta, vain yhteenvedot pyöristetään);
+      // minuutit pyöristettynä (1:55 → 2 min) vanhoille lukijoille ja yhteenvetoihin.
+      if (endSec != null) {
+        final sec = endSec;
+        w.seconds = sec;
+        w.minutes = minutesFromSeconds(sec);
       }
       // Sykevyö: käyrä, keskisyke, maksimi ja kalorit (kesto ensin, se tarvitaan kaloreihin).
       final s = await hr.end(_hrKey);
@@ -311,6 +339,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     final (m, start) = r;
     setState(() {
       w.minutes = m;
+      w.seconds = null; // käsin asetettu kesto korvaa ajanoton tarkan ajan
       w.manualTime = true;
       w.watchTime = false;
       if (start != null) w.started = DateTime(w.date.year, w.date.month, w.date.day, start.hour, start.minute);
@@ -409,6 +438,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                       ],
                     ),
                   ),
+                  // Sarjapisteet (luonnos T1): täytetty = tehty sarja.
+                  _SetDots(done: e.workSets.length, total: e.workSets.length, color: greenText(context)),
                   Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                 ],
               ),
@@ -552,12 +583,23 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               '${it.pct == null || it.kind != null ? '' : ' @ ${fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1)))} %'}'
               ' · ${reserveTarget(mu, tg.rir)}'
               '${it.alts.isEmpty ? '' : '\n${t('tai: {0}', [it.alts.map(exerciseLabel).join(', ')])}'}'
-              '${it.note != null ? '\n🩹 ${trNote(it.note!)}' : ''}',
+              '${it.note != null
+                  ? '\n🩹 ${trNote(it.note!)}'
+                  : injuryMark(it.exercise) != null
+                  ? '\n${injuryMark(it.exercise)}'
+                  : ''}',
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             );
           },
         ),
-        trailing: const Icon(Icons.chevron_right),
+        // Tekemättömät sarjat ontoin pistein (luonnos T1).
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SetDots(done: 0, total: it.sets, color: greenText(context)),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
         onTap: () => rest.justClosed ? null : _logPlanned(it),
         onLongPress: () => _moveMenu(it.exercise),
       ),
@@ -926,25 +968,24 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     top: false,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
-                      // Reunapainike kuten Merkitse liike valmiiksi (käyttäjä 15.11.): ei kilpaile sarjan tallennuksen kanssa.
-                      child: OutlinedButton.icon(
+                      // Koko treenin lopetus täytettynä vihreänä 🏁-painikkeena (ulkoasun kohennus 16.11.): erottuu
+                      // liikkeen läpinäkyvästä "✓ … valmis" -painikkeesta, ettei niitä sekoiteta.
+                      child: FilledButton.icon(
                         key: const ValueKey('finishWorkout'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: greenText(context),
-                          side: BorderSide(color: greenText(context), width: 1.5),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF00843D),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           // Matala näyttö: tiiviimpi, ettei palautusajastimen kanssa vie puolta näytöstä.
-                          padding: EdgeInsets.symmetric(vertical: MediaQuery.sizeOf(context).height < 700 ? 8 : 16),
+                          padding: EdgeInsets.symmetric(vertical: MediaQuery.sizeOf(context).height < 700 ? 8 : 14),
                         ),
                         onPressed: _finish,
-                        icon: const Icon(Icons.flag_rounded),
+                        icon: const Text('🏁', style: TextStyle(fontSize: 18)),
                         // Osa liikkeistä jäi: toisella rivillä pienemmällä, ettei teksti jää kapeaksi.
                         label: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              t('Treeni valmis!'),
-                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                            ),
+                            Text(t('Lopeta treeni'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                             if (widget.planDay != null &&
                                 widget.planDay!.items.any(
                                   (i) => !w.skipMoves.contains(i.exercise) && !done.any((e) => i.covers(e.name)),
@@ -1010,6 +1051,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
         children: _guard([
           const SamiBand(height: 4, pattern: false),
+          PauseReminder(),
+          const InjuryReminder(),
           // Sykevyö: iso syke, alue ja minikäyrä treenin ajan.
           const Padding(padding: EdgeInsets.only(top: 4), child: HrLiveStrip()),
           if (w.warmup != null)
@@ -1127,7 +1170,10 @@ class _SavedScreenState extends State<SavedScreen> {
     final day = p?.plan.where((x) => x.matches(workout.dayKey)).firstOrNull;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => WorkoutScreen(workout: workout.copy(), planDay: day),
+        builder: (_) => WorkoutScreen(
+          workout: workout.copy(),
+          planDay: day == null ? null : injuryAdjusted(day, settings.injuries),
+        ),
       ),
     );
     if (!mounted) return;
@@ -1292,8 +1338,11 @@ class _SavedScreenState extends State<SavedScreen> {
         if (workout.distanceKm == null && intensity != null) ('${intensity.$3} ${t(intensity.$2)}', t('rasitus')),
       ],
     ];
+    final active = activeKcal(workout, hrProfile());
+    final ring = workout.kcal != null && active != null;
     final watchStats = <(String, String)>[
-      if (workout.kcal != null) ('🔥 ${workout.kcal}', t('kcal')),
+      // Aktiiviset tiedossa: kalorit renkaana rivin alla (käyttäjä 17.11.).
+      if (workout.kcal != null && active == null) ('🔥 ${workout.kcal}', t('kcal')),
       if (workout.hrAvg != null) ('❤️ ${workout.hrAvg}', t('keskisyke')),
       if (workout.hrMax != null && workout.steps == null) ('💓 ${workout.hrMax}', t('maksimisyke')),
       if (workout.steps != null) ('👣 ${thousands(workout.steps!)}', t('askeleet')),
@@ -1355,6 +1404,8 @@ class _SavedScreenState extends State<SavedScreen> {
                 : t('Treeni valmis!'),
           ),
         ),
+        // Ohut saamen nauha otsikon alla kuten muissa näkymissä (ennen paksu siksak sisällön alussa).
+        bottom: const PreferredSize(preferredSize: Size.fromHeight(4), child: SamiBand(height: 4, pattern: false)),
       ),
       // Toiminnot alareunassa: pienet linkit ja yksi pääpainike.
       bottomNavigationBar: SafeArea(
@@ -1424,7 +1475,6 @@ class _SavedScreenState extends State<SavedScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
         children: [
-          const SamiBand(),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -1432,8 +1482,14 @@ class _SavedScreenState extends State<SavedScreen> {
                 width: 56,
                 height: 56,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: Sami.green.withValues(alpha: .15), shape: BoxShape.circle),
-                child: Text(sport?.icon ?? '💪', style: const TextStyle(fontSize: 30)),
+                // Väri lajin mukaan kuten muualla: sali punainen (käsipaino), liikunta vihreä (lajin merkki).
+                decoration: BoxDecoration(
+                  color: (workout.activity != null ? Sami.green : Sami.red).withValues(alpha: .15),
+                  shape: BoxShape.circle,
+                ),
+                child: workout.activity != null
+                    ? Text(sport?.icon ?? '🏃', style: const TextStyle(fontSize: 30))
+                    : Icon(Icons.fitness_center_rounded, size: 30, color: redText(context)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1486,13 +1542,24 @@ class _SavedScreenState extends State<SavedScreen> {
               ),
             ),
           ],
-          if (watchStats.isNotEmpty) ...[
+          if (watchStats.isNotEmpty || ring) ...[
             const SizedBox(height: 8),
-            InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: settings.watch ? _editWatch : null,
-              child: statRow(watchStats, size: 16),
-            ),
+            if (watchStats.isNotEmpty)
+              InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: settings.watch ? _editWatch : null,
+                child: statRow(watchStats, size: 16),
+              ),
+            if (ring)
+              Padding(
+                padding: EdgeInsets.only(top: watchStats.isEmpty ? 0 : 8),
+                child: KcalRing(
+                  total: workout.kcal!,
+                  active: active,
+                  color: cs.surfaceContainer,
+                  onTap: settings.watch ? _editWatch : null,
+                ),
+              ),
             if (workout.healthSource != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -1520,6 +1587,17 @@ class _SavedScreenState extends State<SavedScreen> {
                   onTap: _editWatch,
                 ),
               ),
+            ),
+          // Health Connect: rivi vain, kun kellolla on uutta tietoa (juuri tallennetussa odottaa kellon siirtoa).
+          if (HcUpdateRow.wanted(workout))
+            HcUpdateRow(
+              key: ValueKey('hc_${workout.date}_${workout.session}'),
+              w: workout,
+              waiting: !widget.history,
+              onApplied: () async {
+                await _persist();
+                if (mounted) setState(() {});
+              },
             ),
           const SizedBox(height: 10),
           // Fiilis yhtenä rivinä (kysytty jo lopussa); Muuta avaa saman valinnan.
@@ -1597,14 +1675,14 @@ class _SavedScreenState extends State<SavedScreen> {
                   ? Text(t('Ensimmäinen kerta tällä treenillä. Ensi kerralla näet, miten kehityit.'))
                   : workout.activity != null
                   ? Text(
-                      '${t('Edellinen kerta: {0} ({1})', [sportName(workout.activity!), shortDate(c.previous!.date)])}: '
+                      '${t('Edellinen kerta: {0} ({1})', [sportName(workout.activity!), shortDateY(c.previous!.date)])}: '
                       '${[if (c.previous!.minutes != null) fmtDuration(c.previous!.minutes!), if (c.previous!.distanceKm != null) '${fmtNum(c.previous!.distanceKm!)} km', ?c.previous!.pace, if (intensityOf(c.previous!.intensity) case final i?) t(i.$2)].join(' · ')}',
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          t('Verrattuna edelliseen kertaan ({0})', [shortDate(c.previous!.date)]),
+                          t('Verrattuna edelliseen kertaan ({0})', [shortDateY(c.previous!.date)]),
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
@@ -1838,4 +1916,39 @@ class _DashedBorder extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedBorder old) => old.color != color;
+}
+
+/// Sarjapisteet liikkeen rivillä: [done] täytettyä, loput ontoina (enintään 6 näkyvissä).
+class _SetDots extends StatelessWidget {
+  final int done, total;
+  final Color color;
+  const _SetDots({required this.done, required this.total, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final n = total.clamp(0, 6);
+    if (n == 0) return const SizedBox.shrink();
+    final off = Theme.of(context).colorScheme.outlineVariant;
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < n; i++)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i < done ? color : null,
+                  border: i < done ? null : Border.all(color: off, width: 1.5),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -154,8 +154,9 @@ void main() {
     expect(find.text('KELLON TIEDOT'), findsNothing);
   });
 
-  testWidgets('Alle minuutin kysymys: tallennettu aika on Valmis-napautuksen hetki, ei vastaamisen jälkeinen',
-      (tester) async {
+  testWidgets('Alle minuutin kysymys: tallennettu aika on Valmis-napautuksen hetki, ei vastaamisen jälkeinen', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
     settings.folder = dir.path;
     addTearDown(() {
@@ -190,32 +191,34 @@ void main() {
     expect(w.seconds, 1, reason: 'kysymyksiin kulunut aika ei lisäänny treeniin');
   });
 
-  testWidgets('Treeni valmis -ikkunan kesto on käynnissä olevan ajanoton aika, ei oletus 45:00 (Android 11 -emulaattori 15.11.)',
-      (tester) async {
-    final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
-    settings.folder = dir.path;
-    addTearDown(() {
-      settings.folder = null;
-      store.workouts = [];
-      dir.deleteSync(recursive: true);
-    });
-    await open(tester, sport: 'Jooga');
-    await tester.tap(find.text('Aloita'));
-    await tester.pump();
-    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 1100)));
-    await tester.tap(find.text('Treeni valmis!'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Tallenna'));
-    for (var k = 0; k < 20 && find.text('Ohita').evaluate().isEmpty; k++) {
-      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    await tester.pumpAndSettle();
-    final sheet = find.byKey(const ValueKey('finishSheet'));
-    expect(sheet, findsOneWidget);
-    expect(find.descendant(of: sheet, matching: find.text('45:00')), findsNothing);
-    expect(find.descendant(of: sheet, matching: find.textContaining('0:0')), findsWidgets);
-  });
+  testWidgets(
+    'Treeni valmis -ikkunan kesto on käynnissä olevan ajanoton aika, ei oletus 45:00 (Android 11 -emulaattori 15.11.)',
+    (tester) async {
+      final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
+      settings.folder = dir.path;
+      addTearDown(() {
+        settings.folder = null;
+        store.workouts = [];
+        dir.deleteSync(recursive: true);
+      });
+      await open(tester, sport: 'Jooga');
+      await tester.tap(find.text('Aloita'));
+      await tester.pump();
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 1100)));
+      await tester.tap(find.text('Treeni valmis!'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Tallenna'));
+      for (var k = 0; k < 20 && find.text('Ohita').evaluate().isEmpty; k++) {
+        await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.pumpAndSettle();
+      final sheet = find.byKey(const ValueKey('finishSheet'));
+      expect(sheet, findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text('45:00')), findsNothing);
+      expect(find.descendant(of: sheet, matching: find.textContaining('0:0')), findsWidgets);
+    },
+  );
 
   testWidgets('Treeni valmis alareunassa; fiilis ponnahdusikkunassa ennen yhteenvetoa', (tester) async {
     final dir = Directory.systemTemp.createTempSync('gievra-liikunta');
@@ -236,13 +239,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('KESTO'), findsOneWidget);
     await tester.tap(find.text('Treeni valmis!'));
-    for (var k = 0; k < 20 && find.text('Miltä tuntui?').evaluate().isEmpty; k++) {
+    for (var k = 0; k < 20 && find.byKey(const ValueKey('feelingTile')).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
     await tester.pumpAndSettle();
-    expect(find.text('Miltä tuntui?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('feelingTile')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Loistava'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('finishSave')));
     for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
@@ -339,11 +346,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Treeni valmis!'));
     await tester.pumpAndSettle();
-    expect(find.text('Miltä tuntui?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
     // Takaisin: kysely sulkeutuu, ollaan yhä kirjauksessa, mitään ei tallennettu.
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(find.text('Miltä tuntui?'), findsNothing);
+    expect(find.byKey(const ValueKey('feelingTile')), findsNothing);
     expect(find.byType(ActivityScreen), findsOneWidget);
     expect(store.workouts.where((x) => x.activity == 'Jooga'), isEmpty);
     // Ohita: tallentuu ilman fiilistä.
@@ -444,10 +451,14 @@ void main() {
     await tester.tap(find.text('Treeni valmis!'));
     await tester.pumpAndSettle();
     expect(find.text('Rasitus'), findsOneWidget);
-    expect(find.text('Miltä tuntui?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
     await tester.tap(find.textContaining('Reipas'));
     await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('feelingTile')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Hyvä'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('finishSave')));
     for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
@@ -456,29 +467,31 @@ void main() {
     expect(find.byType(SavedScreen), findsOneWidget);
   });
 
-  testWidgets('Koskematon kirjaus ei jää luonnokseksi: Androidin sulkema sovellus ei palaa lajiin kysymään tallennusta',
-      (tester) async {
-    final tmp = Directory.systemTemp.createTempSync('gievra-luonnos');
-    ActivityDraft.dirOverride = tmp;
-    addTearDown(() {
-      ActivityDraft.dirOverride = null;
-      tmp.deleteSync(recursive: true);
-    });
-    await open(tester);
-    await tester.tap(find.text('Kävely').first);
-    await tester.pump();
-    final before = ActivityDraft.debugSaves;
-    // Laji valittu, ei muuta: luonnosta ei tallenneta (3 s välein tarkistus).
-    await tester.pump(const Duration(seconds: 7));
-    expect(ActivityDraft.debugSaves, before);
-    // Ajanotto käyntiin: nyt luonnos tallentuu.
-    await tester.tap(find.text('Ajanotto'));
-    await tester.pump();
-    await tester.tap(find.text('Aloita'));
-    await tester.pump(const Duration(seconds: 4));
-    expect(ActivityDraft.debugSaves, greaterThan(before));
-    await tester.pumpWidget(const SizedBox());
-  });
+  testWidgets(
+    'Koskematon kirjaus ei jää luonnokseksi: Androidin sulkema sovellus ei palaa lajiin kysymään tallennusta',
+    (tester) async {
+      final tmp = Directory.systemTemp.createTempSync('gievra-luonnos');
+      ActivityDraft.dirOverride = tmp;
+      addTearDown(() {
+        ActivityDraft.dirOverride = null;
+        tmp.deleteSync(recursive: true);
+      });
+      await open(tester);
+      await tester.tap(find.text('Kävely').first);
+      await tester.pump();
+      final before = ActivityDraft.debugSaves;
+      // Laji valittu, ei muuta: luonnosta ei tallenneta (3 s välein tarkistus).
+      await tester.pump(const Duration(seconds: 7));
+      expect(ActivityDraft.debugSaves, before);
+      // Ajanotto käyntiin: nyt luonnos tallentuu.
+      await tester.tap(find.text('Ajanotto'));
+      await tester.pump();
+      await tester.tap(find.text('Aloita'));
+      await tester.pump(const Duration(seconds: 4));
+      expect(ActivityDraft.debugSaves, greaterThan(before));
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   savedScreenGuardTest();
 }

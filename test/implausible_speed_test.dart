@@ -56,6 +56,6 @@ void main() {
     await tester.tap(find.text('Tallenna silti'));
     await tester.pumpAndSettle();
     expect(find.text('Tarkista matka ja aika'), findsNothing);
-    expect(find.text('Miltä tuntui?'), findsOneWidget, reason: 'tallennus jatkuu fiiliskyselyyn');
+    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget, reason: 'tallennus jatkuu lopetusikkunaan');
   });
 }

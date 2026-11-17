@@ -99,6 +99,20 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 </header>
 
 <section>
+  <h2>Uutta: uusi ulkoasu, treeni jatkuu taustalla ja kalorit renkaana <span class="badge">0.6.8</span></h2>
+  <div class="card">
+    <ul>
+      <li><b>Uusi ulkoasu:</b> alapalkki (Tänään, Ohjelma, Tilastot, Lisää), etusivulla Sali- ja Liikunta-valinta, päivän ehdotus ja viikon renkaat. Tilastot välilehdillä: Viikko, Kehitys, Ennätykset, Kalenteri ja Askeleet.</li>
+      <li><b>Treeni jatkuu taustalla:</b> Takaisin kesken liikunnan ei enää kysy tallennusta, vaan ajanotto, GPS ja sykevyö jatkavat. Kalenteria, ohjelmaa ja vanhoja treenejä voi katsoa kesken lenkin; alapalkin yläpuolelta tai etusivun <i>Jatka treeniä</i> -painikkeesta palaat treeniin.</li>
+      <li><b>Kalorit renkaana:</b> kokonaiskulutus ja aktiiviset kalorit erikseen. Kävelyn kalorit lasketaan vauhdista ja pituudesta (Ludlow &amp; Weyand 2016), myös ilman sykevyötä; hitaalla kävelyllä sykkeestä laskettu arvio oli moninkertainen.</li>
+      <li><b>Vammatila ja tauko:</b> vammatila keventää merkittyjen liikkeiden painoehdotusta ja tarjoaa korvaavan liikkeen; tauolle voi valita viimeisen päivän tai merkitä tulevan loman etukäteen.</li>
+      <li><b>Ohjaus ilmoituksesta:</b> palautukseen −15 s, +15 s ja Ohita, liikuntaan Tauko ja Jatka. Palautuksen voi mitata ajalla tai sykkeellä.</li>
+      <li><b>Haku asetuksissa</b>, Health Connectin tiedot tieto kerrallaan Kumoa-mahdollisuudella, paino ja pituus kuvaajalla, laskentakaavojen lähteet Lisenssit-sivulla. Etusivu päivittyy, kun sovellus on auki yön yli.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
   <h2>Uutta: tämä tai tuo -liikkeet, jako kuvana ja tarkempi viikon kuorma <span class="badge">0.6.7.2</span></h2>
   <div class="card">
     <ul>
@@ -244,7 +258,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <ul>
         <li><b>Lisää tehty liikunta Health Connectista</b> löytää nyt myös <b>salitreenit</b>: kellon tiedot (aika, syke, kalorit) lisätään päivän salitreeniin, tai syntyy uusi salitreeni.</li>
         <li>Myös <b>askeleet ilman harjoitusta</b>, esim. kävelymatolta: yhtenäinen kävely (vähintään 10 min) näkyy listassa, esim. "4032 askelta 10.23–11.05". Valitse laji, niin liikunta täyttyy.</li>
-        <li><b>Yksi ilmoitus</b> käynnissä olevasta treenistä pudotusvalikossa: laji ja kulunut aika (salitreeni, ajanotto tai GPS-lenkki). Palautusajastin pysyy omanaan. Asetus ☰-valikossa.</li>
+        <li><b>Yksi ilmoitus</b> käynnissä olevasta treenistä pudotusvalikossa: laji ja kulunut aika (salitreeni, ajanotto tai GPS-lenkki). Palautusajastin pysyy omanaan. Asetus: Lisää → Asetukset.</li>
         <li>Karttahaku: hae kuntaa, kaupunkia tai maakuntaa.</li>
       </ul>
     </div>
@@ -255,7 +269,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Tehty liikunta Health Connectista <span class="badge">0.4.2</span></h2>
   <div class="card">
     <ul>
-      <li><b>Lisää tehty liikunta Health Connectista</b> (☰ → Asetukset, oletus pois): etusivun painikkeesta näet päivän harjoitukset, joita ei vielä ole Gievrassa – esim. kävelymaton, kellon tai muun sovelluksen tallentamat. Napautus avaa valmiiksi täytetyn liikunnan: laji, aika, matka, syke, kalorit ja askeleet. Tarkista ja tallenna.</li>
+      <li><b>Lisää tehty liikunta Health Connectista</b> (Lisää → Asetukset, oletus pois): etusivun painikkeesta näet päivän harjoitukset, joita ei vielä ole Gievrassa – esim. kävelymaton, kellon tai muun sovelluksen tallentamat. Napautus avaa valmiiksi täytetyn liikunnan: laji, aika, matka, syke, kalorit ja askeleet. Tarkista ja tallenna.</li>
       <li>Askeleet, matka ja kalorit luetaan harjoituksen tallentaneesta sovelluksesta, joten puhelimen samaan aikaan laskemat askeleet eivät korvaa niitä.</li>
       <li>Tallennetun liikunnan voi nyt jakaa ja poistaa (⋮-valikko).</li>
       <li>Korjattu: kolmen painikkeen navigoinnissa sivujen loppu jäi Androidin painikepalkin alle.</li>
@@ -347,7 +361,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <li>Lataa alueen kartta (<code>.pmtiles</code>) ja kerran maan yleiskartta.</li>
       <li>Siirrä tiedostot puhelimeen, esim. synkronoituun kansioon (Seafile, Nextcloud…) tai USB:llä.</li>
       <li>Ilman verkkoa puhelimessa: ota mukaan myös <a href="kartat-tarkisteet.json" download>tarkistetaulukko</a> (<code>kartat-tarkisteet.json</code>, kaikkien karttaversioiden SHA-256) ja valitse se tuonnissa karttojen kanssa, niin sovellus tarkistaa kartat.</li>
-      <li>Gievrassa: ☰ → <b>Kartat</b> → <b>Tiedostosta</b> ja valitse tiedostot.</li>
+      <li>Gievrassa: Lisää → <b>Kartat</b> → <b>Tiedostosta</b> ja valitse tiedostot.</li>
     </ol>
     <p class="sub"><small class="maara"></small><br><small>Tiedostot ladataan suoraan GitHubista. Kartat © OpenStreetMap-tekijät (ODbL).</small></p>
   </div>
@@ -402,7 +416,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     </div>
     <div class="card">
       <h3>📋 Ohjelmatyökalu</h3>
-      <p>Tee ohjelma vastaamalla muutamaan kysymykseen: ☰ → Ohjelma ja tavoitteet → Tee uusi ohjelma →
+      <p>Tee ohjelma vastaamalla muutamaan kysymykseen: Ohjelma-välilehti → Tee ohjelma →
       <b>Tallenna pohja</b>. Saat <code>.gmd</code>-ohjelmapohjan, jonka voit tuoda puhelimen sovellukseen tai
       lähettää kaverille.</p>
     </div>
@@ -550,7 +564,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
   <h2>Palaute on enemmän kuin tervetullutta</h2>
   <p>Virheet, puuttuvat liikkeet, oudon näköiset liikeohjeet, ideat ja käännöskorjaukset:</p>
   <ul>
-    <li>sovelluksessa: ☰ → <i>Tietoa, palaute ja tuki</i> → <i>Ilmoita ongelmasta</i> tai <i>Lähetä palautetta</i></li>
+    <li>sovelluksessa: Lisää → <i>Ilmoita ongelmasta</i>, tai Lisää → <i>Tietoa, palaute ja tuki</i> → <i>Lähetä palautetta</i></li>
     <li>sähköposti: <a href="mailto:treeni@somby.fi">treeni@somby.fi</a></li>
     <li>GitHubissa: <a href="https://github.com/sombyduodji/gievra/issues">virheilmoitukset ja ehdotukset</a></li>
   </ul>
