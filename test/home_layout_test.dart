@@ -47,14 +47,14 @@ void main() {
     ]);
     expect(homeCardsToFile(['running', 'recent'], {'recent'}), 'running, -recent');
     final (o, h) = homeCardsFromFile('running, -recent, roskaa, running');
-    expect(o, ['running', 'recent', 'goals', 'strength', 'weight']);
+    expect(o, ['running', 'recent', 'next', 'goals', 'streak', 'recovery', 'strength', 'weight']);
     expect(h, {'recent'});
     settings.applyMarkdown('---\nhome_goals: km:Pyöräily:100\nhome_cards: -goals, weight, recent\n---\n');
     expect(settings.goals, const [Goal('km', 'Pyöräily', 100)]);
     expect(settings.homeOrder.take(3), ['goals', 'weight', 'recent']);
     expect(settings.homeCardOn('goals'), isFalse);
     expect(settings.settingsToMarkdown(), contains('home_goals: km:Pyöräily:100'));
-    expect(settings.settingsToMarkdown(), contains('home_cards: -goals, weight, recent, strength, running'));
+    expect(settings.settingsToMarkdown(), contains('home_cards: -goals, weight, recent, next, streak, recovery, strength, running'));
   });
 
   test('tavoitteen toteuma: laji, matka, aika, kerrat ja salipäivät; kuukausi skaalautuu', () {
@@ -74,14 +74,28 @@ void main() {
     expect(const Goal('km', null, 7).target(30), 30);
   });
 
-  test('ohjelman salipäivät oletustavoitteena, kunnes käyttäjä valitsee omat', () {
+  testWidgets('lihaskuntopäivät yhtenä renkaana: tavoite ohjelman päivistä (vähintään 2), ei oletustavoitetta', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.devicePixelRatio = 2.7;
+    addTearDown(tester.view.reset);
     settings.debugGoals = null; // ei home_goals-riviä tiedostossa
     settings.program = generateProgram(goal: 'kunto', experience: 'keski', days: 3, minutes: 60, injuries: const []);
-    expect(settings.goals, const [Goal('gym', null, 3)]);
-    settings.setGoals([]);
-    expect(settings.goals, isEmpty, reason: 'tyhjä valinta säilyy');
-    expect(settings.settingsToMarkdown(), contains('home_goals: \n'));
+    addTearDown(() => settings.program = null);
+    expect(settings.goals, isEmpty);
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('lihaskuntopäivää'), findsOneWidget);
+    expect(find.text('0/3'), findsOneWidget, reason: 'ohjelman 3 päivää');
+    expect(find.text('salipäivää'), findsNothing, reason: 'ei erillistä salirengasta');
+    // Ilman ohjelmaa WHO:n 2.
     settings.program = null;
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('0/2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('yksi tavoite WHO-rivissä, kaksi omana korttinaan; piilotettu kortti ei näy', (tester) async {
@@ -180,13 +194,13 @@ void main() {
     final h = find.descendant(of: find.byKey(const ValueKey('goal_0')), matching: find.byIcon(Icons.drag_indicator));
     await drag(h, tester.getSize(find.byKey(const ValueKey('goal_0'))).height * 2.6);
     expect(settings.goals.map((g) => g.kind), ['km', 'times', 'gym']);
-    // Viimeksi-kortti ensimmäiseksi.
+    // Viimeksi-kortti yhden ylemmäs.
     final c = find.descendant(
       of: find.byKey(const ValueKey('homeCard_recent')),
       matching: find.byIcon(Icons.drag_indicator),
     );
     await drag(c, -tester.getSize(find.byKey(const ValueKey('homeCard_recent'))).height * 1.2);
-    expect(settings.homeOrder.first, 'recent');
+    expect(settings.homeOrder.indexOf('recent'), 3); // yhden kortin ylemmäs (Palautuminen-kortin edelle)
     expect(tester.takeException(), isNull);
   });
 }

@@ -231,8 +231,10 @@ class PeriodCard extends StatelessWidget {
     final today = dateOnly(DateTime.now());
     final (from, next, days) = range(monthView, month, weekOf);
     final a = periodActivity(store.workouts, from, next);
-    // Ylärivi on WHO:n suositus (käyttäjä 17.11.): lihaskuntoa 2 päivänä viikossa; ohjelman päivät omana tavoitteena.
-    const perWeek = whoStrengthDays;
+    // Lihaskuntopäivät (käyttäjä 17.11.: lihaskunto ja sali yhtenä renkaana): tavoitteena ohjelman päivät viikossa,
+    // vähintään WHO:n 2; ilman ohjelmaa 2.
+    final plan = settings.program?.plan.length ?? 0;
+    final perWeek = plan > whoStrengthDays ? plan : whoStrengthDays;
     final gymTarget = monthView ? (perWeek * days / 7).round() : perWeek;
     final actTarget = monthView ? (whoMinutes * days / 7).round() : whoMinutes;
     final current = !today.isBefore(from) && today.isBefore(next);
@@ -419,10 +421,16 @@ class RingTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            small,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+          // Yksi rivi, tarvittaessa pienempänä: neljän renkaan rivissä "lihaskuntopäivää" katkesi keskeltä sanaa.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              small,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+            ),
           ),
         ],
       ),

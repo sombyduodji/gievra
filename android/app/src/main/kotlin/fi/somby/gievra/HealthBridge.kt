@@ -394,6 +394,46 @@ object HealthBridge {
     }
 
     /**
+     * Yön alin syke (etusivun palautumiskortti, käyttäjä 17.11.): kunkin aamun [from]..[to] yöltä (edellinen ilta
+     * 21:00 – aamu 10:00) sykenäytteiden alin 15 minuutin keskiarvo. Käyttää samaa sykkeen lukulupaa kuin
+     * harjoitusten tuonti; unitietoja eikä leposyketietuetta lueta (ne vaatisivat uudet luvat). Yö jätetään pois,
+     * jos näytteitä on alle 12 (kello ei mitannut yöllä).
+     */
+    suspend fun nightLowHr(context: Context, from: String, to: String): List<List<Any>> {
+        val zone = java.time.ZoneId.systemDefault()
+        val out = mutableListOf<List<Any>>()
+        var d = LocalDate.parse(from)
+        val last = LocalDate.parse(to)
+        while (!d.isAfter(last)) {
+            val start = d.minusDays(1).atTime(21, 0).atZone(zone).toInstant()
+            val end = d.atTime(10, 0).atZone(zone).toInstant()
+            val s = client(context).readRecords(
+                ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(start, end), pageSize = 5000),
+            ).records.flatMap { r -> r.samples }
+                .filter { !it.time.isBefore(start) && it.time.isBefore(end) && it.beatsPerMinute in 25..220 }
+                .sortedBy { it.time }
+            if (s.size >= 12) {
+                var low = Double.MAX_VALUE
+                var j = 0
+                var sum = 0L
+                // Liukuva 15 min ikkuna: [s[i], s[i] + 15 min), vähintään 2 näytettä.
+                for (i in s.indices) {
+                    if (i > 0) sum -= s[i - 1].beatsPerMinute
+                    if (j < i) { j = i; sum = 0 }
+                    while (j < s.size && s[j].time.isBefore(s[i].time.plus(Duration.ofMinutes(15)))) {
+                        sum += s[j].beatsPerMinute; j++
+                    }
+                    val n = j - i
+                    if (n >= 2) low = minOf(low, sum.toDouble() / n)
+                }
+                if (low < Double.MAX_VALUE) out.add(listOf(d.toString(), Math.round(low).toInt()))
+            }
+            d = d.plusDays(1)
+        }
+        return out
+    }
+
+    /**
      * Yhden päivän askeleet sovelluksittain (kunkin oma koonti, ennen päällekkäisyyksien poistoa) vertailuun,
      * esim. Oura vs. puhelin. Päivän tietueet saa lisäksi stepRecords-kutsulla.
      */

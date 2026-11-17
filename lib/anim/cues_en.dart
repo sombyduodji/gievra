@@ -94,6 +94,11 @@ const exerciseCuesEn = <String, List<String>>{
     "Curl all the way, hips stay on the pad",
     "Return slowly to almost straight",
   ],
+  "Reiden koukistus istuen": [
+    "Knee at the pivot, thigh pad snug on your thighs",
+    "Curl your heels under the seat, back against the backrest",
+    "Return slowly to almost straight",
+  ],
   "Hip thrust": [
     "Upper back against the edge of the bench, bar on your hips",
     "Chin and ribs down, drive your hips up",

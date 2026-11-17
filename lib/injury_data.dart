@@ -437,6 +437,7 @@ const injuryRegions = <InjuryRegion>[
     ["Nordic hamstring", "Suorin jaloin maastaveto", "Good morning"],
     {
       "Reiden koukistus": "aloita isometrisellä pidolla, sitten kevyt dynaaminen; kipu ≤4/10",
+      "Reiden koukistus istuen": "aloita isometrisellä pidolla, sitten kevyt dynaaminen; kipu ≤4/10",
       "Romanialainen maastaveto": "kevyt, lyhyt liikerata, lisää vähitellen",
       "Maastaveto": "kevennä selvästi",
       "Sumomaastaveto": "kevennä selvästi",
@@ -456,7 +457,7 @@ const injuryRegions = <InjuryRegion>[
     "takareisi_jannne",
     "Takareisi istuinkyhmyn kohdalla (proksimaalinen jänne)",
     "Syvä kipu pakaran alaosassa istuinkyhmyssä. Se pahenee istuessa, eteentaivutuksissa ja venyttäessä. Jänne ärtyy puristuksesta, kun lonkka on koukussa. Siksi syviä lonkan koukistuksia ja venyttelyä vältetään aluksi.",
-    ["Suorin jaloin maastaveto", "Good morning", "Romanialainen maastaveto"],
+    ["Suorin jaloin maastaveto", "Good morning", "Romanialainen maastaveto", "Reiden koukistus istuen"],
     {
       "Reiden koukistus": "makuulla (lonkka suorana), ei istuen; aloita isometrisellä",
       "Maastaveto": "korotukselta tai Rack pull",
@@ -473,6 +474,7 @@ const injuryRegions = <InjuryRegion>[
       "Good morning": "Hip thrust",
       "Romanialainen maastaveto": "Hip thrust",
       "Maastaveto": "Rack pull",
+      "Reiden koukistus istuen": "Reiden koukistus",
     },
     "Ensin isometriset pidot lonkka suorana (esim. Hip thrust -pito, Reiden koukistus makuulla). Lisää lonkan koukistusta ja kuormaa vähitellen.",
     [],

@@ -116,7 +116,7 @@ const fitnotesNames = {
   'Bulgarian Split Squat': 'Bulgarialainen askelkyykky',
   'Leg Extension Machine': 'Reiden ojennus',
   'Lying Leg Curl Machine': 'Reiden koukistus',
-  'Seated Leg Curl Machine': 'Reiden koukistus',
+  'Seated Leg Curl Machine': 'Reiden koukistus istuen',
   'Barbell Hip Thrust': 'Hip thrust',
   'Hip Thrust': 'Hip thrust',
   'Standing Calf Raise Machine': 'Pohjenousu seisten',

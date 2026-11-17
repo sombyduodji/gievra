@@ -19,6 +19,7 @@ const exerciseEnglish = <String, String>{
   'Askelkyykkykävely': 'Walking Lunge',
   'Reiden ojennus': 'Leg Extension Machine',
   'Reiden koukistus': 'Lying Leg Curl Machine',
+  'Reiden koukistus istuen': 'Seated Leg Curl Machine',
   'Hip thrust': 'Barbell Hip Thrust',
   'Pohjenousu seisten': 'Standing Calf Raise Machine',
   'Pohjenousu istuen': 'Seated Calf Raise Machine',

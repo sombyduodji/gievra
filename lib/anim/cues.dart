@@ -92,6 +92,11 @@ const exerciseCues = <String, List<String>>{
     "Koukista täysin, lantio pysyy alustassa",
     "Palauta hitaasti lähes suoraksi",
   ],
+  "Reiden koukistus istuen": [
+    "Polvi akselin kohdalla, reisituki tiukasti reisien päällä",
+    "Koukista kantapäät penkin alle, selkä selkänojassa",
+    "Palauta hitaasti lähes suoraksi",
+  ],
   "Hip thrust": [
     "Yläselkä penkin reunaa vasten, tanko lantiolla",
     "Leuka ja kylkiluut alas, nosta lantio",

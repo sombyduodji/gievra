@@ -1039,6 +1039,7 @@ final Map<String, Motion> exerciseMotions = {
   'Jalkaprässi': _legPress,
   'Reiden ojennus': _legExt,
   'Reiden koukistus': _legCurl,
+  'Reiden koukistus istuen': _legCurl,
   'Pohjenousu seisten': _calfStanding,
   'Pohjenousu istuen': _calfSeated,
   'Hip thrust': _hipThrust,

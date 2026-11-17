@@ -208,15 +208,10 @@ class Settings extends ChangeNotifier {
   /// Juoksun matkaryhmät etusivun Juoksun kehitys -kortissa (1–3, käyttäjä 17.11.).
   List<RunBand> runBands = defaultRunBands;
 
-  /// Etusivun omat tavoitteet (0–3; käyttäjä 17.11.). null = ei vielä valittu: ohjelman salipäivät, jos ohjelma on
-  /// (ennen salirengas näytti ohjelman päivät; nyt ylärivillä on WHO:n vähimmäismäärä).
+  /// Etusivun omat tavoitteet (0–3; käyttäjä 17.11.). Ohjelman salipäivät eivät ole oletustavoite: ne ovat
+  /// lihaskuntopäivien renkaan tavoite (käyttäjä 17.11.: lihaskuntopäivä ja sali yhdeksi renkaaksi).
   List<Goal>? _goals;
-  List<Goal> get goals =>
-      _goals ??
-      [
-        if (program case final p? when p.plan.isNotEmpty && trainMode != 'cardio')
-          Goal('gym', null, p.plan.length.toDouble()),
-      ];
+  List<Goal> get goals => _goals ?? const [];
 
   /// Etusivun korttien järjestys ja piilotetut (kehonpainon näkyvyys: [weightOnHome]).
   List<String> homeOrder = [...homeCardIds];

@@ -60,9 +60,9 @@ List<Goal> goalsFromFile(String v) {
   return out;
 }
 
-/// Valittavat kortit WHO-osion alla: omat tavoitteet (kun niitä on 2–3), viimeksi, voiman kehitys, juoksun kehitys
-/// (matkaryhmät) ja kehonpaino (näkyvyys asetuksesta weightOnHome, koska se vaatii painon seurannan).
-const homeCardIds = ['goals', 'recent', 'strength', 'running', 'weight'];
+/// Valittavat kortit WHO-osion alla: seuraava ohjelman päivä, omat tavoitteet (kun niitä on 2–3), viikkoputki, yön
+/// alin syke, viimeksi, voiman kehitys, juoksun kehitys (matkaryhmät) ja kehonpaino (näkyvyys asetuksesta weightOnHome, koska se vaatii painon seurannan).
+const homeCardIds = ['next', 'goals', 'streak', 'recovery', 'recent', 'strength', 'running', 'weight'];
 
 /// Järjestys ja piilotetut tiedostoon: "goals, recent, -strength, running, weight" (- = piilossa).
 String homeCardsToFile(List<String> order, Set<String> hidden) =>

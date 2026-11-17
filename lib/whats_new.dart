@@ -13,6 +13,18 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.9.1',
+    Icons.dashboard_customize_outlined,
+    'Uusia etusivun kortteja',
+    'Seuraava treeni ohjelmasta Aloita-painikkeella, Viikkoputki (montako viikkoa peräkkäin WHO:n suositukset täyttyivät; tauot eivät katkaise) ja Palautuminen: yön alin syke kellosta verrattuna tavalliseen tasoosi (Health Connect, vain sykkeen luku). Päälle, pois ja järjestys: Asetukset → Etusivu.',
+  ),
+  NewFeature(
+    '0.6.9.1',
+    Icons.fitness_center,
+    'Lihaskuntopäivät yhtenä renkaana',
+    'Salipäivät lasketaan lihaskuntopäiviin. Tavoite on ohjelmasi päivät viikossa, ilman ohjelmaa WHO:n vähimmäismäärä 2. Uusi liike: Reiden koukistus istuen.',
+  ),
+  NewFeature(
     '0.6.9',
     Icons.home_outlined,
     'Uusi etusivu',

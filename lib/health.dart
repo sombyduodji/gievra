@@ -351,6 +351,14 @@ class HealthConnect {
     };
   }
 
+  /// Yön alin syke aamuittain [from]..[to] (etusivun palautumiskortti); sykkeen lukulupa riittää.
+  static Future<Map<DateTime, int>> nightLowHr(DateTime from, DateTime to) async {
+    final r = await _ch.invokeMethod<List>('nightLowHr', {'from': isoDate(from), 'to': isoDate(to)});
+    return {
+      for (final e in (r ?? const []).cast<List>()) DateTime.parse(e[0] as String): (e[1] as num).toInt(),
+    };
+  }
+
   static Future<void> openSettings() => _ch.invokeMethod('settings');
 
   /// Kehitysversio: keksitty harjoitus sykkeineen emulaattorille.

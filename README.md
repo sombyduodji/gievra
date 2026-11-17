@@ -117,6 +117,9 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   FitNotesin punnitukset tuodaan mukana
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
+- etusivun kortit omassa järjestyksessä (*Asetukset → Etusivu*): seuraava ohjelman päivä, omat tavoitteet,
+  viikkoputki (montako viikkoa peräkkäin WHO:n suositukset täyttyivät), palautuminen (yön alin syke kellosta Health
+  Connectin kautta, vain sykkeen luku), viimeksi, voiman ja juoksun kehitys sekä kehonpaino
 - **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa
   etusivun Tänään-kortissa ovat Sali ja Liikunta rinnakkain (useammin tehty leveämpänä, Liikunta-puolella viimeksi tehdyn
   lajin kuvake); kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke

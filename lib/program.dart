@@ -166,6 +166,7 @@ const _extraSlot = <String, String>{
   'Y-T-W-nostot makuulla': 'TAK',
   'Yhden jalan lantionnosto': 'PAK',
   'Reiden koukistus kehonpainolla': 'POK',
+  'Reiden koukistus istuen': 'POK',
   'Veneasento': 'KES',
   'Dead bug': 'KES',
   'Burpee': 'KES',

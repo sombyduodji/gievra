@@ -579,6 +579,15 @@ class MainActivity : FlutterActivity() {
                         result.error("health", e.message, null)
                     }
                 }
+                "nightLowHr" -> scope.launch {
+                    try {
+                        result.success(
+                            HealthBridge.nightLowHr(this@MainActivity, call.argument<String>("from")!!, call.argument<String>("to")!!),
+                        )
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
                 "dayStepsByApp" -> scope.launch {
                     try {
                         result.success(HealthBridge.dayStepsByApp(this@MainActivity, call.argument<String>("date")!!))

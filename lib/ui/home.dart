@@ -40,6 +40,7 @@ import 'program_screen.dart';
 import 'run_bands.dart';
 import 'running_bar.dart';
 import 'start_panels.dart';
+import 'home_extras_ui.dart';
 import 'shell.dart' show MainShell;
 import 'body_screen.dart';
 import 'bug_report.dart';
@@ -753,6 +754,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               await store.reload();
               if (stepsTabAvailable) await dailySteps.refresh();
               await HealthImportButton.refresh();
+              await NightHrData.refresh(force: true);
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 2, 18, 32),
@@ -904,6 +906,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       'strength' => _InsightsCard(strength: true), // ei const: lukee treenit ja asetukset
                       'running' => _InsightsCard(strength: false),
                       'weight' => const WeightTodayCard(),
+                      'next' => NextDayCard(), // ei const: lukee ohjelman ja treenit
+                      'streak' => StreakCard(), // ei const: lukee treenit ja tauot
+                      'recovery' => const NightHrCard(),
                       _ => const SizedBox.shrink(),
                     },
               ],
@@ -2489,7 +2494,7 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
             sec(t('Viikko ja kuukausi'), t('Valitse Viikko tai Kuukausi; ‹ › vaihtaa jaksoa.')),
             mark(
               SizedBox(width: 22, height: 22, child: CustomPaint(painter: _StepsRing(.6, redText(ctx), width: 3))),
-              t('Lihaskunto: WHO suosittaa lihaskuntoharjoittelua vähintään 2 päivänä viikossa.'),
+              t('Lihaskuntopäivät: tavoitteena ohjelmasi päivät viikossa, ilman ohjelmaa WHO:n vähimmäismäärä 2.'),
             ),
             mark(
               SizedBox(width: 22, height: 22, child: CustomPaint(painter: _StepsRing(.4, greenText(ctx), width: 3))),
@@ -2530,8 +2535,24 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
               t('Omat tavoitteet ja kortit'),
               t(
                 'Asetukset → Etusivu: lisää enintään 3 omaa tavoitetta (salipäivät, matka, liikunta-aika tai kerrat, '
-                'koko liikunta tai yksi laji) ja valitse kortit järjestyksessä: Viimeksi, Voiman kehitys, Juoksun '
-                'kehitys (omat matkaryhmät) ja Kehonpaino.',
+                'koko liikunta tai yksi laji) ja valitse kortit järjestyksessä: Seuraava treeni, Viikkoputki, '
+                'Palautuminen, Viimeksi, Voiman kehitys, Juoksun kehitys (omat matkaryhmät) ja Kehonpaino.',
+              ),
+            ),
+            sec(
+              t('Viikkoputki'),
+              t(
+                'Montako viikkoa peräkkäin molemmat WHO:n suositukset täyttyivät (lihaskunto 2 päivänä ja 150 min '
+                'reipasta liikuntaa). Vihreä = molemmat, keltainen = toinen, tyhjä = ei kumpaakaan. Tauko (sairas, loma '
+                'tai vamma vähintään 4 päivää) ei katkaise putkea. Kuluva viikko lasketaan, kun se täyttyy.',
+              ),
+            ),
+            sec(
+              t('Palautuminen'),
+              t(
+                'Yön alin syke (alin 15 minuutin keskiarvo klo 21–10) kellosta Health Connectin kautta. Kolmen viimeisen '
+                'yön keskiarvoa verrataan tavalliseen tasoosi (mediaani 28 yöstä): 5 lyöntiä tai enemmän koholla voi '
+                'kertoa sairastumisesta, rasituksesta tai huonosta unesta. Vain sykkeen lukulupa; unitietoja ei lueta.',
               ),
             ),
             sec(

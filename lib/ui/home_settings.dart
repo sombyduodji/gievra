@@ -16,7 +16,10 @@ class HomeLayoutSettings extends StatelessWidget {
   const HomeLayoutSettings({super.key});
 
   static String cardTitle(String id) => switch (id) {
+    'next' => t('Seuraava treeni'),
     'goals' => t('Omat tavoitteet'),
+    'streak' => t('Viikkoputki'),
+    'recovery' => t('Palautuminen'),
     'recent' => t('Viimeksi'),
     'strength' => t('Voiman kehitys'),
     'running' => t('Juoksun kehitys'),
@@ -34,6 +37,15 @@ class HomeLayoutSettings extends StatelessWidget {
         goals.length >= 2
             ? t('Tavoitteet omana korttinaan.')
             : t('Kun tavoitteita on 2–3. Yksi tavoite näkyy WHO-renkaiden rivissä.'),
+      'next' =>
+        settings.program == null
+            ? t('Näkyy, kun sinulla on ohjelma.')
+            : t('Ohjelman seuraava päivä liikkeineen ja Aloita.'),
+      'streak' => t('Montako viikkoa peräkkäin WHO:n suositukset täyttyivät; viimeiset 8 viikkoa.'),
+      'recovery' => t(
+        'Yön alin syke kellosta Health Connectin kautta verrattuna tavalliseen tasoosi. Vaatii Health Connect -tuonnin '
+        '(sykkeen luku) ja kellon, joka mittaa sykettä yöllä. Unitietoja ei lueta.',
+      ),
       'recent' => t('Viimeisimmät treenit, saman päivän sama laji yhdellä rivillä.'),
       'strength' => t('Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen; ennätykset.'),
       'running' => '${t('Vauhti ja syke matkaryhmittäin:')} ${settings.runBands.map(runBandLabel).join(' · ')}',
@@ -50,8 +62,9 @@ class HomeLayoutSettings extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Text(
             t(
-              'Aina näkyvissä: Sali | Liikunta -aloitus, WHO:n suositukset renkaina (lihaskunto 2 päivänä ja reipas '
-              'liikunta 150 min viikossa, askeleet) ja kalenteri. Niiden alle valitset omat tavoitteesi ja kortit.',
+              'Aina näkyvissä: Sali | Liikunta -aloitus, WHO:n suositukset renkaina (lihaskuntopäivät ohjelmasi mukaan, '
+              'vähintään 2, reipas liikunta 150 min viikossa ja askeleet) ja kalenteri. Niiden alle valitset omat '
+              'tavoitteesi ja kortit.',
             ),
             style: sub,
           ),
