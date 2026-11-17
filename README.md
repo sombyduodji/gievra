@@ -24,7 +24,7 @@
 
 <p align="center">
   <img src="docs/screenshots/koti.png" width="200" alt="Etusivu">
-  <img src="docs/screenshots/sarja.png" width="200" alt="Sarjan kirjaus lämmittelysarjoineen">
+  <img src="docs/screenshots/sarja.png" width="200" alt="Sarjan kirjaus">
   <img src="docs/screenshots/ohjelma.png" width="200" alt="Treeniohjelma ja viikon kuorma">
   <img src="docs/screenshots/tilastot.png" width="200" alt="Tilastot: kehitys">
   <img src="docs/screenshots/kalorit.png" width="200" alt="Liikunnan yhteenveto ja kalorirengas">
@@ -58,7 +58,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 **Treenin kirjaus yhdellä kädellä**
 - isot +/– -säätimet, edellinen kerta ja paras tulos näkyvissä, ennätykset 🏆
 - sarja tallentuu yhdellä napautuksella samalla kun vastaat *jäikö varaa?* (Ei yhtään / Muutama / Reilusti)
-- lämmittelysarjat valmiiksi täytettyinä työpainon mukaan (esim. 120 kg kyykkyyn 20 → 60 → 85 → 102,5 kg)
+- lämmittelysarjat omalla painikkeella: ne eivät vaikuta tavoitteeseen, ehdotuksiin eikä ennätyksiin
 - painoehdotus seuraavaan kertaan edellisen treenin perusteella
 - *Miltä tuntui?* viidellä hymiöllä 😫 😕 😐 🙂 🤩; raskaan treenin jälkeen voi kertoa, mikä liike oli liian
   raskas tai oliko vain rankka päivä, ja seuraava ehdotus ottaa sen huomioon
@@ -273,7 +273,7 @@ Gievra on ja pysyy maksuttomana. Jos se on sinulle hyödyllinen, voit tarjota ka
 **In English:** Gievra (North Sámi for *strong*) is a free, open-source training log for the gym and sports,
 fully in Finnish and English, with an experimental North Sámi interface (injury guidance in Finnish or English). Workouts are plain
 Markdown files in a folder you choose; no account, no ads, no tracking. It builds evidence-based programs
-(including kettlebell programs), prefills warm-up sets, adapts suggestions to your feedback, and shares programs
+(including kettlebell programs), separates warm-up sets, adapts suggestions to your feedback, and shares programs
 as `.gmd` templates. Try the demo and program builder in your browser:
 [sombyduodji.github.io/gievra/app](https://sombyduodji.github.io/gievra/app/?lang=en). English home page: [sombyduodji.github.io/gievra/en](https://sombyduodji.github.io/gievra/en/). Feedback is very welcome.
 

@@ -145,7 +145,9 @@ void main() {
     expect(await Settings.mdFiles(dir), contains(stepsFileName));
   });
 
-  testWidgets('Etusivun kortti: Edistyminen | Askeleet, Askeleet avaa tilastojen välilehden', (tester) async {
+  testWidgets('Etusivun jaksokortti: askeleet renkaassa ja päivän kehällä; kuukausi näyttää keskiarvon', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 4000);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
@@ -158,32 +160,29 @@ void main() {
     });
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(HomeStatsCard), findsOneWidget);
-    expect(find.textContaining('6412', findRichText: true), findsWidgets); // myös korkeuden mitoituskopio
-    expect(find.textContaining(RegExp(r'Eilen 11.204')), findsWidgets);
-    // Kortin napautus (ei pylväs: se avaa päivän erittelyn).
-    await tester.tap(find.textContaining('askelta tänään', findRichText: true).hitTestable().first);
+    // Viikko (ui-test 17.11.): tämän päivän askeleet renkaassa.
+    expect(find.text('askelta tänään'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^6.412$')), findsOneWidget);
+    // Kuukausi: keskiarvo päivää kohden niistä päivistä, joilta on askeleita. Kuluva päivä ei mukana (keskeneräinen,
+    // koodikatselmus 17.11.), paitsi kuun ensimmäisenä päivänä, kun muita ei ole.
+    await tester.tap(find.byKey(const ValueKey('periodMonth')));
     await tester.pumpAndSettle();
-    expect(find.byType(StatsScreen), findsOneWidget);
-    expect(find.text('Kehitys'), findsOneWidget);
-    expect(find.text('Askeleet'), findsWidgets);
-    expect(find.byType(StepsStatsView), findsOneWidget);
-    expect(find.textContaining(RegExp(r'^11.204$')), findsWidgets);
+    expect(find.text('askelta / pv'), findsOneWidget);
+    expect(find.textContaining(RegExp(today.day == 1 ? r'^6.412$' : r'^11,2k$')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Etusivun kortti: Viikko-puoli näyttää WHO-viikon, napautus avaa laskutavan', (tester) async {
+  testWidgets('Etusivun liikuntarengas: reippaat minuutit, napautus avaa WHO-laskutavan', (tester) async {
     tester.view.physicalSize = const Size(1080, 4000);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
+    settings.trainMode = 'both';
+    addTearDown(() => settings.trainMode = 'gym');
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Viikko'), findsOneWidget, reason: 'puolten valitsimessa');
-    await tester.tap(find.text('Viikko'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('min reipasta'), findsWidgets);
+    expect(find.text('/150 reipasta'), findsOneWidget);
     expect(find.text('Viikon liikunta'), findsNothing, reason: 'ei omaa korttia');
-    await tester.tap(find.textContaining('min reipasta').hitTestable().first);
+    await tester.tap(find.text('/150 reipasta'));
     await tester.pumpAndSettle();
     expect(find.text('Viikon liikunta'), findsOneWidget);
     expect(find.textContaining('WHO suosittelee'), findsOneWidget);
@@ -244,30 +243,41 @@ void main() {
     );
   });
 
-  testWidgets('Juoksut: kortin Juoksu-puoli; ei erillisiä linkkejä etusivulla', (tester) async {
+  testWidgets('Juoksut: Kehitys-kortissa matkaryhmät, kun vertailtavaa on tarpeeksi', (tester) async {
     tester.view.physicalSize = const Size(1080, 4000);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
-    store.workouts = [
-      ...store.workouts,
-      Workout(date: addDays(today, -2), title: 'Juoksu')
-        ..activity = 'Juoksu'
-        ..distanceKm = 8.2
-        ..seconds = 2700,
-    ];
-    await tester.runAsync(() async {
-      dailySteps.debugSource = (a, b) async => {today: (3000, <String>[])};
-      await dailySteps.refresh();
-    });
+    settings.trainMode = 'both';
+    addTearDown(() => settings.trainMode = 'gym');
+    Workout run(int daysAgo, double km, int sec, int hr) => Workout(date: addDays(today, -daysAgo), title: 'Juoksu')
+      ..activity = 'Juoksu'
+      ..distanceKm = km
+      ..seconds = sec
+      ..hrAvg = hr;
+    final base = [...store.workouts];
+    // Yksi juoksu: ei vielä vertailua.
+    store.workouts = [...base, run(2, 8.2, 2700, 150)];
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Juoksu'), findsWidgets);
-    expect(find.text('Juoksun kehitys'), findsNothing);
-    expect(find.text('Toinen salitreeni tälle päivälle'), findsNothing);
-    await tester.tap(find.text('Juoksu').last);
-    await tester.pump();
-    expect(find.byType(RunningCardBody), findsWidgets);
-    expect(find.textContaining('8,2 km', findRichText: true), findsWidgets);
+    expect(find.byKey(const ValueKey('runGroup_5–10 km')), findsNothing);
+    // Kaksi molemmilla jaksoilla: 5–10 km nopeutui 5:40 → 5:20 /km, syke 150 → 146.
+    store.workouts = [
+      ...base,
+      run(2, 8, 2560, 146),
+      run(9, 6, 1920, 146),
+      run(40, 8, 2720, 150),
+      run(50, 6, 2040, 150),
+    ];
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    final g = find.byKey(const ValueKey('runGroup_5–10 km'));
+    expect(g, findsOneWidget);
+    expect(find.descendant(of: g, matching: find.textContaining('5:20')), findsOneWidget);
+    expect(find.descendant(of: g, matching: find.textContaining('−20 s')), findsOneWidget);
+    expect(find.descendant(of: g, matching: find.textContaining('♥ 146 (−4)')), findsOneWidget);
+    expect(find.byKey(const ValueKey('runGroup_< 5 km')), findsNothing);
+    store.workouts = base;
     expect(tester.takeException(), isNull);
   });
 
@@ -328,28 +338,16 @@ void main() {
     expect(dailySteps.today, 1746);
   });
 
-  testWidgets('Kortin puolet samankorkuisia; kalenterissa päivän askeleet', (tester) async {
+  testWidgets('Kalenterissa päivän askeleet kehänä; tänään keltaisella ilman kehystä', (tester) async {
     tester.view.physicalSize = const Size(1080, 4000);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
-    store.workouts = [
-      ...store.workouts,
-      Workout(date: addDays(today, -2), title: 'Juoksu')
-        ..activity = 'Juoksu'
-        ..distanceKm = 8.2
-        ..seconds = 2700,
-    ];
     await tester.runAsync(() async {
       dailySteps.debugSource = (a, b) async => {y: (3949, <String>[]), today: (1746, <String>[])};
       await dailySteps.refresh();
     });
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.pump(const Duration(milliseconds: 500));
-    final h1 = tester.getSize(find.byType(HomeStatsCard)).height;
-    await tester.tap(find.text('Juoksu').first);
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(tester.getSize(find.byType(HomeStatsCard)).height, h1, reason: 'etusivu ei hypi');
-    // Kalenterissa askelrenkaat päivämäärien ympärillä (tarkka luku päivän näkymässä).
     expect(
       find.byWidgetPredicate((w) => w is CustomPaint && '${w.painter?.runtimeType}' == '_StepsRing'),
       findsWidgets,

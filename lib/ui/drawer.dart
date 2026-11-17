@@ -40,6 +40,7 @@ import '../whats_new.dart';
 import '../l10n.dart';
 import '../heart_rate.dart' show hr;
 import 'hr_ui.dart';
+import 'home_settings.dart';
 import '../maps/elevation.dart' show copernicusAttribution;
 
 Future<void> _open(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -298,7 +299,7 @@ class MoreScreen extends StatelessWidget {
   );
 }
 
-enum SettingsGroup { general, training, rest, body, storage }
+enum SettingsGroup { general, home, training, rest, body, storage }
 
 /// Asetukset omana näkymänään: ryhmät, joista kukin avaa oman sivun.
 class SettingsScreen extends StatefulWidget {
@@ -315,6 +316,7 @@ class SettingsScreen extends StatefulWidget {
       'Vammatilan ohjeet ja liikevinkit',
     ])
       (SettingsGroup.general, k),
+    for (final k in ['Omat tavoitteet', 'Kortit', 'Juoksun matkaryhmät', 'Kehonpaino']) (SettingsGroup.home, k),
     for (final k in [
       'Mitä treenaat?',
       'Painon lisäys (kg)',
@@ -344,6 +346,7 @@ class SettingsScreen extends StatefulWidget {
 
   static String title(SettingsGroup g) => switch (g) {
     SettingsGroup.general => t('Yleiset'),
+    SettingsGroup.home => t('Etusivu'),
     SettingsGroup.training => t('Harjoittelu'),
     SettingsGroup.rest => t('Palautusajastin'),
     SettingsGroup.body => t('Keho ja laitteet'),
@@ -381,6 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Englanniksi liikkeiden nimet ovat aina englanniksi, eikä valintaa näytetä.
         isEnglish ? t('Nimi, kieli, teema') : t('Nimi, kieli, teema, liikkeiden nimet'),
       ),
+      (SettingsGroup.home, Icons.home_outlined, t('Omat tavoitteet ja kortit, järjestys')),
       (SettingsGroup.training, Icons.fitness_center, t('Mitä treenaat, painon lisäys, lämmittely, vinkit ja kevennys')),
       (SettingsGroup.rest, Icons.timer_outlined, t('Ääni, palautusajat ja ilmoitus')),
       (SettingsGroup.body, Icons.monitor_heart_outlined, t('Kehonpaino, sykemittari, Health Connect')),
@@ -901,6 +905,7 @@ class _SettingsSection extends StatelessWidget {
             // Akunsäästö: saako Gievra toimia taustalla (treeni ei pysähdy näytön sammuessa).
             if (BatteryHelp.supported) const BatterySettingsTile(),
           ],
+          if (group == SettingsGroup.home) HomeLayoutSettings(), // ei const: asetukset muuttuvat
           if (group == SettingsGroup.training) ...[
             Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
             Padding(
@@ -1101,14 +1106,20 @@ class _SettingsSection extends StatelessWidget {
             SwitchListTile(
               title: Text(t('Kehonpainon seuranta')),
               subtitle: Text(
-                t(
-                  'Tämän päivän paino etusivulla, painon kehitys ja painoindeksi tilastoissa. Punnitse milloin haluat.',
-                ),
+                t('Kysyy painoa kerran päivässä, kun avaat sovelluksen. Painon kehitys ja painoindeksi tilastoissa.'),
                 style: sub,
               ),
               value: settings.bodyTracker,
               onChanged: settings.setBodyTracker,
             ),
+            if (settings.bodyTracker)
+              SwitchListTile(
+                key: const ValueKey('weightOnHome'),
+                title: Text(t('Painon kehitys etusivulla')),
+                subtitle: Text(t('Viimeisin paino, muutos 30 päivässä ja käyrä etusivulla.'), style: sub),
+                value: settings.weightOnHome,
+                onChanged: settings.setWeightOnHome,
+              ),
             if (settings.bodyTracker)
               ListTile(
                 leading: const Icon(Icons.monitor_weight_outlined),

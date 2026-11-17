@@ -61,7 +61,7 @@ class SetLoggerScreen extends StatefulWidget {
 class _SetLoggerScreenState extends State<SetLoggerScreen> {
   ExerciseEntry get e => widget.entry;
   late final _last = store.lastBefore(e.name, widget.date, widget.session);
-  late final double _bestBefore = store.maxKgBefore(e.name, widget.date);
+  late final double _bestBefore = store.maxKgBefore(e.name, widget.date, session: widget.session);
   late final Suggestion? _sugg = widget.target != null
       ? suggestForTarget(e.name, widget.date, widget.target!, session: widget.session)
       : suggestNext(e.name, widget.date, session: widget.session);
@@ -119,8 +119,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
 
   /// Suunnitellut sarjat tehty (ulkoasun kohennus 16.11.): kirjauskortin tilalla "Kaikki sarjat tehty" ja
   /// Lisää sarja; alareunassa "✓ Liike valmis" (palaa listaan). Supersarjassa ei (vuorottelu jatkuu).
-  bool get _allDone =>
-      !_warming && widget.superset == null && widget.target != null && e.workSets.length >= widget.target!.sets;
+  bool get _allDone => widget.superset == null && widget.target != null && e.workSets.length >= widget.target!.sets;
 
   /// Lisäsarja auki (Lisää sarja painettu).
   bool _extra = false;
@@ -201,7 +200,6 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   String? _restNextLine() {
     if (_next != null && _nextAfterRest) return t('Seuraavaksi: {0}', [exerciseLabel(_next!)]);
     final set = fmtSet(e.name, SetEntry(_kg, _reps, kind: _kind));
-    if (_warming) return t('Seuraava lämmittelysarja: {0}', [set]);
     final done = e.sets.where((s) => !s.warmup).length;
     final target = widget.target;
     if (target != null && target.sets > 0) {
@@ -228,10 +226,13 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     }
   });
 
-  /// Esitäytetyt lämmittelysarjat (vain kun liikkeessä ei ole vielä sarjoja tänään).
-  List<SetEntry> _warm = const [];
-  int _warmIdx = 0;
-  bool get _warming => _warmIdx < _warm.length;
+  /// Lämmittely on yksi painike (käyttäjä 17.11.: vanha esitäytetty lämmittelytila ja painovinkit pois): Tallenna lämmittelysarjana
+  /// painoliikkeissä (tanko, käsipainot, kahvakuula, laitteet; ei pelkkä kehonpaino eikä aikaliike), kunnes
+  /// ensimmäinen työsarja on tehty.
+  bool get _manualWarmup =>
+      e.workSets.isEmpty &&
+      _m != Measure.seconds &&
+      !(exerciseEquipment[e.name]?.every((q) => q == Equip.kehonpaino) ?? false);
 
   void _prefillWork() {
     if (_sugg != null) {
@@ -261,15 +262,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     if (src == null && _sugg == null && (exerciseEquipment[e.name]?.every((q) => q == Equip.kehonpaino) ?? false)) {
       _kg = 0;
     }
-    // Lämmittely kohti työpainoa (ehdotus tai edellinen kerta).
-    final work = _sugg?.kg ?? _last?.$2.workSets.lastOrNull?.kg;
-    if (e.sets.isEmpty && work != null) {
-      _warm = warmupSets(e.name, work);
-      if (_warm.isNotEmpty) {
-        _kg = _warm.first.kg;
-        _reps = _warm.first.reps;
-      }
-    }
+    // Palattu lämmittelyn jälkeen: työpaino valmiina (ei viimeisimmän lämmittelysarjan painoa).
+    if (e.workSets.isEmpty && e.sets.isNotEmpty) _prefillWork();
     // Toisen liikkeen palautus käynnissä: palkki näyttää tämän liikkeen ensimmäisen sarjan (tauon jälkeen tämä).
     if (rest.running && rest.exercise != e.name) rest.nextFn = _restNext;
   }
@@ -421,7 +415,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        t('Ehdotus: {0}', [fmtSet(e.name, SetEntry(sugg.kg, sugg.reps))]) +
+                        // Työsarjojen paino ja toistot (käyttäjä 17.11.: "Ehdotus" sekoittui lämmittelyyn ja maksimiin).
+                        t('Työsarjat: {0}', [fmtSet(e.name, SetEntry(sugg.kg, sugg.reps))]) +
                             (mul == 2 && sugg.kg > 0 ? ' (${t('yhteensä {0} kg', [fmtNum(sugg.kg * mul)])})' : ''),
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                       ),
@@ -512,7 +507,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   DateTime? _lastSave;
 
   /// Yksi napautus tallentaa sarjan ja vastauksen "jäikö varaa" (null = ei merkitty).
-  Future<void> _saveSet([int? rir]) async {
+  Future<void> _saveSet([int? rir, bool warmup = false]) async {
     _extra = false; // lisäsarjan kortti sulkeutuu tallennuksen jälkeen
     if (rest.justClosed) return; // palkki sulkeutui juuri sormen alta
     // Vahinkotuplanapautus (hikinen sormi, napautus kahteen kertaan) ei tallenna samaa sarjaa kahdesti.
@@ -522,15 +517,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     setState(() {
       _edited = false;
       _kgEdited = false;
-      if (_warming) {
+      if (warmup) {
         e.sets.add(SetEntry(_kg, _reps, warmup: true));
-        _warmIdx++;
-        if (_warming) {
-          _kg = _warm[_warmIdx].kg;
-          _reps = _warm[_warmIdx].reps;
-        } else {
-          _prefillWork();
-        }
       } else {
         e.sets.add(SetEntry(_kg, _reps, rir: _kind == amrapSet ? 0 : rir, kind: _kind));
         // AMRAP on yksittäinen sarja; pudotus jatkuu, kunnes käyttäjä vaihtaa takaisin.
@@ -582,12 +570,20 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _EditSetSheet(name: e.name, index: i, set: e.sets[i], measure: _m),
+      // Sama numerointi kuin listassa: lämmittelysarjat eivät kasvata numeroa (17.11.: lista Sarja 1, ikkuna Sarja 3).
+      builder: (_) => _EditSetSheet(
+        name: e.name,
+        index: i - e.sets.take(i).where((s) => s.warmup).length,
+        set: e.sets[i],
+        measure: _m,
+      ),
     );
     if (r == null) return;
     if (r.delete) return _removeSet(i);
     setState(() {
-      e.sets[i] = SetEntry(r.kg, r.reps, rir: r.rir, rpe: e.sets[i].rpe, warmup: e.sets[i].warmup, kind: r.kind);
+      e.sets[i] = r.warmup
+          ? SetEntry(r.kg, r.reps, warmup: true)
+          : SetEntry(r.kg, r.reps, rir: r.rir, rpe: e.sets[i].rpe, kind: r.kind);
       _recomputePr();
     });
     await widget.onChanged();
@@ -861,9 +857,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                     child: Text(
-                      _warming
-                          ? t('Lämmittely')
-                          : _extra
+                      _extra
                           ? t('Sarja {0} · lisäsarja', [e.sets.where((s) => !s.warmup).length + 1])
                           : t('Sarja {0}', [e.sets.where((s) => !s.warmup).length + 1]),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -920,53 +914,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                     ),
                   if (isBarbell(e.name) && _kg > 0) PlateLine(kg: _kg, onPick: (v) => _setKg(v)),
                   const SizedBox(height: 14),
-                  if (_warming) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Sami.yellow.withValues(alpha: .14),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t('Lämmittely {0}/{1}', [_warmIdx + 1, _warm.length]),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            [
-                              for (var i = 0; i < _warm.length; i++)
-                                '${i == _warmIdx ? '▶ ' : ''}${fmtNum(_warm[i].kg)}×${_warm[i].reps}',
-                              if (_sugg != null) '${t('työsarjat')} ${fmtNum(_sugg.kg)}×${_sugg.reps}',
-                            ].join('  →  '),
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            t(
-                              'Esitäytetty: muuta painoa tai toistoja vapaasti. Lämmittelysarjat eivät vaikuta ehdotuksiin.',
-                            ),
-                            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    FilledButton(
-                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18)),
-                      onPressed: () => _saveSet(),
-                      child: Text(t('Tallenna lämmittelysarja'), style: const TextStyle(fontSize: 15)),
-                    ),
-                    TextButton(
-                      onPressed: () => setState(() {
-                        _warmIdx = _warm.length;
-                        _prefillWork();
-                      }),
-                      child: Text(t('Ohita lämmittely')),
-                    ),
-                  ] else ...[
+                  ...[
                     // Aikaliikkeet: ajastin laskee alas, lopussa ääni ja värinä.
                     if (_m == Measure.seconds) ...[_countdown(cs), const SizedBox(height: 14)],
                     if (_m == Measure.reps) ...[
@@ -991,6 +939,18 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                         child: Text(t('Tallenna AMRAP-sarja'), style: const TextStyle(fontSize: 15)),
                       )
                     else ...[
+                      // Oma lämmittely (käyttäjä 17.11.: uudessa liikkeessä ei ole valmista lämmittelyä, ja kolme
+                      // kevyttä sarjaa täytti tavoitteen): näkyy, kunnes liikkeen ensimmäinen työsarja on tehty.
+                      if (_manualWarmup) ...[
+                        OutlinedButton.icon(
+                          key: const ValueKey('saveWarmupSet'),
+                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                          onPressed: () => _saveSet(null, true),
+                          icon: const Icon(Icons.local_fire_department_outlined, size: 20),
+                          label: Text(t('Tallenna lämmittelysarjana')),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       // Tallennus = vastaus kysymykseen "jäikö varaa?". Yksi napautus, ei kirjoittamista.
                       Text(
                         t('Tallenna sarja – {0}{1}', [
@@ -1037,7 +997,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 ],
               ),
             ),
-          if (!_warming && _next != null) ...[
+          if (_next != null) ...[
             const SizedBox(height: 12),
             FilledButton.icon(
               style: FilledButton.styleFrom(
@@ -1077,34 +1037,51 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     child: Row(
                       children: [
-                        Text(
-                          e.sets[i].warmup
-                              ? t('Lämmittely')
-                              : t('Sarja {0}', [i + 1 - e.sets.take(i).where((s) => s.warmup).length]),
-                          style: TextStyle(color: cs.onSurfaceVariant),
-                        ),
-                        const Spacer(),
-                        if (e.sets[i].rir != null)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: Text(
-                              reserveWords(_m).short[e.sets[i].rir] ?? '',
-                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                            ),
-                          ),
-                        // Joustava: pudotus- ja AMRAP-merkinnät ja pitkät käännökset eivät vie riviä yli. Yksi rivi,
-                        // tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8").
+                        // Kapea näyttö tai suuri fontti: otsikko vie enintään puolet, varaa-teksti ja sarja kapenevat
+                        // (17.11.: Lämmittely + reilusti varaa + 42 kg × 2 edestakaisin vuoti yli).
                         Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: Text(
-                              '${fmtSetHand(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
-                              textAlign: TextAlign.end,
-                              maxLines: 1,
-                              softWrap: false,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                            ),
+                          child: Text(
+                            e.sets[i].warmup
+                                ? t('Lämmittely')
+                                : t('Sarja {0}', [i + 1 - e.sets.take(i).where((s) => s.warmup).length]),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: cs.onSurfaceVariant),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (e.sets[i].rir != null)
+                                Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: Text(
+                                      reserveWords(_m).short[e.sets[i].rir] ?? '',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                                    ),
+                                  ),
+                                ),
+                              // Yksi rivi, tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8").
+                              Flexible(
+                                flex: 2,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: Text(
+                                    '${fmtSetHand(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
+                                    textAlign: TextAlign.end,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1125,7 +1102,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               ),
             ),
           // Ennen suunniteltujen sarjojen loppua: aina näkyvä Merkitse liike valmiiksi (lopetus 1–2 sarjan jälkeenkin).
-          if (!_warming && !_allDone) ...[
+          if (!_allDone) ...[
             const SizedBox(height: 14),
             // Ohuempi reunapainike listan lopussa: löytyy viimeisen sarjan jälkeen, mutta ei osu vahingossa.
             OutlinedButton.icon(
@@ -1154,8 +1131,8 @@ class _EditResult {
   final int reps;
   final int? rir;
   final String? kind;
-  final bool delete;
-  const _EditResult(this.kg, this.reps, this.rir, {this.kind, this.delete = false});
+  final bool delete, warmup;
+  const _EditResult(this.kg, this.reps, this.rir, {this.kind, this.delete = false, this.warmup = false});
 }
 
 /// Sarjan muokkaus: paino, toistot/aika/matka ja "jäikö varaa" -vastaus, tai poisto.
@@ -1174,6 +1151,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
   late int _reps = widget.set.reps;
   late int? _rir = widget.set.rir;
   late String? _kind = widget.set.kind;
+  late bool _warmup = widget.set.warmup;
   Measure get _m => widget.measure;
 
   @override
@@ -1187,7 +1165,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            t('Korjaa sarja {0}', [widget.index + 1]),
+            widget.set.warmup ? t('Korjaa lämmittelysarja') : t('Korjaa sarja {0}', [widget.index + 1]),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           SectionLabel(weightTitle(widget.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)'))),
@@ -1222,20 +1200,34 @@ class _EditSetSheetState extends State<_EditSetSheet> {
               if (v != null && v >= 1 && v <= 9999 && mounted) setState(() => _reps = v.round());
             },
           ),
-          if (_m == Measure.reps && !widget.set.warmup) ...[
+          // Lämmittelysarja ei vaikuta ehdotuksiin eikä tavoitteeseen (käyttäjä 17.11.: jälkikäteen merkittävissä).
+          SwitchListTile(
+            key: const ValueKey('editWarmup'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(t('Lämmittelysarja')),
+            subtitle: Text(
+              t('Ei lasketa työsarjoihin eikä ehdotuksiin.'),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            value: _warmup,
+            onChanged: (v) => setState(() => _warmup = v),
+          ),
+          if (_m == Measure.reps && !_warmup) ...[
             SectionLabel(t('Sarjan tyyppi')),
             SetKindPicker(value: _kind, onChanged: (k) => setState(() => _kind = k)),
           ],
-          SectionLabel(rw.question),
-          SegmentedButton<int?>(
-            showSelectedIcon: false,
-            segments: [
-              for (final (v, label) in rw.answers) ButtonSegment(value: v, label: _segLabel(label)),
-              const ButtonSegment(value: null, label: Text('–')),
-            ],
-            selected: {_rir},
-            onSelectionChanged: (v) => setState(() => _rir = v.first),
-          ),
+          if (!_warmup) ...[
+            SectionLabel(rw.question),
+            SegmentedButton<int?>(
+              showSelectedIcon: false,
+              segments: [
+                for (final (v, label) in rw.answers) ButtonSegment(value: v, label: _segLabel(label)),
+                const ButtonSegment(value: null, label: Text('–')),
+              ],
+              selected: {_rir},
+              onSelectionChanged: (v) => setState(() => _rir = v.first),
+            ),
+          ],
           const SizedBox(height: 18),
           Row(
             children: [
@@ -1262,7 +1254,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
               ),
               const SizedBox(width: 4),
               FilledButton(
-                onPressed: () => Navigator.pop(context, _EditResult(_kg, _reps, _rir, kind: _kind)),
+                onPressed: () => Navigator.pop(context, _EditResult(_kg, _reps, _rir, kind: _kind, warmup: _warmup)),
                 child: Text(t('Tallenna')),
               ),
             ],

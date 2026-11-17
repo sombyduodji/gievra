@@ -1,4 +1,5 @@
 import 'insights.dart' show weekStart;
+import 'l10n.dart';
 import 'models.dart';
 import 'sports.dart';
 
@@ -99,4 +100,84 @@ Workout? previousRun(List<Workout> ws, Workout run) {
     if (b > 0 && (a - b).abs() <= b * 0.2) return r;
   }
   return null;
+}
+
+/// Juoksun matkaryhmä etusivun Kehitys-kortissa (käyttäjä 17.11.): alle 5 km, 5–10 km ja yli 10 km, jotta lyhyitä ja
+/// pitkiä lenkkejä ei verrata keskenään.
+class RunGroup {
+  final String label; // '< 5 km', '5–10 km', '> 10 km'
+  final double pace, prevPace; // s/km, matkalla painotettu
+  final int? hr, prevHr; // keskisyke lenkeistä, joissa on syke
+  final int runs, prevRuns;
+  const RunGroup(this.label, this.pace, this.prevPace, this.hr, this.prevHr, this.runs, this.prevRuns);
+
+  /// Vauhdin muutos sekunteina kilometrille (negatiivinen = nopeampi).
+  int get paceDelta => (pace - prevPace).round();
+}
+
+/// Juoksun matkaryhmä etusivun Kehitys-kortissa: matka [lo, hi) km, hi null = ei ylärajaa.
+typedef RunBand = (double, double?);
+
+/// Oletus: alle 5, 5–10 ja yli 10 km. Käyttäjä voi valita 1–3 omaa ryhmää asetuksista (käyttäjä 17.11.).
+const defaultRunBands = <RunBand>[(0, 5), (5, 10), (10, null)];
+
+String runBandLabel(RunBand b) => switch (b) {
+  (0, null) => t('kaikki matkat'),
+  (0, final double hi) => '< ${fmtNum(hi)} km',
+  (final lo, null) => '> ${fmtNum(lo)} km',
+  (final lo, final double hi) => '${fmtNum(lo)}–${fmtNum(hi)} km',
+};
+
+/// Tiedostoon: "0-5; 5-10; 10-" (desimaalit pilkulla).
+String runBandsToFile(List<RunBand> bands) =>
+    bands.map((b) => '${fileNum(b.$1)}-${b.$2 == null ? '' : fileNum(b.$2!)}').join('; ');
+
+/// Tiedostosta; virheelliset ryhmät ohitetaan, enintään 3. Tyhjä tulos = oletus.
+List<RunBand> runBandsFromFile(String v) {
+  final out = <RunBand>[];
+  for (final part in v.split(';')) {
+    final m = RegExp(r'^\s*([0-9]+(?:,[0-9]+)?)\s*-\s*([0-9]+(?:,[0-9]+)?)?\s*$').firstMatch(part);
+    if (m == null) continue;
+    final lo = parseNum(m.group(1)!)!;
+    final hi = m.group(2) == null ? null : parseNum(m.group(2)!);
+    if (hi != null && hi <= lo) continue;
+    out.add((lo, hi));
+    if (out.length == 3) break;
+  }
+  return out.isEmpty ? defaultRunBands : out;
+}
+
+/// Matkaryhmät, joissa on vähintään [minRuns] juoksua sekä viimeisten 4 viikon aikana että 8 viikkoa ennen sitä.
+List<RunGroup> runGroups(List<Workout> ws, DateTime today, {int minRuns = 2, List<RunBand> bands = defaultRunBands}) {
+  final t0 = addDays(today, -28);
+  final t1 = addDays(today, -84);
+  final out = <RunGroup>[];
+  for (final b in bands) {
+    final (lo, hi0) = b;
+    final hi = hi0 ?? double.infinity;
+    final label = runBandLabel(b);
+    final now = <Workout>[], before = <Workout>[];
+    for (final w in runsOf(ws)) {
+      final km = w.distanceKm!;
+      if (km < lo || km >= hi || w.date.isAfter(today)) continue;
+      if (!w.date.isBefore(t0)) {
+        now.add(w);
+      } else if (!w.date.isBefore(t1)) {
+        before.add(w);
+      }
+    }
+    if (now.length < minRuns || before.length < minRuns) continue;
+    double pace(List<Workout> l) =>
+        l.fold<double>(0, (a, w) => a + w.durationSec!) / l.fold<double>(0, (a, w) => a + w.distanceKm!);
+    int? hr(List<Workout> l) {
+      final h = [
+        for (final w in l)
+          if (w.hrAvg != null) w.hrAvg!,
+      ];
+      return h.isEmpty ? null : (h.reduce((a, b) => a + b) / h.length).round();
+    }
+
+    out.add(RunGroup(label, pace(now), pace(before), hr(now), hr(before), now.length, before.length));
+  }
+  return out;
 }

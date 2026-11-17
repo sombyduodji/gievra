@@ -65,7 +65,12 @@ Effort effortOf(Workout w) {
 /// Viikko maanantaista sunnuntaihin, jolle [day] osuu.
 WeekActivity weekActivity(Iterable<Workout> workouts, DateTime day) {
   final mon = weekStart(DateTime(day.year, day.month, day.day));
-  final next = addDays(mon, 7); // kalenteripäivinä (kesäaika)
+  return periodActivity(workouts, mon, addDays(mon, 7)); // kalenteripäivinä (kesäaika)
+}
+
+/// Liikunta ja salipäivät jaksolta [from] (mukaan) – [next] (ei mukaan), esim. etusivun kuukausi.
+WeekActivity periodActivity(Iterable<Workout> workouts, DateTime from, DateTime next) {
+  final mon = from;
   var vig = 0, mod = 0, light = 0;
   final strength = <DateTime>{};
   for (final w in workouts) {

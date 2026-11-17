@@ -7,6 +7,7 @@ import '../theme.dart' show samiBarBand;
 
 import '../app_state.dart';
 import '../health.dart';
+import '../ongoing.dart';
 import '../l10n.dart';
 import '../models.dart';
 import '../sports.dart';
@@ -32,12 +33,20 @@ class HealthImportButton extends StatefulWidget {
 
   /// Uudet harjoitukset: (määrä, uusin päivä); null = ei vielä tarkistettu tai tarkistus epäonnistui.
   static final found = ValueNotifier<(int, DateTime?)?>(null);
-  static bool _checking = false;
+
+  /// Tämän päivän uudet harjoitukset (etusivun Sali- ja Liikunta-paneelit näyttävät ne ylimpänä).
+  static final todayFresh = ValueNotifier<List<HealthCandidate>>(const []);
+  static bool _checking = false, _again = false;
   static bool failed = false;
 
   /// Tarkistus: avatessa, etusivun alas vetäessä ja treenien muuttuessa.
   static Future<void> refresh() async {
-    if (!visible || _checking) return;
+    if (!visible) return;
+    if (_checking) {
+      // Tallennus kesken tarkistuksen: tarkistetaan uudelleen, ettei tallennettu jää listaan (koodikatselmus 17.11.).
+      _again = true;
+      return;
+    }
     _checking = true;
     try {
       final today = dateOnly(DateTime.now());
@@ -45,7 +54,9 @@ class HealthImportButton extends StatefulWidget {
       DateTime? latest;
       for (var i = 0; i < 7; i++) {
         final d = addDays(today, -i);
-        final (fresh, _) = newHealthSessions(await HealthConnect.sessions(d), store.workouts);
+        final (all, _) = newHealthSessions(await HealthConnect.sessions(d), store.workouts);
+        final fresh = withoutRunning(all, DateTime.now());
+        if (i == 0) todayFresh.value = fresh;
         if (fresh.isNotEmpty) {
           n += fresh.length;
           latest ??= d;
@@ -58,6 +69,10 @@ class HealthImportButton extends StatefulWidget {
       found.value = null;
     } finally {
       _checking = false;
+    }
+    if (_again) {
+      _again = false;
+      await refresh();
     }
   }
 
@@ -253,18 +268,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
 
   Future<void> _addInner(HealthCandidate c) async {
     if (isStrengthType(c.type)) return _addGym(c);
-    final sport =
-        sportForHealthType(c.type) ??
-        await pickSport(
-          context,
-          c.stepsOnly
-              ? t('{0} askelta ilman harjoitusta. Valitse laji:', [c.steps])
-              : t('Health Connect: {0}. Valitse lähin laji:', [c.title ?? t('tuntematon laji')]),
-        );
-    if (sport == null || !mounted) return;
-    final day = DateTime(c.start.year, c.start.month, c.start.day);
-    final w = workoutFromHealth(c, sport, session: store.onDay(day).isEmpty ? 1 : store.nextSession(day));
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ActivityScreen(workout: w, manual: true)));
+    await addHealthActivity(context, c);
     if (mounted) await _load(); // tallennettu liikunta katoaa listalta
   }
 
@@ -436,4 +440,36 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
       ),
     );
   }
+}
+
+/// Health Connectin liikunta Gievraan: laji tyypistä (tai kysytään), sitten valmiiksi täytetty liikunta
+/// tarkistettavaksi ja tallennettavaksi (myös etusivun liikuntapaneelista).
+Future<void> addHealthActivity(BuildContext context, HealthCandidate c) async {
+  final sport =
+      sportForHealthType(c.type) ??
+      await pickSport(
+        context,
+        c.stepsOnly
+            ? t('{0} askelta ilman harjoitusta. Valitse laji:', [c.steps])
+            : t('Health Connect: {0}. Valitse lähin laji:', [c.title ?? t('tuntematon laji')]),
+      );
+  if (sport == null || !context.mounted) return;
+  final day = DateTime(c.start.year, c.start.month, c.start.day);
+  final w = workoutFromHealth(c, sport, session: store.onDay(day).isEmpty ? 1 : store.nextSession(day));
+  await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ActivityScreen(workout: w, manual: true)));
+  HealthImportButton.refresh();
+}
+
+/// Käynnissä olevan liikunnan aikana tallentuneet harjoitukset piiloon (käyttäjä 17.11.: kävelymaton harjoitus
+/// näkyi uutena kesken Gievran kävelyn, ja sen lisääminen olisi tehnyt kaksoiskappaleen). Tallennuksen jälkeen
+/// päällekkäisyyden tarkistus (newHealthSessions) hoitaa saman. Salitreenit jäävät: ne liitetään treeniin.
+List<HealthCandidate> withoutRunning(List<HealthCandidate> fresh, DateTime now) {
+  final a = Ongoing.gps ?? Ongoing.activity;
+  if (a == null) return fresh;
+  // Alku: kellon laskennallinen alku (tauot siirtävät sitä myöhemmäksi), väljyyttä 30 min.
+  final start = (a.since ?? now.subtract(a.elapsed)).subtract(const Duration(minutes: 30));
+  return [
+    for (final c in fresh)
+      if (isStrengthType(c.type) || !c.end.isAfter(start)) c,
+  ];
 }

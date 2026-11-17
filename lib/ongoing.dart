@@ -96,12 +96,32 @@ class Ongoing {
       // Treeni voi jatkua yli puolenyön (alle 5 h aloituksesta), mutta sen on alettava omana päivänään.
       if (w.activity != null || w.started == null || dateOnly(w.started!) != w.date) continue;
       if (w.minutes != null || w.feeling != null) continue; // Treeni valmis!
-      if (w.exercises.every((e) => e.sets.isEmpty)) continue;
+      // Lämmittely riittää (käyttäjä 17.11.: ilmoitusta ei näkynyt lämmittelyn aikana, vaikka syke kulki).
+      if (w.exercises.every((e) => e.sets.isEmpty) && w.warmup == null) continue;
       final age = now.difference(w.started!);
       if (age.isNegative || age > const Duration(hours: 5)) continue;
       return w;
     }
     return null;
+  }
+
+  /// Auki oleva tämän päivän salitreeni (WorkoutScreen), vaikka siinä ei vielä ole sarjoja eikä se ole tallessa:
+  /// ilmoitus näkyy treenin alusta asti, jottei Android sammuta sykkeen keruuta taustalla (käyttäjä 17.11.).
+  static Workout? openGym;
+
+  static void setOpenGym(Workout? w) {
+    openGym = w;
+    unawaited(refresh());
+  }
+
+  /// Käynnissä oleva salitreeni: tallessa oleva keskeneräinen tai auki oleva uusi.
+  static Workout? gymNow(List<Workout> workouts, DateTime now) {
+    final saved = gymInProgress(workouts, now);
+    if (saved != null) return saved;
+    final o = openGym;
+    if (o == null || o.started == null || o.minutes != null || o.feeling != null) return null;
+    final age = now.difference(o.started!);
+    return age.isNegative || age > const Duration(hours: 5) ? null : o;
   }
 
   /// Mitä näytetään: (otsikko, alku, tauolla, taukoteksti) tai null = ei mitään.
@@ -113,7 +133,7 @@ class Ongoing {
       if (a.paused) return (title, now, true, t('tauolla · {0}', [fmtDurationSec(a.elapsed.inSeconds)]));
       return (title, a.since!, false, '');
     }
-    final gym = gymInProgress(workouts, now);
+    final gym = gymNow(workouts, now);
     if (gym != null) return (t('Salitreeni käynnissä'), gym.started!, false, '');
     return null;
   }
@@ -129,7 +149,7 @@ class Ongoing {
   /// Elävän näkymän sisältö (ks. OngoingNote.Live). Tyhjä merkkijono = rivi piilossa.
   static Map<String, Object?> live(List<Workout> workouts, DateTime now) {
     final a = gps ?? activity;
-    final gym = a == null ? gymInProgress(workouts, now) : null;
+    final gym = a == null ? gymNow(workouts, now) : null;
     final m = <String, Object?>{'kind': kindOf(a?.sport, gym: gym != null)};
     // Syke (sykevyö valittu ja treeni kerää sykettä).
     if (hr.address != null && hr.recording) {

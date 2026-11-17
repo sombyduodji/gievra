@@ -67,6 +67,14 @@ DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 /// Kalenteripäivien lisäys (Duration ei kelpaa: kesäaikasiirtymä siirtää kellonaikaa).
 DateTime addDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
 
+/// ISO-viikkonumero. Lasketaan UTC-päivinä: paikallisella ajalla kesäajan tunti katosi erotuksesta, ja vuosina,
+/// joiden 1.1. on torstai (esim. 2026), kesäajan viikot näkyivät yhtä pienempinä (koodikatselmus 17.11.).
+int isoWeek(DateTime d) {
+  final day = DateTime.utc(d.year, d.month, d.day);
+  final thursday = day.add(Duration(days: 4 - day.weekday));
+  return thursday.difference(DateTime.utc(thursday.year, 1, 1)).inDays ~/ 7 + 1;
+}
+
 /// Uinnin vauhti näytössä 100 metrille (☰ → Asetukset → Harjoittelu, käyttäjä 15.11.). Tiedostoon aina /km.
 bool swimPer100 = false;
 

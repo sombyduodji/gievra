@@ -13,7 +13,7 @@ import 'package:treenipaivakirja/ui/home.dart';
 
 import 'test_fonts.dart';
 
-// Etusivun Sali | Liikunta (ulkoasun kohennus 16.11.) ja päivänäkymän Sali/Liikunta-pari: teksti ei katkea millään
+// Etusivun jaettu aloituspainike ja paneelit (ui-test 17.11.) ja päivänäkymän Sali/Liikunta-pari: teksti ei katkea millään
 // kielellä, puhelimen leveydellä tai tekstikoolla. Oikea fontti (Roboto), koska testifontti on leveämpi kuin puhelimen.
 void main() {
   final po = {
@@ -75,21 +75,31 @@ void main() {
             ),
           );
           await tester.pump();
-          expect(find.byKey(const ValueKey('modeGym')), findsOneWidget);
-          expect(find.byKey(const ValueKey('modeActivity')), findsOneWidget);
-          // Oletusvalinta: kesken oleva tai käytetympi.
-          final gymFirst = st.key != 'liikunta käytetympi';
-          final start = st.key == 'salitreeni kesken'
-              ? 'homeContinue'
-              : gymFirst
-              ? 'homeStartGym'
-              : 'homeStartActivity';
-          expect(find.byKey(ValueKey(start)), findsOneWidget, reason: start);
+          // Jaettu aloituspainike (ui-test 17.11.): Sali ja Liikunta vierekkäin, teksti ei katkea.
+          expect(find.byKey(const ValueKey('homeStartGym')), findsOneWidget);
+          expect(find.byKey(const ValueKey('homeStartActivity')), findsOneWidget);
           noCutText(tester);
-          // Valitsimen vaihto vaihtaa kortin.
-          await tester.tap(find.byKey(ValueKey(gymFirst ? 'modeActivity' : 'modeGym')));
-          await tester.pump();
-          expect(find.byKey(ValueKey(gymFirst ? 'homeStartActivity' : 'homeStartGym')), findsOneWidget);
+          // Sali avaa paneelin: vapaa treeni ja kesken oleva treeni (Jatka).
+          await tester.tap(find.byKey(const ValueKey('homeStartGym')));
+          await tester.pumpAndSettle();
+          expect(find.byKey(const ValueKey('panelFreeWorkout')), findsOneWidget);
+          if (st.key == 'salitreeni kesken') {
+            expect(find.textContaining(lang == 'en' ? 'Continue' : (lang == 'se' ? 'Joatkke' : 'Jatka')), findsWidgets);
+          }
+          noCutText(tester);
+          Navigator.of(tester.element(find.byKey(const ValueKey('panelFreeWorkout')))).pop();
+          await tester.pumpAndSettle();
+          // Liikunta avaa paneelin: viimeksi käytetty laji ja kaikki lajit.
+          await tester.tap(find.byKey(const ValueKey('homeStartActivity')));
+          await tester.pumpAndSettle();
+          expect(find.byKey(const ValueKey('panelAllSports')), findsOneWidget);
+          expect(find.byKey(const ValueKey('panelSport_Kävely')), findsOneWidget);
+          noCutText(tester);
+          // Lajin valinta kysyy kirjaustavan.
+          await tester.tap(find.byKey(const ValueKey('panelSport_Kävely')));
+          await tester.pumpAndSettle();
+          expect(find.byKey(const ValueKey('panelMode_watch')), findsOneWidget);
+          expect(find.byKey(const ValueKey('panelMode_manual')), findsOneWidget);
           noCutText(tester);
           await tester.pumpWidget(const SizedBox());
         });
@@ -163,10 +173,14 @@ void main() {
         ),
       );
       await tester.pump();
-      // Ehdotuskortti: ohjelman päivä näkyy otsikkona (ulkoasun kohennus 16.11.).
+      // Ehdotettu päivä näkyy Sali-puolen vihjeenä ja paneelin ehdotuskortissa (ui-test 17.11.).
       final names = settings.program!.plan.map((d) => d.uiName).toSet();
       expect(find.byWidgetPredicate((w) => w is Text && names.contains(w.data)), findsWidgets);
       expect(find.byKey(const ValueKey('homeStartGym')), findsOneWidget);
+      noCutText(tester);
+      await tester.tap(find.byKey(const ValueKey('homeStartGym')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('panelStartSuggested')), findsOneWidget);
       noCutText(tester);
       debugSetCatalog('fi', const {});
     });

@@ -13,6 +13,30 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.9',
+    Icons.home_outlined,
+    'Uusi etusivu',
+    'Sali | Liikunta -painike avaa valinnan etusivun päälle: ohjelman päivät, viimeksi käytetyt lajit ja kellon harjoitukset. Viikko tai kuukausi renkaineen ja kalenterissa päivän askeleet.',
+  ),
+  NewFeature(
+    '0.6.9',
+    Icons.flag_outlined,
+    'Omat tavoitteet ja kortit',
+    'Asetukset → Etusivu: WHO:n suositusten lisäksi enintään kolme omaa tavoitetta (salipäivät, matka, aika tai kerrat) sekä kortit omassa järjestyksessä: Viimeksi, Voiman kehitys, Juoksun kehitys ja Kehonpaino.',
+  ),
+  NewFeature(
+    '0.6.9',
+    Icons.directions_run,
+    'Juoksun kehitys matkoittain',
+    'Vauhti ja syke viimeiset 4 viikkoa vs. 8 viikkoa ennen, omilla matkaryhmillä (oletus alle 5, 5–10 ja yli 10 km).',
+  ),
+  NewFeature(
+    '0.6.9',
+    Icons.local_fire_department_outlined,
+    'Lämmittelysarjat',
+    'Tallenna lämmittelysarjana -painike painoliikkeissä ensimmäiseen työsarjaan asti. Lämmittely ei vaikuta tavoitteeseen, ehdotuksiin eikä ennätyksiin, ja sarjan voi merkitä lämmittelyksi jälkikäteen.',
+  ),
+  NewFeature(
     '0.6.8',
     Icons.dashboard_outlined,
     'Uusi ulkoasu',

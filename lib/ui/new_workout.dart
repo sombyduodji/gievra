@@ -49,103 +49,20 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
     if (d != null && mounted) setState(() => _date = dateOnly(d));
   }
 
-  void _start(bool withWarmup) {
-    final eq = settings.equipment;
-    // Jos päivälle on jo treeni, jatketaan sitä.
-    // Jos päivälle on jo treeni, jatketaan sitä, ellei käyttäjä aloittanut uutta treeniä samalle päivälle.
-    final w =
-        (widget.newSession ? null : store.forDate(_date)?.copy()) ??
-        Workout(
-          date: _date,
-          title: _day?.display ?? 'Treeni', // tiedostoon suomeksi
-          programDay: _day?.name,
-          session: widget.newSession ? store.nextSession(_date) : 1,
-        );
-    if (withWarmup && eq.isNotEmpty) {
-      w.warmup = Warmup(eq[_selected.clamp(0, eq.length - 1)].name, _minutes);
-    }
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) =>
-            WorkoutScreen(workout: w, planDay: _day == null ? null : injuryAdjusted(_day!, settings.injuries)),
-      ),
-    );
-  }
+  void _start(bool withWarmup) => startGymWorkout(
+    context,
+    date: _date,
+    day: _day,
+    newSession: widget.newSession,
+    warmup: withWarmup ? _selected : null,
+    minutes: _minutes,
+    replace: true,
+  );
 
   /// Aloita päivän kortista: lämmittely alapaneelina (laite siruina, kesto, Ohita), sitten treeni.
   Future<void> _askWarmup(PlanDay? day) async {
     setState(() => _day = day);
-    final eq = settings.equipment;
-    if (eq.isEmpty) return _start(false);
-    final r = await showModalBottomSheet<bool>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, set) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(day?.uiName ?? t('Vapaa treeni'), style: Theme.of(ctx).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                Text(t('Lämmittely'), style: const TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (var i = 0; i < eq.length; i++)
-                      ChoiceChip(
-                        key: ValueKey('warmupEq$i'),
-                        label: Text('${eq[i].icon} ${t(eq[i].name)}'),
-                        selected: i == _selected,
-                        onSelected: (_) => set(() => _selected = i),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: Text(t('Kesto'))),
-                    ValueStepper(
-                      value: '$_minutes',
-                      unit: 'min',
-                      onMinus: () => set(() => _minutes = (_minutes - 1).clamp(1, 600)),
-                      onPlus: () => set(() => _minutes = (_minutes + 1).clamp(1, 600)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        key: const ValueKey('skipWarmup'),
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ohita lämmittely'), maxLines: 1)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton(
-                        key: const ValueKey('startWarmup'),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Aloita lämmittely'), maxLines: 1)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    if (r == null || !mounted) return;
-    _start(r);
+    await askWarmupAndStart(context, date: _date, day: day, newSession: widget.newSession, replace: true);
   }
 
   void _addEq() {
@@ -567,4 +484,131 @@ class _DayAccordion extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Aloittaa salitreenin päivälle [day] (null = vapaa treeni): jos päivälle on jo treeni, sitä jatketaan (ellei
+/// [newSession]). [warmup]: lämmittelylaitteen indeksi asetuksissa (null = ei lämmittelyä). [replace]: korvaa
+/// nykyisen näkymän (päivän valinta), muuten avautuu päälle (etusivun paneeli).
+void startGymWorkout(
+  BuildContext context, {
+  required DateTime date,
+  PlanDay? day,
+  bool newSession = false,
+  int? warmup,
+  int minutes = 10,
+  bool replace = false,
+}) {
+  final eq = settings.equipment;
+  final d = dateOnly(date);
+  // Jatketaan vain saman päivän keskeneräistä salitreeniä. Ennen jatkettiin päivän ensimmäistä treeniä, mikä
+  // tahansa se oli: etusivun paneelista Koko keho C avasi saman päivän tallennetun koripallon (testi 17.11.).
+  final open = newSession
+      ? null
+      : store.onDay(d).where((w) => w.activity == null && w.minutes == null && w.feeling == null).firstOrNull;
+  final w =
+      open?.copy() ??
+      Workout(
+        date: d,
+        title: day?.display ?? 'Treeni', // tiedostoon suomeksi
+        programDay: day?.name,
+        session: store.onDay(d).isEmpty ? 1 : store.nextSession(d),
+      );
+  if (warmup != null && eq.isNotEmpty) w.warmup = Warmup(eq[warmup.clamp(0, eq.length - 1)].name, minutes);
+  final route = MaterialPageRoute<void>(
+    builder: (_) => WorkoutScreen(workout: w, planDay: day == null ? null : injuryAdjusted(day, settings.injuries)),
+  );
+  replace ? Navigator.of(context).pushReplacement(route) : Navigator.of(context).push(route);
+}
+
+/// Lämmittely alapaneelina (laite siruina, kesto, Ohita lämmittely / Aloita lämmittely), sitten treeni. Ilman
+/// lämmittelylaitteita treeni alkaa suoraan. Peruttu paneeli (Takaisin, pyyhkäisy) ei aloita mitään.
+Future<void> askWarmupAndStart(
+  BuildContext context, {
+  required DateTime date,
+  PlanDay? day,
+  bool newSession = false,
+  bool replace = false,
+}) async {
+  final eq = settings.equipment;
+  if (eq.isEmpty) {
+    return startGymWorkout(context, date: date, day: day, newSession: newSession, replace: replace);
+  }
+  var selected = 0, minutes = 10;
+  final r = await showModalBottomSheet<bool>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, set) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(day?.uiName ?? t('Vapaa treeni'), style: Theme.of(ctx).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Text(t('Lämmittely'), style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (var i = 0; i < eq.length; i++)
+                    ChoiceChip(
+                      key: ValueKey('warmupEq$i'),
+                      label: Text('${eq[i].icon} ${t(eq[i].name)}'),
+                      selected: i == selected,
+                      onSelected: (_) => set(() => selected = i),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: Text(t('Kesto'))),
+                  ValueStepper(
+                    value: '$minutes',
+                    unit: 'min',
+                    onMinus: () => set(() => minutes = (minutes - 1).clamp(1, 600)),
+                    onPlus: () => set(() => minutes = (minutes + 1).clamp(1, 600)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const ValueKey('skipWarmup'),
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Ohita lämmittely'), maxLines: 1)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      key: const ValueKey('startWarmup'),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Aloita lämmittely'), maxLines: 1)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  if (r == null || !context.mounted) return;
+  startGymWorkout(
+    context,
+    date: date,
+    day: day,
+    newSession: newSession,
+    warmup: r ? selected : null,
+    minutes: minutes,
+    replace: replace,
+  );
 }

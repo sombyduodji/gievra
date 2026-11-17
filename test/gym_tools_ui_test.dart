@@ -76,7 +76,7 @@ void main() {
       await logger(tester, 'Penkkipunnerrus');
       // Edellinen kerta ja ehdotus samassa kortissa; Näin teet ei vie tilaa ylhäällä.
       expect(find.textContaining('Edellinen kerta', findRichText: true), findsOneWidget);
-      expect(find.textContaining('Ehdotus'), findsOneWidget);
+      expect(find.textContaining('Työsarjat'), findsOneWidget);
       expect(find.text('Näin teet'), findsNothing);
       // Paino ja toistot samalla rivillä.
       final w = tester.getCenter(find.text('PAINO'));

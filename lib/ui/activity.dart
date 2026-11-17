@@ -47,7 +47,19 @@ class ActivityScreen extends StatefulWidget {
 
   /// Valmiiksi täytetty liikunta (esim. Health Connectista): ei GPS-valintaa, arvot suoraan säätimiin.
   final bool manual;
-  const ActivityScreen({super.key, required this.workout, this.recoverGps = false, this.draft, this.manual = false});
+
+  /// Etusivun liikuntapaneelista valittu kirjaustapa: 'gps' (tallennus alkaa heti), 'watch' (ajanotto) tai
+  /// 'manual' (jo tehty: aika ja matka itse). Null = valinta lajin näkymässä kuten ennen.
+  final String? startMode;
+
+  const ActivityScreen({
+    super.key,
+    required this.workout,
+    this.recoverGps = false,
+    this.draft,
+    this.manual = false,
+    this.startMode,
+  });
 
   /// Testeissä: kellotaulun valinta ilman dialogia.
   @visibleForTesting
@@ -256,6 +268,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
     super.initState();
     w.minutes ??= 45;
     if (widget.recoverGps) WidgetsBinding.instance.addPostFrameCallback((_) => _record(recover: true));
+    // Paneelista valittu kirjaustapa (käyttäjä 17.11.: laji ja tapa valitaan etusivun paneelissa).
+    switch (widget.startMode) {
+      case 'gps' when _canGps:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _record();
+        });
+      case 'watch':
+        _manual = true;
+        _useWatch = _canStopwatch;
+      case 'manual':
+        _manual = true;
+        _useWatch = false;
+    }
     _restoreDraft(widget.draft);
     if (widget.draft != null || widget.recoverGps) {
       AwayActivity.owner = this;

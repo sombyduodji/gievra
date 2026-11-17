@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -14,7 +14,9 @@ import 'l10n.dart';
 import 'plates.dart';
 import 'durable_write.dart';
 import 'models.dart';
+import 'home_layout.dart';
 import 'program.dart';
+import 'running.dart' show RunBand, defaultRunBands, runBandsFromFile, runBandsToFile;
 import 'exercises.dart';
 import 'heart_rate.dart' show hrProfile, repairLowCoverageKcal, repairWalkKcal;
 
@@ -199,6 +201,28 @@ class Settings extends ChangeNotifier {
 
   /// Kehonpainon seuranta (asetukset.md: body_tracker). Punnitukset ja pituus kehonpaino.md:ssä ([body]).
   bool bodyTracker = false;
+
+  /// Painon kehitys etusivulla (oma kortti käyrineen; käyttäjä 17.11.): erillään punnitusten kysymisestä.
+  bool weightOnHome = false;
+
+  /// Juoksun matkaryhmät etusivun Juoksun kehitys -kortissa (1–3, käyttäjä 17.11.).
+  List<RunBand> runBands = defaultRunBands;
+
+  /// Etusivun omat tavoitteet (0–3; käyttäjä 17.11.). null = ei vielä valittu: ohjelman salipäivät, jos ohjelma on
+  /// (ennen salirengas näytti ohjelman päivät; nyt ylärivillä on WHO:n vähimmäismäärä).
+  List<Goal>? _goals;
+  List<Goal> get goals =>
+      _goals ??
+      [
+        if (program case final p? when p.plan.isNotEmpty && trainMode != 'cardio')
+          Goal('gym', null, p.plan.length.toDouble()),
+      ];
+
+  /// Etusivun korttien järjestys ja piilotetut (kehonpainon näkyvyys: [weightOnHome]).
+  List<String> homeOrder = [...homeCardIds];
+  Set<String> homeHidden = {};
+
+  bool homeCardOn(String id) => id == 'weight' ? bodyTracker && weightOnHome : !homeHidden.contains(id);
 
   /// Kalorilaskennan perustiedot (sykevyö): syntymävuosi ja sukupuoli ('mies' / 'nainen'). Pituus ja paino
   /// kehonpainon seurannasta ([body]).
@@ -416,6 +440,35 @@ class Settings extends ChangeNotifier {
     _persist();
   }
 
+  void setRunBands(List<RunBand> v) {
+    runBands = v.isEmpty ? defaultRunBands : v.take(3).toList();
+    _persist();
+  }
+
+  @visibleForTesting
+  set debugGoals(List<Goal>? v) => _goals = v;
+
+  void setGoals(List<Goal> v) {
+    _goals = v.take(3).toList();
+    _persist();
+  }
+
+  void setHomeOrder(List<String> order) {
+    homeOrder = order;
+    _persist();
+  }
+
+  void setHomeCard(String id, bool on) {
+    if (id == 'weight') return setWeightOnHome(on);
+    on ? homeHidden.remove(id) : homeHidden.add(id);
+    _persist();
+  }
+
+  void setWeightOnHome(bool v) {
+    weightOnHome = v;
+    _persist();
+  }
+
   void setMaxHr(int? v) {
     maxHr = v?.clamp(120, 230);
     _persist();
@@ -548,6 +601,14 @@ class Settings extends ChangeNotifier {
       ..writeln('bar: ${fileNum(barKg)}')
       ..writeln('tips: $tips')
       ..writeln('body_tracker: $bodyTracker')
+      ..writeln('weight_home: $weightOnHome')
+      ..write(listEquals(runBands, defaultRunBands) ? '' : 'run_bands: ${runBandsToFile(runBands)}\n')
+      ..write(_goals == null ? '' : 'home_goals: ${goalsToFile(_goals!)}\n')
+      ..write(
+        listEquals(homeOrder, homeCardIds) && homeHidden.isEmpty
+            ? ''
+            : 'home_cards: ${homeCardsToFile(homeOrder, homeHidden)}\n',
+      )
       ..write(birthYear == null ? '' : 'birth_year: $birthYear\n')
       ..write(sex == null ? '' : 'sex: $sex\n')
       ..write(hrRecoveryPct == 60 ? '' : 'hr_recovery: $hrRecoveryPct\n')
@@ -678,6 +739,16 @@ class Settings extends ChangeNotifier {
             tips = v != 'false';
           case 'body_tracker':
             bodyTracker = v == 'true';
+          case 'weight_home':
+            weightOnHome = v == 'true';
+          case 'run_bands':
+            runBands = runBandsFromFile(v);
+          case 'home_goals':
+            _goals = goalsFromFile(v);
+          case 'home_cards':
+            final (o, h) = homeCardsFromFile(v);
+            homeOrder = o;
+            homeHidden = h;
           case 'birth_year':
             final y = int.tryParse(v);
             if (y != null && y > 1900 && y <= DateTime.now().year) birthYear = y;
@@ -1360,14 +1431,18 @@ class WorkoutStore extends ChangeNotifier {
   });
 
   /// Raskain aiempi sarja liikkeessä ennen annettua päivää.
-  double maxKgBefore(String exercise, DateTime before) {
+  /// Paras paino ennen päivää [before]; [session]: myös saman päivän aiemmat treenit (testikierros 17.11.: toisessa
+  /// treenissä Paras näytti eilisen, ja sama paino merkittiin uudeksi ennätykseksi). Lämmittelysarjat eivät ole mukana.
+  double maxKgBefore(String exercise, DateTime before, {int? session}) {
     var best = 0.0;
+    final day = dateOnly(before);
     for (final w in workouts) {
-      if (!w.date.isBefore(before)) continue;
+      final earlier = w.date.isBefore(day) || (session != null && w.date == day && w.session < session);
+      if (!earlier) continue;
       for (final e in w.exercises) {
         if (e.name != exercise) continue;
         for (final s in e.sets) {
-          if (s.kg > best) best = s.kg;
+          if (!s.warmup && s.kg > best) best = s.kg;
         }
       }
     }

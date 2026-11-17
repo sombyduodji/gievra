@@ -7,6 +7,7 @@ import '../rest.dart';
 import '../app_state.dart';
 import '../injuries.dart' show injuryAdjusted;
 import '../models.dart';
+import '../ongoing.dart';
 import '../program.dart';
 import '../running.dart';
 import '../share_text.dart' show thousands;
@@ -97,6 +98,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
     // Sykevyö (jos valittu): tämän päivän keskeneräinen treeni kerää sykkeen.
     if (_live && !_locked) hr.begin(_hrKey);
+    // Ilmoitus treenin alusta asti (myös lämmittelyn aikana ja ennen ensimmäistä sarjaa; käyttäjä 17.11.).
+    if (_live && !_locked && w.minutes == null && w.feeling == null) Ongoing.setOpenGym(w);
+    // Lämmittelyllä alkava treeni talteen heti: etusivun Jatka-kortti ja palkki näkyvät, jos näkymästä poistutaan.
+    if (_live && w.warmup != null && !_stored && w.exercises.every((e) => e.sets.isEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _save() : null);
+    }
     // Uusi treeni ohjelmasta: ohjelman supersarjat treeniin (muokattavissa ⋮ → Supersarjat).
     if (w.supersets.isEmpty && w.exercises.every((e) => e.sets.isEmpty) && widget.planDay != null) {
       final groups = <String, List<String>>{};
@@ -375,6 +382,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   void dispose() {
     tzWatch.removeListener(_tzChanged);
+    if (identical(Ongoing.openGym, w)) Ongoing.setOpenGym(null);
     _tick?.cancel();
     _notesSave?.cancel();
     w.notes = _notes.text;
