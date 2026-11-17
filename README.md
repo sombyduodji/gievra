@@ -26,7 +26,8 @@
   <img src="docs/screenshots/koti.png" width="200" alt="Etusivu">
   <img src="docs/screenshots/sarja.png" width="200" alt="Sarjan kirjaus lämmittelysarjoineen">
   <img src="docs/screenshots/ohjelma.png" width="200" alt="Treeniohjelma ja viikon kuorma">
-  <img src="docs/screenshots/tilastot.png" width="200" alt="Edistyminen ja tilastot">
+  <img src="docs/screenshots/tilastot.png" width="200" alt="Tilastot: kehitys">
+  <img src="docs/screenshots/kalorit.png" width="200" alt="Liikunnan yhteenveto ja kalorirengas">
 </p>
 
 ---
@@ -179,7 +180,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   uuteen puhelimeen palautettaessa myös asetukset ja ohjelma sellaisinaan; käytössä olevaan päiväkirjaan sairas- ja
   lomatauot yhdistetään ja vammatilasta kysytään), yksittäisten `.md`-tiedostojen tuonti
 - automaattinen varmuuskopio, kun uusi versio käynnistyy ensimmäisen kerran: treenikansion `backup/`-kansioon,
-  enintään kolme, oma varmuuskopio korvaa ne; Asetukset → Tallennus: tallenna, jaa tai poista
+  enintään kolme, oma varmuuskopio korvaa ne; Lisää → Tuonti, vienti ja varmuuskopio: tallenna, jaa tai poista
 - lukukelvottomat treenitiedostot (esim. vaurioitunut tai väärä merkistö) kerrotaan syineen: väärän merkistön voi
   korjata (alkuperäinen jää `.bak`-tiedostoksi), muut voi lähettää ongelmaraporttina; sama tarkistus tuonnissa
 

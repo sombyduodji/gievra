@@ -62,6 +62,10 @@ Future<void> _seedBody(DateTime today) async {
     weights[addDays(today, -d)] = ((80.4 + d * .03 + (d % 5 == 0 ? .3 : 0)) * 10).round() / 10;
   }
   await settings.setBody(BodyLog(heightCm: 180, weights: weights));
+  // Keksitty profiili: kalorirengas (aktiiviset ja lepokulutus) ja sykealueet näkyvät demossa.
+  settings
+    ..birthYear = 1991
+    ..sex = 'mies';
   final monday = addDays(today, 1 - today.weekday);
   for (var week = 0; week < 4; week++) {
     final date = addDays(monday, -7 * (3 - week) + 5);

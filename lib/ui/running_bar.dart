@@ -181,7 +181,8 @@ class _RunningBarState extends State<RunningBar> {
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.w700,
-                  color: Sami.yellow,
+                  // Vaaleassa teemassa tumma keltainen: kirkas keltainen valkoisella ei erotu (tarkistus 17.11.).
+                  color: yellowText(context),
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),

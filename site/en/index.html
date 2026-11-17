@@ -100,15 +100,25 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
 
 <section>
   <h2>New: fresh look, workouts continue in the background and calories as a ring <span class="badge">0.6.8</span></h2>
-  <div class="card">
-    <ul>
+  <div class="feature">
+    <img src="../kuvat/en/kaynnissa.png" alt="Home screen card Walking in progress, timer 4:22 and a Continue workout button">
+    <div>
+      <ul>
       <li><b>Fresh look:</b> a bottom bar (Today, Program, Stats, More), a Gym and Activity choice on the home screen, today's suggestion and week rings. Stats as tabs: Week, Progress, Records, Calendar and Steps.</li>
       <li><b>Workouts continue in the background:</b> Back during an activity no longer asks to save; the stopwatch, GPS and heart rate strap keep going. Browse the calendar, program and past workouts mid-walk, and return from the bar above the bottom bar or the home screen's <i>Continue workout</i> button.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="feature" style="margin-top:14px">
+    <img src="../kuvat/en/kalorit.png" alt="Run summary: time, distance, pace and average heart rate, calorie ring 966 kcal with 860 active">
+    <div>
+      <ul>
       <li><b>Calories as a ring:</b> total and active calories shown separately. Walking calories come from speed and height (Ludlow &amp; Weyand 2016), also without a strap; for slow walks the heart-rate estimate was several times too high.</li>
       <li><b>Injury mode and breaks:</b> injury mode lowers the suggested weight for marked exercises and offers a substitute; a break can have a last day, and an upcoming holiday can be marked in advance.</li>
       <li><b>Control from the notification:</b> −15 s, +15 s and Skip for rest, Pause and Continue for activities. Rest can be timed or measured by heart rate.</li>
       <li><b>Search in settings</b>, Health Connect data updated one value at a time with undo, weight and height with a chart, calculation sources on the licences page. The home screen updates when the app stays open overnight.</li>
-    </ul>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -210,7 +220,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
       <li><b>0.6.1:</b> The GPS route map no longer sometimes stays grey when first opened after the app starts. Deleting an unfinished gym workout no longer brings it back to the home screen. Small backups are shown in kB (was "0 MB"). New demo video and screenshots.</li>
       <li><b>0.6:</b> <b>Clearer menu</b>: <i>Training and health</i> and <i>Data and devices</i>; settings in five groups; about, feedback and support in one view. <b>Injury mode and breaks show at the top of the home screen</b>, where you can also end a break.</li>
       <li><b>Progress and statistics</b>: 1, 3 or 6 months or a <b>custom period</b> – from your first workout, to today or to any date. Long periods show workouts per year.</li>
-      <li><b>Automatic backup</b> when a new version starts for the first time (in the workout folder's backup/ folder, at most three). Settings → Storage: save, share or delete.</li>
+      <li><b>Automatic backup</b> when a new version starts for the first time (in the workout folder's backup/ folder, at most three). More → Import, export and backup: save, share or delete.</li>
       <li><b>Restoring a backup</b> keeps sick and holiday breaks even in a diary that already has workouts, and asks whether to turn on injury mode.</li>
       <li><b>Unreadable workout files</b> are shown on the home screen with the reason: a wrong character encoding (e.g. Windows Notepad) can be fixed, others can be sent in a problem report. Problem reports send files as one zip attachment, with the version in the subject.</li>
       <li><b>0.5.9.1:</b> the app's licence information now also covers Ireland's maps, boundaries and elevation data.</li>
@@ -442,7 +452,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li><i>How did it feel?</i> 😫 😕 😐 🙂 🤩 – after a hard workout, feedback per exercise</li>
         <li>rest timer (optional): longer rests for heavy sets, alerts with sound and vibration even with the screen off</li>
         <li><i>Mark move as done</i> stops the rest timer; a finished workout is locked 🔒 and asks before editing</li>
-        <li>a notification for the workout in progress (activity and elapsed time); an unfinished workout is saved every few seconds</li>
+        <li>a notification for the workout in progress (activity and elapsed time, −15 s, +15 s and Skip for rest); an unfinished workout is saved every few seconds</li>
+        <li>workouts continue in the background: browse the calendar, program and past workouts mid-workout, and <i>Continue workout</i> takes you back</li>
         <li>your own exercises, weight per dumbbell or kettlebell, editing your maxes</li>
         <li>plate calculator for barbell lifts, weights as a percentage of your max, supersets and circuits, drop and AMRAP sets, a timer for timed exercises</li>
       </ul>
@@ -461,7 +472,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div class="card">
       <h3>🏃 Running and other sports</h3>
       <ul>
-        <li>choose <b>Gym</b>, <b>Cardio</b> or <b>Both</b>; switch views on the home screen with one tap</li>
+        <li>choose <b>Gym</b>, <b>Cardio</b> or <b>Both</b>; the home screen's <i>Gym | Activity</i> choice switches views with one tap</li>
+        <li>calories as a ring: total and active; walking calories from speed and height, also without a heart rate strap</li>
         <li>add a run with one tap, most-used sports first</li>
         <li>over 30 sports (plus <i>Other activity</i>, with or without GPS); walking, Nordic walking, running and hiking also record steps</li>
         <li>running has its own progress view: pace and average speed, kilometers, easy-run pace and heart rate, records</li>
@@ -476,6 +488,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div class="card">
       <h3>📈 Progress and statistics</h3>
       <ul>
+        <li>stats as tabs: Week, Progress, Records, Calendar and Steps</li>
         <li>overview for 1, 3 or 6 months or a custom period (e.g. from your first workout to today)</li>
         <li>all workouts together, or gym and cardio separately: sessions, time, sets, volume, kilometers, heart rate and by sport</li>
         <li>workouts per week, month or year, including those imported from FitNotes and Garmin</li>
@@ -495,8 +508,8 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
     <div class="card">
       <h3>🩹 Recovery and injuries</h3>
       <ul>
-        <li>injury mode: 20 body areas, exercises to avoid and alternatives</li>
-        <li>sick or vacation break with an easier return</li>
+        <li>injury mode: 20 body areas, exercises to avoid and alternatives; marked exercises get a 30 % lighter weight suggestion</li>
+        <li>sick or vacation break with an easier return; a break can have a last day, or a holiday can be marked in advance</li>
         <li>injury mode and breaks show at the top of the home screen; end a break from there</li>
         <li>without a program, a deload reminder after a long streak of training or when lifts stall</li>
         <li>151 exercises, each with a <i>How to do it</i> animation and technique tips</li>
@@ -509,7 +522,7 @@ footer{padding:30px 0 40px;color:var(--muted);text-align:center;font-size:14px}
         <li>sync with Nextcloud, Seafile, Syncthing or anything else</li>
         <li>import from FitNotes, Garmin Connect and <code>.md</code> files; backup as a zip file</li>
         <li>importing again never duplicates: existing workouts and weigh-ins are kept</li>
-        <li>automatic backup when a new version first starts (up to three); Settings → Storage: save, share or delete</li>
+        <li>automatic backup when a new version first starts (up to three); More → Import, export and backup: save, share or delete</li>
         <li>export for reading or spreadsheets (CSV), with a chosen period and content</li>
         <li>unreadable workout files are shown on the home screen with the reason; a wrong character encoding can be fixed (the original is kept as <code>.bak</code>)</li>
       </ul>
