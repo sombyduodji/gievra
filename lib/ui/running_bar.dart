@@ -98,6 +98,8 @@ class _RunningBarState extends State<RunningBar> {
         return Semantics(
           button: true,
           label: t('{0} käynnissä, {1}. Jatka', [title, parts.join(', ')]),
+          // excludeSemantics pudottaa lapsen napautustoiminnon: ilman omaa onTapia TalkBack ei voinut painaa.
+          onTap: () => _open(gym),
           excludeSemantics: true,
           child: Material(
             key: const ValueKey('runningBar'),

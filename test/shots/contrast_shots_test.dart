@@ -144,6 +144,10 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.tap(find.text(t('Aloita')));
+    // Aloitus 5 s laskennan jälkeen (0.6.5); ilman tätä Tauko-painiketta ei vielä ollut (testi vanhentunut).
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
     clock = clock.add(const Duration(minutes: 12));

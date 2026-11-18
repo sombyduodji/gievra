@@ -148,6 +148,11 @@ void main() {
     // Fiilis yhtenä ruutuna (16.11.): napautus avaa valitsimen, erillinen Tallenna.
     await tester.tap(find.byKey(const ValueKey('feelingTile')));
     await tester.pumpAndSettle();
+    // Yötesti 18.11.: valitsin ei veny koko näytön korkuiseksi (kasvojen sarake ilman mainAxisSize.min).
+    expect(
+      tester.getSize(find.descendant(of: find.byType(AlertDialog), matching: find.byType(Material)).first).height,
+      lessThan(400),
+    );
     await tester.tap(find.byKey(const ValueKey('face_4')));
     await tester.pumpAndSettle();
     expect(r, isNull, reason: 'kasvo ei tallenna heti');

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/injuries.dart';
+import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/ui/injury_screen.dart';
 
 // Vammatila: Takaisin ruksin jälkeen kysyy (Hylkää / Peruuta / Tallenna); ennen valinta hylättiin hiljaa (yötesti 15.11.).
@@ -65,5 +66,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(InjuryScreen), findsNothing);
     expect(settings.injuries, [injuryRegions.first.id]);
+  });
+
+  testWidgets('yötesti 18.11.: alueen valintaruudulla on alueen nimi saavutettavuuspuussa', (tester) async {
+    final sem = tester.ensureSemantics();
+    await open(tester);
+    final first = find.byType(Checkbox).first;
+    expect(tester.getSemantics(first).getSemanticsData().label, t(injuryRegions.first.name));
+    sem.dispose();
   });
 }

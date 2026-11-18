@@ -9,7 +9,9 @@ import 'package:treenipaivakirja/ui/home.dart';
 
 // Etusivun painokortti katoaa heti tallennuksen jälkeen (ei vasta näkymää vaihdettaessa).
 void main() {
-  testWidgets('aamupaino kysytään kerran päivässä; kortti vain asetuksella Painon kehitys etusivulla', (t) async {
+  testWidgets('aamupaino etusivun kysymyksenä (ei ikkunaa); kortti vain asetuksella Painon kehitys etusivulla', (
+    t,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('paino');
     settings
       ..folder = dir.path
@@ -19,45 +21,39 @@ void main() {
       ..bodySkipped = null
       ..body = BodyLog();
     await t.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (c) => Scaffold(
-            body: Column(
-              children: [
-                TextButton(onPressed: () => askDailyWeight(c), child: const Text('avaa')),
-                const WeightTodayCard(),
-              ],
-            ),
-          ),
+      const MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(child: Column(children: [MorningWeightCard(), WeightTodayCard()])),
         ),
       ),
     );
     // Ilman asetusta ei korttia etusivulla (käyttäjä 17.11.).
     expect(find.byKey(const ValueKey('weightCard')), findsNothing);
-    // Päivän ensimmäinen avaus kysyy painon.
-    await t.tap(find.text('avaa'));
-    await t.pumpAndSettle();
-    expect(find.text('Aamupaino'), findsOneWidget);
-    await t.enterText(find.byType(TextField), '-82.4'); // miinus suodattuu, piste käy
-    await t.tap(find.text('OK'));
+    // Kysymys näkyy etusivulla, ei ponnahdusikkunana (käyttäjä 18.11.).
+    expect(find.byKey(const ValueKey('morningWeight')), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+    // Väärä arvo: virhe, ei tallennu.
+    await t.enterText(find.byKey(const ValueKey('morningWeightField')), '5');
+    await t.tap(find.byKey(const ValueKey('morningWeightSave')));
+    await t.pump();
+    expect(find.text('Anna paino 20–400 kg.'), findsOneWidget);
+    await t.enterText(find.byKey(const ValueKey('morningWeightField')), '-82.4'); // miinus suodattuu, piste käy
+    await t.tap(find.byKey(const ValueKey('morningWeightSave')));
+    await t.tap(find.byKey(const ValueKey('morningWeightSave'))); // tuplanapautus
     await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await t.pumpAndSettle();
     expect(settings.body.weights[dateOnly(DateTime.now())], 82.4);
-    // Punnittu: ei kysytä uudelleen.
-    await t.tap(find.text('avaa'));
-    await t.pumpAndSettle();
-    expect(find.text('Aamupaino'), findsNothing);
-    // Ei punnitusta, ikkuna suljetaan: ohitus tälle päivälle, ei kysytä toista kertaa.
+    // Punnittu: kysymys poistuu.
+    expect(find.byKey(const ValueKey('morningWeight')), findsNothing);
+    // Ei tänään: piilottaa tältä päivältä.
     settings.body = BodyLog();
-    await t.tap(find.text('avaa'));
-    await t.pumpAndSettle();
-    expect(find.text('Aamupaino'), findsOneWidget);
-    await t.tapAt(const Offset(5, 5)); // ikkunan ulkopuolelle
-    await t.pumpAndSettle();
+    settings.setWeightOnHome(false); // ilmoittaa muutoksesta
+    await t.pump();
+    expect(find.byKey(const ValueKey('morningWeight')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('morningWeightSkip')));
+    await t.pump();
     expect(settings.bodySkipped, isoDate(dateOnly(DateTime.now())));
-    await t.tap(find.text('avaa'));
-    await t.pumpAndSettle();
-    expect(find.text('Aamupaino'), findsNothing);
+    expect(find.byKey(const ValueKey('morningWeight')), findsNothing);
     // Asetuksella kortti näkyy: viimeisin paino.
     await t.runAsync(() => settings.setWeight(dateOnly(DateTime.now()), 81.0));
     settings.setWeightOnHome(true);

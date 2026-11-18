@@ -10,8 +10,10 @@ const defaultPlates = <double>[25, 20, 15, 10, 5, 2.5, 1.25];
 const defaultBarKg = 20.0;
 
 /// Tankoliike (levylaskuri näytetään): tanko välineenä eikä paino käsipainoa tai kuulaa kohti.
-/// Tanko, jonka paino ei ole tavallisen suoran tangon (asetus): levylaskuri ei koske niitä.
+/// Hex bar -liikkeet: tangon paino omasta asetuksesta (Hex bar, kg); levylaskuri vain, kun se on asetettu.
 const specialBars = {'Farmer walk hex barilla'};
+
+bool isHexBar(String exercise) => specialBars.contains(exercise);
 
 bool isBarbell(String exercise) =>
     !specialBars.contains(exercise) && (exerciseEquipment[exercise]?.contains(Equip.tanko) ?? false);

@@ -556,6 +556,28 @@ class HrDetails extends StatelessWidget {
               ].join(' · '),
               style: sub,
             ),
+            // Kävely sykevyöllä (käyttäjä 18.11.): kalorit vauhdista, mutta sykkeestä laskettu arvio näkyy vertailuksi
+            // ja merkitään epäluotettavaksi (Keytel 2005 on tehty reippaalle liikunnalle; hitaassa kävelyssä noin
+            // 1,5–3-kertainen: 49 min keskisykkeellä 93 sykkeestä 360 kcal, vauhdista noin 150).
+            if (!watch && p != null && w.kcalSource == 'nopeus' && w.activity == 'Kävely' && w.kcal != null)
+              Builder(
+                builder: (context) {
+                  final fromHr = p.kcalEnduranceFor(s, w.durationSec);
+                  if (fromHr <= w.kcal! * 1.15) return const SizedBox.shrink();
+                  return Padding(
+                    key: const ValueKey('walkHrKcal'),
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      t(
+                        'Sykevyöstä laskettuna {0} kcal: ei luotettava kävelyssä. Sykkeeseen perustuva kaava on tehty '
+                        'reippaalle liikunnalle ja yliarvioi hidasta kävelyä, joten kalorit lasketaan vauhdista.',
+                        [fromHr],
+                      ),
+                      style: sub,
+                    ),
+                  );
+                },
+              ),
             // Vyö lakkasi lähettämästä kesken treenin: todennäköisin syy on puhelimen akunsäästö (näyttö lukittuna).
             if (cover < 50 && !watch)
               Padding(

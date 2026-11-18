@@ -54,6 +54,8 @@ class _MainShellState extends State<MainShell> {
           button: true,
           selected: on,
           label: '$label, ${i + 1}/${tabs.length}',
+          // excludeSemantics pudottaa lapsen napautustoiminnon: ilman omaa onTapia TalkBack ei voinut painaa.
+          onTap: () => _go(i),
           excludeSemantics: true,
           child: InkWell(
             key: ValueKey('tab_$fi'),

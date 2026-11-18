@@ -27,7 +27,10 @@ bool? debugStepsSupported;
 
 /// Päivän askeltavoite: kalenterin täysi rengas ja etusivun kortin ylin viiva (yleinen päivätavoite; terveyshyöty
 /// tasaantuu noin 6 000–10 000:ssa).
-const stepsGoal = 10000;
+int get stepsGoal => settings.stepsGoal;
+
+/// Askelmäärä lyhyesti: 10000 → 10k, 7500 → 7,5k.
+String stepsK(int n) => n % 1000 == 0 ? '${n ~/ 1000}k' : '${fmtDec(n / 1000, 1)}k';
 
 /// Tavoitteen ylittävän osan ja askelrenkaan väri.
 const stepsGoalColor = Color(0xFF1D9E75);
@@ -283,18 +286,32 @@ class _SideSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget seg(String v, String label) => GestureDetector(
+    // Kosketusalue 48 dp (yötesti 18.11.: ~28 dp) ilman että pilleri kasvaa: läpinäkyvä tila pillerin ylä- ja
+    // alapuolella; TalkBack kertoo valitun.
+    Widget seg(String v, String label) => Semantics(
+      button: true,
+      selected: v == value,
+      inMutuallyExclusiveGroup: true,
+      label: label,
       onTap: () => onChanged(v),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: v == value ? Sami.yellow.withValues(alpha: .35) : Colors.transparent,
-          borderRadius: BorderRadius.circular(99),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          style: TextStyle(fontSize: 13, fontWeight: v == value ? FontWeight.w700 : null),
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onChanged(v),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+            decoration: BoxDecoration(
+              color: v == value ? Sami.yellow.withValues(alpha: .35) : Colors.transparent,
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(fontSize: 13, fontWeight: v == value ? FontWeight.w700 : null),
+            ),
+          ),
         ),
       ),
     );
@@ -302,15 +319,25 @@ class _SideSwitch extends StatelessWidget {
     return FittedBox(
       fit: BoxFit.scaleDown,
       alignment: AlignmentDirectional.centerStart,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: cs.outlineVariant),
-          borderRadius: BorderRadius.circular(99),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [for (var i = 0; i < values.length; i++) seg(values[i], labels[i])],
-        ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            top: 10,
+            bottom: 10,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: cs.outlineVariant),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [for (var i = 0; i < values.length; i++) seg(values[i], labels[i])],
+          ),
+        ],
       ),
     );
   }
@@ -471,7 +498,11 @@ class StepsWeekChart extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              for (final (n, label) in [(0, '0'), (stepsGoal ~/ 2, '5k'), (stepsGoal, '10k')])
+              for (final (n, label) in [
+                (0, '0'),
+                (stepsGoal ~/ 2, stepsK(stepsGoal ~/ 2)),
+                (stepsGoal, stepsK(stepsGoal)),
+              ])
                 Positioned(
                   left: 0,
                   right: 0,
@@ -503,37 +534,44 @@ class StepsWeekChart extends StatelessWidget {
                   children: [
                     for (final (i, d) in week.indexed)
                       Expanded(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
+                        // TalkBack: pylväällä päivä ja askeleet (yötesti 18.11.: nimettömät napautettavat pylväät).
+                        child: Semantics(
+                          button: true,
+                          label: t('{0}: {1} askelta', [shortDate(d), thousands(values[i])]),
                           onTap: () => showStepsDay(context, d),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                if (values[i] > stepsGoal)
+                          excludeSemantics: true,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => showStepsDay(context, d),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (values[i] > stepsGoal)
+                                    Container(
+                                      key: ValueKey('stepsOver$i'),
+                                      height: y(values[i] - stepsGoal),
+                                      decoration: const BoxDecoration(
+                                        color: stepsGoalColor,
+                                        borderRadius: BorderRadius.vertical(top: Radius.circular(3)),
+                                      ),
+                                    ),
                                   Container(
-                                    key: ValueKey('stepsOver$i'),
-                                    height: y(values[i] - stepsGoal),
-                                    decoration: const BoxDecoration(
-                                      color: stepsGoalColor,
-                                      borderRadius: BorderRadius.vertical(top: Radius.circular(3)),
+                                    height: y(values[i].clamp(0, stepsGoal)).clamp(2.0, height),
+                                    decoration: BoxDecoration(
+                                      color: values[i] == stepsGoal
+                                          ? stepsGoalColor
+                                          : d == today
+                                          ? cs.primary.withValues(alpha: .6)
+                                          : cs.outlineVariant,
+                                      borderRadius: values[i] > stepsGoal
+                                          ? const BorderRadius.vertical(bottom: Radius.circular(3))
+                                          : BorderRadius.circular(3),
                                     ),
                                   ),
-                                Container(
-                                  height: y(values[i].clamp(0, stepsGoal)).clamp(2.0, height),
-                                  decoration: BoxDecoration(
-                                    color: values[i] == stepsGoal
-                                        ? stepsGoalColor
-                                        : d == today
-                                        ? cs.primary.withValues(alpha: .6)
-                                        : cs.outlineVariant,
-                                    borderRadius: values[i] > stepsGoal
-                                        ? const BorderRadius.vertical(bottom: Radius.circular(3))
-                                        : BorderRadius.circular(3),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),

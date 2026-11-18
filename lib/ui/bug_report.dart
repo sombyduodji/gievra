@@ -19,6 +19,7 @@ import '../maps/map_store.dart';
 import '../models.dart' show isoDate;
 import '../theme.dart';
 import 'widgets.dart';
+import '../picker_guard.dart';
 
 /// ☰ → Ilmoita ongelmasta: ongelman tyyppi, kuvaus ja liitteet (treenitiedostot, asetukset, kuvakaappaukset).
 /// Androidilla avautuu sähköpostisovellus valmiilla vastaanottajalla, aiheella ja liitteillä; muualla jakovalikko.
@@ -284,10 +285,14 @@ class _BugReportScreenState extends State<BugReportScreen> {
   }
 
   Future<void> _pick({required bool images}) async {
-    final picked = await FilePicker.pickFiles(
-      dialogTitle: images ? t('Valitse kuvakaappaukset') : t('Valitse tiedostot'),
-      type: images ? FileType.image : FileType.any,
-    );
+    final picked =
+        (await pickOnce(
+          () => FilePicker.pickFiles(
+            dialogTitle: images ? t('Valitse kuvakaappaukset') : t('Valitse tiedostot'),
+            type: images ? FileType.image : FileType.any,
+          ),
+        ) ??
+        const []);
     for (final f in picked) {
       final path = f.path;
       if (path == null) continue;
@@ -376,11 +381,13 @@ class _BugReportScreenState extends State<BugReportScreen> {
           'paths': paths,
         });
       } else {
-        await SharePlus.instance.share(
-          ShareParams(
-            text: '${AppInfo.feedbackEmail}\n\n$body',
-            subject: subject,
-            files: [for (final x in paths) XFile(x)],
+        await pickOnce(
+          () => SharePlus.instance.share(
+            ShareParams(
+              text: '${AppInfo.feedbackEmail}\n\n$body',
+              subject: subject,
+              files: [for (final x in paths) XFile(x)],
+            ),
           ),
         );
       }

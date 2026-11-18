@@ -471,7 +471,14 @@ class MapStore extends ChangeNotifier {
         }
         final errors = <String>[];
         await Future.wait([
-          for (final (cc, url) in countries) fetch(url, expect: cc).catchError((Object e) => errors.add('$cc: $e')),
+          // Verkkovirhe tiiviinä käyttäjän kielellä (ennen raaka "ClientException with SocketException: Failed host
+          // lookup: 'github.com' (OS Error …)" näkyi luettelon virheen alla, yötesti 18.11.).
+          for (final (cc, url) in countries)
+            fetch(url, expect: cc).catchError(
+              (Object e) => errors.add(
+                '$cc: ${e is SocketException || e is http.ClientException || e is TimeoutException ? l10n.t('ei verkkoyhteyttä') : l10n.errorText(e)}',
+              ),
+            ),
         ]);
         if (errors.isNotEmpty && catalogs.isEmpty) err = errors.join('; ');
       } catch (e) {

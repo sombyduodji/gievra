@@ -1,3 +1,5 @@
+import 'sleep.dart' show SleepNight;
+
 import 'dart:convert';
 
 import 'package:archive/archive.dart';
@@ -13,7 +15,7 @@ import 'models.dart';
 /// Suomeksi ja saameksi erottimena puolipiste ja desimaalipilkku (Excel avaa suoraan), englanniksi pilkku ja piste.
 class CsvExportOptions {
   final DateTime from, to; // päivät mukaan lukien
-  final bool gym, cardio, body, notes, steps;
+  final bool gym, cardio, body, notes, steps, sleep;
   const CsvExportOptions({
     required this.from,
     required this.to,
@@ -22,6 +24,7 @@ class CsvExportOptions {
     this.body = false,
     this.notes = false,
     this.steps = false,
+    this.sleep = false,
   });
 }
 
@@ -42,8 +45,17 @@ String _num(double? v) {
   return isEnglish ? s : s.replaceAll('.', ',');
 }
 
+/// Taulukko-ohjelma tulkitsee =, +, -, @, sarkaimella tai rivinvaihdolla alkavan solun kaavaksi (CSV-kaavainjektio:
+/// esim. Health Connectista tai tuodusta uni.md:stä tullut sovelluksen nimi "=HYPERLINK(…)"). Tekstisolun eteen
+/// heittomerkki; luvut (myös "-0,12" ja "+0,31") jäävät luvuiksi. Yötesti 18.11.
+final _formulaStart = RegExp(r'^[=+\-@\t\r]');
+final _numberLike = RegExp(r'^[+-]?\d+([.,]\d+)?$');
+
+String csvCell(Object? v) => _cell(v);
+
 String _cell(Object? v) {
-  final s = v == null ? '' : '$v';
+  var s = v == null ? '' : '$v';
+  if (v is! num && _formulaStart.hasMatch(s) && !_numberLike.hasMatch(s.trim())) s = "'$s";
   final sep = _sep;
   if (s.contains(sep) || s.contains('"') || s.contains('\n') || s.contains('\r')) {
     return '"${s.replaceAll('"', '""')}"';
@@ -92,6 +104,7 @@ List<CsvFile> buildCsvExport(
   BodyLog body,
   CsvExportOptions o, {
   Map<DateTime, int> steps = const {},
+  Map<DateTime, SleepNight> sleep = const {},
 }) {
   final ws = [...workouts.where((w) => _inRange(w.date, o))]
     ..sort((a, b) => a.date == b.date ? a.session.compareTo(b.session) : a.date.compareTo(b.date));
@@ -275,6 +288,31 @@ List<CsvFile> buildCsvExport(
     ];
     if (rows.isNotEmpty) {
       out.add(CsvFile(_fileName(t('askeleet')), _table([t('Päivä'), t('Askeleet')], rows), rows.length));
+    }
+  }
+  // Yöunet (uni.md): herätyspäivä, nukkumaan, herätys, uni minuutteina, yön alin syke ja sovellus.
+  if (o.sleep) {
+    final days = sleep.keys.where((d) => _inRange(d, o)).toList()..sort();
+    String hm(DateTime d) => '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final rows = [
+      for (final d in days)
+        [
+          isoDate(d),
+          hm(sleep[d]!.bed),
+          hm(sleep[d]!.wake),
+          sleep[d]!.asleep.inMinutes,
+          sleep[d]!.lowHr ?? '',
+          sleep[d]!.app,
+        ],
+    ];
+    if (rows.isNotEmpty) {
+      out.add(
+        CsvFile(
+          _fileName(t('uni')),
+          _table([t('Päivä'), t('Nukkumaan'), t('Herätys'), t('Uni (min)'), t('Yön alin syke'), t('Lähde')], rows),
+          rows.length,
+        ),
+      );
     }
   }
   return out;

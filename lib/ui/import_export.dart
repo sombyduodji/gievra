@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../sleep.dart' show sleepData;
 import '../app_state.dart';
 import '../auto_backup.dart';
 import '../body.dart';
@@ -24,6 +25,7 @@ import 'bug_report.dart';
 import 'program_template.dart' show importTemplate, templateMaxBytes;
 import 'widgets.dart';
 import '../l10n.dart';
+import '../picker_guard.dart';
 
 /// Tuonti muista sovelluksista ja oma varmuuskopio (zip .md-tiedostoista).
 class ImportExportScreen extends StatefulWidget {
@@ -69,7 +71,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   }
 
   Future<PlatformFile?> _pick(List<String> ext) async {
-    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse tiedosto'));
+    final files = (await pickOnce(() => FilePicker.pickFiles(dialogTitle: t('Valitse tiedosto'))) ?? const []);
     if (files.isEmpty) return null;
     final f = files.first;
     final e = (f.extension ?? '').toLowerCase().replaceAll('.', '');
@@ -83,7 +85,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   /// Tuo tiedosto: yksi painike, tyyppi tunnistetaan sisällöstä (FitNotes, Garmin, Gievran varmuuskopio,
   /// .md-treenit, ohjelmapohja). Useampi .md-tiedosto kerralla tuodaan yhdessä.
   Future<void> _importAny() => _run(() async {
-    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse tuotava tiedosto'));
+    final files = (await pickOnce(() => FilePicker.pickFiles(dialogTitle: t('Valitse tuotava tiedosto'))) ?? const []);
     if (files.isEmpty) return;
     for (final f in files) {
       checkImportSize(await f.xFile.length());
@@ -212,10 +214,11 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final today = dateOnly(DateTime.now());
     var period = 90; // päiviä; 0 = kaikki, -1 = oma aikaväli
     DateTimeRange? custom;
-    var gym = true, cardio = true, body = false, notes = false, steps = false;
+    var gym = true, cardio = true, body = false, notes = false, steps = false, sleep = false;
     final hasBody = settings.body.weights.isNotEmpty;
     // Askeleet valittavissa, kun päivän askeleet ovat päällä tai niitä on tallennettu (luettu käynnistyessä).
     final hasSteps = settings.dailySteps || dailySteps.days.isNotEmpty;
+    final hasSleep = sleepData.nights.isNotEmpty;
     DateTime from() => switch (period) {
       0 => DateTime(1900),
       -1 => custom?.start ?? today,
@@ -230,12 +233,19 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       body: body && hasBody,
       notes: notes,
       steps: steps && hasSteps,
+      sleep: sleep && hasSleep,
     );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) {
-          final files = buildCsvExport(store.workouts, settings.body, opts(), steps: dailySteps.days);
+          final files = buildCsvExport(
+            store.workouts,
+            settings.body,
+            opts(),
+            steps: dailySteps.days,
+            sleep: sleepData.nights,
+          );
           final cs = Theme.of(ctx).colorScheme;
           return AlertDialog(
             scrollable: true,
@@ -325,6 +335,16 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                     title: Text(t('Päivän askeleet')),
                     subtitle: Text(t('Terveystietoa: jaa harkiten.'), style: TextStyle(color: cs.error)),
                   ),
+                if (hasSleep)
+                  CheckboxListTile(
+                    key: const ValueKey('csvSleep'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: sleep,
+                    onChanged: (v) => setDialog(() => sleep = v ?? false),
+                    title: Text(t('Yöunet')),
+                    subtitle: Text(t('Terveystietoa: jaa harkiten.'), style: TextStyle(color: cs.error)),
+                  ),
                 CheckboxListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
@@ -356,15 +376,19 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     );
     if (ok != true || !mounted) return;
     await _run(() async {
-      final files = buildCsvExport(store.workouts, settings.body, opts(), steps: dailySteps.days);
+      final files = buildCsvExport(
+        store.workouts,
+        settings.body,
+        opts(),
+        steps: dailySteps.days,
+        sleep: sleepData.nights,
+      );
       final stamp = isoDate(today);
       final (name, bytes) = files.length == 1
           ? ('gievra-${files.single.name.replaceAll('.csv', '')}-$stamp.csv', utf8.encode(files.single.text))
           : ('gievra-csv-$stamp.zip', csvZip(files));
-      final uri = await FilePicker.saveFile(
-        fileName: name,
-        bytes: Uint8List.fromList(bytes),
-        dialogTitle: t('Tallenna vienti'),
+      final uri = await pickOnce(
+        () => FilePicker.saveFile(fileName: name, bytes: Uint8List.fromList(bytes), dialogTitle: t('Tallenna vienti')),
       );
       if (uri != null && mounted) _snack(t('Vienti tallennettu.'));
     });
@@ -393,10 +417,12 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final tmp = p.join((await getTemporaryDirectory()).path, 'FitNotes_Backup.fitnotes');
     final sets = await writeFitnotes(tmp, store.workouts, weighIns: settings.body.weights);
     final file = File(tmp);
-    final uri = await FilePicker.saveFile(
-      fileName: 'FitNotes_Backup_${isoDate(DateTime.now())}.fitnotes',
-      bytes: await file.readAsBytes(),
-      dialogTitle: t('Tallenna FitNotes-varmuuskopio'),
+    final uri = await pickOnce(
+      () async => FilePicker.saveFile(
+        fileName: 'FitNotes_Backup_${isoDate(DateTime.now())}.fitnotes',
+        bytes: await file.readAsBytes(),
+        dialogTitle: t('Tallenna FitNotes-varmuuskopio'),
+      ),
     );
     await file.delete();
     if (uri != null && mounted) _snack(t('Viety {0} treeniä, {1} sarjaa.', [store.workouts.length, sets]));
@@ -642,7 +668,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
             Icons.archive_outlined,
             t('Vie varmuuskopio (.zip)'),
             t(
-              'Kaikki treenit, reitit (.gpx), asetukset, ohjelma, punnitukset, askeleet ja tallennetut ohjelmat yhdessä zip-tiedostossa.',
+              'Kaikki treenit, reitit (.gpx), asetukset, ohjelma, punnitukset, askeleet, uni ja yöarvot sekä tallennetut ohjelmat '
+              'yhdessä zip-tiedostossa. Sisältää terveystietoja: säilytä ja jaa harkiten.',
             ),
             _export,
           ),

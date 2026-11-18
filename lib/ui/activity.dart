@@ -1211,7 +1211,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               min: 1,
               max: 1440,
             );
-            if (v != null && v > 0) setState(() => _setMinutes(v.round()));
+            if (v != null && v > 0 && mounted) setState(() => _setMinutes(v.round()));
           },
         ),
       ],

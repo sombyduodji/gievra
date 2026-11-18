@@ -181,3 +181,55 @@ List<RunGroup> runGroups(List<Workout> ws, DateTime today, {int minRuns = 2, Lis
   }
   return out;
 }
+
+/// Oma tavoite "Juoksuvauhdin kehitys" (käyttäjä 18.11.): jakson juoksujen vauhti verrattuna 4 edelliseen viikkoon
+/// samassa matkaryhmässä (lyhyttä lenkkiä ei verrata pitkään). Ryhmien erotukset painotetaan jakson kilometreillä.
+/// Negatiivinen = nopeampi (s/km). Null = ei vertailtavaa (jaksolla tai sitä edeltävällä 4 viikolla ei juoksua
+/// samassa ryhmässä).
+double? paceProgress(List<Workout> ws, DateTime from, DateTime next, List<RunBand> bands) {
+  final before = addDays(from, -28);
+  final runs = runsOf(ws);
+  var wsum = 0.0, dsum = 0.0;
+  for (final (lo, hi0) in bands) {
+    final hi = hi0 ?? double.infinity;
+    var kmN = 0.0, secN = 0.0, kmB = 0.0, secB = 0.0;
+    for (final r in runs) {
+      final km = r.distanceKm!;
+      if (km < lo || km >= hi) continue;
+      if (!r.date.isBefore(from) && r.date.isBefore(next)) {
+        kmN += km;
+        secN += r.durationSec!;
+      } else if (!r.date.isBefore(before) && r.date.isBefore(from)) {
+        kmB += km;
+        secB += r.durationSec!;
+      }
+    }
+    if (kmN == 0 || kmB == 0) continue;
+    dsum += (secN / kmN - secB / kmB) * kmN;
+    wsum += kmN;
+  }
+  return wsum == 0 ? null : dsum / wsum;
+}
+
+/// Oma tavoite "Vauhti samalla sykkeellä": metrejä sydämenlyöntiä kohden (matka / (kesto × keskisyke)) jakson
+/// juoksuista verrattuna 4 edelliseen viikkoon, prosentteina (positiivinen = nopeampi samalla sykkeellä, eli
+/// peruskunto paranee). Vain juoksut, joissa on keskisyke. Null = ei vertailtavaa.
+double? hrPaceProgress(List<Workout> ws, DateTime from, DateTime next) {
+  final before = addDays(from, -28);
+  var mN = 0.0, bN = 0.0, mB = 0.0, bB = 0.0;
+  for (final r in runsOf(ws)) {
+    final hr = r.hrAvg;
+    if (hr == null || hr < 60) continue;
+    final beats = r.durationSec! / 60 * hr;
+    final m = r.distanceKm! * 1000;
+    if (!r.date.isBefore(from) && r.date.isBefore(next)) {
+      mN += m;
+      bN += beats;
+    } else if (!r.date.isBefore(before) && r.date.isBefore(from)) {
+      mB += m;
+      bB += beats;
+    }
+  }
+  if (bN == 0 || bB == 0) return null;
+  return (mN / bN) / (mB / bB) * 100 - 100;
+}

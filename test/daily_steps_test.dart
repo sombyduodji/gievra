@@ -231,10 +231,15 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MaterialApp(home: OnboardingScreen()));
     await tester.pump();
+    // Askeleet kysytään vasta, kun terveys on valittu (18.11.).
+    await tester.tap(find.byKey(const ValueKey('onbHealth')));
+    await tester.pump();
     expect(find.textContaining(RegExp('seurataanko päivän askeleita', caseSensitive: false)), findsOneWidget);
     debugStepsSupported = false;
     await tester.pumpWidget(const MaterialApp(home: Scaffold()));
     await tester.pumpWidget(const MaterialApp(home: OnboardingScreen()));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('onbHealth')));
     await tester.pump();
     expect(
       find.textContaining(RegExp('seurataanko päivän askeleita', caseSensitive: false)),

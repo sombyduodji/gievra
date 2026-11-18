@@ -55,4 +55,28 @@ void main() {
     expect(ws2.workout.session, 2);
     expect(ws2.workout.exercises.single.name, 'Takakyykky');
   });
+
+  testWidgets('yötesti 18.11.: lämmittelypaneeli (laitteet asetuksissa) asettuu ilman virhettä', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final today = dateOnly(DateTime.now());
+    expect(settings.equipment, isNotEmpty);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => askWarmupAndStart(c, date: today),
+            child: const Text('aloita'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('aloita'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('startWarmup')), findsOneWidget);
+    // Kesto-säädin toimii.
+    await tester.tap(find.byTooltip('Lisää'));
+    await tester.pump();
+    expect(find.textContaining('11'), findsOneWidget);
+  });
 }

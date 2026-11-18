@@ -40,6 +40,9 @@ class KcalRing extends StatelessWidget {
     );
     return Semantics(
       label: t('{0} kcal yhteensä, aktiivisia {1}, lepokulutus {2}', [total, active, rest]),
+      // Napautus (kellon tietojen muokkaus) myös TalkBackille: excludeSemantics pudotti InkWellin toiminnon.
+      button: onTap != null,
+      onTap: onTap,
       excludeSemantics: true,
       child: Material(
         key: const ValueKey('kcalRing'),

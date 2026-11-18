@@ -67,6 +67,11 @@ DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 /// Kalenteripäivien lisäys (Duration ei kelpaa: kesäaikasiirtymä siirtää kellonaikaa).
 DateTime addDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
 
+/// Kalenteripäiviä [from]-päivästä [to]-päivään. UTC-päivinä: paikallisella ajalla kesäaikaan siirtymän viikolla
+/// erotus on 71 h ja `inDays` yhtä liian pieni (3 päivää vanha yö näkyi "viime yönä").
+int daysBetween(DateTime from, DateTime to) =>
+    DateTime.utc(to.year, to.month, to.day).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
 /// ISO-viikkonumero. Lasketaan UTC-päivinä: paikallisella ajalla kesäajan tunti katosi erotuksesta, ja vuosina,
 /// joiden 1.1. on torstai (esim. 2026), kesäajan viikot näkyivät yhtä pienempinä (koodikatselmus 17.11.).
 int isoWeek(DateTime d) {
@@ -348,6 +353,10 @@ String fmtDec(num v, int digits) {
 double? parseNum(String s) => double.tryParse(s.trim().replaceAll(',', '.'));
 
 String workoutToMarkdown(Workout w) {
+  // Lämmittely ja supersarjat kuuluvat salitreeniin: pelkkään liikuntaan niitä ei kirjoiteta (käyttäjän vienti 18.11.:
+  // vanha versio jatkoi salipäivää aamun kävelyyn, ja kävelytiedostoon tuli salin lämmittely ja supersarja). Korjaa
+  // samalla jo vahingoittuneen tiedoston seuraavassa tallennuksessa.
+  final gymOnly = w.activity == null || w.exercises.isNotEmpty;
   final b = StringBuffer()
     ..writeln('---')
     ..writeln('date: ${isoDate(w.date)}')
@@ -359,7 +368,7 @@ String workoutToMarkdown(Workout w) {
   if (w.distanceManual && w.distanceKm != null) b.writeln('distance_source: manual');
   if (w.snapM case final s?) b.writeln('snap: ${s == 0 ? 'off' : '$s m'}');
   if (w.intensity != null) b.writeln('intensity: ${w.intensity}');
-  if (w.warmup != null) b.writeln('warmup: ${w.warmup!.equipment}, ${w.warmup!.minutes} min');
+  if (gymOnly && w.warmup != null) b.writeln('warmup: ${w.warmup!.equipment}, ${w.warmup!.minutes} min');
   if (w.bodyweight != null) b.writeln('bodyweight: ${fileNum(w.bodyweight!)}');
   if (w.started != null) b.writeln('start: ${_two(w.started!.hour)}:${_two(w.started!.minute)}');
   if (w.minutes != null) {
@@ -395,7 +404,7 @@ String workoutToMarkdown(Workout w) {
   // Kahden käsipainon painot yhteispainoina (tarkistettu tai uudella versiolla kirjattu), ks. Workout.dumbbellReview.
   if (w.hasTotalDumbbells && !w.dumbbellReview) b.writeln('dumbbells: total');
   if (w.skipMoves.isNotEmpty) b.writeln('skip: ${w.skipMoves.join('; ')}');
-  if (w.supersets.isNotEmpty) b.writeln('superset: ${w.supersets.map((g) => g.join(' + ')).join('; ')}');
+  if (gymOnly && w.supersets.isNotEmpty) b.writeln('superset: ${w.supersets.map((g) => g.join(' + ')).join('; ')}');
   b
     ..writeln('tags: [treeni]')
     ..writeln('---')
@@ -416,7 +425,7 @@ String workoutToMarkdown(Workout w) {
         '${w.intensity == null ? '' : ', ${w.intensity}'}',
       );
   }
-  if (w.warmup != null) {
+  if (gymOnly && w.warmup != null) {
     b
       ..writeln()
       ..writeln('## $warmupHeading')

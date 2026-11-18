@@ -138,6 +138,25 @@ void main() {
     });
   });
 
+  test('yötesti 18.11.: luettelo ilman verkkoa: tiivis virhe, ei raakaa poikkeustekstiä osoitteineen', () async {
+    final tmp = Directory.systemTemp.createTempSync('gievra-offline');
+    addTearDown(() {
+      MapStore.instance
+        ..dirOverride = null
+        ..clientOverride = null
+        ..catalog = null;
+      tmp.deleteSync(recursive: true);
+    });
+    final store = MapStore.instance
+      ..dirOverride = tmp
+      ..catalog = null
+      ..clientOverride = MockClient((_) async => throw http.ClientException('Failed host lookup: github.com'));
+    final err = await store.load(refresh: true);
+    expect(err, isNotNull);
+    expect(err, isNot(contains('github.com')));
+    expect(err, contains('ei verkkoyhteyttä'));
+  });
+
   group('Ladatut kartat', () {
     late Directory tmp;
     setUp(() => tmp = Directory.systemTemp.createTempSync('gievra-ladatut'));

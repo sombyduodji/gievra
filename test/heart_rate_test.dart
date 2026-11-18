@@ -340,6 +340,39 @@ void main() {
     expect(repairLowCoverageKcal(old(), null), isFalse);
   });
 
+  testWidgets('hidas kävely sykevyöllä: kalorit vauhdista, sykkeestä laskettu näkyy epäluotettavana (18.11.)', (
+    tester,
+  ) async {
+    settings
+      ..birthYear = 1985
+      ..sex = 'nainen'
+      ..body = BodyLog(heightCm: 168, weights: {DateTime(2026, 11, 1): 66.0});
+    addTearDown(() {
+      settings
+        ..birthYear = null
+        ..sex = null
+        ..body = BodyLog();
+    });
+    // Keksitty: 49 min kävely 2 km, syke noin 93 koko ajan.
+    final vals = List.filled(49 * 12, '93').join(' ');
+    final w = Workout(date: DateTime(2026, 11, 10), title: 'Kävely', activity: 'Kävely')
+      ..seconds = 49 * 60
+      ..distanceKm = 2.0
+      ..hrSource = 'sykevyö'
+      ..hrSeries = HrSeries.decode('5 09:00:00 $vals', DateTime(2026, 11, 10));
+    applyHeartRate(w, HrStats(93, 93, 49 * 12, w.hrSeries));
+    expect(w.kcalSource, 'nopeus');
+    final fromHr = hrProfile()!.kcalEnduranceFor(w.hrSeries!, w.durationSec);
+    expect(fromHr, greaterThan(w.kcal! * 1.15));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: SingleChildScrollView(child: HrDetails(w))),
+      ),
+    );
+    expect(find.byKey(const ValueKey('walkHrKcal')), findsOneWidget);
+    expect(find.textContaining('ei luotettava kävelyssä'), findsOneWidget);
+  });
+
   testWidgets('Sykekortti: aika alle alueiden näkyy omana rivinään, jolloin rivit summautuvat mitattuun', (
     tester,
   ) async {

@@ -593,7 +593,9 @@ class FaceRow extends StatelessWidget {
                 key: ValueKey('face_$v'),
                 customBorder: const StadiumBorder(),
                 onTap: () => onTap(v),
+                // min: ponnahdusikkunassa sarake venyi koko korkeuteen (tyhjä ikkuna, yötesti 18.11.).
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedScale(
                       scale: value == v ? 1.1 : 1,

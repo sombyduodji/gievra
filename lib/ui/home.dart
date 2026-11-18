@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
 import 'maps_screen.dart';
@@ -14,6 +15,7 @@ import '../running.dart';
 import '../sports.dart';
 import '../gps_recorder.dart';
 import '../app_state.dart';
+import '../body.dart' show parseWeight;
 import '../auto_backup.dart';
 import '../custom_merge.dart';
 import '../drafts.dart';
@@ -40,7 +42,10 @@ import 'program_screen.dart';
 import 'run_bands.dart';
 import 'running_bar.dart';
 import 'start_panels.dart';
+import 'recovery_card.dart' show RecoveryHelpSection;
 import 'home_extras_ui.dart';
+import '../home_extras.dart' show nightHr;
+import '../sleep.dart' show sleepData;
 import 'shell.dart' show MainShell;
 import 'body_screen.dart';
 import 'bug_report.dart';
@@ -561,10 +566,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _refreshSteps();
     _resume();
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _checkMoves()
-          .then((_) => _checkElevFormat())
-          .then((_) => _checkWhatsNew())
-          .then((_) => mounted ? askDailyWeight(context) : null),
+      (_) => _checkMoves().then((_) => _checkElevFormat()).then((_) => _checkWhatsNew()),
     );
   }
 
@@ -583,8 +585,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       tzWatch.check();
       dayWatch.check();
       _refreshSteps();
-      // Päivän ensimmäinen avaus: paino (vain kun etusivu on päällimmäisenä, ei kesken treenin).
-      if (ModalRoute.of(context)?.isCurrent ?? false) askDailyWeight(context);
+      setState(() {}); // päivä vaihtui: aamupainon kysymys näkyviin
     } else if (state == AppLifecycleState.paused) {
       dailySteps.stopTimer();
     }
@@ -718,11 +719,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final today = dateOnly(now);
         return Scaffold(
           appBar: AppBar(
-            title: BarTitle(
-              Text(
-                (settings.name ?? '').isEmpty ? '${seGreeting(now)}!' : '${seGreeting(now)}, ${settings.name}',
-                overflow: TextOverflow.ellipsis,
-              ),
+            // Pelkkä saamenkielinen tervehdys ilman nimeä, hieman pienempänä (käyttäjä 18.11.), jotta päiväys
+            // mahtuu viereen; pienenee tarvittaessa (suuri teksti).
+            title: FittedBox(
+              key: const ValueKey('homeGreeting'),
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(seGreeting(now), style: const TextStyle(fontSize: 20)),
             ),
             // Matalampi palkki: viiva lähemmäs tervehdystä; suurella tekstillä korkeampi, ettei teksti leikkaudu.
             toolbarHeight: (MediaQuery.textScalerOf(context).scale(22) + 22).clamp(44.0, 80.0),
@@ -732,12 +735,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: Padding(padding: EdgeInsets.fromLTRB(18, 0, 18, 4), child: SamiBand(height: 4, pattern: false)),
             ),
             actions: [
-              // Päivämäärä ohjeen vieressä (luonnos etusivu4).
+              // Päivä saameksi ja sen alla suomeksi (englanninkielisessä käyttöliittymässä englanniksi) suluissa,
+              // vasemmalta tasattuna (käyttäjä 18.11.). Enintään 1,3-kertaisena: 2-kertaisella fontilla päiväys vei
+              // tilan tervehdykseltä.
               Center(
-                // Päiväys enintään 1,3-kertaisena: 2-kertaisella järjestelmäfontilla se vei tilan tervehdykseltä.
-                child: MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: 1.3,
-                  child: Text(shortDate(now), style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                child: ConstrainedBox(
+                  // Kapealla näytöllä suurella fontilla päiväys pienenee eikä vie tervehdyksen tilaa (360 dp, 2,0).
+                  constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .42),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.3,
+                      child: Column(
+                        key: const ValueKey('homeDate'),
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${seWeekdays[now.weekday - 1]} ${now.day}.${now.month}.',
+                            style: TextStyle(fontSize: 13.5, height: 1.2, color: cs.onSurface.withValues(alpha: .85)),
+                          ),
+                          Text(
+                            '(${(isEnglish ? enWeekdays : fiWeekdays)[now.weekday - 1]})',
+                            style: TextStyle(fontSize: 13, height: 1.2, color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
               IconButton(
@@ -755,6 +781,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               if (stepsTabAvailable) await dailySteps.refresh();
               await HealthImportButton.refresh();
               await NightHrData.refresh(force: true);
+              if (sleepData.enabled) await sleepData.refresh(force: true);
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 2, 18, 32),
@@ -858,6 +885,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       child: Text(store.error!, style: TextStyle(color: cs.error)),
                     ),
                 ],
+                const MorningWeightCard(),
                 const SizedBox(height: 14),
                 Card(
                   child: Padding(
@@ -909,6 +937,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       'next' => NextDayCard(), // ei const: lukee ohjelman ja treenit
                       'streak' => StreakCard(), // ei const: lukee treenit ja tauot
                       'recovery' => const NightHrCard(),
+                      'sleep' => SleepCard(), // ei const: lukee unitiedot ja asetukset
+                      // Yöarvot näkyvät Palautuminen-kortissa (käyttäjä 18.11.), eivät omana korttinaan.
+                      'night' => const SizedBox.shrink(),
                       _ => const SizedBox.shrink(),
                     },
               ],
@@ -1029,6 +1060,8 @@ class _SplitCta extends StatelessWidget {
         return Semantics(
           button: true,
           label: isGym ? gymSemantics : t('Aloita liikunta'),
+          // excludeSemantics pudottaa lapsen napautustoiminnon: ilman omaa onTapia TalkBack ei voinut painaa.
+          onTap: isGym ? onGym : onActivity,
           excludeSemantics: true,
           child: ClipPath(
             clipper: _ArrowClip(point: isGym),
@@ -1159,12 +1192,18 @@ class MonthCalendar extends StatelessWidget {
       children: [
         for (final (i, d) in uiWeekdaysShort.indexed)
           Expanded(
+            // Yhdelle riville, pienennetään tarvittaessa (fontti 2,0: "Mo / n", "We / d" katkesivat, Samsung 18.11.).
             child: Center(
-              child: Text(
-                d,
-                style: i == todayCol
-                    ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
-                    : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  d,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: i == todayCol
+                      ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
+                      : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
               ),
             ),
           ),
@@ -1297,11 +1336,16 @@ class MonthCalendar extends StatelessWidget {
     final cells = <Widget>[
       for (final (i, d) in uiWeekdaysShort.indexed)
         Center(
-          child: Text(
-            d,
-            style: home && inMonth && i == today.weekday - 1
-                ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
-                : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              d,
+              maxLines: 1,
+              softWrap: false,
+              style: home && inMonth && i == today.weekday - 1
+                  ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
+                  : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            ),
           ),
         ),
       for (var i = 0; i < lead; i++) const SizedBox(),
@@ -1326,7 +1370,11 @@ class MonthCalendar extends StatelessWidget {
         if (!home)
           Row(
             children: [
-              IconButton.filledTonal(onPressed: () => onShift(-1), icon: const Icon(Icons.chevron_left)),
+              IconButton.filledTonal(
+                tooltip: t('Edellinen'),
+                onPressed: () => onShift(-1),
+                icon: const Icon(Icons.chevron_left),
+              ),
               Expanded(
                 child: Column(
                   children: [
@@ -1342,7 +1390,11 @@ class MonthCalendar extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton.filledTonal(onPressed: () => onShift(1), icon: const Icon(Icons.chevron_right)),
+              IconButton.filledTonal(
+                tooltip: t('Seuraava'),
+                onPressed: () => onShift(1),
+                icon: const Icon(Icons.chevron_right),
+              ),
             ],
           ),
         if (home)
@@ -1403,7 +1455,7 @@ class MonthCalendar extends StatelessWidget {
                   // Kapeassa kortissa teksti rivittyy (etusivun kuukausi: ylivuoto 26 px, tarkistus 17.11.).
                   Flexible(
                     child: Text(
-                      t('Askeleet (täysi rengas 10 000)'),
+                      t('Askeleet (täysi rengas {0})', [thousands(stepsGoal)]),
                       style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                     ),
                   ),
@@ -1444,7 +1496,7 @@ class _DayCell extends StatelessWidget {
 
   /// Askelrenkaan väri (kalenteri ja selite) ja täysi rengas: sama kuin etusivun kortin tavoiteviiva.
   static const stepsColor = stepsGoalColor;
-  static const stepsFull = stepsGoal;
+  static int get stepsFull => stepsGoal;
 
   @override
   Widget build(BuildContext context) {
@@ -2270,29 +2322,137 @@ class _UnreadableBanner extends StatelessWidget {
   );
 }
 
-/// Aamupaino etusivulla (kehonpainon seuranta päällä, ei vielä punnittu tänään eikä ohitettu): painike avaa
-/// syöttöikkunan, Ohita piilottaa rivin tältä päivältä. Korjaukset ☰ → Asetukset → Paino ja pituus.
-/// Kysyy päivän painon kerran päivässä (käyttäjä 17.11.): kehonpainon seuranta päällä, tänään ei punnitusta eikä
-/// ohitusta. Ikkunan sulkeminen ilman painoa ohittaa tämän päivän, joten kysymys ei toistu.
-bool _askingWeight = false;
+/// Aamupaino etusivun kysymyksenä (käyttäjä 18.11.: ei ponnahdusikkunaa): kehonpainon seuranta päällä, tänään ei
+/// punnitusta eikä ohitusta. Kenttä ei avaa näppäimistöä itsestään; Tallenna kirjaa painon, Ei tänään piilottaa
+/// kysymyksen tältä päivältä. Korjaukset Asetukset → Paino ja pituus.
+class MorningWeightCard extends StatefulWidget {
+  const MorningWeightCard({super.key});
 
-Future<void> askDailyWeight(BuildContext context) async {
-  final today = dateOnly(DateTime.now());
-  if (!settings.bodyTracker || !settings.introDone || _askingWeight) return;
-  if (settings.body.weights.containsKey(today) || settings.bodySkipped == isoDate(today)) return;
-  // Käynnistys ja sovellukseen palaaminen voivat kysyä yhtä aikaa: vain yksi ikkuna (koodikatselmus 17.11.).
-  _askingWeight = true;
-  final double? kg;
-  try {
-    kg = await askBodyValue(context, height: false, title: t('Aamupaino'), previous: settings.body.sorted.lastOrNull);
-  } finally {
-    _askingWeight = false;
+  static bool visible() {
+    final today = dateOnly(DateTime.now());
+    return settings.bodyTracker &&
+        settings.introDone &&
+        !settings.body.weights.containsKey(today) &&
+        settings.bodySkipped != isoDate(today);
   }
-  if (kg != null) {
-    await settings.setWeight(today, kg);
-  } else {
-    settings.skipBodyToday(isoDate(today));
+
+  @override
+  State<MorningWeightCard> createState() => _MorningWeightCardState();
+}
+
+class _MorningWeightCardState extends State<MorningWeightCard> {
+  final _c = TextEditingController();
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
   }
+
+  Future<void> _save() async {
+    if (_saving) return; // tuplanapautus
+    final v = parseWeight(_c.text);
+    if (v == null) {
+      setState(() => _error = t('Anna paino 20–400 kg.'));
+      return;
+    }
+    _saving = true;
+    FocusScope.of(context).unfocus();
+    try {
+      await settings.setWeight(dateOnly(DateTime.now()), v);
+    } finally {
+      _saving = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: settings,
+    builder: (context, _) {
+      if (!MorningWeightCard.visible()) return const SizedBox.shrink();
+      final cs = Theme.of(context).colorScheme;
+      final prev = settings.body.sorted.lastOrNull;
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Card(
+          key: const ValueKey('morningWeight'),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.monitor_weight_outlined, size: 20, color: cs.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: Text(t('Aamupaino'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const ValueKey('morningWeightField'),
+                        controller: _c,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        textInputAction: TextInputAction.done,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                          LengthLimitingTextInputFormatter(5),
+                        ],
+                        decoration: InputDecoration(
+                          hintText: prev == null ? null : fmtNum(prev.$2),
+                          // Yksikkö näkyy myös ennen kentän napautusta (suffixText näkyy vain kohdistettuna).
+                          suffixIcon: const Padding(padding: EdgeInsets.only(top: 12), child: Text('kg')),
+                          suffixIconConstraints: const BoxConstraints(minWidth: 28),
+                          errorText: _error,
+                          helperText: prev == null
+                              ? null
+                              : t('Edellinen {0} kg ({1})', [fmtNum(prev.$2), shortDate(prev.$1)]),
+                        ),
+                        onChanged: (_) {
+                          if (_error != null) setState(() => _error = null);
+                        },
+                        onSubmitted: (_) => _save(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: FilledButton(
+                        key: const ValueKey('morningWeightSave'),
+                        onPressed: _save,
+                        child: Text(t('Tallenna')),
+                      ),
+                    ),
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    key: const ValueKey('morningWeightSkip'),
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      settings.skipBodyToday(isoDate(dateOnly(DateTime.now())));
+                    },
+                    child: Text(t('Ei tänään')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// Kehonpaino etusivulla (vain asetuksella Painon kehitys etusivulla): viimeisin paino, muutos 30 päivässä ja käyrä.
@@ -2445,17 +2605,23 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
   builder: (ctx) {
     final cs = Theme.of(ctx).colorScheme;
     final sub = TextStyle(fontSize: 13.5, color: cs.onSurfaceVariant, height: 1.35);
-    Widget sec(String title, String body) => Padding(
+    Widget sec(String title, [String? body]) => Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-          const SizedBox(height: 4),
-          Text(body, style: sub),
+          if (body != null) ...[const SizedBox(height: 4), Text(body, style: sub)],
         ],
       ),
     );
+    // Ohje vain siitä, mitä etusivulla nyt on (käyttäjä 17.11.): askeleet, Health Connect, tavoitteet ja kortit.
+    final steps = stepsTabAvailable;
+    final hc = HealthImportButton.visible;
+    final oneGoal = settings.goals.length == 1;
+    final streak = settings.homeCardOn('streak') && store.workouts.isNotEmpty;
+    final recovery = settings.homeCardOn('recovery') && nightHr(nightHrNights(), DateTime.now()) != null;
+    final sleep = settings.homeCardOn('sleep');
     Widget dot(Color c, {bool hollow = false}) => Container(
       width: 10,
       height: 10,
@@ -2486,10 +2652,11 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
             sec(
               t('Sali ja Liikunta'),
               t(
-                'Sali avaa ohjelmasi päivät (ehdotus ylimpänä) ja vapaan treenin; Liikunta avaa viimeksi käyttämäsi '
-                'lajit ja sitten kirjaustavan (GPS, ajanotto tai jo tehty). Kellon harjoitukset Health Connectista '
-                'näkyvät paneelin ylälaidassa. Paneeli sulkeutuu pyyhkäisyllä alas tai Takaisin-painikkeella.',
-              ),
+                    'Sali avaa ohjelmasi päivät (ehdotus ylimpänä) ja vapaan treenin; Liikunta avaa viimeksi käyttämäsi '
+                    'lajit ja sitten kirjaustavan (GPS, ajanotto tai jo tehty). Paneeli sulkeutuu pyyhkäisyllä alas tai '
+                    'Takaisin-painikkeella.',
+                  ) +
+                  (hc ? ' ${t('Kellon harjoitukset Health Connectista näkyvät paneelin ylälaidassa.')}' : ''),
             ),
             sec(t('Viikko ja kuukausi'), t('Valitse Viikko tai Kuukausi; ‹ › vaihtaa jaksoa.')),
             mark(
@@ -2503,21 +2670,28 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
                 'näkyy kokonaisminuuteissa. Napauta rengasta nähdäksesi laskutavan.',
               ),
             ),
-            mark(
-              SizedBox(width: 22, height: 22, child: CustomPaint(painter: _StepsRing(.8, blueText(ctx), width: 3))),
-              t('Askeleet: viikossa tämän päivän, kuukaudessa keskiarvo päivää kohden; tavoite {0}.', [
-                thousands(stepsGoal),
-              ]),
-            ),
-            sec(t('Päivät'), ''),
-            mark(
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: CustomPaint(painter: _StepsRing(.7, _DayCell.stepsColor, width: 3)),
+            if (steps)
+              mark(
+                SizedBox(width: 22, height: 22, child: CustomPaint(painter: _StepsRing(.8, blueText(ctx), width: 3))),
+                t('Askeleet: viikossa tämän päivän, kuukaudessa keskiarvo päivää kohden; tavoite {0}.', [
+                  thousands(stepsGoal),
+                ]),
               ),
-              t('Kehä täyttyy päivän askelista; täysi = {0} askelta.', [thousands(stepsGoal)]),
-            ),
+            if (oneGoal)
+              mark(
+                SizedBox(width: 22, height: 22, child: CustomPaint(painter: _StepsRing(.5, yellowText(ctx), width: 3))),
+                t('Oma tavoitteesi keltaisella renkaana tässä rivissä.'),
+              ),
+            sec(t('Päivät')),
+            if (steps)
+              mark(
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CustomPaint(painter: _StepsRing(.7, _DayCell.stepsColor, width: 3)),
+                ),
+                t('Kehä täyttyy päivän askelista; täysi = {0} askelta.', [thousands(stepsGoal)]),
+              ),
             mark(dot(redText(ctx)), t('Salitreeni tehty')),
             mark(dot(greenText(ctx)), t('Liikuntaa tehty')),
             mark(
@@ -2527,41 +2701,44 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
               ),
               t('Tänään keltaisella · napauta päivää nähdäksesi sen treenit'),
             ),
-            mark(
-              SizedBox(width: 22, height: 22, child: CustomPaint(painter: _StepsRing(.5, yellowText(ctx), width: 3))),
-              t('Omat tavoitteet keltaisella: yksi näkyy tässä rivissä, useampi omana korttinaan.'),
-            ),
             sec(
               t('Omat tavoitteet ja kortit'),
               t(
-                'Asetukset → Etusivu: lisää enintään 3 omaa tavoitetta (salipäivät, matka, liikunta-aika tai kerrat, '
-                'koko liikunta tai yksi laji) ja valitse kortit järjestyksessä: Seuraava treeni, Viikkoputki, '
-                'Palautuminen, Viimeksi, Voiman kehitys, Juoksun kehitys (omat matkaryhmät) ja Kehonpaino.',
+                'Asetukset → Etusivu: enintään 3 omaa tavoitetta, askeltavoite ja kortit päälle, pois ja järjestykseen.',
               ),
             ),
-            sec(
-              t('Viikkoputki'),
-              t(
-                'Montako viikkoa peräkkäin molemmat WHO:n suositukset täyttyivät (lihaskunto 2 päivänä ja 150 min '
-                'reipasta liikuntaa). Vihreä = molemmat, keltainen = toinen, tyhjä = ei kumpaakaan. Tauko (sairas, loma '
-                'tai vamma vähintään 4 päivää) ei katkaise putkea. Kuluva viikko lasketaan, kun se täyttyy.',
+            if (streak)
+              sec(
+                t('Viikkoputki'),
+                t(
+                  'Montako viikkoa peräkkäin molemmat WHO:n suositukset täyttyivät (lihaskunto 2 päivänä ja 150 min '
+                  'reipasta liikuntaa). Vihreä = molemmat, keltainen = toinen, tyhjä = ei kumpaakaan. Tauko (sairas, loma '
+                  'tai vamma vähintään 4 päivää) ei katkaise putkea. Kuluva viikko lasketaan, kun se täyttyy.',
+                ),
               ),
-            ),
-            sec(
-              t('Palautuminen'),
-              t(
-                'Yön alin syke (alin 15 minuutin keskiarvo klo 21–10) kellosta Health Connectin kautta. Kolmen viimeisen '
-                'yön keskiarvoa verrataan tavalliseen tasoosi (mediaani 28 yöstä): 5 lyöntiä tai enemmän koholla voi '
-                'kertoa sairastumisesta, rasituksesta tai huonosta unesta. Vain sykkeen lukulupa; unitietoja ei lueta.',
+            // Palautuminen-kortin värit ja selitykset (käyttäjä 18.11.: ohje täällä, ei kortissa).
+            if (recovery) const RecoveryHelpSection(),
+            if (sleep)
+              sec(
+                t('Uni'),
+                t(
+                  'Valinnainen kortti (Asetukset → Etusivu, oletus pois): yöunet Health Connectista, esim. Ouralta. '
+                  'Viime yön uni ilman valveillaoloa, 7 yön keskiarvo ja säännöllisyys 14 yöltä (nukkumaanmenon ja '
+                  'herätyksen vaihtelu, vihreä enintään ±30 min, keltainen ±90 min). Unta verrataan omaan tavalliseesi '
+                  '(mediaani 4–5 viikolta; alussa 7 h): vihreä enintään 30 min alle tavallisen, keltainen enemmän, '
+                  'punainen 6 h tai alle. ⚠ otsikossa kertoo vihjeen (lyhyt yö, tavallista lyhyempi viikko, myöhäinen '
+                  'kova treeni). Vain vihjeitä, ei diagnoosia; lähteet Lisää → Tietoa. Usean sovelluksen kirjaamista öistä käytetään sitä, '
+                  'jolla on eniten öitä. Yöt tallentuvat uni.md-tiedostoon ja ovat mukana varmuuskopioissa.',
+                ),
               ),
-            ),
-            sec(
-              t('Askeleet ja Health Connect'),
-              t(
-                'Askeleet ja kellon harjoitukset tulevat Health Connectista. Ne päivittyvät, kun avaat sovelluksen, ja '
-                '15 minuutin välein sen ollessa auki. Vedä etusivua alas päivittääksesi heti.',
+            if (steps || hc)
+              sec(
+                t('Askeleet ja Health Connect'),
+                t(
+                  'Askeleet ja kellon harjoitukset tulevat Health Connectista. Ne päivittyvät, kun avaat sovelluksen, ja '
+                  '15 minuutin välein sen ollessa auki. Vedä etusivua alas päivittääksesi heti.',
+                ),
               ),
-            ),
           ],
         ),
       ),

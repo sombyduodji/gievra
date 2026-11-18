@@ -30,8 +30,13 @@ class MainActivity : FlutterActivity() {
     private var saveResult: MethodChannel.Result? = null
     private var saveSource: String? = null
 
+    // Ilmoituksen painikkeiden kutsu tälle aktiviteetille; nollataan onDestroyssa, ettei staattinen kenttä pidä
+    // tuhottua aktiviteettia ja sen kanavaa muistissa (vain jos uudempi aktiviteetti ei ole jo asettanut omaansa).
+    private var noteCb: ((String) -> Unit)? = null
+
     override fun onDestroy() {
         if (live?.get() === this) live = null
+        if (NoteActionReceiver.onAction === noteCb) NoteActionReceiver.onAction = null
         scope.cancel()
         super.onDestroy()
     }
@@ -425,9 +430,11 @@ class MainActivity : FlutterActivity() {
         // Käynnissä oleva treeni pudotusvalikossa (OngoingNote.kt).
         val ongoingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fi.somby.gievra/ongoing")
         // Ilmoituksen palautuspainikkeet Dartille (pääsäikeessä).
-        NoteActionReceiver.onAction = { a ->
+        val cb: (String) -> Unit = { a ->
             runOnUiThread { ongoingChannel.invokeMethod("noteAction", a) }
         }
+        noteCb = cb
+        NoteActionReceiver.onAction = cb
         ongoingChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "show" -> {
@@ -497,12 +504,17 @@ class MainActivity : FlutterActivity() {
                 "granted" -> scope.launch {
                     try {
                         val need = when {
+                            call.argument<Boolean>("sleep") == true && call.argument<Boolean>("history") == true -> HealthBridge.sleepHistoryPermissions
+                            call.argument<Boolean>("sleep") == true -> HealthBridge.sleepPermissions
+                            call.argument<Boolean>("metrics") == true -> HealthBridge.metricsPermissions(this@MainActivity)
                             call.argument<Boolean>("history") == true -> HealthBridge.historyPermissions
                             call.argument<Boolean>("steps") == true -> HealthBridge.stepsPermissions
                             call.argument<Boolean>("import") == true -> HealthBridge.importPermissions
                             else -> HealthBridge.readPermissions
                         }
-                        result.success(HealthBridge.granted(this@MainActivity).containsAll(need))
+                        val have = HealthBridge.granted(this@MainActivity)
+                        // Yöarvot: riittää, että jokin arvo on sallittu (käyttäjä voi antaa vain osan).
+                        result.success(if (call.argument<Boolean>("metrics") == true) need.any { it in have } else have.containsAll(need))
                     } catch (e: Exception) {
                         result.error("health", e.message, null)
                     }
@@ -510,6 +522,9 @@ class MainActivity : FlutterActivity() {
                 "request" -> {
                     val write = call.argument<Boolean>("write") == true && BuildConfig.DEBUG
                     val read = when {
+                        call.argument<Boolean>("sleep") == true && call.argument<Boolean>("history") == true -> HealthBridge.sleepHistoryPermissions
+                        call.argument<Boolean>("sleep") == true -> HealthBridge.sleepPermissions
+                        call.argument<Boolean>("metrics") == true -> HealthBridge.metricsPermissions(this)
                         call.argument<Boolean>("history") == true -> HealthBridge.historyPermissions
                         call.argument<Boolean>("steps") == true -> HealthBridge.stepsPermissions
                         call.argument<Boolean>("import") == true -> HealthBridge.importPermissions
@@ -575,6 +590,24 @@ class MainActivity : FlutterActivity() {
                         val start = (call.argument<Number>("start") ?: 0).toLong()
                         val end = (call.argument<Number>("end") ?: 0).toLong()
                         result.success(HealthBridge.stepsInRange(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "nightMetrics" -> scope.launch {
+                    try {
+                        @Suppress("UNCHECKED_CAST")
+                        val w = (call.argument<List<Any>>("windows") ?: emptyList()).map { it as List<Any> }
+                        result.success(HealthBridge.nightMetrics(this@MainActivity, w))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
+                "sleepSessions" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.sleepSessions(this@MainActivity, start, end))
                     } catch (e: Exception) {
                         result.error("health", e.message, null)
                     }

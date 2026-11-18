@@ -1,3 +1,5 @@
+import '../sleep.dart' show sleepData;
+
 import 'dart:io';
 
 import 'maps_screen.dart';
@@ -18,6 +20,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_info.dart';
 import '../app_state.dart';
+import '../health.dart' show HealthConnect;
+import 'health_import.dart' show HealthImportButton;
 import '../auto_backup.dart';
 import '../rest.dart';
 import '../models.dart';
@@ -42,6 +46,7 @@ import '../heart_rate.dart' show hr;
 import 'hr_ui.dart';
 import 'home_settings.dart';
 import '../maps/elevation.dart' show copernicusAttribution;
+import '../picker_guard.dart';
 
 Future<void> _open(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
@@ -93,6 +98,9 @@ class ActiveBadge extends StatelessWidget {
 }
 
 /// Valikon kohdat: ☰-valikko ([drawer]) tai alapalkin Lisää-välilehti (ulkoasun kohennus 16.11.).
+/// Kartat-valikko vain, kun liikunta on käytössä (käyttäjä 18.11.).
+bool mapsInMenu(String trainMode) => trainMode != 'gym';
+
 List<Widget> menuEntries(BuildContext context, {bool drawer = true}) {
   final cs = Theme.of(context).colorScheme;
   final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
@@ -182,7 +190,8 @@ List<Widget> menuEntries(BuildContext context, {bool drawer = true}) {
     if (!isDemo) ...[
       const Divider(indent: 18, endIndent: 18),
       _cap(context, t('Tiedot ja laitteet')),
-      if (Platform.isAndroid)
+      // Kartat vain, kun liikunta on käytössä (käyttäjä 18.11.: pelkälle salille ei turhaa valikkoa).
+      if (Platform.isAndroid && mapsInMenu(settings.trainMode))
         ListTile(
           leading: const Icon(Icons.map_outlined),
           title: Text(t('Kartat')),
@@ -357,14 +366,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _q = '';
 
-  void _open(SettingsGroup g) => Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: BarTitle(Text(SettingsScreen.title(g))), bottom: samiBarBand),
-        body: ListView(padding: const EdgeInsets.only(top: 8, bottom: 24), children: [_SettingsSection(g)]),
-      ),
-    ),
-  );
+  void _open(SettingsGroup g) => openSettingsGroup(context, g);
 
   @override
   Widget build(BuildContext context) {
@@ -600,11 +602,13 @@ class _AutoBackupsState extends State<_AutoBackups> {
   Future<void> _save(File f) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final uri = await FilePicker.saveFile(
-        fileName: p.basename(f.path),
-        bytes: await f.readAsBytes(),
-        mimeType: 'application/zip',
-        dialogTitle: t('Tallenna varmuuskopio'),
+      final uri = await pickOnce(
+        () async => FilePicker.saveFile(
+          fileName: p.basename(f.path),
+          bytes: await f.readAsBytes(),
+          mimeType: 'application/zip',
+          dialogTitle: t('Tallenna varmuuskopio'),
+        ),
       );
       if (uri != null) messenger.showSnackBar(SnackBar(content: Text(t('Varmuuskopio tallennettu.'))));
     } catch (e) {
@@ -641,10 +645,12 @@ class _AutoBackupsState extends State<_AutoBackups> {
     // Jaetaan väliaikaisen kopion kautta (kuten treenin .md-tiedosto).
     final tmp = File(p.join((await getTemporaryDirectory()).path, p.basename(f.path)));
     await f.copy(tmp.path);
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(tmp.path, mimeType: 'application/zip')],
-        subject: p.basename(f.path),
+    await pickOnce(
+      () => SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(tmp.path, mimeType: 'application/zip')],
+          subject: p.basename(f.path),
+        ),
       ),
     );
   }
@@ -730,6 +736,16 @@ class _AutoBackupsState extends State<_AutoBackups> {
   }
 }
 
+/// Avaa asetusryhmän suoraan (esim. Palautuminen-kortin ohjeesta Asetukset → Etusivu, 18.11.).
+Future<void> openSettingsGroup(BuildContext context, SettingsGroup g) => Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (_) => Scaffold(
+      appBar: AppBar(title: BarTitle(Text(SettingsScreen.title(g))), bottom: samiBarBand),
+      body: ListView(padding: const EdgeInsets.only(top: 8, bottom: 24), children: [_SettingsSection(g)]),
+    ),
+  ),
+);
+
 class _SettingsSection extends StatelessWidget {
   final SettingsGroup group;
   const _SettingsSection(this.group);
@@ -741,7 +757,11 @@ class _SettingsSection extends StatelessWidget {
 
   Future<void> _pickFolder(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final dir = await FilePicker.getDirectoryPath(dialogTitle: t('Valitse treenikansio'));
+    // file_picker 13.4 vanhentaa getDirectoryPathin (pickDirectory palauttaa content://-osoitteen). Treenikansio
+    // luetaan tiedostopolkuna Kaikkien tiedostojen käyttö -luvalla, joten polku on tässä oikea; vaihto vaatisi
+    // tiedostokerroksen uusimisen SAF:lle.
+    // ignore: deprecated_member_use
+    final dir = await pickOnce(() => FilePicker.getDirectoryPath(dialogTitle: t('Valitse treenikansio')));
     if (dir == null) return;
     // Androidilla toisen sovelluksen (Nextcloud, Seafile, Syncthing…) synkkaamaa kansiota
     // voi lukea vain "Kaikkien tiedostojen käyttö" -luvalla.
@@ -810,7 +830,10 @@ class _SettingsSection extends StatelessWidget {
             const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text('Kieli · Giella')),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: LanguagePicker()),
             const SizedBox(height: 8),
-            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Teema'))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+              child: Semantics(header: true, child: Text(t('Teema'))),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SegmentedButton<ThemeMode>(
@@ -834,7 +857,10 @@ class _SettingsSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Tekstin koko'))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+              child: Semantics(header: true, child: Text(t('Tekstin koko'))),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextSizePicker(value: settings.textSize, onChanged: settings.setTextSize),
@@ -869,7 +895,10 @@ class _SettingsSection extends StatelessWidget {
             ],
             // Englanninkielisessä käyttöliittymässä nimet ovat aina englanniksi: valintaa ei tarvita.
             if (!isEnglish) ...[
-              Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text(t('Liikkeiden nimet'))),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                child: Semantics(header: true, child: Text(t('Liikkeiden nimet'))),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SegmentedButton<String>(
@@ -907,7 +936,10 @@ class _SettingsSection extends StatelessWidget {
           ],
           if (group == SettingsGroup.home) HomeLayoutSettings(), // ei const: asetukset muuttuvat
           if (group == SettingsGroup.training) ...[
-            Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Mitä treenaat?'))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              child: Semantics(header: true, child: Text(t('Mitä treenaat?'))),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TrainModePicker(
@@ -920,14 +952,17 @@ class _SettingsSection extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Text(
                 t(
-                  'Sali: salitreenit ja ohjelma. Kestävyys: juoksu, pyöräily, hiihto ja muut lajit. Molemmat: '
+                  'Sali: salitreenit ja ohjelma. Liikunta: juoksu, pyöräily, hiihto ja muut lajit. Molemmat: '
                   'etusivulla valinta Sali / Liikunta.',
                 ),
                 style: sub,
               ),
             ),
             if (settings.trainMode != 'gym') ...[
-              Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Text(t('Uinnin vauhti'))),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                child: Semantics(header: true, child: Text(t('Uinnin vauhti'))),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SegmentedButton<bool>(
@@ -961,7 +996,15 @@ class _SettingsSection extends StatelessWidget {
               leading: const Icon(Icons.fitness_center),
               title: Text(t('Levyt ja tanko')),
               subtitle: Text(
-                t('Levylaskuri: {0} · tanko {1} kg', [settings.plates.map(fmtNum).join(', '), fmtNum(settings.barKg)]),
+                [
+                  t('Levylaskuri: {0} · tanko {1} kg', [
+                    settings.plates.map(fmtNum).join(', '),
+                    fmtNum(settings.barKg),
+                  ]),
+                  settings.hexBarKg == null
+                      ? t('hex bar: ei asetettu')
+                      : t('hex bar {0} kg', [fmtNum(settings.hexBarKg!)]),
+                ].join(' · '),
                 style: sub,
               ),
               onTap: () => showPlateSheet(context),
@@ -1106,20 +1149,13 @@ class _SettingsSection extends StatelessWidget {
             SwitchListTile(
               title: Text(t('Kehonpainon seuranta')),
               subtitle: Text(
-                t('Kysyy painoa kerran päivässä, kun avaat sovelluksen. Painon kehitys ja painoindeksi tilastoissa.'),
+                t('Aamupaino kysytään etusivulla kerran päivässä. Painon kehitys ja painoindeksi tilastoissa.'),
                 style: sub,
               ),
               value: settings.bodyTracker,
               onChanged: settings.setBodyTracker,
             ),
-            if (settings.bodyTracker)
-              SwitchListTile(
-                key: const ValueKey('weightOnHome'),
-                title: Text(t('Painon kehitys etusivulla')),
-                subtitle: Text(t('Viimeisin paino, muutos 30 päivässä ja käyrä etusivulla.'), style: sub),
-                value: settings.weightOnHome,
-                onChanged: settings.setWeightOnHome,
-              ),
+            // Etusivun painokortti vain Asetukset → Etusivu -sivulla muiden korttien kanssa (käyttäjä 18.11.).
             if (settings.bodyTracker)
               ListTile(
                 leading: const Icon(Icons.monitor_weight_outlined),
@@ -1211,7 +1247,27 @@ class _SettingsSection extends StatelessWidget {
                   style: sub,
                 ),
                 value: settings.hcImport,
-                onChanged: settings.setHcImport,
+                // Lupa heti päälle kytkettäessä kuten askeleissa ja unessa (testi 18.11.: uusi käyttäjä ei saanut
+                // lupakyselyä lainkaan, koska tarkistus ilman lupaa palauttaa tyhjän eikä painiketta näytetty).
+                onChanged: (v) async {
+                  settings.setHcImport(v);
+                  if (!v) return;
+                  final ok =
+                      await HealthConnect.status() == 'available' &&
+                      await HealthConnect.request(import: true).catchError((_) => false);
+                  if (!ok && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          t(
+                            'Liikunnan lisäys tarvitsee luvan lukea harjoitukset Health Connectista. Voit antaa sen myöhemmin.',
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  HealthImportButton.refresh();
+                },
               ),
           ],
           if (group == SettingsGroup.storage) ...[
@@ -1246,9 +1302,13 @@ class _SettingsSection extends StatelessWidget {
 
 // --- Dialogit -------------------------------------------------------------
 
-Widget _h(String t) => Padding(
-  padding: const EdgeInsets.only(top: 16, bottom: 6),
-  child: Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+Widget _h(String t) => Semantics(
+  header: true,
+  container: true,
+  child: Padding(
+    padding: const EdgeInsets.only(top: 16, bottom: 6),
+    child: Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+  ),
 );
 
 Widget _bullets(BuildContext context, List<(String, String)> items) => Column(
@@ -1331,6 +1391,16 @@ Future<void> showAbout(BuildContext context) async {
             t(
               'Sovelluksessa ei ole tiliä, mainoksia eikä analytiikkaa, eikä se lähetä tietoja '
               'minnekään. Treenit pysyvät omassa kansiossasi.',
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Sama sisältö kuin Health Connectin tietosuojalinkin natiivinäkymässä (PrivacyActivity.kt).
+          Text(
+            t(
+              'Health Connectista Gievra lukee vain ne tiedot, joihin annat luvan, ja vain itse käyttöön ottamiisi '
+              'toimintoihin: treenien tuonti ja syke, askeleet sekä valinnaiset Uni- ja Palautuminen-kortit yöarvoineen '
+              '(oletuksena pois). Tiedot tallentuvat vain kansioosi (askeleet.md, uni.md), eikä Gievra kirjoita '
+              'Health Connectiin. Luvat voi perua Health Connectin asetuksista.',
             ),
           ),
           _h(t('Saamelainen teema')),
@@ -1894,6 +1964,7 @@ Future<void> changeFolder(BuildContext context, String? newDir) async {
   await settings.setFolder(newDir);
   await store.reload();
   await dailySteps.load(); // uuden kansion askeleet.md
+  await sleepData.load(); // ja uni.md
   messenger.showSnackBar(SnackBar(content: Text(t('{0}Löytyi {1} treeniä.', [msg, store.workouts.length]))));
 }
 

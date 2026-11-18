@@ -32,7 +32,10 @@ bool _paused(DateTime mon, List<Pause> pauses) {
 Streak whoStreak(List<Workout> workouts, DateTime today, {List<Pause> pauses = const [], int show = 8}) {
   final thisMon = weekStart(dateOnly(today));
   if (workouts.isEmpty) return Streak(0, 0, [(thisMon, WeekMark.open)]);
-  final first = weekStart(workouts.map((w) => w.date).reduce((a, b) => a.isBefore(b) ? a : b));
+  var first = weekStart(workouts.map((w) => w.date).reduce((a, b) => a.isBefore(b) ? a : b));
+  // Pelkkiä tulevia päiviä (käsin muokattu tai synkronoitu tiedosto): kuluva viikko silti mukaan (ennen tyhjä lista
+  // ja kortin kaatuminen).
+  if (first.isAfter(thisMon)) first = thisMon;
   final marks = <(DateTime, WeekMark)>[];
   for (var mon = first; !mon.isAfter(thisMon); mon = addDays(mon, 7)) {
     final a = periodActivity(workouts, mon, addDays(mon, 7));
@@ -78,7 +81,7 @@ NightHr? nightHr(Map<DateTime, int> nights, DateTime today) {
   if (nights.isEmpty) return null;
   final days = nights.keys.toList()..sort();
   final lastDay = days.last;
-  if (dateOnly(today).difference(lastDay).inDays > 3) return null;
+  if (daysBetween(lastDay, today) > 3) return null;
   final recentDays = days.where((d) => !d.isBefore(addDays(lastDay, -2))).toList();
   final recent = recentDays.map((d) => nights[d]!).reduce((a, b) => a + b) / recentDays.length;
   final from = addDays(recentDays.first, -28);

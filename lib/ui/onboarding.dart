@@ -37,7 +37,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _body = false;
   bool _steps = false;
 
+  /// Terveys ja hyvinvointi (käyttäjä 18.11.): pois = vain treenit; askeleita ja kehonpainoa ei kysytä eikä
+  /// terveysominaisuuksia oteta käyttöön (kellon ja sykevyön treenitiedot toimivat silti). Kaiken voi kytkeä
+  /// myöhemmin asetuksista.
+  bool _health = false;
+
   void _done() {
+    if (!_health) {
+      _body = false;
+      _steps = false;
+    }
     settings.trainMode = _mode;
     // Kehonpainon seuranta: pituus ja nykyinen paino ovat valinnaisia (voi lisätä myöhemmin asetuksista).
     settings.bodyTracker = _body;
@@ -112,6 +121,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
+            const SizedBox(height: 12),
+            // Tietosuoja näkyvästi heti alussa (käyttäjä 18.11.).
+            Container(
+              key: const ValueKey('onbPrivacy'),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              decoration: BoxDecoration(
+                color: greenText(context).withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: greenText(context).withValues(alpha: .35)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lock_outline, color: greenText(context)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      t(
+                        'Kaikki tiedot pysyvät vain tässä puhelimessa. Gievra ei lähetä eikä synkronoi mitään '
+                        'minnekään. Varmuuskopiot ja jakaminen tapahtuvat vain, kun itse teet ne.',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SectionLabel(t('Miksi haluat, että sinua kutsutaan?')),
             // Valinnainen: tyhjänä tervehdys ilman nimeä. Ei automaattista näppäimistöä, joka peittäisi sivun.
             TextField(
@@ -149,13 +184,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
-            // Seuranta yhdessä kortissa kytkimin (luonnos aloitus 3): luvat kysytään vasta kytkiessä.
+            // Seuranta yhdessä kortissa kytkimin (luonnos aloitus 3): luvat kysytään vasta kytkiessä. Ensin yksi
+            // pääkytkin (käyttäjä 18.11.: uusi käyttäjä näkee vain perusasiat): ilman sitä ei kysytä mitään muuta.
             SectionLabel(t('Mitä seurataan?')),
             Card(
               margin: EdgeInsets.zero,
               child: Column(
                 children: [
-                  if (stepsSupported)
+                  SwitchListTile(
+                    key: const ValueKey('onbHealth'),
+                    secondary: bigText ? null : const Text('❤️', style: TextStyle(fontSize: 22)),
+                    title: Text(
+                      bigText ? '❤️ ${t('Myös terveys ja hyvinvointi?')}' : t('Myös terveys ja hyvinvointi?'),
+                    ),
+                    subtitle: Text(
+                      t(
+                        'Askeleet ja kehonpaino nyt, uni ja palautuminen myöhemmin asetuksista. Ilman tätä Gievra on '
+                        'pelkkä treenipäiväkirja; kellon ja sykevyön treenitiedot toimivat silti.',
+                      ),
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    ),
+                    value: _health,
+                    onChanged: (v) => setState(() => _health = v),
+                  ),
+                  if (_health && stepsSupported)
                     SwitchListTile(
                       key: const ValueKey('onbSteps'),
                       // Suurella tekstillä kuvake otsikon alkuun: vasemman reunan kuvake ja kytkin kavensivat
@@ -174,30 +226,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       value: _steps,
                       onChanged: (v) => setState(() => _steps = v),
                     ),
-                  SwitchListTile(
-                    key: const ValueKey('onbBody'),
-                    secondary: bigText ? null : const Text('⚖️', style: TextStyle(fontSize: 22)),
-                    title: Text(bigText ? '⚖️ ${t('Seurataanko kehonpainoa?')}' : t('Seurataanko kehonpainoa?')),
-                    subtitle: Text(
-                      t(
-                        'Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai harvemmin. Näet painon kehityksen ja painoindeksin Tilastot-välilehdellä.',
+                  if (_health)
+                    SwitchListTile(
+                      key: const ValueKey('onbBody'),
+                      secondary: bigText ? null : const Text('⚖️', style: TextStyle(fontSize: 22)),
+                      title: Text(bigText ? '⚖️ ${t('Seurataanko kehonpainoa?')}' : t('Seurataanko kehonpainoa?')),
+                      subtitle: Text(
+                        t(
+                          'Valinnainen. Punnitse milloin haluat: päivittäin, viikoittain tai harvemmin. Näet painon kehityksen ja painoindeksin Tilastot-välilehdellä.',
+                        ),
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                       ),
-                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                      value: _body,
+                      onChanged: (v) => setState(() => _body = v),
                     ),
-                    value: _body,
-                    onChanged: (v) => setState(() => _body = v),
-                  ),
                 ],
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                t('Tiedot pysyvät puhelimessa. Mitään ei lähetetä minnekään.'),
+                t('Kaiken voi kytkeä päälle tai pois myöhemmin asetuksista.'),
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ),
-            if (_body) ...[
+            if (_health && _body) ...[
               const SizedBox(height: 10),
               Row(
                 children: [

@@ -18,6 +18,15 @@ double? e1rm(double kg, int reps) {
   return reps == 1 ? kg : kg * (1 + reps / 30);
 }
 
+/// Sarjan vertailuarvo ennätyksiin: toistoliikkeissä arvioitu maksimi, muissa (kantaminen matkana tai
+/// edestakaisin, aika) pelkkä paino. Ennen kantamisen "2 edestakaisin" luettiin toistoiksi, ja 132 kg × 2 näytti
+/// arvioiduksi maksimiksi 141 kg (käyttäjä 17.11.).
+double? recordValue(String exercise, SetEntry s) {
+  if (s.warmup) return null;
+  if (measureOf(exercise) == Measure.reps) return e1rm(s.kg, s.reps);
+  return s.kg > 0 ? s.kg : null;
+}
+
 DateTime weekStart(DateTime d) => addDays(d, 1 - d.weekday);
 
 class Progress {
@@ -153,7 +162,7 @@ LiftRecord? bestLift(List<Workout> ws, String exercise, {DateTime? since, DateTi
     if (until != null && w.date.isAfter(until)) continue;
     for (final e in w.exercises.where((e) => e.name == exercise)) {
       for (final s in e.sets) {
-        final v = e1rm(s.kg, s.reps);
+        final v = recordValue(exercise, s);
         if (v != null && (best == null || v > best.e1rm)) best = LiftRecord(w.date, s.kg, s.reps, v);
       }
     }

@@ -1,3 +1,5 @@
+import 'sleep.dart' show sleepData;
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kReleaseMode;
@@ -49,6 +51,7 @@ Future<void> main() async {
   final tStore = sw.elapsedMilliseconds;
   // Päivän askeleet tallennetusta tiedostosta (Health Connect -haku etusivulla).
   unawaited(dailySteps.load());
+  unawaited(sleepData.load()); // yöunet uni.md:stä (Uni-kortti)
   unawaited(hr.load()); // valittu sykevyö (tällä puhelimella)
   // Akunsäästö: saako Gievra toimia taustalla (tila päivittyy, kun palataan asetuksista).
   WidgetsBinding.instance.addObserver(battery);
@@ -67,6 +70,7 @@ Future<void> main() async {
       await store.reload();
       await settings.loadFromFolder();
       unawaited(dailySteps.load());
+      unawaited(sleepData.load());
     } catch (_) {
       // Kansio ei hetkeksi luettavissa: seuraava käynnistys tai muutos lukee sen uudelleen.
     }

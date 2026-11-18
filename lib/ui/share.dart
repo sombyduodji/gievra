@@ -9,6 +9,7 @@ import '../models.dart';
 import '../share_text.dart';
 import '../l10n.dart';
 import 'share_card.dart';
+import '../picker_guard.dart';
 
 /// Jaa treeni: kuvana, yhteenveto tekstinä tai .md-tiedostona.
 Future<void> shareWorkout(BuildContext context, Workout w) async {
@@ -53,10 +54,12 @@ Future<void> shareWorkout(BuildContext context, Workout w) async {
     return;
   }
   if (choice == 'text') {
-    await SharePlus.instance.share(
-      ShareParams(
-        text: shareText(w),
-        subject: '${w.activity != null ? sportName(w.activity!) : trName(w.title)} ${isoDate(w.date)}',
+    await pickOnce(
+      () => SharePlus.instance.share(
+        ShareParams(
+          text: shareText(w),
+          subject: '${w.activity != null ? sportName(w.activity!) : trName(w.title)} ${isoDate(w.date)}',
+        ),
       ),
     );
     return;
@@ -65,10 +68,12 @@ Future<void> shareWorkout(BuildContext context, Workout w) async {
   final name = '${isoDate(w.date)}${w.session > 1 ? '-${w.session}' : ''}.md';
   final f = File(p.join(dir.path, name));
   await f.writeAsString(workoutToMarkdown(w));
-  await SharePlus.instance.share(
-    ShareParams(
-      files: [XFile(f.path, mimeType: 'text/markdown')],
-      subject: name,
+  await pickOnce(
+    () => SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(f.path, mimeType: 'text/markdown')],
+        subject: name,
+      ),
     ),
   );
 }

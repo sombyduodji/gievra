@@ -33,7 +33,7 @@ class LicensesScreen extends StatelessWidget {
     ('latlong2', t('Koordinaatit ja matkat reitillä'), 'Apache 2.0'),
     (
       'AndroidX Core, Health Connect client',
-      t('Ilmoitukset sekä Health Connectin syke, askeleet ja harjoitukset'),
+      t('Ilmoitukset sekä Health Connectin syke, askeleet, harjoitukset, uni ja yöarvot'),
       'Apache 2.0',
     ),
     ('Kotlin coroutines', t('Health Connect -haut taustasäikeessä'), 'Apache 2.0'),
@@ -137,6 +137,48 @@ class LicensesScreen extends StatelessWidget {
             ),
             ('Mifflin, St Jeor et al. 1990, Am J Clin Nutr 51:241–247', t('Lepoaineenvaihdunta')),
             ('Tanaka et al. 2001, J Am Coll Cardiol 37:153–156', t('Maksimisykkeen arvio iästä')),
+            // Uni- ja Palautuminen-kortit (17.11.): vain vihjeitä, omaan tasoon verraten.
+            ('Watson et al. 2015 (AASM, SRS), Sleep 38:843–844', t('Uni: aikuisille 7 tuntia tai enemmän')),
+            ('Craven et al. 2022, Sports Medicine', t('Uni: lyhyen yön vaikutus suorituskykyyn')),
+            ('Windred et al. 2024, Sleep', t('Uni: säännöllisyys')),
+            (
+              'Huang et al. 2020, JACC 75:991–999; Fischer et al. 2021, Sleep 44:zsab103',
+              t('Uni: säännöllisyyden rajat (30 ja 90 min) ja 14 yön jakso'),
+            ),
+            (
+              'Mah et al. 2011, Sleep 34:943–950; Cunha et al. 2023, Sports Med Open, doi 10.1186/s40798-023-00599-z',
+              t('Uni: unen pidentäminen ja päiväunet urheilijoilla'),
+            ),
+            ('Baron et al. 2017, J Clin Sleep Med 13:351–354', t('Uni: unenseurannan aiheuttama stressi (ortosomnia)')),
+            (
+              'Mishra et al. 2020, Nat Biomed Eng 4:1208–1220; Radin et al. 2020, Lancet Digital Health',
+              t('Yön alin syke verrattuna omaan 28 päivän tasoon'),
+            ),
+            // Yöarvot-kortti (17.11.): kaikki avoimia (CC BY) paitsi Plews 2012.
+            (
+              'Plews et al. 2012, Eur J Appl Physiol 112:3729–3741; Buchheit 2014, Front Physiol 5:73',
+              t('Yöarvot: HRV:n 7 yön keskiarvo ja oma vaihteluväli'),
+            ),
+            (
+              'Javaloyes et al. 2019, IJSPP 14:23–32; Düking et al. 2021, J Sci Med Sport; Stanley et al. 2013, Sports Med',
+              t('Yöarvot: HRV-ohjattu treeni ja palautuminen kovan treenin jälkeen'),
+            ),
+            ('Cao et al. 2022, J Med Internet Res 24:e27487', t('Yöarvot: sormuksen yösyke ja HRV verrattuna EKG:hen')),
+            (
+              'Altini & Plews 2021, Sensors 21:7932; Pietilä et al. 2018, JMIR Ment Health 5:e23',
+              t('Yöarvot: alkoholin, sairauden ja treenin vaikutus HRV:hen ja sykkeeseen'),
+            ),
+            ('Natarajan et al. 2021, npj Digit Med 4:136', t('Yöarvot: hengitystiheys')),
+            (
+              'Smarr et al. 2020, Sci Rep 10:21640; Mason et al. 2022, Sci Rep 12:3463',
+              t('Yöarvot: ihon lämpötila ja useamman arvon yhdistelmä'),
+            ),
+            (
+              'Shapiro et al. 2023, npj Digit Med 6:134; Khosla et al. 2018 (AASM), J Clin Sleep Med 14:877–880',
+              t('Yöarvot: happisaturaatio ja kuluttajalaitteiden rajat'),
+            ),
+            ('Walsh et al. 2021, Br J Sports Med 55:356–368', t('Uni: urheilijan uni ja oma unitavoite')),
+            ('Stutz et al. 2019, Sports Med 49:269–287', t('Uni: kova treeni alle tunti ennen nukkumaanmenoa')),
           ])
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),

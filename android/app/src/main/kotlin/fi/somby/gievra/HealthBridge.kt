@@ -9,6 +9,13 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.RespiratoryRateRecord
+import androidx.health.connect.client.records.RestingHeartRateRecord
+import androidx.health.connect.client.records.SkinTemperatureRecord
+import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.metadata.DataOrigin
@@ -43,6 +50,92 @@ object HealthBridge {
     /** Päivän askeleet: vain askelten luku (ei harjoituksia, sykettä eikä kaloreita). */
     val stepsPermissions = setOf(HealthPermission.getReadPermission(StepsRecord::class))
 
+    /**
+     * Uni-kortti (valinnainen, käyttäjä 17.11.): unijaksot ja syke (yön alin syke unen ajalta). Kysytään vasta,
+     * kun kortti otetaan käyttöön asetuksista.
+     */
+    val sleepPermissions = setOf(
+        HealthPermission.getReadPermission(SleepSessionRecord::class),
+        HealthPermission.getReadPermission(HeartRateRecord::class),
+    )
+
+    /**
+     * Yöarvot-kortti (valinnainen, käyttäjä 17.11.): HRV, happisaturaatio, hengitystiheys, ihon lämpötila ja
+     * leposyke. Käyttäjä voi antaa vain osan; luetaan ne, joihin lupa on.
+     */
+    fun metricsPermissions(context: Context): Set<String> {
+        val base = mutableSetOf(
+            HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
+            HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+            HealthPermission.getReadPermission(RespiratoryRateRecord::class),
+            // Leposykettä ei enää kysytä (18.11.): yöarvot näkyvät Palautuminen-kortissa, jossa yön alin syke on jo;
+            // aiemmin annettu lupa luetaan edelleen (puuttuva lupa = tyhjä).
+        )
+        if (skinTempAvailable(context)) base.add(HealthPermission.getReadPermission(SkinTemperatureRecord::class))
+        return base
+    }
+
+    fun skinTempAvailable(context: Context): Boolean = try {
+        client(context).features.getFeatureStatus(HealthConnectFeatures.FEATURE_SKIN_TEMPERATURE) ==
+            HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+    } catch (e: Throwable) {
+        false
+    }
+
+    /**
+     * Yöarvot öittäin: [windows] = (päivä, alku ms, loppu ms), esim. unijakso tai klo 21–10. Kunkin yön keskiarvot
+     * (HRV ms, SpO2 %, hengitys /min, ihon lämpötilan poikkeama °C) sekä SpO2:n alin ja päivän leposyke
+     * (RestingHeartRateRecord). Vain luvalliset tietotyypit luetaan; puuttuva arvo jää pois.
+     */
+    suspend fun nightMetrics(context: Context, windows: List<List<Any>>): List<Map<String, Any?>> {
+        if (windows.isEmpty()) return emptyList()
+        val c = client(context)
+        val granted = granted(context)
+        val ws = windows.map { Triple(it[0] as String, Instant.ofEpochMilli((it[1] as Number).toLong()), Instant.ofEpochMilli((it[2] as Number).toLong())) }
+        val from = ws.minOf { it.second }.minus(Duration.ofHours(12))
+        val to = ws.maxOf { it.third }.plus(Duration.ofHours(12))
+        suspend fun <T : Record> all(k: kotlin.reflect.KClass<T>): List<T> {
+            if (HealthPermission.getReadPermission(k) !in granted) return emptyList()
+            val out = mutableListOf<T>()
+            var token: String? = null
+            do {
+                val r = c.readRecords(ReadRecordsRequest(k, TimeRangeFilter.between(from, to), pageSize = 5000, pageToken = token))
+                out.addAll(r.records)
+                token = r.pageToken
+            } while (token != null)
+            return out
+        }
+        val hrv = try { all(HeartRateVariabilityRmssdRecord::class) } catch (e: Throwable) { emptyList() }
+        val spo2 = try { all(OxygenSaturationRecord::class) } catch (e: Throwable) { emptyList() }
+        val rr = try { all(RespiratoryRateRecord::class) } catch (e: Throwable) { emptyList() }
+        val rest = try { all(RestingHeartRateRecord::class) } catch (e: Throwable) { emptyList() }
+        val skin = if (skinTempAvailable(context)) {
+            try { all(SkinTemperatureRecord::class) } catch (e: Throwable) { emptyList() }
+        } else emptyList()
+        val zone = java.time.ZoneId.systemDefault()
+        return ws.map { (day, a, b) ->
+            fun inside(t: Instant) = !t.isBefore(a) && t.isBefore(b)
+            val h = hrv.filter { inside(it.time) }.map { it.heartRateVariabilityMillis }
+            val s = spo2.filter { inside(it.time) }.map { it.percentage.value }
+            val r = rr.filter { inside(it.time) }.map { it.rate }
+            val tDeltas = skin.filter { it.startTime.isBefore(b) && it.endTime.isAfter(a) }
+                .flatMap { rec -> rec.deltas.filter { inside(it.time) }.map { it.delta.inCelsius } }
+            val restDay = rest.filter { it.time.atZone(zone).toLocalDate().toString() == day }.map { it.beatsPerMinute.toDouble() }
+            mapOf(
+                "day" to day,
+                "hrv" to (if (h.isEmpty()) null else h.average()),
+                "spo2" to (if (s.isEmpty()) null else s.average()),
+                "spo2Min" to s.minOrNull(),
+                "rr" to (if (r.isEmpty()) null else r.average()),
+                "temp" to (if (tDeltas.isEmpty()) null else tDeltas.average()),
+                "rest" to restDay.minOrNull(),
+            )
+        }
+    }
+
+    /** Vanhempi unihistoria: unen luvat ja historialupa. */
+    val sleepHistoryPermissions = sleepPermissions + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+
     /** Vanhempi historia (yli 30 päivää ennen luvan antamista): askelten lupa ja historialupa. */
     val historyPermissions = stepsPermissions + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
 
@@ -64,6 +157,10 @@ object HealthBridge {
         HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getWritePermission(StepsRecord::class),
         HealthPermission.getWritePermission(DistanceRecord::class),
+        HealthPermission.getWritePermission(SleepSessionRecord::class),
+        HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class),
+        HealthPermission.getWritePermission(OxygenSaturationRecord::class),
+        HealthPermission.getWritePermission(RespiratoryRateRecord::class),
     )
 
     /** available, update (Health Connect -sovellus pitää asentaa tai päivittää) tai unavailable. */
@@ -394,6 +491,94 @@ object HealthBridge {
     }
 
     /**
+     * Unijaksot aikaväliltä (Uni-kortti): alku, loppu, valveilla olo jakson aikana (vaiheista: hereillä, sängystä
+     * poissa, hereillä sängyssä), onko vaiheita, sovellus ja jakson alin 15 minuutin sykekeskiarvo (null, jos
+     * sykettä ei ole tai lupaa ei ole). Lähteen valinta ja öiden yhdistäminen tehdään Dartissa.
+     */
+    suspend fun sleepSessions(context: Context, start: Long, end: Long): List<Map<String, Any?>> {
+        val c = client(context)
+        val from = Instant.ofEpochMilli(start)
+        val to = Instant.ofEpochMilli(end)
+        val awakeTypes = setOf(
+            SleepSessionRecord.STAGE_TYPE_AWAKE,
+            SleepSessionRecord.STAGE_TYPE_OUT_OF_BED,
+            SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED,
+        )
+        val out = mutableListOf<Map<String, Any?>>()
+        var token: String? = null
+        do {
+            val res = c.readRecords(
+                ReadRecordsRequest(SleepSessionRecord::class, TimeRangeFilter.between(from, to), pageSize = 1000, pageToken = token),
+            )
+            for (r in res.records) {
+                val awake = r.stages.filter { it.stage in awakeTypes }
+                    .sumOf { Duration.between(it.startTime, it.endTime).toMillis() }
+                val low = try {
+                    lowHr(c, r.startTime, r.endTime)
+                } catch (e: Throwable) {
+                    null
+                }
+                val pkg = r.metadata.dataOrigin.packageName
+                out.add(
+                    mapOf(
+                        "start" to r.startTime.toEpochMilli(),
+                        "end" to r.endTime.toEpochMilli(),
+                        "awakeMs" to awake,
+                        "stages" to r.stages.isNotEmpty(),
+                        "app" to appLabel(context, pkg),
+                        "lowHr" to low,
+                    ),
+                )
+            }
+            token = res.pageToken
+        } while (token != null)
+        return out
+    }
+
+    /**
+     * Sykenäytteet aikaväliltä kaikilta sivuilta (yötesti 18.11.: ennen vain ensimmäinen 5 000 tietueen sivu; sovellus,
+     * joka kirjoittaa jokaisen näytteen omana tietueenaan, täyttää sen yön alkupuolella, ja alin syke laskettiin vain
+     * siitä). Enintään 20 sivua.
+     */
+    private suspend fun hrSamples(
+        c: androidx.health.connect.client.HealthConnectClient,
+        start: Instant,
+        end: Instant,
+    ): List<HeartRateRecord.Sample> {
+        val out = mutableListOf<HeartRateRecord.Sample>()
+        var token: String? = null
+        var pages = 0
+        do {
+            val r = c.readRecords(
+                ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(start, end), pageSize = 5000, pageToken = token),
+            )
+            r.records.flatMapTo(out) { rec -> rec.samples.filter { !it.time.isBefore(start) && it.time.isBefore(end) && it.beatsPerMinute in 25..220 } }
+            token = r.pageToken
+            pages++
+        } while (token != null && pages < 20)
+        return out.sortedBy { it.time }
+    }
+
+    /** Alin 15 minuutin sykekeskiarvo aikaväliltä (vähintään 12 näytettä ja 2 näytettä ikkunassa). */
+    private suspend fun lowHr(c: androidx.health.connect.client.HealthConnectClient, start: Instant, end: Instant): Int? {
+        val s = hrSamples(c, start, end)
+        if (s.size < 12) return null
+        var low = Double.MAX_VALUE
+        var j = 0
+        var sum = 0L
+        for (i in s.indices) {
+            if (i > 0) sum -= s[i - 1].beatsPerMinute
+            if (j < i) { j = i; sum = 0 }
+            while (j < s.size && s[j].time.isBefore(s[i].time.plus(Duration.ofMinutes(15)))) {
+                sum += s[j].beatsPerMinute; j++
+            }
+            val n = j - i
+            if (n >= 2) low = minOf(low, sum.toDouble() / n)
+        }
+        return if (low < Double.MAX_VALUE) Math.round(low).toInt() else null
+    }
+
+    /**
      * Yön alin syke (etusivun palautumiskortti, käyttäjä 17.11.): kunkin aamun [from]..[to] yöltä (edellinen ilta
      * 21:00 – aamu 10:00) sykenäytteiden alin 15 minuutin keskiarvo. Käyttää samaa sykkeen lukulupaa kuin
      * harjoitusten tuonti; unitietoja eikä leposyketietuetta lueta (ne vaatisivat uudet luvat). Yö jätetään pois,
@@ -407,11 +592,7 @@ object HealthBridge {
         while (!d.isAfter(last)) {
             val start = d.minusDays(1).atTime(21, 0).atZone(zone).toInstant()
             val end = d.atTime(10, 0).atZone(zone).toInstant()
-            val s = client(context).readRecords(
-                ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(start, end), pageSize = 5000),
-            ).records.flatMap { r -> r.samples }
-                .filter { !it.time.isBefore(start) && it.time.isBefore(end) && it.beatsPerMinute in 25..220 }
-                .sortedBy { it.time }
+            val s = hrSamples(client(context), start, end)
             if (s.size >= 12) {
                 var low = Double.MAX_VALUE
                 var j = 0
@@ -466,6 +647,30 @@ object HealthBridge {
         val samples = generateSequence(start) { it.plusSeconds(30) }.takeWhile { it.isBefore(end) }
             .mapIndexed { i, t -> HeartRateRecord.Sample(t, (bpm + (i % 9) * 3 - 12).toLong()) }.toList()
         val meta = Metadata.manualEntry()
+        if (type == -2) {
+            // Testiyö (Uni-kortti): unijakso, jossa 20 min valveilla keskellä, ja syke [bpm] ± 4 koko yön.
+            val mid = start.plus(Duration.between(start, end).dividedBy(2))
+            val stages = listOf(
+                SleepSessionRecord.Stage(start, mid, SleepSessionRecord.STAGE_TYPE_LIGHT),
+                SleepSessionRecord.Stage(mid, mid.plusSeconds(1200), SleepSessionRecord.STAGE_TYPE_AWAKE),
+                SleepSessionRecord.Stage(mid.plusSeconds(1200), end, SleepSessionRecord.STAGE_TYPE_DEEP),
+            )
+            val night = generateSequence(start) { it.plusSeconds(300) }.takeWhile { it.isBefore(end) }
+                .mapIndexed { i, t -> HeartRateRecord.Sample(t, (bpm + (i % 5) * 2 - 4).toLong()) }.toList()
+            client(context).insertRecords(
+                listOf(
+                    SleepSessionRecord(start, zone, end, zone, meta, "Testi", null, stages),
+                    HeartRateRecord(start, zone, end, zone, night, meta),
+                ) + generateSequence(start) { it.plusSeconds(3600) }.takeWhile { it.isBefore(end) }.flatMap { t ->
+                    listOf(
+                        HeartRateVariabilityRmssdRecord(t, zone, 95.0 - bpm, meta),
+                        OxygenSaturationRecord(t, zone, androidx.health.connect.client.units.Percentage(if (bpm > 55) 94.0 else 96.5), meta),
+                        RespiratoryRateRecord(t, zone, if (bpm > 55) 16.5 else 14.0, meta),
+                    )
+                }.toList(),
+            )
+            return
+        }
         if (type < 0) {
             // Pelkät askeleet minuutin tietueina (kävelymatto ilman harjoitusta), tahti [bpm] askelta minuutissa.
             val steps = generateSequence(start) { it.plusSeconds(60) }.takeWhile { it.isBefore(end) }

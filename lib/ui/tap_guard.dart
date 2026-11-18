@@ -33,6 +33,10 @@ class NavTapGuard extends NavigatorObserver {
 
   void _mark() => _changed = clock();
 
+  /// Listan rivi poistettiin: seuraavan rivin poistonappi siirtyy sormen alle, joten tupla-napautus poisti kaksi
+  /// (yötesti 18.11.: omat tavoitteet, lämmittelylaitteet). Sama lyhyt suoja kuin näkymän vaihtuessa.
+  static void markListChange() => _changed = clock();
+
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (previousRoute != null) _mark(); // sovelluksen ensimmäinen näkymä ei tarvitse suojaa

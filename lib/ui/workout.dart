@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../rest.dart';
+import 'orientation_lock.dart';
 import '../app_state.dart';
 import '../injuries.dart' show injuryAdjusted;
 import '../models.dart';
@@ -87,6 +88,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    lockPortrait();
     tzWatch.addListener(_tzChanged);
     _hadContent = !w.isEmpty;
     // Ajastin käynnistyy, kun tämän päivän uusi treeni avataan (ei jo kirjattuun treeniin).
@@ -246,6 +248,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       final next = w.exercises.where((x) => x.name == to).firstOrNull ?? (ExerciseEntry(to));
       if (!w.exercises.contains(next)) w.exercises.add(next);
       await _save();
+      if (!mounted) return;
       setState(() {});
       await _log(next);
       return;
@@ -381,6 +384,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   @override
   void dispose() {
+    unlockPortrait();
     tzWatch.removeListener(_tzChanged);
     if (identical(Ongoing.openGym, w)) Ongoing.setOpenGym(null);
     _tick?.cancel();
@@ -1079,6 +1083,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   Expanded(child: Text(t('Lämmittely · {0} {1} min', [t(w.warmup!.equipment), w.warmup!.minutes]))),
                   IconButton(
                     visualDensity: VisualDensity.compact,
+                    tooltip: t('Poista'),
                     icon: const Icon(Icons.close, size: 18),
                     onPressed: () {
                       setState(() => w.warmup = null);
@@ -1340,6 +1345,8 @@ class _SavedScreenState extends State<SavedScreen> {
       if (workout.activity == null) ...[
         if (sets > 0) ('$sets', sets == 1 ? t('sarja') : t('sarjaa')),
         if (c.volume > 0) (kg(c.volume), t('volyymi')),
+        // Ennätykset ylös omana ruutunaan (käyttäjä 17.11.: "missä ennätykset?" — rivi oli liikkeiden alla).
+        if (c.prs > 0) ('🏆 ${c.prs}', c.prs == 1 ? t('ennätys') : t('ennätystä')),
       ] else ...[
         if (workout.distanceKm != null) ('${fmtNum(workout.distanceKm!)} km', t('matka')),
         if (workout.pace != null) (workout.pace!, t('vauhti')),
@@ -1520,127 +1527,239 @@ class _SavedScreenState extends State<SavedScreen> {
           ),
           const SizedBox(height: 14),
           if (stats.isNotEmpty) statRow(stats),
-          // Salitreenin liikkeet sarjoineen (ennen yhteenvedossa vain luvut; kalenterista avattuna tärkein tieto).
-          if (workout.activity == null && workout.exercises.any((e) => e.sets.isNotEmpty)) ...[
-            const SizedBox(height: 10),
-            Container(
-              key: const ValueKey('savedExercises'),
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final (i, e) in workout.exercises.where((e) => e.sets.isNotEmpty).indexed) ...[
-                    if (i > 0) Divider(height: 14, color: cs.outlineVariant.withValues(alpha: .5)),
-                    Text(exerciseLabel(e.name), style: const TextStyle(fontWeight: FontWeight.w600)),
-                    // Vaihtoehto B (käyttäjä 15.11.): sarjamäärä ja yksikkö kerran, sarjat tiiviisti alla.
-                    Text(
-                      [
-                        e.workSets.length == 1 ? t('1 sarja') : t('{0} sarjaa', [e.workSets.length]),
-                        if (unitOnce(e.name, e.workSets)) kgUnit(e.name),
-                      ].join(' · '),
-                      style: sub,
-                    ),
-                    Text(
-                      fmtSetsCompact(e.name, e.workSets),
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-          if (watchStats.isNotEmpty || ring) ...[
-            const SizedBox(height: 8),
-            if (watchStats.isNotEmpty)
-              InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: settings.watch ? _editWatch : null,
-                child: statRow(watchStats, size: 16),
-              ),
-            if (ring)
-              Padding(
-                padding: EdgeInsets.only(top: watchStats.isEmpty ? 0 : 8),
-                child: KcalRing(
-                  total: workout.kcal!,
-                  active: active,
-                  color: cs.surfaceContainer,
-                  onTap: settings.watch ? _editWatch : null,
-                ),
-              ),
-            if (workout.healthSource != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '♥ ${t('Health Connectista ({0})', [workout.healthSource])}',
-                  style: TextStyle(fontSize: 12, color: greenText(context)),
-                ),
-              ),
-          ] else if (settings.watch && !hasWatch)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Material(
-                color: Sami.yellow.withValues(alpha: .12),
-                shape: RoundedRectangleBorder(
+          if (workout.activity == null) ...[
+            // Sali (käyttäjä 17.11.): keho ensin kuten liikunnassa: syke, kalorit ja sykekäyrä, sitten liikkeet.
+            if (watchStats.isNotEmpty || ring) ...[
+              const SizedBox(height: 8),
+              if (watchStats.isNotEmpty)
+                InkWell(
                   borderRadius: BorderRadius.circular(14),
-                  side: BorderSide(color: Sami.yellow.withValues(alpha: .6)),
+                  onTap: settings.watch ? _editWatch : null,
+                  child: statRow(watchStats, size: 16),
                 ),
-                child: ListTile(
-                  key: const ValueKey('fetchWatch'),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  leading: Icon(Icons.favorite_border, color: yellowText(context)),
-                  title: Text(t('Hae kellon tiedot')),
-                  subtitle: Text(t('Kalorit ja syke Health Connectista tai käsin'), style: sub),
-                  trailing: Icon(Icons.chevron_right, color: yellowText(context)),
-                  onTap: _editWatch,
+              if (ring)
+                Padding(
+                  padding: EdgeInsets.only(top: watchStats.isEmpty ? 0 : 8),
+                  child: KcalRing(
+                    total: workout.kcal!,
+                    active: active,
+                    color: cs.surfaceContainer,
+                    onTap: settings.watch ? _editWatch : null,
+                  ),
+                ),
+              if (workout.healthSource != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '♥ ${t('Health Connectista ({0})', [workout.healthSource])}',
+                    style: TextStyle(fontSize: 12, color: greenText(context)),
+                  ),
+                ),
+            ] else if (settings.watch && !hasWatch)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Material(
+                  color: Sami.yellow.withValues(alpha: .12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: Sami.yellow.withValues(alpha: .6)),
+                  ),
+                  child: ListTile(
+                    key: const ValueKey('fetchWatch'),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    leading: Icon(Icons.favorite_border, color: yellowText(context)),
+                    title: Text(t('Hae kellon tiedot')),
+                    subtitle: Text(t('Kalorit ja syke Health Connectista tai käsin'), style: sub),
+                    trailing: Icon(Icons.chevron_right, color: yellowText(context)),
+                    onTap: _editWatch,
+                  ),
                 ),
               ),
-            ),
-          // Health Connect: rivi vain, kun kellolla on uutta tietoa (juuri tallennetussa odottaa kellon siirtoa).
-          if (HcUpdateRow.wanted(workout))
-            HcUpdateRow(
-              key: ValueKey('hc_${workout.date}_${workout.session}'),
-              w: workout,
-              waiting: !widget.history,
-              onApplied: () async {
-                await _persist();
-                if (mounted) setState(() {});
-              },
-            ),
-          const SizedBox(height: 10),
-          // Fiilis yhtenä rivinä (kysytty jo lopussa); Muuta avaa saman valinnan.
-          Material(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(14),
-            child: ListTile(
-              key: const ValueKey('feelingRow'),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              leading: Text(feel?.$2 ?? '🙂', style: TextStyle(fontSize: 26, color: feel == null ? cs.outline : null)),
-              title: Text(feel == null ? t('Miltä tuntui?') : t('Fiilis: {0}', [t(feel.$3).toLowerCase()])),
-              subtitle: workout.activity != null && intensity != null && workout.distanceKm != null
-                  ? Text('${intensity.$3} ${t(intensity.$2)}', style: sub)
-                  // Sali: liian raskaiksi merkityt liikkeet (Treeni valmis -ikkunan Mikä tuntui raskaalta?).
-                  // Sali: liian raskaat liikkeet ja päivän syyt (ennen syyt eivät näkyneet, yötesti 15.11.).
-                  : workout.activity == null && (workout.tooHeavy.isNotEmpty || workout.dayReasons.isNotEmpty)
-                  ? Text(
-                      [
-                        if (workout.tooHeavy.isNotEmpty)
-                          t('Liian raskas: {0}', [workout.tooHeavy.map(exerciseLabel).join(', ')]),
-                        if (workout.dayReasons.isNotEmpty) workout.dayReasons.map(t).join(', '),
-                      ].join(' · '),
-                      key: const ValueKey('tooHeavyNote'),
-                      style: sub,
-                    )
-                  : null,
-              trailing: Text(
-                feel == null ? t('Valitse') : t('Muuta'),
-                style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+            // Health Connect: rivi vain, kun kellolla on uutta tietoa (juuri tallennetussa odottaa kellon siirtoa).
+            if (HcUpdateRow.wanted(workout))
+              HcUpdateRow(
+                key: ValueKey('hc_${workout.date}_${workout.session}'),
+                w: workout,
+                waiting: !widget.history,
+                onApplied: () async {
+                  await _persist();
+                  if (mounted) setState(() {});
+                },
               ),
-              onTap: _changeFeeling,
+            HrDetails(workout),
+            // Salitreenin liikkeet sarjoineen: sarjat "pilleinä" (käyttäjä 17.11.: modernimmaksi); lämmittelyt
+            // himmeinä, ennätykset kultaisina, pudotussarja nuolella.
+            if (workout.activity == null && workout.exercises.any((e) => e.sets.isNotEmpty)) ...[
+              const SizedBox(height: 10),
+              Container(
+                key: const ValueKey('savedExercises'),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (i, e) in workout.exercises.where((e) => e.sets.isNotEmpty).indexed) ...[
+                      if (i > 0) Divider(height: 22, color: cs.outlineVariant.withValues(alpha: .5)),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              exerciseLabel(e.name),
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            [
+                              e.workSets.length == 1 ? t('1 sarja') : t('{0} sarjaa', [e.workSets.length]),
+                              if (unitOnce(e.name, e.workSets)) kgUnit(e.name, short: true),
+                            ].join(' · '),
+                            style: sub,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [for (final st in e.sets) _SetPill(exercise: e.name, set: st)],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            // Fiilis yhtenä rivinä (kysytty jo lopussa); Muuta avaa saman valinnan.
+            Material(
+              color: cs.surfaceContainer,
+              borderRadius: BorderRadius.circular(14),
+              child: ListTile(
+                key: const ValueKey('feelingRow'),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                leading: Text(
+                  feel?.$2 ?? '🙂',
+                  style: TextStyle(fontSize: 26, color: feel == null ? cs.outline : null),
+                ),
+                title: Text(feel == null ? t('Miltä tuntui?') : t('Fiilis: {0}', [t(feel.$3).toLowerCase()])),
+                subtitle: workout.activity != null && intensity != null && workout.distanceKm != null
+                    ? Text('${intensity.$3} ${t(intensity.$2)}', style: sub)
+                    // Sali: liian raskaiksi merkityt liikkeet (Treeni valmis -ikkunan Mikä tuntui raskaalta?).
+                    // Sali: liian raskaat liikkeet ja päivän syyt (ennen syyt eivät näkyneet, yötesti 15.11.).
+                    : workout.activity == null && (workout.tooHeavy.isNotEmpty || workout.dayReasons.isNotEmpty)
+                    ? Text(
+                        [
+                          if (workout.tooHeavy.isNotEmpty)
+                            t('Liian raskas: {0}', [workout.tooHeavy.map(exerciseLabel).join(', ')]),
+                          if (workout.dayReasons.isNotEmpty) workout.dayReasons.map(t).join(', '),
+                        ].join(' · '),
+                        key: const ValueKey('tooHeavyNote'),
+                        style: sub,
+                      )
+                    : null,
+                trailing: Text(
+                  feel == null ? t('Valitse') : t('Muuta'),
+                  style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+                ),
+                onTap: _changeFeeling,
+              ),
             ),
-          ),
-          // Sykevyön käyrä ja sykealueet.
-          HrDetails(workout),
+          ] else ...[
+            if (watchStats.isNotEmpty || ring) ...[
+              const SizedBox(height: 8),
+              if (watchStats.isNotEmpty)
+                InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: settings.watch ? _editWatch : null,
+                  child: statRow(watchStats, size: 16),
+                ),
+              if (ring)
+                Padding(
+                  padding: EdgeInsets.only(top: watchStats.isEmpty ? 0 : 8),
+                  child: KcalRing(
+                    total: workout.kcal!,
+                    active: active,
+                    color: cs.surfaceContainer,
+                    onTap: settings.watch ? _editWatch : null,
+                  ),
+                ),
+              if (workout.healthSource != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '♥ ${t('Health Connectista ({0})', [workout.healthSource])}',
+                    style: TextStyle(fontSize: 12, color: greenText(context)),
+                  ),
+                ),
+            ] else if (settings.watch && !hasWatch)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Material(
+                  color: Sami.yellow.withValues(alpha: .12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: Sami.yellow.withValues(alpha: .6)),
+                  ),
+                  child: ListTile(
+                    key: const ValueKey('fetchWatch'),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    leading: Icon(Icons.favorite_border, color: yellowText(context)),
+                    title: Text(t('Hae kellon tiedot')),
+                    subtitle: Text(t('Kalorit ja syke Health Connectista tai käsin'), style: sub),
+                    trailing: Icon(Icons.chevron_right, color: yellowText(context)),
+                    onTap: _editWatch,
+                  ),
+                ),
+              ),
+            // Health Connect: rivi vain, kun kellolla on uutta tietoa (juuri tallennetussa odottaa kellon siirtoa).
+            if (HcUpdateRow.wanted(workout))
+              HcUpdateRow(
+                key: ValueKey('hc_${workout.date}_${workout.session}'),
+                w: workout,
+                waiting: !widget.history,
+                onApplied: () async {
+                  await _persist();
+                  if (mounted) setState(() {});
+                },
+              ),
+            const SizedBox(height: 10),
+            // Fiilis yhtenä rivinä (kysytty jo lopussa); Muuta avaa saman valinnan.
+            Material(
+              color: cs.surfaceContainer,
+              borderRadius: BorderRadius.circular(14),
+              child: ListTile(
+                key: const ValueKey('feelingRow'),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                leading: Text(
+                  feel?.$2 ?? '🙂',
+                  style: TextStyle(fontSize: 26, color: feel == null ? cs.outline : null),
+                ),
+                title: Text(feel == null ? t('Miltä tuntui?') : t('Fiilis: {0}', [t(feel.$3).toLowerCase()])),
+                subtitle: workout.activity != null && intensity != null && workout.distanceKm != null
+                    ? Text('${intensity.$3} ${t(intensity.$2)}', style: sub)
+                    // Sali: liian raskaiksi merkityt liikkeet (Treeni valmis -ikkunan Mikä tuntui raskaalta?).
+                    // Sali: liian raskaat liikkeet ja päivän syyt (ennen syyt eivät näkyneet, yötesti 15.11.).
+                    : workout.activity == null && (workout.tooHeavy.isNotEmpty || workout.dayReasons.isNotEmpty)
+                    ? Text(
+                        [
+                          if (workout.tooHeavy.isNotEmpty)
+                            t('Liian raskas: {0}', [workout.tooHeavy.map(exerciseLabel).join(', ')]),
+                          if (workout.dayReasons.isNotEmpty) workout.dayReasons.map(t).join(', '),
+                        ].join(' · '),
+                        key: const ValueKey('tooHeavyNote'),
+                        style: sub,
+                      )
+                    : null,
+                trailing: Text(
+                  feel == null ? t('Valitse') : t('Muuta'),
+                  style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+                ),
+                onTap: _changeFeeling,
+              ),
+            ),
+            HrDetails(workout),
+          ],
           // Sykevyöllä kävelty (esim. kävelymatolla): laitteen askeleet ja matka Health Connectista.
           if (PadMatch.wanted(workout) && HealthImportButton.available)
             PadMatch(
@@ -1657,7 +1776,7 @@ class _SavedScreenState extends State<SavedScreen> {
               padding: const EdgeInsets.only(top: 8),
               child: Text('🌙 ${_tiredTip()}', style: const TextStyle(fontSize: 13)),
             ),
-          if (c.prs > 0)
+          if (c.prs > 0 && workout.activity != null)
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(
@@ -1956,6 +2075,52 @@ class _SetDots extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Sarja pillinä tallennetun salitreenin yhteenvedossa: paino × toistot (yksikkö liikkeen otsikossa), lämmittely
+/// himmeänä, ennätys kultaisena, pudotussarja nuolella ja AMRAP merkittynä.
+class _SetPill extends StatelessWidget {
+  final String exercise;
+  final SetEntry set;
+  const _SetPill({required this.exercise, required this.set});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final gold = yellowText(context);
+    final text = fmtSetsCompact(exercise, [set]).replaceAll(' 🏆', '');
+    final warm = set.warmup;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: warm ? Colors.transparent : (set.pr ? gold.withValues(alpha: .14) : cs.surfaceContainerHighest),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: warm ? cs.outlineVariant : (set.pr ? gold : Colors.transparent),
+          width: set.pr ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (set.pr) ...[const Text('🏆', style: TextStyle(fontSize: 13)), const SizedBox(width: 4)],
+          if (warm) ...[
+            Icon(Icons.local_fire_department_outlined, size: 14, color: cs.onSurfaceVariant),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: warm ? FontWeight.w500 : FontWeight.w700,
+              color: warm ? cs.onSurfaceVariant : null,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }

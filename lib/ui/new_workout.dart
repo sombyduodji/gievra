@@ -10,6 +10,7 @@ import '../theme.dart';
 import 'activity.dart';
 import 'program_screen.dart';
 import 'program_view.dart';
+import 'tap_guard.dart' show NavTapGuard;
 import 'widgets.dart';
 import 'workout.dart';
 import '../l10n.dart';
@@ -262,6 +263,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                           onTap: () => setState(() => _selected = i),
                           onRemove: () {
                             settings.setEquipment([...eq]..removeAt(i));
+                            NavTapGuard.markListChange();
                             if (_selected >= eq.length - 1) _selected = 0;
                           },
                         ),
@@ -302,7 +304,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                         min: 1,
                         max: 600,
                       );
-                      if (v != null && v >= 1) setState(() => _minutes = v.round());
+                      if (v != null && v >= 1 && mounted) setState(() => _minutes = v.round());
                     },
                   ),
                   const SizedBox(height: 18),
@@ -363,7 +365,7 @@ class _EquipmentTile extends StatelessWidget {
               Positioned(
                 top: 0,
                 right: 0,
-                child: IconButton(icon: const Icon(Icons.close, size: 18), onPressed: onRemove),
+                child: IconButton(icon: const Icon(Icons.close, size: 18), tooltip: t('Poista'), onPressed: onRemove),
               ),
           ],
         ),
@@ -564,14 +566,19 @@ Future<void> askWarmupAndStart(
                 ],
               ),
               const SizedBox(height: 12),
+              // ValueStepperissa on Expanded: rivissä sille annetaan leveys (ennen rajaton leveys, asettelu
+              // kaatui; debug-koonnissa ruutu jäi himmeäksi ilman paneelia, yötesti 18.11.).
               Row(
                 children: [
-                  Expanded(child: Text(t('Kesto'))),
-                  ValueStepper(
-                    value: '$minutes',
-                    unit: 'min',
-                    onMinus: () => set(() => minutes = (minutes - 1).clamp(1, 600)),
-                    onPlus: () => set(() => minutes = (minutes + 1).clamp(1, 600)),
+                  Expanded(flex: 2, child: Text(t('Kesto'))),
+                  Expanded(
+                    flex: 5,
+                    child: ValueStepper(
+                      value: '$minutes',
+                      unit: 'min',
+                      onMinus: () => set(() => minutes = (minutes - 1).clamp(1, 600)),
+                      onPlus: () => set(() => minutes = (minutes + 1).clamp(1, 600)),
+                    ),
                   ),
                 ],
               ),

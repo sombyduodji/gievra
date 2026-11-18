@@ -238,7 +238,10 @@ class RecordsTab extends StatelessWidget {
               key: ValueKey('record_$n'),
               title: exerciseLabel(n),
               isNew: beat && _isNew(r.date),
-              detail: '${fmtNum(shownKg(n, r.kg))} × ${r.reps} · ${shortDateY(r.date)}',
+              detail: measureOf(n) == Measure.reps
+                  ? '${fmtNum(shownKg(n, r.kg))} × ${r.reps} · ${shortDateY(r.date)}'
+                  // Kantaminen: paras paino matkoineen ("132 kg × 2 edestakaisin"), ei arvioitua maksimia.
+                  : '${fmtSetHand(n, SetEntry(r.kg, r.reps))} · ${shortDateY(r.date)}',
               value: '${fmtNum(shownKg(n, r.e1rm).roundToDouble())} ${kgUnit(n, short: true)}',
               onTap: () => _showHistory(context, n),
             ),
@@ -271,7 +274,7 @@ class RecordsTab extends StatelessWidget {
       double bestV = 0;
       for (final e in w.exercises.where((e) => e.name == exercise)) {
         for (final s in e.sets.where((s) => !s.warmup)) {
-          final v = e1rm(s.kg, s.reps);
+          final v = recordValue(exercise, s);
           if (v != null && v > bestV) (best, bestV) = (s, v);
         }
       }
@@ -301,12 +304,19 @@ class RecordsTab extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                   leading: Text(v >= top ? '🏆' : '·', style: const TextStyle(fontSize: 18)),
-                  title: Text('${fmtNum(shownKg(exercise, s.kg))} $unit × ${s.reps}'),
-                  subtitle: Text(shortDateY(w.date)),
-                  trailing: Text(
-                    '≈ ${fmtNum(shownKg(exercise, v).roundToDouble())}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  title: Text(
+                    measureOf(exercise) == Measure.reps
+                        ? '${fmtNum(shownKg(exercise, s.kg))} $unit × ${s.reps}'
+                        : fmtSetHand(exercise, s),
                   ),
+                  subtitle: Text(shortDateY(w.date)),
+                  // Arvioitu maksimi vain toistoliikkeissä (kantamisessa paino on jo ennätys).
+                  trailing: measureOf(exercise) == Measure.reps
+                      ? Text(
+                          '≈ ${fmtNum(shownKg(exercise, v).roundToDouble())}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        )
+                      : null,
                   onTap: () {
                     Navigator.of(ctx).pop();
                     openWorkout(context, w);

@@ -112,15 +112,21 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   treenit viikoittain, kuukausittain tai pitkällä aikavälillä vuosittain;
   mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
 - viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (keskiarvo viikossa valitulta jaksolta)
-- kehonpainon seuranta (valinnainen): *Merkitse aamupaino* etusivulla, kun et ole vielä punninnut (pilkku tai piste
-  käy), painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
+- kehonpainon seuranta (valinnainen): aamupaino kysytään etusivulla kerran päivässä (*Tallenna* tai *Ei tänään*),
+  painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
   FitNotesin punnitukset tuodaan mukana
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
-- etusivun kortit omassa järjestyksessä (*Asetukset → Etusivu*): seuraava ohjelman päivä, omat tavoitteet,
-  viikkoputki (montako viikkoa peräkkäin WHO:n suositukset täyttyivät), palautuminen (yön alin syke kellosta Health
-  Connectin kautta, vain sykkeen luku), viimeksi, voiman ja juoksun kehitys sekä kehonpaino
-- **Sali, Kestävyys tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa
+- etusivun kortit omassa järjestyksessä (*Asetukset → Etusivu*): seuraava ohjelman päivä, omat tavoitteet (myös
+  juoksuvauhdin kehitys ja vauhti samalla sykkeellä), viikkoputki (montako viikkoa peräkkäin WHO:n suositukset
+  täyttyivät), palautuminen, uni, viimeksi, voiman ja juoksun kehitys sekä kehonpaino; oma askeltavoite
+- **Palautuminen** (valinnainen, oletus pois): ruudut yösykkeelle, HRV:lle, hengitykselle, happisaturaatiolle, ihon
+  lämpötilalle, unelle ja kuormitukselle omaan tasoon verrattuna (vihreä, keltainen tai punainen reuna; ⚠-ruudusta
+  neuvo); ruudut ja järjestys valittavissa; rajat tutkimuksista (lähteet sovelluksen Tietoa-sivulla), vain vihjeitä,
+  ei diagnoosia. Tiedot Health Connectista vain luettuina ja vain itse käyttöön otettuina
+- **Uni** (valinnainen, oletus pois): viime yö, 7 yön keskiarvo, säännöllisyys ja yöt pylväinä omaan tavalliseen
+  uneen verrattuna; `uni.md`-tiedostoon ja varmuuskopioihin. Tilastoissa yösykkeen, HRV:n ja unen kehitys 12 viikolta
+- **Sali, Liikunta tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa
   etusivun Tänään-kortissa ovat Sali ja Liikunta rinnakkain (useammin tehty leveämpänä, Liikunta-puolella viimeksi tehdyn
   lajin kuvake); kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke
 - urheilulajit (juoksu, hiihto, salibandy, squash …) sekä sykemittarin ja älykellon tiedot
@@ -179,7 +185,7 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - tuonti yhdellä painikkeella (sovellus tunnistaa tiedoston): FitNotes, Garmin Connect (suoritusten CSV-vienti: laji,
   aika, matka, kesto, kalorit ja syke), Gievran varmuuskopio, `.md`-treenit ja ohjelmapohjat (`.gmd`);
   luettava CSV-vienti käyttöliittymän kielellä taulukkolaskentaan tai valmentajalle (valittava sisältö ja aikaväli);
-  varmuuskopio zip-tiedostona (treenit, GPS-reitit, asetukset, ohjelma, punnitukset ja tallennetut ohjelmat;
+  varmuuskopio zip-tiedostona (treenit, GPS-reitit, asetukset, ohjelma, punnitukset, askeleet, uni ja tallennetut ohjelmat;
   uuteen puhelimeen palautettaessa myös asetukset ja ohjelma sellaisinaan; käytössä olevaan päiväkirjaan sairas- ja
   lomatauot yhdistetään ja vammatilasta kysytään), yksittäisten `.md`-tiedostojen tuonti
 - automaattinen varmuuskopio, kun uusi versio käynnistyy ensimmäisen kerran: treenikansion `backup/`-kansioon,

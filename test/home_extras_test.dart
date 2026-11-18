@@ -27,6 +27,13 @@ void main() {
     run(addDays(mon, 5), 60),
   ];
 
+  test('yötesti 18.11.: pelkät tulevat treenit eivät kaada viikkoputkea', () {
+    final s = whoStreak([gym(addDays(thisMon, 14))], today);
+    expect(s.weeks, isNotEmpty);
+    expect(s.weeks.last.$1, thisMon);
+    expect(s.current, 0);
+  });
+
   test('viikkoputki: täydet viikot, katkos, kuluva viikko kesken ei katkaise', () {
     final ws = [
       ...fullWeek(addDays(thisMon, -42)),
@@ -110,7 +117,23 @@ void main() {
     expect(find.byKey(const ValueKey('nextDayCard')), findsOneWidget);
     expect(find.text(settings.program!.plan.first.uiName), findsOneWidget);
     expect(find.byKey(const ValueKey('nightHrCard')), findsOneWidget);
-    expect(find.textContaining('Selvästi tavallista korkeampi'), findsOneWidget);
+    // Uusi ulkoasu (18.11.): yösyke ruutuna punaisella reunalla ja ⚠; napautus avaa neuvon.
+    expect(find.byKey(const ValueKey('nightTile_nighthr')), findsOneWidget);
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('nightTile_nighthr')));
+    await tester.pumpAndSettle();
+    expect(find.text('Yösyke selvästi koholla'), findsOneWidget);
+    expect(find.textContaining('Mishra 2020'), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    // Ei omaa ?-painiketta kortissa (ohje etusivun ?-ohjeessa, 18.11.).
+    expect(find.byKey(const ValueKey('recoveryHelp')), findsNothing);
+    // Yösyke valittavissa kuten muutkin ruudut (18.11.): pois valittuna ruutu ja kortti katoavat.
+    settings.setNightTile('nighthr', false);
+    await tester.pump();
+    expect(find.byKey(const ValueKey('nightTile_nighthr')), findsNothing);
+    settings.setNightTile('nighthr', true);
+    await tester.pump();
     settings.program = null;
     NightHrData.debugNights = const {};
     await tester.pumpWidget(

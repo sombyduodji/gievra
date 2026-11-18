@@ -42,6 +42,14 @@
     <!-- Päivän askeleet: vanhempi historia kuin 30 päivää ennen luvan antamista (käyttäjän pyynnöstä). -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <!-- Uni-kortti (valinnainen, oletus pois): unijaksot, kysytään vasta kun kortti otetaan käyttöön. -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <!-- Yöarvot-kortti (valinnainen, oletus pois): kysytään vasta, kun kortti otetaan käyttöön. -->
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
+    <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_SKIN_TEMPERATURE" />
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
         <!-- Health Connectia käyttävät sovellukset (kellon sovellus, Health Sync …): nimi näkyy "Onko tämä se?"
@@ -84,7 +92,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Health Connect: "miksi sovellus pyytää lupaa" (Android 13 ja vanhemmat) avaa sovelluksen. -->
+        </activity>
+        <!-- Health Connect: "miksi sovellus pyytää lupaa" / tietosuojakäytäntö (Android 13 ja vanhemmat) avaa oman
+             kevyen tietosuojanäkymän (yötesti 18.11.: MainActivity aukesi Health Connectin taakse, eikä mitään näkynyt). -->
+        <activity
+            android:name=".PrivacyActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.DayNight"
+            android:label="Gievra">
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
@@ -152,11 +167,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/report_paths" />
         </provider>
-        <!-- Health Connect (Android 14+): lupien käyttötarkoitus avaa sovelluksen. -->
+        <!-- Health Connect (Android 14+): lupien käyttötarkoitus / tietosuojakäytäntö avaa tietosuojanäkymän. -->
         <activity-alias
             android:name="ViewPermissionUsageActivity"
             android:exported="true"
-            android:targetActivity=".MainActivity"
+            android:targetActivity=".PrivacyActivity"
             android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />

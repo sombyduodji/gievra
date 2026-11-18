@@ -8,6 +8,7 @@ import '../app_state.dart';
 import '../exercises.dart' show exerciseLabel;
 import '../l10n.dart';
 import '../program.dart';
+import '../picker_guard.dart';
 
 /// Ohjelmapohjan (.gmd) tallennus: nimi ja tekijä valinnaisia; maksimit ja aloituspäivä jäävät pois.
 Future<void> exportTemplate(BuildContext context, Program p) async {
@@ -50,10 +51,12 @@ Future<void> exportTemplate(BuildContext context, Program p) async {
   final defaultName = p.displayTitle.split(' · ').first;
   final text = programToTemplate(p, name: name.text.trim() == defaultName ? null : name.text, author: author.text);
   final base = name.text.trim().isEmpty ? 'ohjelma' : name.text.trim().replaceAll(RegExp(r'[^\w\-äöåÄÖÅ ]'), '');
-  final saved = await FilePicker.saveFile(
-    dialogTitle: t('Tallenna ohjelmapohja'),
-    fileName: '$base.$templateExtension',
-    bytes: Uint8List.fromList(utf8.encode(text)),
+  final saved = await pickOnce(
+    () => FilePicker.saveFile(
+      dialogTitle: t('Tallenna ohjelmapohja'),
+      fileName: '$base.$templateExtension',
+      bytes: Uint8List.fromList(utf8.encode(text)),
+    ),
   );
   if (saved != null && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Ohjelmapohja tallennettu.'))));
@@ -68,7 +71,8 @@ const templateMaxBytes = 1000000;
 /// [activate] false: pohja tallennetaan vain ohjelmaluetteloon (☰ → Asetukset → Ohjelmat).
 Future<bool> importTemplate(BuildContext context, {String? text, bool activate = true}) async {
   if (text == null) {
-    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse ohjelmapohja (.gmd)'));
+    final files =
+        (await pickOnce(() => FilePicker.pickFiles(dialogTitle: t('Valitse ohjelmapohja (.gmd)'))) ?? const []);
     if (files.isEmpty) return false;
     // Pohja on pieni tekstitiedosto: yli 1 Mt ei ole pohja (sama raja kuin avatuilla ja jaetuilla tiedostoilla).
     text = await files.first.xFile.length() > templateMaxBytes

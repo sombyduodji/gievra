@@ -262,6 +262,9 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     if (src == null && _sugg == null && (exerciseEquipment[e.name]?.every((q) => q == Equip.kehonpaino) ?? false)) {
       _kg = 0;
     }
+    // Hex bar ensimmäistä kertaa: tangon paino valmiina, jos se on asetettu (käyttäjä 18.11.: Farmer walk alkoi
+    // 0 kg:sta, vaikka pelkkä tanko painaa 20–30 kg).
+    if (src == null && _sugg == null && isHexBar(e.name)) _kg = barFor(e.name, hex: true) ?? 0;
     // Palattu lämmittelyn jälkeen: työpaino valmiina (ei viimeisimmän lämmittelysarjan painoa).
     if (e.workSets.isEmpty && e.sets.isNotEmpty) _prefillWork();
     // Toisen liikkeen palautus käynnissä: palkki näyttää tämän liikkeen ensimmäisen sarjan (tauon jälkeen tämä).
@@ -912,7 +915,24 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                         style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                       ),
                     ),
-                  if (isBarbell(e.name) && _kg > 0) PlateLine(kg: _kg, onPick: (v) => _setKg(v)),
+                  if (isBarbell(e.name) && _kg > 0) PlateLine(kg: _kg, exercise: e.name, onPick: (v) => _setKg(v)),
+                  // Hex bar: levylaskuri vain, kun tangon paino on asetettu; muuten linkki asetukseen.
+                  if (isHexBar(e.name))
+                    barFor(e.name, hex: true) != null
+                        ? PlateLine(kg: _kg, hex: true, exercise: e.name, onPick: (v) => _setKg(v))
+                        : Center(
+                            child: TextButton.icon(
+                              key: const ValueKey('hexBarSet'),
+                              onPressed: () async {
+                                await showPlateSheet(context, kg: _kg > 0 ? _kg : null, hex: true, exercise: e.name);
+                                final b = barFor(e.name, hex: true);
+                                if (mounted && b != null && _kg == 0) _setKg(b);
+                                if (mounted) setState(() {});
+                              },
+                              icon: const Icon(Icons.fitness_center, size: 16),
+                              label: Text(t('Aseta hex barin paino'), style: const TextStyle(fontSize: 13)),
+                            ),
+                          ),
                   const SizedBox(height: 14),
                   ...[
                     // Aikaliikkeet: ajastin laskee alas, lopussa ääni ja värinä.

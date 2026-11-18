@@ -201,7 +201,7 @@ class _HealthImportScreenState extends State<HealthImportScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = '$e';
+          _error = errorText(e); // ei raakaa PlatformException-tekstiä (yötesti 18.11.)
           _state = _State.error;
         });
       }

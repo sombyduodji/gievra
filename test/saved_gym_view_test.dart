@@ -47,7 +47,9 @@ void main() {
     expect(find.textContaining('Giitu'), findsNothing, reason: 'aiempi treeni, ei onnittelua');
     final list = find.byKey(const ValueKey('savedExercises'));
     expect(find.descendant(of: list, matching: find.text('Taukopenkki')), findsOneWidget);
-    expect(find.descendant(of: list, matching: find.textContaining('70 × 6 🏆')), findsOneWidget);
+    expect(find.descendant(of: list, matching: find.text('70 × 6')), findsOneWidget); // sarja pillinä (17.11.)
+    expect(find.descendant(of: list, matching: find.text('🏆')), findsWidgets); // ennätysmerkki pillissä
+    expect(find.text('🏆 1'), findsOneWidget, reason: 'ennätykset ylhäällä omana ruutunaan');
     expect(find.text('Uusi treeni'), findsNothing);
     await tester.pump(const Duration(milliseconds: 500)); // suojaviive
     await tester.tap(find.byKey(const ValueKey('savedEdit')));
@@ -91,5 +93,21 @@ void main() {
     await tester.pump();
     expect(find.textContaining('Volyymi viime kerroilla'), findsNothing);
     expect(find.textContaining('60 kg × 2 edestakaisin'), findsWidgets);
+  });
+
+  testWidgets('salitreenin yhteenveto: syke ennen liikkeitä, lämmittely pillinä (17.11.)', (tester) async {
+    store.workouts = [
+      done()
+        ..hrAvg = 128
+        ..hrMax = 161
+        ..exercises.first.sets.insert(0, SetEntry(40, 8)..warmup = true),
+    ];
+    await openFromRecent(tester);
+    final hr = tester.getTopLeft(find.textContaining('128')).dy;
+    final ex = tester.getTopLeft(find.byKey(const ValueKey('savedExercises'))).dy;
+    expect(hr, lessThan(ex), reason: 'keho ensin, sitten liikkeet');
+    expect(find.byIcon(Icons.local_fire_department_outlined), findsOneWidget, reason: 'lämmittely merkitty');
+    expect(find.text('40 × 8'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

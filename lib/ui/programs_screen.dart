@@ -10,6 +10,7 @@ import '../program.dart';
 import 'program_template.dart';
 import '../theme.dart';
 import 'widgets.dart';
+import '../picker_guard.dart';
 
 /// ☰ → Asetukset → Ohjelmat: tallennetut ohjelmat (ohjelmat/*.gmd). Käyttöönotto, nimeäminen, vienti,
 /// poisto ja tuonti. Treenit eivät muutu ohjelmaa vaihdettaessa.
@@ -81,10 +82,12 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 
   Future<void> _export(String name, Program p) async {
     final text = programToTemplate(p, name: name);
-    await FilePicker.saveFile(
-      dialogTitle: t('Tallenna ohjelmapohja'),
-      fileName: '$name.$templateExtension',
-      bytes: Uint8List.fromList(utf8.encode(text)),
+    await pickOnce(
+      () => FilePicker.saveFile(
+        dialogTitle: t('Tallenna ohjelmapohja'),
+        fileName: '$name.$templateExtension',
+        bytes: Uint8List.fromList(utf8.encode(text)),
+      ),
     );
   }
 

@@ -13,6 +13,7 @@ import '../sports.dart' show sportOf;
 import '../theme.dart';
 import 'program_view.dart' show WeeklyLoadCard;
 import 'running_screen.dart';
+import 'recovery_stats.dart' show RecoveryTrendsSection;
 import 'widgets.dart';
 import 'steps_ui.dart';
 import 'stats_tabs.dart';
@@ -377,7 +378,7 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
               ButtonSegment(
                 value: 'cardio',
-                label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Kestävyys'), maxLines: 1)),
+                label: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Liikunta'), maxLines: 1)),
               ),
             ],
             selected: {_kind},
@@ -553,6 +554,8 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
         ],
         if (settings.bodyTracker) BodyWeightSection(from: _span == 'month' && !_custom ? addDays(b, -84) : a, to: b),
+        // Palautumisen ja unen kehitys (käyttäjä 18.11.): vain, kun Palautuminen, Uni tai yöarvot on käytössä.
+        const RecoveryTrendsSection(),
         if (tips.isNotEmpty) ...[
           SectionLabel(t('Huomiot ja ehdotukset')),
           for (final tip in tips)
@@ -830,7 +833,7 @@ class _Split extends StatelessWidget {
             children: [
               side('🏋', t('Sali'), gym, gymMinutes, redText(context), CrossAxisAlignment.start),
               const SizedBox(width: 12),
-              side('🏃', t('Kestävyys'), cardio, cardioMinutes, greenText(context), CrossAxisAlignment.end),
+              side('🏃', t('Liikunta'), cardio, cardioMinutes, greenText(context), CrossAxisAlignment.end),
             ],
           ),
           const SizedBox(height: 8),
@@ -956,7 +959,7 @@ class _StackBars extends StatelessWidget {
           spacing: 12,
           children: [
             if (kind != 'cardio') legend(Sami.red, t('Sali')),
-            if (kind != 'gym') legend(Sami.green, t('Kestävyys')),
+            if (kind != 'gym') legend(Sami.green, t('Liikunta')),
           ],
         ),
       ],

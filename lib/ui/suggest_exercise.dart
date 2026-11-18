@@ -11,6 +11,7 @@ import '../app_state.dart';
 import '../exercises.dart';
 import '../l10n.dart';
 import '../models.dart';
+import '../picker_guard.dart';
 
 // Oman liikkeen ehdotus Gievraan (käyttäjä 16.11.): samaan tapaan kuin ongelmailmoitus, sähköpostina kehittäjälle.
 // Kysytään vain kerran liikettä kohden ja vasta treenin jälkeen (ei kesken treenin). Käsin liikevalitsimesta
@@ -132,7 +133,9 @@ Future<void> suggestExercises(BuildContext context, List<String> names) async {
         'paths': <String>[],
       });
     } else {
-      await SharePlus.instance.share(ShareParams(text: '${AppInfo.feedbackEmail}\n\n$body', subject: subject));
+      await pickOnce(
+        () => SharePlus.instance.share(ShareParams(text: '${AppInfo.feedbackEmail}\n\n$body', subject: subject)),
+      );
     }
   } catch (e) {
     if (context.mounted) {

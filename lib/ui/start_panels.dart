@@ -17,6 +17,7 @@ import '../models.dart';
 import '../ongoing.dart';
 import '../program.dart';
 import '../program_edit.dart' show suggestDay;
+import '../running.dart' show paceProgress, hrPaceProgress;
 import '../sports.dart';
 import '../theme.dart';
 import '../weekly_activity.dart';
@@ -100,64 +101,47 @@ class StartSplitButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final mode = settings.trainMode;
     final gym = mode != 'cardio', act = mode != 'gym';
-    final p = settings.program;
-    final today = dateOnly(DateTime.now());
-    final gymHint = settings.activePause != null
-        ? t('tauolla')
-        : p != null && p.plan.isNotEmpty
-        ? suggestDay(p, store.workouts, today).$1.uiName
-        : t('Vapaa treeni');
+    // Vihjeteksti (seuraava päivä / viimeksi tehty laji) pois (käyttäjä 18.11.): paneeli näyttää ne jo valmiiksi
+    // valittuina, ja saameksi isolla fontilla vihje katkesi kesken sanan.
     final last = recentSports(store.workouts, 1).firstOrNull;
-    final actHint = last == null ? t('Valitse laji') : t('Viimeksi {0}', [sportName(last.$1).toLowerCase()]);
-    Widget half(String key, Color color, String icon, String title, String hint, VoidCallback onTap, BorderRadius r) =>
-        Expanded(
-          child: Semantics(
-            button: true,
-            label: '$title, $hint',
-            excludeSemantics: true,
-            child: Material(
-              key: ValueKey(key),
-              color: color,
-              borderRadius: r,
-              child: InkWell(
-                borderRadius: r,
-                onTap: onTap,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  child: Row(
-                    children: [
-                      Text(icon, style: const TextStyle(fontSize: 26)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                title,
-                                maxLines: 1,
-                                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                              ),
-                            ),
-                            Text(
-                              hint,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white.withValues(alpha: .88), fontSize: 12),
-                            ),
-                          ],
-                        ),
+    Widget half(String key, Color color, String icon, String title, VoidCallback onTap, BorderRadius r) => Expanded(
+      child: Semantics(
+        button: true,
+        label: title,
+        // excludeSemantics pudottaa lapsen napautustoiminnon: ilman omaa onTapia TalkBack ei voinut painaa.
+        onTap: onTap,
+        excludeSemantics: true,
+        child: Material(
+          key: ValueKey(key),
+          color: color,
+          borderRadius: r,
+          child: InkWell(
+            borderRadius: r,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+              child: Row(
+                children: [
+                  Text(icon, style: const TextStyle(fontSize: 26)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
     const r = Radius.circular(18);
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.5,
@@ -171,7 +155,6 @@ class StartSplitButton extends StatelessWidget {
                 _gymRed,
                 '🏋️',
                 t('Sali'),
-                gymHint,
                 () => showGymPanel(context),
                 act ? const BorderRadius.horizontal(left: r) : const BorderRadius.all(r),
               ),
@@ -182,7 +165,6 @@ class StartSplitButton extends StatelessWidget {
                 _actGreen,
                 sportOf(last?.$1)?.icon ?? '🚶',
                 t('Liikunta'),
-                actHint,
                 () => showActivityPanel(context),
                 gym ? const BorderRadius.horizontal(right: r) : const BorderRadius.all(r),
               ),
@@ -254,6 +236,9 @@ class PeriodCard extends StatelessWidget {
         if (vals.isNotEmpty) steps = (vals.reduce((x, y) => x + y) / vals.length).round();
         stepsAvg = true;
       }
+      // Askeleet juuri kytketty, eikä tietoa vielä ole (testi 18.11.: uusi käyttäjä ei nähnyt mitään ja luuli,
+      // ettei kytkentä toiminut): kuluvalla jaksolla rengas nollasta.
+      if (steps == null && current) steps = 0;
     }
     final mode = settings.trainMode;
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -269,7 +254,7 @@ class PeriodCard extends StatelessWidget {
         ),
       if (steps != null)
         (
-          steps / 10000,
+          steps / settings.stepsGoal,
           blueText(context),
           steps >= 10000 ? '${(steps / 1000).toStringAsFixed(1).replaceAll('.', decimalSep)}k' : thousandsSep(steps),
           stepsAvg ? t('askelta / pv') : t('askelta tänään'),
@@ -443,6 +428,8 @@ String goalLabel(Goal g) {
   final s = g.sport == null ? null : sportName(g.sport!).toLowerCase();
   return switch (g.kind) {
     'gym' => t('salipäivää'),
+    'pace' => t('juoksuvauhti vs. 4 vk'),
+    'hrpace' => t('vauhti samalla sykkeellä'),
     'km' => s == null ? t('km liikuntaa') : t('km · {0}', [s]),
     'min' => s == null ? t('min liikuntaa') : t('min · {0}', [s]),
     _ => s == null ? t('kertaa liikuntaa') : t('kertaa · {0}', [s]),
@@ -453,9 +440,33 @@ String goalNum(Goal g, double v) => g.kind == 'km' && v < 10 && v != v.roundToDo
 
 /// Oman tavoitteen rengas jaksolle [from, next).
 (double, Color, String, String) goalRing(BuildContext context, Goal g, DateTime from, DateTime next, int days) {
+  // Kehitystavoite: täysi vihreä rengas, kun jakson juoksut ovat edes vähän parempia kuin 4 edellistä viikkoa.
+  if (g.progress) {
+    final cs = Theme.of(context).colorScheme;
+    final pace = g.kind == 'pace';
+    final d = pace
+        ? paceProgress(store.workouts, from, next, settings.runBands)
+        : hrPaceProgress(store.workouts, from, next);
+    if (d == null) return (0, cs.onSurfaceVariant, '–', goalLabel(g));
+    final better = pace ? d.round() < 0 : d >= 0.05;
+    final sign = (pace ? d.round() : d) > 0
+        ? '+'
+        : (pace ? d.round() < 0 : d < 0)
+        ? '−'
+        : '±';
+    final big = pace ? '$sign${d.round().abs()} s' : '$sign${fmtDec(d.abs(), 1)} %';
+    return (better ? 1 : 0.15, better ? greenText(context) : cs.onSurfaceVariant, big, goalLabel(g));
+  }
   final v = g.value(store.workouts, from, next);
   final target = g.target(days);
-  return (v / target, yellowText(context), '${goalNum(g, v)}/${goalNum(g, target)}', goalLabel(g));
+  // Rengas samaa pyöristettyä tavoitetta vasten kuin teksti (kuukausi 3 × 31 / 7 = 13,3: "13/13" ja täysi rengas).
+  final shown = g.kind == 'km' && target < 10 ? (target * 10).round() / 10 : target.roundToDouble();
+  return (
+    v / (shown > 0 ? shown : target),
+    yellowText(context),
+    '${goalNum(g, v)}/${goalNum(g, target)}',
+    goalLabel(g),
+  );
 }
 
 /// Omat tavoitteet omana korttinaan, kun niitä on kaksi tai kolme (yksi näkyy WHO-renkaiden rivissä). Jakso seuraa
@@ -565,6 +576,68 @@ Future<R?> _panel<R>(BuildContext context, Widget Function(BuildContext ctx, Sta
         ),
       ),
     );
+
+/// Paneelin toissijainen toiminto: ontto painike paneelin värillä koko leveydeltä.
+class _OutlineAction extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  const _OutlineAction({
+    super.key,
+    required this.color,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    onPressed: onPressed,
+    icon: Icon(icon, size: 18),
+    label: Text(label, textAlign: TextAlign.center),
+    style: OutlinedButton.styleFrom(
+      foregroundColor: color,
+      side: BorderSide(color: color, width: 1.5),
+      minimumSize: const Size.fromHeight(48),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
+/// Liikuntapaneelin laji laattana: iso kuvake ja nimi (kuten salipaneelin rivit).
+class _SportTile extends StatelessWidget {
+  final String icon, name;
+  final VoidCallback onTap;
+  const _SportTile({super.key, required this.icon, required this.name, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(name, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _Row extends StatelessWidget {
   final String title;
@@ -721,7 +794,11 @@ Future<void> showGymPanel(BuildContext context) async {
         children: [
           Row(
             children: [
-              IconButton(onPressed: () => set(() => logFor = null), icon: const Icon(Icons.arrow_back)),
+              IconButton(
+                tooltip: MaterialLocalizations.of(ctx).backButtonTooltip,
+                onPressed: () => set(() => logFor = null),
+                icon: const Icon(Icons.arrow_back),
+              ),
               Expanded(
                 child: Text(
                   t('Mitä teit {0}–{1}?', [_hm(c.start), _hm(c.end)]),
@@ -821,17 +898,19 @@ Future<void> showGymPanel(BuildContext context) async {
           ),
         if (logFor == null) _label(ctx, open.isEmpty ? t('ALOITA') : t('ALOITA UUSI')),
         ...dayRows,
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
+        // Oma ontto punainen painike (käyttäjä 17.11.: ennen pelkkä tekstilinkki, joka hukkui listan alle).
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _OutlineAction(
             key: const ValueKey('panelOtherDay'),
+            color: redText(ctx),
+            icon: Icons.edit_calendar_outlined,
+            label: t('Toinen päivä tai ohjelman muokkaus'),
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.of(context)
                   .push(MaterialPageRoute(builder: (_) => NewWorkoutScreen(date: today, gymOnly: true)));
             },
-            icon: const Icon(Icons.edit_calendar_outlined, size: 18),
-            label: Text(t('Toinen päivä tai ohjelman muokkaus')),
           ),
         ),
       ],
@@ -978,7 +1057,11 @@ Future<void> showActivityPanel(BuildContext context) async {
         children: [
           Row(
             children: [
-              IconButton(onPressed: () => set(() => hcW = null), icon: const Icon(Icons.arrow_back)),
+              IconButton(
+                tooltip: MaterialLocalizations.of(ctx).backButtonTooltip,
+                onPressed: () => set(() => hcW = null),
+                icon: const Icon(Icons.arrow_back),
+              ),
               Expanded(
                 child: Text(
                   '${sportOf(w.activity)?.icon ?? ''} ${sportName(w.activity!)} · Health Connect',
@@ -1116,7 +1199,11 @@ Future<void> showActivityPanel(BuildContext context) async {
         children: [
           Row(
             children: [
-              IconButton(onPressed: () => set(() => sport = null), icon: const Icon(Icons.arrow_back)),
+              IconButton(
+                tooltip: MaterialLocalizations.of(ctx).backButtonTooltip,
+                onPressed: () => set(() => sport = null),
+                icon: const Icon(Icons.arrow_back),
+              ),
               Expanded(child: Text('${sp?.icon ?? ''} ${sportName(s)}', style: Theme.of(ctx).textTheme.titleLarge)),
             ],
           ),
@@ -1215,26 +1302,42 @@ Future<void> showActivityPanel(BuildContext context) async {
             ),
         ],
         _label(ctx, recent.isEmpty ? t('LAJIT') : t('MUUT')),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final s in more)
-              ActionChip(
-                key: ValueKey('panelSport_${s.name}'),
-                label: Text('${s.icon} ${sportName(s.name)}'),
-                onPressed: () => set(() => sport = s.name),
+        // Lajit laattoina kahdessa sarakkeessa (käyttäjä 17.11.: sirut näyttivät vanhalta ulkoasulta).
+        for (var i = 0; i < more.length; i += 2)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final s in more.skip(i).take(2)) ...[
+                    if (s != more[i]) const SizedBox(width: 6),
+                    Expanded(
+                      child: _SportTile(
+                        key: ValueKey('panelSport_${s.name}'),
+                        icon: s.icon,
+                        name: sportName(s.name),
+                        onTap: () => set(() => sport = s.name),
+                      ),
+                    ),
+                  ],
+                  if (i + 1 >= more.length) ...[const SizedBox(width: 6), const Expanded(child: SizedBox())],
+                ],
               ),
-            ActionChip(
-              key: const ValueKey('panelAllSports'),
-              avatar: const Icon(Icons.search, size: 18),
-              label: Text(t('Kaikki lajit…')),
-              onPressed: () {
-                Navigator.pop(ctx);
-                startActivity(context, null);
-              },
             ),
-          ],
+          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _OutlineAction(
+            key: const ValueKey('panelAllSports'),
+            color: greenText(ctx),
+            icon: Icons.search,
+            label: t('Kaikki lajit…'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              startActivity(context, null);
+            },
+          ),
         ),
       ],
     );

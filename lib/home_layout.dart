@@ -7,13 +7,18 @@ import 'weekly_activity.dart' show periodActivity;
 
 /// Oma tavoite viikossa: [kind] 'gym' (salipäivät), 'km' (matka), 'min' (liikunta-aika) tai 'times' (kerrat);
 /// [sport] rajaa lajiin (null = kaikki liikunta; salipäivillä aina null). Kuukaudessa tavoite × päivät / 7.
+/// Kehitystavoitteet (käyttäjä 18.11.): 'pace' (juoksuvauhti paranee) ja 'hrpace' (vauhti samalla sykkeellä
+/// paranee) verrattuna 4 edelliseen viikkoon; niissä ei määrää ([perWeek] = 1), rengas täyttyy, kun kehitystä on.
 class Goal {
   final String kind;
   final String? sport;
   final double perWeek;
   const Goal(this.kind, this.sport, this.perWeek);
 
-  static const kinds = ['gym', 'km', 'min', 'times'];
+  static const kinds = ['gym', 'km', 'min', 'times', 'pace', 'hrpace'];
+
+  /// Kehitystavoite (ei määrää viikossa).
+  bool get progress => kind == 'pace' || kind == 'hrpace';
 
   @override
   bool operator ==(Object other) =>
@@ -54,7 +59,8 @@ List<Goal> goalsFromFile(String v) {
     final n = parseNum(f[2]);
     if (n == null || n <= 0 || n > 100000) continue;
     final kind = f[0].trim(), sport = f[1].trim();
-    out.add(Goal(kind, kind == 'gym' || sport == '*' || sport.isEmpty ? null : sport, n));
+    final noSport = kind == 'gym' || kind == 'pace' || kind == 'hrpace' || sport == '*' || sport.isEmpty;
+    out.add(Goal(kind, noSport ? null : sport, n));
     if (out.length == 3) break;
   }
   return out;
@@ -62,7 +68,21 @@ List<Goal> goalsFromFile(String v) {
 
 /// Valittavat kortit WHO-osion alla: seuraava ohjelman päivä, omat tavoitteet (kun niitä on 2–3), viikkoputki, yön
 /// alin syke, viimeksi, voiman kehitys, juoksun kehitys (matkaryhmät) ja kehonpaino (näkyvyys asetuksesta weightOnHome, koska se vaatii painon seurannan).
-const homeCardIds = ['next', 'goals', 'streak', 'recovery', 'recent', 'strength', 'running', 'weight'];
+const homeCardIds = [
+  'next',
+  'goals',
+  'streak',
+  'recovery',
+  'sleep',
+  'night',
+  'recent',
+  'strength',
+  'running',
+  'weight',
+];
+
+/// Kortit, jotka ovat oletuksena pois (Uni: tarvitsee Health Connectin unitiedot ja oman luvan; käyttäjä 17.11.).
+const homeCardsOffByDefault = {'recovery', 'sleep', 'night'};
 
 /// Järjestys ja piilotetut tiedostoon: "goals, recent, -strength, running, weight" (- = piilossa).
 String homeCardsToFile(List<String> order, Set<String> hidden) =>
@@ -77,9 +97,12 @@ String homeCardsToFile(List<String> order, Set<String> hidden) =>
     order.add(id);
     if (off) hidden.add(id);
   }
-  // Uudet kortit (tulevat versiot) loppuun näkyviin.
+  // Uudet kortit (tulevat versiot) loppuun: näkyviin, paitsi oletuksena pois olevat.
   for (final id in homeCardIds) {
-    if (!order.contains(id)) order.add(id);
+    if (!order.contains(id)) {
+      order.add(id);
+      if (homeCardsOffByDefault.contains(id)) hidden.add(id);
+    }
   }
   return (order, hidden);
 }

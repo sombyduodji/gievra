@@ -71,7 +71,7 @@ class _HealthSheetState extends State<_HealthSheet> {
       index = 0;
       if (mounted) setState(() => step = found.isEmpty ? _Step.none : _Step.found);
     } catch (e) {
-      error = '$e';
+      error = errorText(e); // ei raakaa PlatformException-tekstiä (yötesti 18.11.)
       if (mounted) setState(() => step = _Step.error);
     }
   }

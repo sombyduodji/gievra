@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show PlatformException, rootBundle;
 
 import 'exercises.dart' show exerciseLabel;
 import 'injury_data.dart' show injuryRegions;
@@ -110,8 +110,11 @@ String fi(String template, [List<Object?> args = const []]) => fill(template, ar
 /// Virheen teksti käyttäjälle: sovelluksen omat virheviestit (kirjoitettu fi()-merkinnällä) käännetään, muiden
 /// virheiden teksti näytetään sellaisenaan ilman luokan nimeä.
 String errorText(Object e) {
+  // PlatformException: vain viesti (ennen "PlatformException(already_active, File picker is already active, …)").
   final s = e is FormatException
       ? e.message
+      : e is PlatformException
+      ? (e.message ?? e.code)
       : e.toString().replaceFirst(RegExp(r'^(HttpException|Exception|FileSystemException|StateError): '), '');
   return tr(s);
 }

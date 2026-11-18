@@ -16,6 +16,7 @@ import '../session_compare.dart';
 import '../share_text.dart' show thousands;
 import '../theme.dart';
 import 'widgets.dart' show BarTitle, shortDate;
+import '../picker_guard.dart';
 
 // Jaa kuvana (käyttäjä 16.11.: "WhatsApp ym., kauniisti, kuvakaappauksen tyyliin"). Kortti näytetään ensin
 // esikatseluna, ja Jaa tekee siitä PNG-kuvan (3 × tarkkuus) jakovalikkoon. Kortti on aina vaalea, ettei
@@ -284,10 +285,12 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
     setState(() => _busy = true);
     try {
       final f = await _render();
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(f.path, mimeType: 'image/png')],
-          text: widget.text,
+      await pickOnce(
+        () => SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(f.path, mimeType: 'image/png')],
+            text: widget.text,
+          ),
         ),
       );
     } catch (_) {
@@ -379,7 +382,9 @@ Future<void> shareProgram(BuildContext context, Program program) async {
   final dir = await shareDir();
   final f = File(p.join(dir.path, '$base.$templateExtension'));
   await f.writeAsBytes(utf8.encode(programToTemplate(program, name: name)), flush: true);
-  await SharePlus.instance.share(ShareParams(files: [XFile(f.path, mimeType: 'application/octet-stream')]));
+  await pickOnce(
+    () => SharePlus.instance.share(ShareParams(files: [XFile(f.path, mimeType: 'application/octet-stream')])),
+  );
 }
 
 /// Jaettavien kuvien ja pohjien kansio välimuistissa. Yli tunnin vanhat aiemmat jaot poistetaan (yötesti 17.11.:

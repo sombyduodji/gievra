@@ -120,9 +120,13 @@ class _InjuryScreenState extends State<InjuryScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ExpansionTile(
                   shape: const Border(),
-                  leading: Checkbox(
-                    value: _sel.contains(r.id),
-                    onChanged: (v) => setState(() => v == true ? _sel.add(r.id) : _sel.remove(r.id)),
+                  // Ruudulle alueen nimi: TalkBack luki pelkän "Valintaruutu" (uiautomator NAF, yötesti 18.11.).
+                  leading: Semantics(
+                    label: t(r.name),
+                    child: Checkbox(
+                      value: _sel.contains(r.id),
+                      onChanged: (v) => setState(() => v == true ? _sel.add(r.id) : _sel.remove(r.id)),
+                    ),
                   ),
                   title: Text(t(r.name)),
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

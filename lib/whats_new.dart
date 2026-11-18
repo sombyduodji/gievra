@@ -13,6 +13,36 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.6.9.2',
+    Icons.monitor_heart_outlined,
+    'Palautuminen uudistettu',
+    'Ruudut värireunoin (vihreä, keltainen, punainen) omaan tasoosi verrattuna; ⚠-ruudusta neuvo. Mukana HRV, hengitys, happi, lämpö, uni ja kuormitus, jos kello tai sormus niitä tallentaa. Ruudut ja järjestys: Asetukset → Etusivu.',
+  ),
+  NewFeature(
+    '0.6.9.2',
+    Icons.bedtime_outlined,
+    'Uni-kortti',
+    'Viime yö, viikon keskiarvo ja säännöllisyys omaan tavalliseen uneesi verrattuna. Valinnainen: Asetukset → Etusivu.',
+  ),
+  NewFeature(
+    '0.6.9.2',
+    Icons.trending_up,
+    'Kehitys Tilastoissa',
+    'Yösyke, HRV ja uni 12 viikolta: Tilastot → Kehitys → Palautuminen ja uni.',
+  ),
+  NewFeature(
+    '0.6.9.2',
+    Icons.directions_run,
+    'Juoksun kehitystavoitteet ja oma askeltavoite',
+    'Vauhdin kehitys ja vauhti samalla sykkeellä omiin tavoitteisiin; askeltavoite Asetukset → Etusivu.',
+  ),
+  NewFeature(
+    '0.6.9.2',
+    Icons.fitness_center,
+    'Hex bar ja liikekohtainen tanko',
+    'Hex barin paino asetuksiin; levylaskuri muistaa tangon liikkeittäin.',
+  ),
+  NewFeature(
     '0.6.9.1',
     Icons.dashboard_customize_outlined,
     'Uusia etusivun kortteja',

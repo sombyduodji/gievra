@@ -37,6 +37,12 @@ void main() {
       'android.permission.health.READ_STEPS',
       'android.permission.health.READ_HEALTH_DATA_HISTORY',
       'android.permission.health.READ_DISTANCE',
+      'android.permission.health.READ_SLEEP',
+      'android.permission.health.READ_HEART_RATE_VARIABILITY',
+      'android.permission.health.READ_OXYGEN_SATURATION',
+      'android.permission.health.READ_RESPIRATORY_RATE',
+      'android.permission.health.READ_RESTING_HEART_RATE',
+      'android.permission.health.READ_SKIN_TEMPERATURE',
     });
     // Ei kirjoitusoikeuksia Health Connectiin (vain luku, ks. muistio: ei takaisinkirjoitusta).
     expect(perms.where((p) => p.contains('health.WRITE')), isEmpty);
@@ -48,7 +54,7 @@ void main() {
         for (final t in tags(kind))
           if (attr(t, 'exported') == 'true') attr(t, 'name')!,
     ];
-    expect(exported.toSet(), {'.MainActivity', '.OpenFileActivity', 'ViewPermissionUsageActivity'});
+    expect(exported.toSet(), {'.MainActivity', '.OpenFileActivity', '.PrivacyActivity', 'ViewPermissionUsageActivity'});
     // Avaa sovelluksella / Jaa menee läpikulkuaktiviteetin kautta (yötesti 16.11.: ei toista Gievraa muistiin).
     final main = tags('activity').firstWhere((t) => attr(t, 'name') == '.MainActivity');
     final mainBody = body.substring(body.indexOf(main), body.indexOf('</activity>', body.indexOf(main)));
@@ -60,6 +66,12 @@ void main() {
     // Lupanäkymä vain järjestelmälle.
     final alias = tags('activity-alias').single;
     expect(attr(alias, 'permission'), 'android.permission.START_VIEW_PERMISSION_USAGE');
+    // Health Connectin tietosuojalinkit avaavat oman tietosuojanäkymän (yötesti 18.11.: pääikkuna jäi taakse).
+    expect(attr(alias, 'targetActivity'), '.PrivacyActivity');
+    final privacy = tags('activity').firstWhere((t) => attr(t, 'name') == '.PrivacyActivity');
+    final privacyBody = body.substring(body.indexOf(privacy), body.indexOf('</activity>', body.indexOf(privacy)));
+    expect(privacyBody, contains('androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE'));
+    expect(mainBody, isNot(contains('ACTION_SHOW_PERMISSIONS_RATIONALE')));
     // Jokaisella palvelulla, vastaanottimella ja tarjoajalla on exported näkyvästi.
     for (final kind in ['service', 'receiver', 'provider']) {
       for (final t in tags(kind)) {

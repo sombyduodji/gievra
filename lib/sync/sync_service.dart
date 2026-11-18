@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_info.dart';
 import '../app_state.dart';
+import '../daily_steps.dart' show dailySteps;
 import '../models.dart';
+import '../sleep.dart' show sleepData;
 import 'drive_remote.dart';
 import 'sync_engine.dart';
 
@@ -182,6 +184,10 @@ class SyncService extends ChangeNotifier {
       if (r.changedLocal) {
         await settings.loadFromFolder();
         await store.reload();
+        // Askeleet ja uni omista tiedostoistaan: muuten seuraava päivitys kirjoitti vanhat muistissa olleet tiedot
+        // synkronoidun tiedoston päälle (toisen laitteen yöt ja päivät katosivat).
+        await dailySteps.load();
+        await sleepData.load();
       }
     } catch (e) {
       status = 'Virhe: $e';

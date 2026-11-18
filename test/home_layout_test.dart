@@ -25,7 +25,7 @@ void main() {
       ..trainMode = 'both'
       ..program = null
       ..homeOrder = [...homeCardIds]
-      ..homeHidden = {};
+      ..homeHidden = {...homeCardsOffByDefault};
     settings.setGoals([]);
   });
   tearDown(() {
@@ -33,7 +33,7 @@ void main() {
     settings
       ..trainMode = 'gym'
       ..homeOrder = [...homeCardIds]
-      ..homeHidden = {};
+      ..homeHidden = {...homeCardsOffByDefault};
   });
 
   test('tavoitteet ja kortit tiedostoon ja takaisin', () {
@@ -47,14 +47,17 @@ void main() {
     ]);
     expect(homeCardsToFile(['running', 'recent'], {'recent'}), 'running, -recent');
     final (o, h) = homeCardsFromFile('running, -recent, roskaa, running');
-    expect(o, ['running', 'recent', 'next', 'goals', 'streak', 'recovery', 'strength', 'weight']);
-    expect(h, {'recent'});
+    expect(o, ['running', 'recent', 'next', 'goals', 'streak', 'recovery', 'sleep', 'night', 'strength', 'weight']);
+    expect(h, {'recent', 'recovery', 'sleep', 'night'}); // Palautuminen, Uni ja Yöarvot oletuksena pois (18.11.)
     settings.applyMarkdown('---\nhome_goals: km:Pyöräily:100\nhome_cards: -goals, weight, recent\n---\n');
     expect(settings.goals, const [Goal('km', 'Pyöräily', 100)]);
     expect(settings.homeOrder.take(3), ['goals', 'weight', 'recent']);
     expect(settings.homeCardOn('goals'), isFalse);
     expect(settings.settingsToMarkdown(), contains('home_goals: km:Pyöräily:100'));
-    expect(settings.settingsToMarkdown(), contains('home_cards: -goals, weight, recent, next, streak, recovery, strength, running'));
+    expect(
+      settings.settingsToMarkdown(),
+      contains('home_cards: -goals, weight, recent, next, streak, -recovery, -sleep, -night, strength, running'),
+    );
   });
 
   test('tavoitteen toteuma: laji, matka, aika, kerrat ja salipäivät; kuukausi skaalautuu', () {
@@ -129,7 +132,7 @@ void main() {
   });
 
   testWidgets('asetukset: tavoitteen lisäys ja poisto, kortin piilotus', (tester) async {
-    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.physicalSize = const Size(1080, 5400);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -155,17 +158,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(settings.goals, const [Goal('min', null, 200)]);
     expect(find.textContaining('200 min liikuntaa'), findsOneWidget);
+    // Yötesti 18.11.: kytkimellä kortin nimi saavutettavuuspuussa (ennen nimetön "Kytkin").
+    final sem = tester.ensureSemantics();
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('homeCardSwitch_strength'))).getSemanticsData().label,
+      isNotEmpty,
+    );
+    sem.dispose();
     await tester.tap(find.byKey(const ValueKey('homeCardSwitch_strength')));
     await tester.pump();
     expect(settings.homeCardOn('strength'), isFalse);
     await tester.tap(find.byKey(const ValueKey('goalRemove_0')));
     await tester.pump();
     expect(settings.goals, isEmpty);
+    // Yötesti 18.11.: desimaalitavoite säilyy muokattaessa (ennen 12,5 km näkyi ja tallentui 13:na), salipäivät
+    // kokonaislukuina ja alle 1 ei kelpaa (teksti lupaa 1–max).
+    await tester.tap(find.byKey(const ValueKey('goalAdd')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goalKind_km')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const ValueKey('goalAmount')), '0,5');
+    await tester.tap(find.byKey(const ValueKey('goalSave')));
+    await tester.pump();
+    expect(find.textContaining('Anna luku'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('goalAmount')), '12,5');
+    await tester.tap(find.byKey(const ValueKey('goalSave')));
+    await tester.pumpAndSettle();
+    expect(settings.goals, const [Goal('km', null, 12.5)]);
+    expect(find.textContaining('12,5 km liikuntaa'), findsOneWidget);
+    await tester.tap(find.textContaining('12,5 km liikuntaa'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '12,5'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('goalKind_gym')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const ValueKey('goalAmount')), '2,5');
+    await tester.tap(find.byKey(const ValueKey('goalSave')));
+    await tester.pump();
+    expect(find.textContaining('Anna luku'), findsOneWidget);
+    await tester.tap(find.text('Peruuta'));
+    await tester.pumpAndSettle();
+    settings.setGoals(const []);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('asetukset: tavoitteiden ja korttien järjestys vetämällä', (tester) async {
-    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.physicalSize = const Size(1080, 5400);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
     settings.setGoals(const [Goal('gym', null, 3), Goal('km', null, 20), Goal('times', null, 4)]);
@@ -199,8 +236,10 @@ void main() {
       of: find.byKey(const ValueKey('homeCard_recent')),
       matching: find.byIcon(Icons.drag_indicator),
     );
-    await drag(c, -tester.getSize(find.byKey(const ValueKey('homeCard_recent'))).height * 1.2);
-    expect(settings.homeOrder.indexOf('recent'), 3); // yhden kortin ylemmäs (Palautuminen-kortin edelle)
+    await drag(c, -tester.getSize(find.byKey(const ValueKey('homeCard_sleep'))).height * 0.8);
+    // Yhden kortin ylemmäs (Uni-kortin edelle). Yöarvot ei ole listassa (näkyy Palautumisessa, 18.11.).
+    expect(settings.homeOrder.indexOf('recent'), 4);
+    expect(find.byKey(const ValueKey('homeCard_night')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

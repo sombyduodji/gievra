@@ -114,4 +114,45 @@ void main() {
     await tester.tap(find.text('nappi'));
     expect(n, 1);
   });
+
+  testWidgets('yötesti 18.11.: listan rivin poiston jälkeen seuraavan rivin poistonappi ei ota tuplanapautusta', (
+    tester,
+  ) async {
+    final items = ['a', 'b', 'c'];
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => TapGuard(child: child),
+        home: StatefulBuilder(
+          builder: (context, set) => Scaffold(
+            body: Column(
+              children: [
+                for (final (i, x) in items.indexed)
+                  ListTile(
+                    title: Text(x),
+                    trailing: IconButton(
+                      key: ValueKey('del_$i'),
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        set(() => items.removeAt(i));
+                        NavTapGuard.markListChange();
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('del_0')));
+    await tester.pump();
+    now = now.add(const Duration(milliseconds: 120));
+    await tester.tap(find.byKey(const ValueKey('del_0')));
+    await tester.pump();
+    expect(items, ['b', 'c'], reason: 'toinen napautus nielty');
+    now = now.add(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const ValueKey('del_0')));
+    await tester.pump();
+    expect(items, ['c']);
+  });
 }

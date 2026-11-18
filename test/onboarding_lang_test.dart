@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:treenipaivakirja/ui/widgets.dart' show seGreeting;
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/main.dart';
@@ -100,7 +101,8 @@ void main() {
     expect(tester.takeException(), isNull);
     expect((settings.name, settings.started, settings.onboarded), ('', true, true));
     expect(find.widgetWithText(FilledButton, t('Aloitetaan')), findsNothing);
-    expect(find.textContaining(RegExp(r'^[^,]+!$')), findsWidgets, reason: 'tervehdys ilman nimeä');
+    // Tervehdys on aina ilman nimeä ja huutomerkkiä (18.11.: otsikossa vain "Buorre iđit" ym.).
+    expect(find.text(seGreeting(DateTime.now())), findsWidgets, reason: 'tervehdys ilman nimeä');
     expect(settings.settingsToMarkdown(), contains('started: true'));
   });
 

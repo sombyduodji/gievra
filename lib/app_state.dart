@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb, listEquals, visibleForTesting;
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals, setEquals, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +18,7 @@ import 'home_layout.dart';
 import 'program.dart';
 import 'running.dart' show RunBand, defaultRunBands, runBandsFromFile, runBandsToFile;
 import 'exercises.dart';
+import 'recovery.dart' show recoveryOrderDefault, recoveryTileKeys;
 import 'heart_rate.dart' show hrProfile, repairLowCoverageKcal, repairWalkKcal;
 
 final settings = Settings();
@@ -197,6 +198,14 @@ class Settings extends ChangeNotifier {
   /// Levylaskuri: omat levyt (kg) ja tangon paino.
   List<double> plates = [...defaultPlates];
   double barKg = defaultBarKg;
+
+  /// Hex barin (kuusikulmatangon) paino; null = ei asetettu, jolloin levylaskuri ei ole käytössä hex bar
+  /// -liikkeissä (käyttäjä 18.11.: hex barit painavat mitä tahansa, tyypillisesti 20–30 kg).
+  double? hexBarKg;
+
+  /// Liikekohtainen tangon paino (käyttäjä 18.11.: esim. ranteen koukistus 10 kg:n tangolla). Vain levylaskuriin ja
+  /// hex barin alkupainoon; kirjatut sarjat ovat aina kokonaispainoja, joten tämä ei muuta tallennettua dataa.
+  Map<String, double> exerciseBars = {};
   bool tips = true;
 
   /// Kehonpainon seuranta (asetukset.md: body_tracker). Punnitukset ja pituus kehonpaino.md:ssä ([body]).
@@ -208,6 +217,39 @@ class Settings extends ChangeNotifier {
   /// Juoksun matkaryhmät etusivun Juoksun kehitys -kortissa (1–3, käyttäjä 17.11.).
   List<RunBand> runBands = defaultRunBands;
 
+  /// Yöarvot-kortin näytettävät arvot (käyttäjä 17.11.: muokattava; oletus kaikki): hrv, rest, rr, spo2, temp.
+  /// Palautuminen-kortin ruudut (yöarvot sekä uni ja kuormitus, 18.11.); oletuksena kaikki.
+  Set<String> nightTiles = {...recoveryTileKeys};
+
+  /// Palautuminen-kortin ruutujen järjestys (käyttäjä 18.11.: valittavissa ja järjestettävissä).
+  List<String> recoveryOrder = [...recoveryOrderDefault];
+
+  void setRecoveryOrder(List<String> v) {
+    recoveryOrder = v;
+    _persist();
+  }
+
+  void setNightTile(String k, bool on) {
+    on ? nightTiles.add(k) : nightTiles.remove(k);
+    _persist();
+  }
+
+  /// Oma unitavoite minuutteina (käyttäjä 17.11.; Walsh ym. 2021: yksilöllinen; oletus 7 h = 420).
+  int sleepGoal = 420;
+
+  void setSleepGoal(int v) {
+    sleepGoal = v.clamp(300, 720);
+    _persist();
+  }
+
+  /// Päivän askeltavoite (käyttäjä 17.11.: muokattava; oletus 10 000). Asetukset → Etusivu.
+  int stepsGoal = 10000;
+
+  void setStepsGoal(int v) {
+    stepsGoal = v.clamp(1000, 50000);
+    _persist();
+  }
+
   /// Etusivun omat tavoitteet (0–3; käyttäjä 17.11.). Ohjelman salipäivät eivät ole oletustavoite: ne ovat
   /// lihaskuntopäivien renkaan tavoite (käyttäjä 17.11.: lihaskuntopäivä ja sali yhdeksi renkaaksi).
   List<Goal>? _goals;
@@ -215,7 +257,7 @@ class Settings extends ChangeNotifier {
 
   /// Etusivun korttien järjestys ja piilotetut (kehonpainon näkyvyys: [weightOnHome]).
   List<String> homeOrder = [...homeCardIds];
-  Set<String> homeHidden = {};
+  Set<String> homeHidden = {...homeCardsOffByDefault};
 
   bool homeCardOn(String id) => id == 'weight' ? bodyTracker && weightOnHome : !homeHidden.contains(id);
 
@@ -594,13 +636,27 @@ class Settings extends ChangeNotifier {
       ..writeln('weightStep: ${fileNum(weightStep)}')
       ..writeln('plates: ${plates.map(fileNum).join('; ')}')
       ..writeln('bar: ${fileNum(barKg)}')
+      ..write(hexBarKg == null ? '' : 'hex_bar: ${fileNum(hexBarKg!)}\n')
+      ..write(
+        exerciseBars.isEmpty
+            ? ''
+            : 'exercise_bars: ${exerciseBars.entries.map((e) => '${e.key}=${fileNum(e.value)}').join('; ')}\n',
+      )
       ..writeln('tips: $tips')
       ..writeln('body_tracker: $bodyTracker')
       ..writeln('weight_home: $weightOnHome')
       ..write(listEquals(runBands, defaultRunBands) ? '' : 'run_bands: ${runBandsToFile(runBands)}\n')
+      ..write(stepsGoal == 10000 ? '' : 'steps_goal: $stepsGoal\n')
+      ..write(sleepGoal == 420 ? '' : 'sleep_goal: $sleepGoal\n')
+      ..write(
+        setEquals(nightTiles, recoveryTileKeys.toSet())
+            ? ''
+            : 'night_tiles: ${nightTiles.isEmpty ? '-' : recoveryTileKeys.where(nightTiles.contains).join(', ')}\n',
+      )
+      ..write(listEquals(recoveryOrder, recoveryOrderDefault) ? '' : 'recovery_order: ${recoveryOrder.join(', ')}\n')
       ..write(_goals == null ? '' : 'home_goals: ${goalsToFile(_goals!)}\n')
       ..write(
-        listEquals(homeOrder, homeCardIds) && homeHidden.isEmpty
+        listEquals(homeOrder, homeCardIds) && setEquals(homeHidden, homeCardsOffByDefault)
             ? ''
             : 'home_cards: ${homeCardsToFile(homeOrder, homeHidden)}\n',
       )
@@ -730,12 +786,38 @@ class Settings extends ChangeNotifier {
           case 'bar':
             final b = parseNum(v);
             if (b != null && b >= 0 && b <= 50) barKg = b;
+          case 'hex_bar':
+            final b = parseNum(v);
+            if (b != null && b > 0 && b <= 60) hexBarKg = b;
+          case 'exercise_bars':
+            exerciseBars = {
+              for (final part in v.split(';'))
+                if (part.split('=') case [final n, final kg] when n.trim().isNotEmpty)
+                  if (parseNum(kg) case final b? when b > 0 && b <= 60) n.trim(): b,
+            };
           case 'tips':
             tips = v != 'false';
           case 'body_tracker':
             bodyTracker = v == 'true';
           case 'weight_home':
             weightOnHome = v == 'true';
+          case 'recovery_order':
+            final o = <String>[
+              for (final k in v.split(',').map((x) => x.trim()))
+                if (recoveryOrderDefault.contains(k)) k,
+            ];
+            recoveryOrder = [...o.toSet(), ...recoveryOrderDefault.where((k) => !o.contains(k))];
+          case 'night_tiles':
+            nightTiles = {
+              for (final k in v.split(',').map((x) => x.trim()))
+                if (recoveryTileKeys.contains(k)) k,
+            };
+          case 'sleep_goal':
+            final n = int.tryParse(v.trim());
+            if (n != null && n >= 300 && n <= 720) sleepGoal = n;
+          case 'steps_goal':
+            final n = int.tryParse(v.replaceAll(RegExp(r'\s'), ''));
+            if (n != null && n >= 1000 && n <= 50000) stepsGoal = n;
           case 'run_bands':
             runBands = runBandsFromFile(v);
           case 'home_goals':
@@ -743,6 +825,9 @@ class Settings extends ChangeNotifier {
           case 'home_cards':
             final (o, h) = homeCardsFromFile(v);
             homeOrder = o;
+            // Yöarvot näkyvät Palautuminen-kortissa (18.11.): jos Yöarvot oli päällä omana korttinaan, Palautuminen
+            // päälle, jotta arvot eivät katoa.
+            if (!h.contains('night')) h.remove('recovery');
             homeHidden = h;
           case 'birth_year':
             final y = int.tryParse(v);
@@ -1161,6 +1246,18 @@ class Settings extends ChangeNotifier {
   void setPlates(List<double> v, double bar) {
     plates = v.toSet().toList()..sort((a, b) => b.compareTo(a));
     barKg = bar;
+    _persist();
+  }
+
+  /// [kg] null = liike käyttää oletustankoa.
+  void setExerciseBar(String exercise, double? kg) {
+    exerciseBars = {...exerciseBars}..remove(exercise);
+    if (kg != null) exerciseBars[exercise] = kg;
+    _persist();
+  }
+
+  void setHexBarKg(double? v) {
+    hexBarKg = v;
     _persist();
   }
 

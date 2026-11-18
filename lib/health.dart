@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'hr_calc.dart';
 import 'l10n.dart';
 import 'models.dart';
+import 'sleep.dart' show NightMetrics, SleepSession;
 import 'sports.dart';
 
 // Health Connect (Android): treenin jälkeen syke, kalorit ja askeleet kellosta. Ei tuoda kaikkea historiaa: haetaan vain
@@ -248,8 +249,22 @@ class HealthConnect {
   }
 
   /// [import]: tehdyn liikunnan lisäys tarvitsee lisäksi matkan lukuluvan.
-  static Future<bool> granted({bool import = false, bool steps = false, bool history = false}) async =>
-      await _ch.invokeMethod<bool>('granted', {'import': import, 'steps': steps, 'history': history}) ?? false;
+  /// [sleep]: Uni-kortti (unijaksot ja syke); [sleep] + [history]: vanhempi unihistoria.
+  static Future<bool> granted({
+    bool import = false,
+    bool steps = false,
+    bool history = false,
+    bool sleep = false,
+    bool metrics = false,
+  }) async =>
+      await _ch.invokeMethod<bool>('granted', {
+        'import': import,
+        'steps': steps,
+        'history': history,
+        'sleep': sleep,
+        'metrics': metrics,
+      }) ??
+      false;
 
   /// Tukeeko Health Connect vanhemman historian lukua (yli 30 päivää ennen luvan antamista).
   static Future<bool> historyAvailable() async {
@@ -266,9 +281,60 @@ class HealthConnect {
     bool import = false,
     bool steps = false,
     bool history = false,
+    bool sleep = false,
+    bool metrics = false,
   }) async =>
-      await _ch.invokeMethod<bool>('request', {'write': write, 'import': import, 'steps': steps, 'history': history}) ??
+      await _ch.invokeMethod<bool>('request', {
+        'write': write,
+        'import': import,
+        'steps': steps,
+        'history': history,
+        'sleep': sleep,
+        'metrics': metrics,
+      }) ??
       false;
+
+  /// Yöarvot öittäin (Yöarvot-kortti): [windows] = päivä -> (alku, loppu).
+  static Future<Map<DateTime, NightMetrics>> nightMetrics(Map<DateTime, (DateTime, DateTime)> windows) async {
+    final r = await _ch.invokeMethod<List>('nightMetrics', {
+      'windows': [
+        for (final e in windows.entries)
+          [isoDate(e.key), e.value.$1.millisecondsSinceEpoch, e.value.$2.millisecondsSinceEpoch],
+      ],
+    });
+    final out = <DateTime, NightMetrics>{};
+    for (final m in (r ?? const []).cast<Map>()) {
+      double? d(String k) => (m[k] as num?)?.toDouble();
+      final n = NightMetrics(
+        hrv: d('hrv'),
+        spo2: d('spo2'),
+        spo2Min: d('spo2Min'),
+        rr: d('rr'),
+        temp: d('temp'),
+        rest: d('rest'),
+      );
+      if (!n.isEmpty) out[DateTime.parse(m['day'] as String)] = n;
+    }
+    return out;
+  }
+
+  /// Unijaksot aikaväliltä [start]–[end] (Uni-kortti; lähteen valinta lib/sleep.dart).
+  static Future<List<SleepSession>> sleepSessions(DateTime start, DateTime end) async {
+    final r = await _ch.invokeMethod<List>('sleepSessions', {
+      'start': start.millisecondsSinceEpoch,
+      'end': end.millisecondsSinceEpoch,
+    });
+    return [
+      for (final m in (r ?? const []).cast<Map>())
+        SleepSession(
+          DateTime.fromMillisecondsSinceEpoch((m['start'] as num).toInt()),
+          DateTime.fromMillisecondsSinceEpoch((m['end'] as num).toInt()),
+          awake: Duration(milliseconds: (m['awakeMs'] as num? ?? 0).toInt()),
+          app: HealthCandidate.appName(m['app'] as String?),
+          lowHr: (m['lowHr'] as num?)?.toInt(),
+        ),
+    ];
+  }
 
   /// Päivän [day] harjoitukset (alkavat sinä päivänä, laitteen aikavyöhykkeellä) tunnisteineen ja matkoineen.
   static Future<List<HealthCandidate>> sessions(DateTime day) async {
@@ -354,9 +420,7 @@ class HealthConnect {
   /// Yön alin syke aamuittain [from]..[to] (etusivun palautumiskortti); sykkeen lukulupa riittää.
   static Future<Map<DateTime, int>> nightLowHr(DateTime from, DateTime to) async {
     final r = await _ch.invokeMethod<List>('nightLowHr', {'from': isoDate(from), 'to': isoDate(to)});
-    return {
-      for (final e in (r ?? const []).cast<List>()) DateTime.parse(e[0] as String): (e[1] as num).toInt(),
-    };
+    return {for (final e in (r ?? const []).cast<List>()) DateTime.parse(e[0] as String): (e[1] as num).toInt()};
   }
 
   static Future<void> openSettings() => _ch.invokeMethod('settings');

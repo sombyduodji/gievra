@@ -209,11 +209,19 @@ class SectionLabel extends StatelessWidget {
   final String text;
   const SectionLabel(this.text, {super.key});
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 18, bottom: 8),
-    child: Text(
-      text.toUpperCase(),
-      style: TextStyle(fontSize: 12, letterSpacing: .6, color: Theme.of(context).colorScheme.onSurfaceVariant),
+  // TalkBack: otsikko omana solmunaan (yötesti 18.11.: Asetusten alasivun otsikot ja selitteet yhdistyivät yhdeksi
+  // sivun kokoiseksi solmuksi); luetaan tavallisin kirjaimin, ei isoina (muuten lukee kirjain kerrallaan).
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    container: true,
+    label: text,
+    excludeSemantics: true,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 8),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(fontSize: 12, letterSpacing: .6, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
     ),
   );
 }
@@ -681,7 +689,7 @@ class ExName extends StatelessWidget {
   }
 }
 
-/// Treenitila: Sali / Kestävyys / Molemmat (asetukset ja aloituskysely).
+/// Treenitila: Sali / Liikunta / Molemmat (asetukset ja aloituskysely).
 /// Tekstin koko: Pieni (entinen koko), Normaali ja Suuri. Jokaisessa vaihtoehdossa "Aa" omassa koossaan, jotta
 /// ero näkyy ennen valintaa (aloitus ja Asetukset → Yleiset).
 class TextSizePicker extends StatelessWidget {
@@ -739,7 +747,7 @@ class TrainModePicker extends StatelessWidget {
     segments: [
       for (final (v, icon, l) in [
         ('gym', Icons.fitness_center, t('Sali')),
-        ('cardio', Icons.directions_run, t('Kestävyys')),
+        ('cardio', Icons.directions_run, t('Liikunta')),
         ('both', Icons.sync_alt, t('Molemmat')),
       ])
         ButtonSegment(

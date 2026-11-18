@@ -39,11 +39,11 @@ void main() {
     ];
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
-    // Molemmat (ui-test 17.11.): jaettu aloituspainike, Sali vasemmalla ja Liikunta oikealla; Liikunta-puolella
-    // vihjeenä viimeksi tehty laji. Tämän päivän lenkki rivinä painikkeen alla.
+    // Molemmat (ui-test 17.11.): jaettu aloituspainike, Sali vasemmalla ja Liikunta oikealla; ei vihjeriviä
+    // (käyttäjä 18.11.: paneeli näyttää viimeksi tehdyn lajin). Tämän päivän lenkki rivinä painikkeen alla.
     expect(find.byKey(const ValueKey('homeStartGym')), findsOneWidget);
     expect(find.byKey(const ValueKey('homeStartActivity')), findsOneWidget);
-    expect(find.text('Viimeksi juoksu'), findsOneWidget);
+    expect(find.text('Viimeksi juoksu'), findsNothing);
     expect(find.textContaining('6 km', findRichText: true), findsWidgets);
     // Pelkkä sali: vain Sali-puoli.
     settings.setTrainMode('gym');

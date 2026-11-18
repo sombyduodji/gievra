@@ -14,6 +14,7 @@ import '../maps/map_store.dart';
 import '../models.dart';
 import '../theme.dart';
 import 'widgets.dart';
+import '../picker_guard.dart';
 
 /// Viimeisin tunnettu sijainti (tallennuksesta tai sijainnin hausta) karttojen ehdotusta varten. Vain puhelimeen.
 Future<(double, double)?> lastLocation() async {
@@ -271,7 +272,9 @@ class _MapsScreenState extends State<MapsScreen> {
   /// Tuo karttapaketti tiedostosta (zip tai .pmtiles), esim. Seafilesta, kun verkkolataus ei onnistu. Tarkistuksen
   /// ajan näkyy edistyminen; tunnistamattomista kartoista kysytään (tarkista verkosta / tuo tarkistamatta / ohita).
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(dialogTitle: t('Valitse karttapaketti (.zip tai .pmtiles)'));
+    final files =
+        (await pickOnce(() => FilePicker.pickFiles(dialogTitle: t('Valitse karttapaketti (.zip tai .pmtiles)'))) ??
+        const []);
     if (files.isEmpty || !mounted) return;
     setState(() => _importing = true);
     final progress = ValueNotifier<MapImportProgress?>(null);
