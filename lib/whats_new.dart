@@ -13,6 +13,24 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7',
+    Icons.show_chart,
+    'Palautumisen käyrät',
+    'Napauta Palautuminen-ruutua: arvo 30 päivältä tai 12 viikolta, oma tavallinen vaihtelusi vihreänä vyönä ja asteikko.',
+  ),
+  NewFeature(
+    '0.7',
+    Icons.bedtime_outlined,
+    'Unen lähde',
+    'Jos kaksi laitetta (esim. sormus ja kello) kirjaa saman yön, Uni-kortti kysyy kerran, kumpaa käytetään. Yksittäisen yön lähteen voi vaihtaa kalenterin päivästä.',
+  ),
+  NewFeature(
+    '0.7',
+    Icons.fitness_center,
+    'Paremmat ohjelmaehdotukset',
+    'Liikkeet valituilla välineillä kaikissa yhdistelmissä; vammatilassa vaivalle hyvin siedetyt liikkeet ensin.',
+  ),
+  NewFeature(
     '0.6.9.2',
     Icons.monitor_heart_outlined,
     'Palautuminen uudistettu',

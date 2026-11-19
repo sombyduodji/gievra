@@ -16,7 +16,7 @@ import '../theme.dart';
 import '../session_compare.dart' show fmtDuration;
 import 'recovery_card.dart' show RecoveryCard;
 import 'start_panels.dart' show RingTile, showGymPanel;
-import 'widgets.dart' show fmtClock, uiWeekdaysShort;
+import 'widgets.dart' show fmtClock, shortDate, uiWeekdaysShort;
 
 const _title = TextStyle(fontSize: 15, fontWeight: FontWeight.w600);
 
@@ -271,7 +271,10 @@ class SleepCard extends StatelessWidget {
         final last = s.last;
         String hm(Duration d) => '${d.inMinutes ~/ 60}:${(d.inMinutes % 60).toString().padLeft(2, '0')}';
         String clock(DateTime d) => fmtClock(TimeOfDay.fromDateTime(d));
-        final children = <Widget>[];
+        final children = <Widget>[
+          // Kaksi sovellusta kirjasi saman yön eri arvoin: kysytään kerran, kumpi on oletus (käyttäjä 19.11.).
+          if (sleepData.conflict case final c?) _SleepSourceQuestion(nights: c),
+        ];
         // Vihje ⚠-kuvakkeena otsikossa (käyttäjä 18.11.: ei tekstilaatikkoa kortissa); napautus näyttää sen.
         (String, Color)? tip;
         if (sleepData.needsPermission) {
@@ -853,3 +856,62 @@ Future<void> showSleepTip(BuildContext context, String msg, Color c) => showModa
     ),
   ),
 );
+
+/// Uni-kortin kertakysymys: kaksi sovellusta kirjasi saman yön eri arvoin; valinta on oletus tästä eteenpäin
+/// (Asetukset → Etusivu → Unen lähde), yksittäisen yön voi vaihtaa kalenterin päivästä.
+class _SleepSourceQuestion extends StatelessWidget {
+  final List<SleepNight> nights;
+  const _SleepSourceQuestion({required this.nights});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final day = nights.first.day;
+    return Container(
+      key: const ValueKey('sleepSourceQuestion'),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            t('Kaksi sovellusta kirjasi yön {0}: kumpaa käytetään?', [shortDate(day)]),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          for (final n in nights)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: OutlinedButton(
+                key: ValueKey('sleepSourcePick_${n.app}'),
+                style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft),
+                onPressed: () => sleepData.setDefault(n.app),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(n.app, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 8),
+                    Text(fmtDuration(n.asleep.inMinutes), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          Text(
+            t(
+              'Valinta on oletus tästä eteenpäin; muuta: Asetukset → Etusivu → Unen lähde. Yksittäisen yön voi vaihtaa kalenterin päivästä.',
+            ),
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: const ValueKey('sleepSourceLater'),
+              onPressed: sleepData.dismissConflict,
+              child: Text(t('Pidä automaattinen')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

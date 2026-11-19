@@ -51,7 +51,12 @@ class SleepNight {
   final Duration asleep;
   final int? lowHr;
   final String app;
-  const SleepNight(this.day, this.bed, this.wake, this.asleep, {this.lowHr, this.app = ''});
+
+  /// Käyttäjä valitsi tämän yön lähteen kalenterin päivästä (19.11.): haku ei korvaa sitä oletuslähteellä.
+  final bool picked;
+  const SleepNight(this.day, this.bed, this.wake, this.asleep, {this.lowHr, this.app = '', this.picked = false});
+
+  SleepNight asPicked() => SleepNight(day, bed, wake, asleep, lowHr: lowHr, app: app, picked: true);
 
   @override
   bool operator ==(Object other) =>
@@ -61,9 +66,10 @@ class SleepNight {
       other.wake == wake &&
       other.asleep == asleep &&
       other.lowHr == lowHr &&
-      other.app == app;
+      other.app == app &&
+      other.picked == picked;
   @override
-  int get hashCode => Object.hash(day, bed, wake, asleep, lowHr, app);
+  int get hashCode => Object.hash(day, bed, wake, asleep, lowHr, app, picked);
   @override
   String toString() => 'SleepNight(${isoDate(day)} ${_hm(bed)}–${_hm(wake)} ${asleep.inMinutes} min $lowHr $app)';
 }
@@ -77,6 +83,25 @@ String _hm(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
 /// on jo eniten tallennettuja öitä: se voittaa aina (muuten 3 yön päivityshaussa tasapeli ratkesi aakkosilla ja
 /// lähde vaihtui kesken historian, esim. Oura → Fitbit).
 Map<DateTime, SleepNight> nightsFrom(List<SleepSession> sessions, {String? prefer}) {
+  final perApp = nightsByApp(sessions);
+  if (perApp.isEmpty) return {};
+  final apps = perApp.keys.toList()
+    ..sort((a, b) {
+      if (a == prefer || b == prefer) return a == prefer ? -1 : 1;
+      final c = perApp[b]!.length.compareTo(perApp[a]!.length);
+      return c != 0 ? c : a.compareTo(b);
+    });
+  final out = <DateTime, SleepNight>{};
+  for (final a in apps) {
+    for (final n in perApp[a]!.values) {
+      out.putIfAbsent(n.day, () => n);
+    }
+  }
+  return out;
+}
+
+/// Yöt sovelluksittain (sovellus → herätyspäivä → yö), ennen lähteen valintaa.
+Map<String, Map<DateTime, SleepNight>> nightsByApp(List<SleepSession> sessions) {
   final byApp = <String, List<SleepSession>>{};
   for (final s in sessions) {
     if (!s.end.isAfter(s.start)) continue;
@@ -122,20 +147,7 @@ Map<DateTime, SleepNight> nightsFrom(List<SleepSession> sessions, {String? prefe
     }
     perApp[e.key] = nights;
   }
-  if (perApp.isEmpty) return {};
-  final apps = perApp.keys.toList()
-    ..sort((a, b) {
-      if (a == prefer || b == prefer) return a == prefer ? -1 : 1;
-      final c = perApp[b]!.length.compareTo(perApp[a]!.length);
-      return c != 0 ? c : a.compareTo(b);
-    });
-  final out = <DateTime, SleepNight>{};
-  for (final a in apps) {
-    for (final n in perApp[a]!.values) {
-      out.putIfAbsent(n.day, () => n);
-    }
-  }
-  return out;
+  return perApp;
 }
 
 String sleepToMarkdown(Map<DateTime, SleepNight> nights) {
@@ -155,7 +167,7 @@ String sleepToMarkdown(Map<DateTime, SleepNight> nights) {
     final m = n.asleep.inMinutes;
     b.writeln(
       '- ${isoDate(d)}: ${_hm(n.bed)}–${_hm(n.wake)}, ${m ~/ 60} h ${_two(m % 60)} min'
-      '${n.lowHr == null ? '' : ', syke ${n.lowHr}'}${n.app.isEmpty ? '' : ' (${n.app})'}',
+      '${n.lowHr == null ? '' : ', syke ${n.lowHr}'}${n.app.isEmpty ? '' : ' (${n.app}${n.picked ? ' · valittu' : ''})'}',
     );
   }
   return b.toString();
@@ -181,13 +193,17 @@ Map<DateTime, SleepNight> parseSleep(String text) {
     var bed = DateTime(d.year, d.month, d.day, bh, bm);
     if (bed.isAfter(wake)) bed = DateTime(d.year, d.month, d.day - 1, bh, bm);
     final hr = m[8] == null ? null : int.tryParse(m[8]!);
+    var app = (m[9] ?? '').trim();
+    final picked = app.endsWith('· valittu');
+    if (picked) app = app.substring(0, app.length - '· valittu'.length).trim();
     out[d] = SleepNight(
       d,
       bed,
       wake,
       Duration(minutes: h * 60 + mi),
       lowHr: hr != null && hr >= 25 && hr <= 220 ? hr : null,
-      app: (m[9] ?? '').trim(),
+      app: app,
+      picked: picked,
     );
   }
   return out;
@@ -603,6 +619,97 @@ class SleepData extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sovellukset, joilta Health Connectissa on ollut unta tämän käynnistyksen hauissa (lähteen valintaan).
+  final Set<String> seenApps = {};
+
+  /// Lähteet valintaan: haetut ja tallennettujen öiden sovellukset.
+  List<String> get knownApps => ({
+    ...seenApps,
+    for (final n in nights.values)
+      if (n.app.isNotEmpty) n.app,
+  }.toList()..sort());
+
+  /// Viimeisimmän viikon öiden yleisin sovellus (näytetään automaattisen valinnan perässä).
+  String? get currentApp {
+    final counts = <String, int>{};
+    final days = nights.keys.toList()..sort();
+    for (final d in days.reversed.take(7)) {
+      final a = nights[d]!.app;
+      if (a.isNotEmpty) counts[a] = (counts[a] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+    return (counts.entries.toList()..sort((a, b) => b.value - a.value)).first.key;
+  }
+
+  /// Kaksi sovellusta kirjasi saman yön eri arvoin, eikä oletuslähdettä ole valittu: Uni-kortti kysyy kerran
+  /// (käyttäjä 19.11.). Yön sovellukset arvoineen; null = ei kysyttävää.
+  List<SleepNight>? conflict;
+
+  void _findConflict(List<SleepSession> got) {
+    if (settings.sleepApp != null || settings.sleepSourceAsked) {
+      conflict = null;
+      return;
+    }
+    final per = nightsByApp([
+      for (final x in got)
+        if (x.app.isNotEmpty) x,
+    ]);
+    if (per.length < 2) return;
+    final days = {for (final m in per.values) ...m.keys}.toList()..sort((a, b) => b.compareTo(a));
+    for (final d in days) {
+      final ns = [for (final a in per.keys.toList()..sort()) ?per[a]![d]];
+      // Eri arvot (vähintään 10 min ero): sama luku kahdesti ei ole valinta.
+      if (ns.length >= 2 &&
+          ns.map((n) => n.asleep.inMinutes).reduce(math.max) - ns.map((n) => n.asleep.inMinutes).reduce(math.min) >=
+              10) {
+        conflict = ns;
+        return;
+      }
+    }
+  }
+
+  /// Oletuslähde tästä eteenpäin (Uni-kortin kysymys tai asetukset; null = automaattinen). Vanhoja öitä ei
+  /// muuteta kerralla (käyttäjä 19.11.: ei vielä "vaihda kaikki"); viimeiset yöt haetaan uudelleen.
+  Future<void> setDefault(String? app) async {
+    settings.setSleepApp(app);
+    settings.setSleepSourceAsked(true);
+    conflict = null;
+    notifyListeners();
+    await refresh(force: true);
+  }
+
+  /// Uni-kortin kysymys ohitettu: pysytään automaattisessa, eikä kysytä uudelleen.
+  void dismissConflict() {
+    settings.setSleepSourceAsked(true);
+    conflict = null;
+    notifyListeners();
+  }
+
+  /// Yön vaihtoehdot sovelluksittain kalenterin päivään (haetaan Health Connectista illasta iltaan).
+  Future<List<SleepNight>> alternatives(DateTime day) async {
+    final d = dateOnly(day);
+    final got = await (debugSource ?? HealthConnect.sleepSessions)(
+      DateTime(d.year, d.month, d.day - 1, 18),
+      DateTime(d.year, d.month, d.day, 18),
+    );
+    seenApps.addAll([
+      for (final x in got)
+        if (x.app.isNotEmpty) x.app,
+    ]);
+    final per = nightsByApp(got);
+    return [
+      for (final a in per.keys.toList()..sort())
+        if (per[a]![d] case final n?) parseSleep(sleepToMarkdown({d: n}))[d]!,
+    ];
+  }
+
+  /// Yhden yön lähde kalenterin päivästä: yö pysyy, vaikka oletuslähde on toinen.
+  Future<void> pickNight(SleepNight n) async {
+    nights[n.day] = n.asPicked();
+    notifyListeners();
+    await files.write(sleepFileName, _md());
+  }
+
   /// Lukee yöt Health Connectista ja korvaa ne (oletus: viimeiset 3 yötä, ensimmäisellä kerralla 30). Tallentaa
   /// vain, jos jokin muuttui. Tallennettuja öitä ei poisteta.
   Future<void> refresh({DateTime? from, bool force = false}) async {
@@ -647,11 +754,20 @@ class SleepData extends ChangeNotifier {
       for (final n in nights.values) {
         counts[n.app] = (counts[n.app] ?? 0) + 1;
       }
-      final prefer = counts.isEmpty ? null : (counts.entries.toList()..sort((a, b) => b.value - a.value)).first.key;
+      seenApps.addAll([
+        for (final x in got)
+          if (x.app.isNotEmpty) x.app,
+      ]);
+      _findConflict(got);
+      // Käyttäjän valitsema lähde (Asetukset → Etusivu → Unen lähde) voittaa; muuten eniten öitä.
+      final prefer =
+          settings.sleepApp ??
+          (counts.isEmpty ? null : (counts.entries.toList()..sort((a, b) => b.value - a.value)).first.key);
       final fresh = parseSleep(sleepToMarkdown(nightsFrom(got, prefer: prefer)));
       var changed = false;
       for (final e in fresh.entries) {
         if (e.key.isBefore(dateOnly(start))) continue;
+        if (nights[e.key]?.picked ?? false) continue; // käyttäjän valitsema yö pysyy
         if (nights[e.key] != e.value) {
           nights[e.key] = e.value;
           changed = true;

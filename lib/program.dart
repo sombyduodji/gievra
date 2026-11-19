@@ -1111,33 +1111,53 @@ Program generateProgram({
       // Treenihistorian suosikki ensin (sama liikemalli), sitten mallipohjan ja paikan oletukset.
       final fav = kind == null && kb == null ? favorites[family(slot)] : null;
       var cands = [?fav, ?ex, ...s.defaults].where((c) => !used.contains(c)).toList();
-      if (kb != null) {
+      if (kind == null && kb == null && !fitsAll(equipment)) {
+        cands = _equipCandidates(slot, cands, used, equipment);
+      } else if (kb != null) {
         // Kahvakuulaohjelma: mallipohjan liike, vammatilassa saman liikemallin muut kahvakuulaliikkeet.
         cands = [
           ?ex,
           for (final x in exerciseCatalog.values.expand((x) => x))
             if (x != ex && family(slotOf(x)) == family(slot) && fitsEquipment(x, equipment)) x,
+          // Vammatilassa, jos kahvakuulaliikkeet on estetty: kehonpainoliike ennen taljaa (19.11.).
+          if (injuries.isNotEmpty)
+            for (final x in exerciseCatalog.values.expand((x) => x))
+              if (family(slotOf(x)) == family(slot) && (exerciseEquipment[x]?.contains(Equip.kehonpaino) ?? false)) x,
         ].where((c) => !used.contains(c)).toList();
-      } else if (kind == null && !fitsAll(equipment)) {
-        // Välinetoive: sopivat ensin, myös saman liikemallin muut liikkeet. Voimanoston kilpaliikkeet tangolla.
-        final fam = family(slot);
-        final more = [
-          for (final x in exerciseCatalog.values.expand((x) => x))
-            if (family(slotOf(x)) == fam && !used.contains(x) && !cands.contains(x)) x,
-        ];
-        // Jos paikalle ei ole yhtään sopivaa liikettä (esim. rinta-eristys kehonpainolla), lähin korvaaja.
-        if (![...cands, ...more].any((c) => fitsEquipment(c, equipment))) {
-          more.insertAll(0, (_equipFallback[slot] ?? const []).where((c) => !used.contains(c)));
-        }
-        // Ensin liikkeet, jotka tehdään vain valituilla välineillä (kahvakuulapunnerrus ennen push pressiä).
-        final fit = [...cands, ...more].where((c) => fitsEquipment(c, equipment)).toList();
-        cands = [
-          ...fit.where((c) => onlyEquipment(c, equipment)),
-          ...fit.where((c) => !onlyEquipment(c, equipment)),
-          ...cands.where((c) => !fitsEquipment(c, equipment)),
-        ];
       }
-      final (exercise, note) = chooseExercise(cands.isEmpty ? s.defaults : cands, injuries);
+      // Vammatila: vamman "yleensä hyvin siedetyt" liikkeet ensin saman liikemallin sisällä (esim. alaselkä:
+      // hip thrust ennen romanialaista maastavetoa, lankku ja Pallof press keskivartaloon; 19.11.).
+      if (kind == null && kb == null && injuries.isNotEmpty) {
+        final rec = [
+          for (final id in injuries)
+            for (final x in injuryById(id)?.recommended ?? const <String>[])
+              if (family(slotOf(x)) == family(slot) &&
+                  !used.contains(x) &&
+                  (fitsEquipment(x, equipment) || (exerciseEquipment[x]?.contains(Equip.kehonpaino) ?? false)))
+                x,
+        ];
+        cands = {...rec, ...cands}.toList();
+      }
+      var (exercise, note) = chooseExercise(
+        cands.isEmpty ? s.defaults : cands,
+        injuries,
+        equipment: kind == null ? equipment : const {},
+        used: used,
+      );
+      // Muokkausohje "…tai korvaa" ja korvaava liike sopii välineisiin: valitaan korvaava suoraan (19.11.:
+      // alaselkä: tuettu soutu kulmasoudun sijaan, lankku vatsarutistuksen sijaan).
+      if (kind == null && injuries.isNotEmpty) {
+        for (final id in injuries) {
+          final r = injuryById(id);
+          final sub = r?.substitute[exercise];
+          if (r == null || sub == null || !(r.modify[exercise]?.contains('korvaa') ?? false)) continue;
+          if (used.contains(sub) || !fitsEquipment(sub, equipment)) continue;
+          final st = injuryStatus(sub, injuries);
+          if (st.avoid.isNotEmpty) continue;
+          (exercise, note) = (sub, st.modify.isEmpty ? null : st.modify.join(' · '));
+          break;
+        }
+      }
       final main = kind != null;
       final (mlo, mhi) = switch (measureOf(exercise)) {
         Measure.seconds => (20, 40),
@@ -1185,10 +1205,11 @@ Program generateProgram({
   for (var round = 0; round < (kb == null ? 4 : 0); round++) {
     final before = programToMarkdownPlan(plan);
     if (g != 'voimanosto') _minimumDose(plan);
-    _balancePushPull(plan);
+    _balancePushPull(plan, equipment: kb == null ? equipment : const {}, injuries: injuries);
     _capPerSession(plan, exp);
     if (programToMarkdownPlan(plan) == before) break;
   }
+  if (kb == null) _addRecommended(plan, injuries, equipment, minutes);
   final longest = plan.map((d) => estimateMinutes(d.items)).reduce(math.max);
   if (longest > minutes + 5) {
     notes.add(
@@ -1374,10 +1395,86 @@ bool fitsAll(Set<String> prefs) => prefs.isEmpty || prefs.length == equipmentCho
 }
 
 /// Korvaajat liikemalleille, joille jollakin välineellä ei ole omaa liikettä.
+/// Välinetoive: sopivat ensin, myös saman liikemallin muut liikkeet; jos mallissa ei ole yhtään sopivaa,
+/// lähimmät korvaajat ([_equipFallback]). Valituilla välineillä pelkästään tehtävät ennen muita
+/// (kahvakuulapunnerrus ennen push pressiä); sopimattomat viimeisinä.
+List<String> _equipCandidates(String slot, List<String> cands, Set<String> used, Set<String> equipment) {
+  final fam = family(slot);
+  final more = [
+    for (final x in exerciseCatalog.values.expand((x) => x))
+      if (family(slotOf(x)) == fam && !used.contains(x) && !cands.contains(x)) x,
+  ];
+  // Korvaajat myös silloin, kun mallin ainoat sopivat liikkeet on jo käytetty tässä treenissä.
+  if (![...cands, ...more].any((c) => fitsEquipment(c, equipment))) {
+    more.insertAll(0, (_equipFallback[slot] ?? const []).where((c) => !used.contains(c) && !cands.contains(c)));
+  }
+  final fit = [...cands, ...more].where((c) => fitsEquipment(c, equipment)).toList();
+  // Ei yhtään sopivaa: kehonpainoliike (esim. leuanveto, Y-T-W-nostot) ennen laitetta tai taljaa, jota
+  // valituissa välineissä ei ole (yötesti 19.11.: face pull ja ylätalja kahvakuula- ja vapaiden painojen ohjelmiin).
+  // Kehonpainoliikkeet myös silloin, kun sopivia on, mutta vamma estää ne kaikki (yötesti 19.11.: alaselkävammassa
+  // vapaiden painojen ohjelmaan tuli Pallof press taljassa, vaikka lintukoira ja lankku käyvät).
+  bool bw(String c) => exerciseEquipment[c]?.contains(Equip.kehonpaino) ?? false;
+  final unfit = [...cands, ...more].where((c) => !fitsEquipment(c, equipment));
+  // Korvaajat sopivilla välineillä myös silloin, kun liikemallissa on sopivia: vamma voi estää ne kaikki.
+  final fallback = (_equipFallback[slot] ?? const <String>[]).where((c) => !used.contains(c));
+  return {
+    ...fit.where((c) => onlyEquipment(c, equipment)),
+    ...fit.where((c) => !onlyEquipment(c, equipment)),
+    ...fallback.where((c) => fitsEquipment(c, equipment)),
+    ...unfit.where(bw),
+    ...fallback.where(bw),
+    ...[...cands, if (fit.isEmpty) ...more].where((c) => !fitsEquipment(c, equipment) && !bw(c)),
+  }.toList();
+}
+
+/// Vammatila: jos ohjelmassa ei ole yhtään vamman "yleensä hyvin siedettyä" liikettä (esim. aloittelijan
+/// voimanosto-ohjelma alaselkävammalla), ensimmäinen välineisiin sopiva ja muihin vammoihin sallittu lisätään
+/// lyhimpään treeniin 2 sarjana, jos aika riittää (19.11.).
+void _addRecommended(List<PlanDay> plan, List<String> injuries, Set<String> equipment, int minutes) {
+  for (final id in injuries) {
+    final rec = injuryById(id)?.recommended ?? const <String>[];
+    final names = {for (final d in plan) ...d.items.expand((i) => i.choices)};
+    if (rec.isEmpty || rec.any(names.contains)) continue;
+    final ex = rec.where((x) => fitsEquipment(x, equipment) && injuryStatus(x, injuries).avoid.isEmpty).firstOrNull;
+    if (ex == null || plan.isEmpty) continue;
+    final day = plan.reduce((a, b) => estimateMinutes(a.items) <= estimateMinutes(b.items) ? a : b);
+    final slot = slotOf(ex);
+    final (lo, hi) = defaultRange(ex, slots[slot]?.compound ?? false);
+    final item = PlanItem(ex, slot, 2, lo, hi, '1–2', 90);
+    if (estimateMinutes([...day.items, item]) > minutes + 5) continue;
+    final st = injuryStatus(ex, injuries);
+    if (st.modify.isNotEmpty) item.note = st.modify.join(' · ');
+    // Moninivelliike ennen eristäviä (ohjelman tarkistus: järjestys).
+    final at = item.compound ? day.items.indexWhere((i) => !i.compound && i.kind == null) : -1;
+    at < 0 ? day.items.add(item) : day.items.insert(at, item);
+  }
+}
+
+/// Lähimmät korvaajat liikepaikoille, joiden liikemallissa ei ole liikettä kaikille välineille (yötesti 19.11.:
+/// ennen esim. reiden ojennus -laite vapaiden painojen ohjelmassa ja tankovinopenkki kahvakuulaohjelmassa).
 const _equipFallback = <String, List<String>>{
-  'RIE': ['Jalat koholla punnerrus', 'Punnerrus', 'Dipit', 'Kahvakuulalattiapunnerrus'],
+  'RIE': [
+    'Lattiapunnerrus',
+    'Jalat koholla punnerrus',
+    'Punnerrus',
+    'Dipit',
+    'Kahvakuulalattiapunnerrus',
+    'Tuplakahvakuulalattiapunnerrus',
+    'Peck deck',
+  ],
   'OSI': ['Pike-punnerrus', 'Y-T-W-nostot makuulla', 'Käsilläseisontapunnerrus', 'Vipunosto eteen'],
-  'KAN': ['Kylkilankku', 'Farmer walk'],
+  'KAN': ['Kylkilankku', 'Farmer walk', 'Matkalaukkukanto', 'Pallof press'],
+  'POJ': ['Goblet-kyykky', 'Bulgarialainen askelkyykky', 'Jalkaprässi', 'Sissy-kyykky'],
+  'POK': ['Suorin jaloin maastaveto', 'Romanialainen maastaveto', 'Kahvakuulaheilautus', 'Nordic hamstring'],
+  'VIN': [
+    'Vinokäsipainopenkki',
+    'Smith-vinopenkki',
+    'Jalat koholla punnerrus',
+    'Kahvakuulalattiapunnerrus',
+    'Tuplakahvakuulalattiapunnerrus',
+  ],
+  'YKS': ['Jalkaprässi', 'Hack-kyykky', 'Smith-kyykky'],
+  'VTY': ['Peck deck', 'Smith-vinopenkki', 'Punnerrus', 'Kahvakuulalattiapunnerrus'],
 };
 
 /// Toistoalue liikkeelle mittaustavan ja tyypin mukaan.
@@ -1452,14 +1549,32 @@ void _placeChosen(
 }
 
 /// Ensimmäinen ehdokas, jota vammat eivät estä. Muuten vamman korvaava liike tai ensimmäinen varoituksella.
-(String, String?) chooseExercise(List<String> candidates, List<String> injuries) {
-  for (final c in candidates) {
-    final st = injuryStatus(c, injuries);
-    if (st.avoid.isEmpty) return (c, st.modify.isEmpty ? null : st.modify.join(' · '));
-  }
-  for (final c in candidates) {
-    final sub = injuryStatus(c, injuries).substitute;
-    if (sub != null && injuryStatus(sub, injuries).avoid.isEmpty) return (sub, null);
+/// Ensimmäinen vammaan sopiva ehdokas. [equipment]: välinetoiveeseen sopivat (myös vamman korvaavat liikkeet)
+/// ennen muita (yötesti 19.11.: olkapäävammassa kahvakuulaohjelmaan tuli käsipainoliike, vaikka korvaaja sopi).
+(String, String?) chooseExercise(
+  List<String> candidates,
+  List<String> injuries, {
+  Set<String> equipment = const {},
+  Set<String> used = const {},
+}) {
+  // Kierrokset: välineisiin sopivat, sitten kehonpainoliikkeet (eivät vaadi välinettä), lopuksi mikä tahansa.
+  bool ok(String c, int pass) => switch (pass) {
+    0 => fitsEquipment(c, equipment),
+    1 => fitsEquipment(c, equipment) || (exerciseEquipment[c]?.contains(Equip.kehonpaino) ?? false),
+    _ => true,
+  };
+  for (final pass in [0, 1, 2]) {
+    for (final c in candidates) {
+      if (!ok(c, pass)) continue;
+      final st = injuryStatus(c, injuries);
+      if (st.avoid.isEmpty) return (c, st.modify.isEmpty ? null : st.modify.join(' · '));
+    }
+    for (final c in candidates) {
+      final sub = injuryStatus(c, injuries).substitute;
+      // Korvaaja ei saa olla jo samassa treenissä (yötesti 19.11.: hip thrust kahdesti).
+      if (sub == null || used.contains(sub) || !ok(sub, pass)) continue;
+      if (injuryStatus(sub, injuries).avoid.isEmpty) return (sub, null);
+    }
   }
   return (candidates.first, l10n.fi('Varo: {0}', [injuryStatus(candidates.first, injuries).avoid.join(', ')]));
 }
@@ -1476,7 +1591,7 @@ int _weekSets(PlanItem i) => switch (i.kind) {
 /// Vetoa vähintään yhtä paljon kuin työntöä (valmennuskäytäntö olkapäiden tasapainoon; ks. program_check.dart).
 /// Lisää ensin soutuun, sitten takaolkaan ja pystyvetoon (+2 sarjaa liikettä kohden), lopuksi face pull -liikkeen
 /// työntöpäiviin.
-void _balancePushPull(List<PlanDay> plan) {
+void _balancePushPull(List<PlanDay> plan, {Set<String> equipment = const {}, List<String> injuries = const []}) {
   double sum(Set<String> s) =>
       plan.expand((d) => d.items).where((i) => s.contains(i.slot)).fold(0.0, (a, i) => a + _weekSets(i));
   final pulls = [
@@ -1486,15 +1601,25 @@ void _balancePushPull(List<PlanDay> plan) {
   final added = <PlanItem, int>{};
   var guard = 0;
   while (sum(_pull) < sum(_push) * .95 && guard++ < 40) {
-    final it = pulls.where((i) => (added[i] ?? 0) < 2).firstOrNull;
+    // Enintään 5 sarjaa liikettä kohden (yötesti 19.11.: soutu 5 + 2 = 7 sarjaa voimanostossa).
+    final it = pulls.where((i) => (added[i] ?? 0) < 2 && i.sets < 5).firstOrNull;
     if (it == null) {
       // Ei enää lisättävää: face pull jokaiseen työntöpäivään, jossa sitä ei vielä ole.
       final day = plan
           .where((d) => d.items.any((i) => _push.contains(i.slot)) && !d.items.any((i) => i.slot == 'TAK'))
           .firstOrNull;
       if (day == null) break;
-      final ex = slots['TAK']!.defaults.first;
-      final item = PlanItem(ex, 'TAK', 2, 12, 20, '0–2', 90);
+      // Takaolka valituilla välineillä ja vammat huomioiden (ennen aina face pull, myös ilman taljaa).
+      final used = day.items.map((i) => i.exercise).toSet();
+      final base = slots['TAK']!.defaults.where((c) => !used.contains(c)).toList();
+      final cands = fitsAll(equipment) ? base : _equipCandidates('TAK', base, used, equipment);
+      final (ex, note) = chooseExercise(
+        cands.isEmpty ? slots['TAK']!.defaults : cands,
+        injuries,
+        equipment: equipment,
+        used: used,
+      );
+      final item = PlanItem(ex, 'TAK', 2, 12, 20, '0–2', 90, note: note);
       day.items.add(item);
       pulls.add(item);
       continue;

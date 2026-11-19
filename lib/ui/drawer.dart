@@ -300,15 +300,9 @@ class SettingsScreen extends StatefulWidget {
 
   /// Haettavat asetukset ryhmittäin (otsikot käännettyinä haun hetkellä; käyttäjä 16.11.: haku asetuksiin).
   static List<(SettingsGroup, String)> get searchIndex => [
-    for (final k in [
-      'Kieli · Giella',
-      'Teema',
-      'Tekstin koko',
-      'Liikkeiden nimet',
-      'Vammatilan ohjeet ja liikevinkit',
-    ])
+    for (final k in ['Kieli · Giella', 'Teema', 'Tekstin koko', 'Liikkeiden nimet', 'Vammatilan ohjeet ja liikevinkit'])
       (SettingsGroup.general, k),
-    for (final k in ['Omat tavoitteet', 'Kortit', 'Juoksun matkaryhmät', 'Kehonpaino']) (SettingsGroup.home, k),
+    for (final k in ['Omat tavoitteet', 'Kortit', 'Juoksun matkaryhmät', 'Kehonpaino', 'Unen lähde']) (SettingsGroup.home, k),
     for (final k in [
       'Mitä treenaat?',
       'Painon lisäys (kg)',

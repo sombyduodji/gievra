@@ -78,16 +78,8 @@ enum TrainLoad { light, normal, hard }
     if (w.date.isAfter(t)) continue;
     if (oldest == null || w.date.isBefore(oldest)) oldest = w.date;
     if (w.date.isBefore(from28)) continue;
-    final min = (w.durationSec ?? 0) / 60;
-    if (min <= 0) continue;
-    final factor = w.activity == null
-        ? (hardWorkout(w, maxHr: maxHr) ? 3 : 2)
-        : switch (w.intensity) {
-            'kova' => 3,
-            'kevyt' => 1,
-            _ => 2,
-          };
-    final load = min * factor;
+    final load = workoutLoad(w, maxHr: maxHr);
+    if (load <= 0) continue;
     sum28 += load;
     if (!w.date.isBefore(from7)) sum7 += load;
   }
@@ -99,6 +91,21 @@ enum TrainLoad { light, normal, hard }
       ? TrainLoad.hard
       : TrainLoad.normal;
   return (level, ratio);
+}
+
+/// Yhden treenin kuorma: minuutit × rasitus (kevyt 1, tavallinen 2, kova 3; sali kovana, jos syke tai tuntuma
+/// kertoo niin).
+double workoutLoad(Workout w, {int? maxHr}) {
+  final min = (w.durationSec ?? 0) / 60;
+  if (min <= 0) return 0;
+  final factor = w.activity == null
+      ? (hardWorkout(w, maxHr: maxHr) ? 3 : 2)
+      : switch (w.intensity) {
+          'kova' => 3,
+          'kevyt' => 1,
+          _ => 2,
+        };
+  return min * factor;
 }
 
 TileState loadTileState(TrainLoad l) => l == TrainLoad.hard ? TileState.yellow : TileState.green;

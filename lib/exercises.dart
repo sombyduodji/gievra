@@ -225,7 +225,7 @@ const exerciseEquipment = <String, Set<Equip>>{
   'Reiden koukistus': {_l},
   'Reiden koukistus istuen': {_l},
   'Hip thrust': {_t, _l},
-  'Pohjenousu seisten': {_l, _k, _bw},
+  'Pohjenousu seisten': {_l, _k, _kb, _bw}, // kahvakuula kädessä
   'Pohjenousu istuen': {_l},
   'Hack-kyykky': {_l},
   'Goblet-kyykky': {_k, _kb},

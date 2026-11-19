@@ -115,17 +115,19 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - kehonpainon seuranta (valinnainen): aamupaino kysytään etusivulla kerran päivässä (*Tallenna* tai *Ei tänään*),
   painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
   FitNotesin punnitukset tuodaan mukana
-- vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen
+- vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen; ohjelma valitsee vaivalle hyvin siedetyt liikkeet
+  ensin ja pysyy valituissa välineissä
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
 - etusivun kortit omassa järjestyksessä (*Asetukset → Etusivu*): seuraava ohjelman päivä, omat tavoitteet (myös
   juoksuvauhdin kehitys ja vauhti samalla sykkeellä), viikkoputki (montako viikkoa peräkkäin WHO:n suositukset
   täyttyivät), palautuminen, uni, viimeksi, voiman ja juoksun kehitys sekä kehonpaino; oma askeltavoite
 - **Palautuminen** (valinnainen, oletus pois): ruudut yösykkeelle, HRV:lle, hengitykselle, happisaturaatiolle, ihon
   lämpötilalle, unelle ja kuormitukselle omaan tasoon verrattuna (vihreä, keltainen tai punainen reuna; ⚠-ruudusta
-  neuvo); ruudut ja järjestys valittavissa; rajat tutkimuksista (lähteet sovelluksen Tietoa-sivulla), vain vihjeitä,
+  neuvo); ruudun napautus näyttää arvon käyränä 30 päivältä tai 12 viikolta; ruudut ja järjestys valittavissa; rajat tutkimuksista (lähteet sovelluksen Tietoa-sivulla), vain vihjeitä,
   ei diagnoosia. Tiedot Health Connectista vain luettuina ja vain itse käyttöön otettuina
 - **Uni** (valinnainen, oletus pois): viime yö, 7 yön keskiarvo, säännöllisyys ja yöt pylväinä omaan tavalliseen
-  uneen verrattuna; `uni.md`-tiedostoon ja varmuuskopioihin. Tilastoissa yösykkeen, HRV:n ja unen kehitys 12 viikolta
+  uneen verrattuna; `uni.md`-tiedostoon ja varmuuskopioihin. Kahden unimittarin (esim. sormus ja kello) öistä
+  kysytään kerran oletuslähde; yksittäisen yön lähteen voi vaihtaa kalenterin päivästä. Tilastoissa yösykkeen, HRV:n ja unen kehitys 12 viikolta
 - **Sali, Liikunta tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa
   etusivun Tänään-kortissa ovat Sali ja Liikunta rinnakkain (useammin tehty leveämpänä, Liikunta-puolella viimeksi tehdyn
   lajin kuvake); kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke

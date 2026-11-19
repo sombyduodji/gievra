@@ -283,6 +283,10 @@ List<String> validateProgram(Program p, {List<String> injuries = const []}) {
     }
   }
 
+  // Kahvakuulaohjelmat ovat valmiita pohjia (yötesti 19.11.): kahvakuulalla ei voi tehdä esim. pystyvetoa, joten
+  // yleiset malli- ja määrärajat eivät koske niitä (ohjelma ei huomauta itsestään).
+  if (p.kbFocus != null) return issues;
+
   // 2. Viikon työntö/veto-tasapaino
   if (st.push > 0 && (st.pull < st.push * .9 || st.pull > st.push * 2)) {
     issues.add(

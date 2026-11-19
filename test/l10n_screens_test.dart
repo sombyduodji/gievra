@@ -56,7 +56,7 @@ import 'package:flutter/rendering.dart' show RenderParagraph, RenderFittedBox;
 import 'package:treenipaivakirja/home_layout.dart' show homeCardsOffByDefault;
 import 'package:treenipaivakirja/recovery.dart' show TileState;
 import 'package:treenipaivakirja/sleep.dart';
-import 'package:treenipaivakirja/ui/home_extras_ui.dart' show NightHrData;
+import 'package:treenipaivakirja/ui/home_extras_ui.dart' show NightHrData, SleepCard;
 import 'package:treenipaivakirja/ui/home_settings.dart';
 import 'package:treenipaivakirja/ui/plate_sheet.dart';
 import 'package:treenipaivakirja/ui/recovery_card.dart';
@@ -725,8 +725,42 @@ void main() {
           _recoveryData();
           return const StatsScreen(tab: 'progress');
         },
+        'uni: lähteen kertakysymys (19.11.)': () {
+          _recoveryData();
+          final d = dateOnly(DateTime.now());
+          SleepNight n(String app, int m) => SleepNight(
+            d,
+            DateTime(d.year, d.month, d.day - 1, 23),
+            DateTime(d.year, d.month, d.day, 7),
+            Duration(minutes: m),
+            app: app,
+          );
+          sleepData.conflict = [n('Samsung Health', 401), n('Oura', 452)];
+          return const Scaffold(body: SingleChildScrollView(child: SleepCard()));
+        },
+        'kalenterin päivä: uni ja vaihda lähde (19.11.)': () => Builder(
+          builder: (context) {
+            _recoveryData();
+            final d = dateOnly(DateTime.now());
+            sleepData.debugSource = (a, b) async => [
+              SleepSession(
+                DateTime(d.year, d.month, d.day - 1, 23),
+                DateTime(d.year, d.month, d.day, 6, 40),
+                app: 'Samsung Health',
+              ),
+              SleepSession(
+                DateTime(d.year, d.month, d.day - 1, 23),
+                DateTime(d.year, d.month, d.day, 7, 30),
+                app: 'Oura',
+              ),
+            ];
+            WidgetsBinding.instance.addPostFrameCallback((_) => showDay(context, d));
+            return const Scaffold();
+          },
+        ),
         'palautuminen: neuvo (punainen yösyke)': () => Builder(
           builder: (context) {
+            _recoveryData(); // käyrä tiedoilla (19.11.)
             WidgetsBinding.instance.addPostFrameCallback(
               (_) => showTileAdvice(
                 context,
@@ -740,6 +774,7 @@ void main() {
         ),
         'palautuminen: neuvo (kuormitus)': () => Builder(
           builder: (context) {
+            _recoveryData();
             WidgetsBinding.instance.addPostFrameCallback(
               (_) => showTileAdvice(
                 context,
@@ -797,6 +832,8 @@ void main() {
           NightHrData.debugNights = const {};
           sleepData.nights.clear();
           sleepData.metrics.clear();
+          sleepData.conflict = null;
+          sleepData.debugSource = null;
           await tester.pumpWidget(const SizedBox());
           await tester.pump(const Duration(milliseconds: 10)); // sykevyön lopetuksen ajastin
         });

@@ -210,6 +210,74 @@ void main() {
       expect(csv.single.text, contains('23:00'));
     });
 
+    test('unen lähde (19.11.): kysytään kerran, oletus tästä eteenpäin, yksittäisen yön valinta pysyy', () async {
+      final t0 = dateOnly(DateTime.now());
+      settings
+        ..sleepApp = null
+        ..sleepSourceAsked = false;
+      // Kello kirjaa 10 yötä 6 h, sormus 5 viimeistä yötä 7 h (keksityt).
+      SleepSession night(int i, String app, int h) {
+        final d = addDays(t0, -i);
+        return SleepSession(
+          DateTime(d.year, d.month, d.day - 1, 23),
+          DateTime(d.year, d.month, d.day - 1, 23 + h),
+          app: app,
+        );
+      }
+
+      sleepData.debugSource = (a, b) async => [
+        for (var i = 0; i < 10; i++)
+          if (!night(i, 'Kello', 6).start.isBefore(a) && !night(i, 'Kello', 6).end.isAfter(b)) night(i, 'Kello', 6),
+        for (var i = 0; i < 5; i++)
+          if (!night(i, 'Oura', 7).start.isBefore(a) && !night(i, 'Oura', 7).end.isAfter(b)) night(i, 'Oura', 7),
+      ];
+      await sleepData.refresh(force: true, from: addDays(t0, -12));
+      expect(sleepData.nights[t0]!.app, 'Kello', reason: 'automaattinen: eniten öitä');
+      expect(sleepData.conflict!.map((n) => n.app), ['Kello', 'Oura'], reason: 'kysytään viimeisimmästä yöstä');
+      expect(sleepData.conflict!.first.day, t0);
+
+      // Vastaus: oletus tästä eteenpäin; vain viimeiset yöt haetaan uudelleen, vanhemmat pysyvät (ei "vaihda kaikki").
+      await sleepData.setDefault('Oura');
+      expect((settings.sleepApp, settings.sleepSourceAsked, sleepData.conflict), ('Oura', true, null));
+      expect(sleepData.nights[t0]!.app, 'Oura');
+      expect(sleepData.nights[addDays(t0, -4)]!.app, 'Kello', reason: 'vanha yö ennallaan');
+      expect(settings.settingsToMarkdown(), allOf(contains('sleep_app: Oura'), contains('sleep_source_asked: true')));
+
+      // Kalenterin päivä: kummankin arvo, ja yhden yön valinta pysyy päivityksessä.
+      final alts = await sleepData.alternatives(t0);
+      expect(alts.map((n) => (n.app, n.asleep.inHours)), [('Kello', 6), ('Oura', 7)]);
+      await sleepData.pickNight(alts.first);
+      await sleepData.refresh(force: true);
+      expect(sleepData.nights[t0]!.app, 'Kello');
+      expect(sleepData.nights[t0]!.picked, isTrue);
+      expect(sleepData.nights[addDays(t0, -1)]!.app, 'Oura');
+      final md = File('${dir.path}/$sleepFileName').readAsStringSync();
+      expect(md, contains('(Kello · valittu)'));
+      expect(parseSleep(md)[t0]!.picked, isTrue);
+      expect(parseSleep(md)[t0]!.app, 'Kello');
+      settings
+        ..sleepApp = null
+        ..sleepSourceAsked = false;
+    });
+
+    test('unen lähde: "Pidä automaattinen" ei kysy uudelleen', () async {
+      final t0 = dateOnly(DateTime.now());
+      settings
+        ..sleepApp = null
+        ..sleepSourceAsked = false;
+      sleepData.debugSource = (a, b) async => [
+        SleepSession(DateTime(t0.year, t0.month, t0.day - 1, 23), DateTime(t0.year, t0.month, t0.day, 5), app: 'Kello'),
+        SleepSession(DateTime(t0.year, t0.month, t0.day - 1, 23), DateTime(t0.year, t0.month, t0.day, 6), app: 'Oura'),
+      ];
+      await sleepData.refresh(force: true);
+      expect(sleepData.conflict, isNotNull);
+      sleepData.dismissConflict();
+      await sleepData.refresh(force: true);
+      expect(sleepData.conflict, isNull);
+      expect(settings.sleepApp, isNull);
+      settings.sleepSourceAsked = false;
+    });
+
     test('yötesti 18.11.: muuttumaton haku ei kirjoita uni.md:tä uudelleen (sekunnit ja millisekunnit)', () async {
       final t0 = dateOnly(DateTime.now());
       sleepData.debugSource = (a, b) async => [

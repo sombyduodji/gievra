@@ -97,7 +97,10 @@ Every exercise name below is an exact catalog string. A list that has no hard av
   - Takakyykky, Low bar -kyykky: "ranne suorana, leveämpi ote; jos ei onnistu, vaihda"
   - Hauiskääntö tangolla, Ranskalainen punnerrus: "EZ-tanko tai käsipainot neutraalilla otteella"
   - Maastaveto ja muut raskaat vedot: "vetoremmit"
-- **korvaa:** Etukyykky → Hack-kyykky (tai Jalkaprässi); Push press → Olkapääprässi laitteessa; Ab wheel → Pallof press; Dipit (jos kipeä) → Rintaprässi laitteessa
+  - Pike-punnerrus: "käsipainojen tai punnerrustelineiden varassa, ranne suorana; jos kipeä, korvaa"
+  - Dipit, Penkkidipit: "ote koko kämmenellä, ranne suorassa linjassa kyynärvarren kanssa; jos kipeä, korvaa"
+  - Punnerruksen muunnelmat (jalat koholla, vino-, polvi- ja timanttipunnerrus): kuten Punnerrus (sovelluksessa samanarvoisina, `lib/injuries.dart`)
+- **korvaa:** Etukyykky → Hack-kyykky (tai Jalkaprässi); Push press → Olkapääprässi laitteessa; Ab wheel → Pallof press; Dipit (jos kipeä) → Rintaprässi laitteessa; Penkkidipit (jos kipeä) → Ojentajapunnerrus taljassa
 - **Lähteet:** Konventio; S12 (punaiset liput, yleinen).
 
 ### 1.8 `niska`: Niska
@@ -127,7 +130,8 @@ Every exercise name below is an exact catalog string. A list that has no hard av
   - Selän ojennus: "osittainen liikerata, ei yliojennusta"
   - Vatsarutistus, Ab wheel, Jalannosto roikkuen: "lyhyt liikerata tai korvaa"
   - Pystypunnerrus, Push press: "istuen selkätuella tai korvaa"
-- **korvaa:** Good morning → Hip thrust; Suorin jaloin maastaveto → Reiden koukistus; Takakyykky → Goblet-kyykky (tai Jalkaprässi, Hack-kyykky); Maastaveto → Rack pull (tai Hip thrust); Kulmasoutu → Soutu laitteessa; Pendlay-soutu → Soutu laitteessa; T-tankosoutu → Käsipainosoutu (tuettuna); Venäläinen twisti → Pallof press; Vatsarutistus → Lankku; Pystypunnerrus → Olkapääprässi laitteessa
+- **korvaa:** Good morning → Hip thrust; Suorin jaloin maastaveto → Reiden koukistus; Takakyykky → Goblet-kyykky (tai Jalkaprässi, Hack-kyykky); Maastaveto → Rack pull (tai Hip thrust); Kulmasoutu → Rintatuettu kulmasoutu käsipainoilla (tai Soutu laitteessa); Pendlay-soutu → Rintatuettu kulmasoutu käsipainoilla (tai Soutu laitteessa); T-tankosoutu → Käsipainosoutu (tuettuna); Venäläinen twisti → Pallof press; Vatsarutistus → Lankku; Ab wheel → Lankku; Jalannosto roikkuen → Lankku; Pystypunnerrus → Olkapääprässi laitteessa
+- **Ohjelmassa (19.11.):** kun muokkausohje sanoo "korvaa" ja korvaava liike sopii valittuihin välineisiin, ohjelma valitsee suoraan korvaavan liikkeen (esim. tuettu soutu kulmasoudun sijaan).
 - **Suositellut:** Pallof press, Lankku, Kylkilankku, Askelkyykky, Hip thrust
 - **Huom.:** Tutkimusnäyttö ei osoita, että aksiaalinen kuorma tai kuormitettu koukistus sinänsä aiheuttaisi epäspesifiä selkäkipua. Kuorman ja liikeradan väliaikainen keventäminen on konventio. Ohjeet suosittelevat harjoittelua yleisesti, ja harjoitusmuodolla on vähemmän väliä (näyttö vahva pitkittyneessä kivussa).
 - **Lähteet:** S3, S4 (Käypä hoito), S12; liikelistat ovat konventio.

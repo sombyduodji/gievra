@@ -45,7 +45,7 @@ import 'start_panels.dart';
 import 'recovery_card.dart' show RecoveryHelpSection;
 import 'home_extras_ui.dart';
 import '../home_extras.dart' show nightHr;
-import '../sleep.dart' show sleepData;
+import '../sleep.dart' show SleepNight, sleepData;
 import 'shell.dart' show MainShell;
 import 'body_screen.dart';
 import 'bug_report.dart';
@@ -327,6 +327,8 @@ class _DayScreen extends StatelessWidget {
                   style: sub,
                 ),
               ),
+            // Yön uni ja sen lähde (käyttäjä 19.11.): kahden sovelluksen yönä lähteen voi vaihtaa tälle yölle.
+            if (sleepData.enabled) _DaySleepRow(key: ValueKey('daySleep_${isoDate(day)}'), day: day),
             SectionLabel(ws.isEmpty ? t('Treenit') : t('Treenit ({0})', [ws.length])),
             if (ws.isEmpty)
               Padding(
@@ -2728,7 +2730,8 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
                   '(mediaani 4–5 viikolta; alussa 7 h): vihreä enintään 30 min alle tavallisen, keltainen enemmän, '
                   'punainen 6 h tai alle. ⚠ otsikossa kertoo vihjeen (lyhyt yö, tavallista lyhyempi viikko, myöhäinen '
                   'kova treeni). Vain vihjeitä, ei diagnoosia; lähteet Lisää → Tietoa. Usean sovelluksen kirjaamista öistä käytetään sitä, '
-                  'jolla on eniten öitä. Yöt tallentuvat uni.md-tiedostoon ja ovat mukana varmuuskopioissa.',
+                  'jolla on eniten öitä (vaihdettavissa: Asetukset → Etusivu → Unen lähde). Yöt tallentuvat uni.md-tiedostoon ja '
+                  'ovat mukana varmuuskopioissa.',
                 ),
               ),
             if (steps || hc)
@@ -2777,5 +2780,121 @@ class _DayHealthRow extends StatelessWidget {
         ),
       );
     },
+  );
+}
+
+/// Päiväsivun unirivi: kesto, kellonajat ja sovellus; jos Health Connectissa on yöstä toisenkin sovelluksen arvo,
+/// "Vaihda lähde" valitsee sen tälle yölle (oletuslähde ei muutu).
+class _DaySleepRow extends StatefulWidget {
+  final DateTime day;
+  const _DaySleepRow({super.key, required this.day});
+
+  @override
+  State<_DaySleepRow> createState() => _DaySleepRowState();
+}
+
+class _DaySleepRowState extends State<_DaySleepRow> {
+  late final Future<List<SleepNight>> _alts = sleepData.alternatives(widget.day).catchError((_) => <SleepNight>[]);
+
+  bool _open = false;
+
+  Future<void> _choose(List<SleepNight> alts) async {
+    if (_open) return; // tuplanapautus ei avaa kahta paneelia
+    _open = true;
+    try {
+      await _chooseOnce(alts);
+    } finally {
+      _open = false;
+    }
+  }
+
+  Future<void> _chooseOnce(List<SleepNight> alts) async {
+    final cur = sleepData.nights[dateOnly(widget.day)];
+    final picked = await showModalBottomSheet<SleepNight>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+              child: Text(t('Yön lähde'), style: Theme.of(ctx).textTheme.titleLarge),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                t('Vain tämä yö; oletuslähde: Asetukset → Etusivu → Unen lähde.'),
+                style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+              ),
+            ),
+            for (final n in alts)
+              ListTile(
+                key: ValueKey('nightSource_${n.app}'),
+                leading: Icon(n.app == cur?.app ? Icons.radio_button_checked : Icons.radio_button_off),
+                title: Text(n.app),
+                subtitle: Text(
+                  '${fmtClock(TimeOfDay.fromDateTime(n.bed))}–${fmtClock(TimeOfDay.fromDateTime(n.wake))}',
+                ),
+                trailing: Text(
+                  fmtDuration(n.asleep.inMinutes),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                onTap: () => Navigator.pop(ctx, n),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && picked.app != cur?.app) await sleepData.pickNight(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: sleepData,
+    builder: (context, _) => FutureBuilder<List<SleepNight>>(
+      future: _alts,
+      builder: (context, snap) {
+        final n = sleepData.nights[dateOnly(widget.day)];
+        final alts = snap.data ?? const <SleepNight>[];
+        if (n == null) return const SizedBox.shrink();
+        final cs = Theme.of(context).colorScheme;
+        final canChange = alts.map((a) => a.app).toSet().length >= 2;
+        final clock = '${fmtClock(TimeOfDay.fromDateTime(n.bed))}–${fmtClock(TimeOfDay.fromDateTime(n.wake))}';
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Material(
+            color: Sami.blue.withValues(alpha: .10),
+            borderRadius: BorderRadius.circular(14),
+            child: ListTile(
+              key: const ValueKey('daySleepRow'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              leading: Icon(Icons.bedtime_outlined, color: blueText(context)),
+              title: Text(
+                t('Uni {0}', [fmtDuration(n.asleep.inMinutes)]),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                [
+                  clock,
+                  if (n.app.isNotEmpty) n.picked ? t('{0} (valittu)', [n.app]) : n.app,
+                ].join(' · '),
+                style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+              ),
+              trailing: canChange
+                  ? TextButton(
+                      key: const ValueKey('daySleepChange'),
+                      onPressed: () => _choose(alts),
+                      child: Text(t('Vaihda lähde')),
+                    )
+                  : null,
+              onTap: canChange ? () => _choose(alts) : null,
+            ),
+          ),
+        );
+      },
+    ),
   );
 }

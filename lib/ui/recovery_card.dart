@@ -10,6 +10,7 @@ import '../session_compare.dart' show fmtDuration;
 import '../sleep.dart';
 import '../theme.dart';
 import 'home_extras_ui.dart' show NightHrData, NightMetricsCard, hrvHint, nightHrNights;
+import 'tile_trend.dart';
 
 // Palautuminen-kortti (käyttäjä 18.11., vaihtoehto A): ruudut, joiden vasen reuna on saamen vihreä, keltainen tai
 // punainen; keltaisessa ja punaisessa ⚠, jota napauttamalla näkee, mitä poikkeama voi tarkoittaa ja mitä tehdä.
@@ -317,10 +318,12 @@ class _Tile extends StatelessWidget {
         ),
       ),
     );
-    if (!warn) return Semantics(container: true, label: '${tile.label} ${tile.value}, ${tile.sub}', child: body);
+    // Jokainen ruutu avaa käyrän (19.11.); poikkeavassa myös neuvon.
     return Semantics(
       button: true,
-      label: '${tile.label} ${tile.value}, ${tile.sub}, ${t('poikkeaa tavallisesta')}',
+      label: warn
+          ? '${tile.label} ${tile.value}, ${tile.sub}, ${t('poikkeaa tavallisesta')}'
+          : '${tile.label} ${tile.value}, ${tile.sub}',
       onTap: () => showTileAdvice(context, tile, reds, now),
       excludeSemantics: true,
       child: GestureDetector(onTap: () => showTileAdvice(context, tile, reds, now), child: body),
@@ -416,8 +419,11 @@ class _Tile extends StatelessWidget {
   };
 }
 
+/// Ruudun paneeli (käyttäjä 19.11., vaihtoehto C): arvo käyränä 30 päivältä tai 12 viikolta; keltaisessa ja
+/// punaisessa ruudussa lisäksi mitä poikkeama voi tarkoittaa ja mitä tehdä.
 Future<void> showTileAdvice(BuildContext context, RecTile tile, int reds, DateTime now) {
-  final (title, means, todo, src) = tileAdvice(tile, now);
+  final warn = tile.state == TileState.yellow || tile.state == TileState.red;
+  final (title, means, todo, src) = warn ? tileAdvice(tile, now) : (tile.label, '', '', '');
   final physio = const {'nighthr', 'hrv', 'rr', 'temp'}.contains(tile.key);
   return showModalBottomSheet<void>(
     context: context,
@@ -447,21 +453,24 @@ Future<void> showTileAdvice(BuildContext context, RecTile tile, int reds, DateTi
               Row(
                 children: [
                   Icon(
-                    Icons.warning_amber_rounded,
-                    color: tile.state == TileState.red ? redText(ctx) : yellowText(ctx),
+                    warn ? Icons.warning_amber_rounded : tile.icon,
+                    color: warn ? (tile.state == TileState.red ? redText(ctx) : yellowText(ctx)) : cs.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(title, style: Theme.of(ctx).textTheme.titleMedium)),
                 ],
               ),
               const SizedBox(height: 4),
-              Text('${tile.value} · ${tile.sub}', style: sub),
-              if (physio && reds >= 2 && tile.state == TileState.red)
-                sec(t('Useampi arvo punaisella'), t('Kevyt päivä tai lepo on hyvä ajatus.')),
-              sec(t('Mitä se voi tarkoittaa'), means),
-              if (todo.isNotEmpty) sec(t('Mitä tehdä'), todo),
-              const SizedBox(height: 10),
-              Text(src, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              Text(tile.sub.isEmpty ? tile.value : '${tile.value} · ${tile.sub}', style: sub),
+              TileTrend(tileKey: tile.key, state: tile.state, now: now),
+              if (warn) ...[
+                if (physio && reds >= 2 && tile.state == TileState.red)
+                  sec(t('Useampi arvo punaisella'), t('Kevyt päivä tai lepo on hyvä ajatus.')),
+                sec(t('Mitä se voi tarkoittaa'), means),
+                if (todo.isNotEmpty) sec(t('Mitä tehdä'), todo),
+                const SizedBox(height: 10),
+                Text(src, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              ],
             ],
           ),
         ),

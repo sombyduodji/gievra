@@ -68,6 +68,17 @@ const injuryEquivalent = <String, String>{
   'Kahvakuulahauiskääntö': 'Hauiskääntö käsipainoilla',
   'Matkalaukkukanto': 'Farmer walk',
   'Farmer walk hex barilla': 'Farmer walk',
+  // Vammatilan tarkistus 19.11.: muunnelmat, joilla on sama kuormitus kuin perusliikkeellä (ranne: punnerrukset
+  // nyrkkien varassa; olkapää: pike-punnerrus kuin pystypunnerrus; takareisi: koukistukset; niska ja kyynärpää:
+  // suorin jaloin maastaveto kuin romanialainen).
+  'Jalat koholla punnerrus': 'Punnerrus',
+  'Vinopunnerrus': 'Punnerrus',
+  'Polvipunnerrus': 'Punnerrus',
+  'Timanttipunnerrus': 'Punnerrus',
+  'Pike-punnerrus': 'Käsipainopystypunnerrus',
+  'Reiden koukistus kehonpainolla': 'Reiden koukistus',
+  'Suorin jaloin maastaveto': 'Romanialainen maastaveto',
+  'Smith-vinopenkki': 'Vinopenkki',
 };
 
 InjuryStatus injuryStatus(String exercise, List<String> injuries) {
@@ -77,11 +88,15 @@ InjuryStatus injuryStatus(String exercise, List<String> injuries) {
   for (final id in injuries) {
     final r = injuryById(id);
     if (r == null) continue;
-    if (r.avoid.contains(x)) {
+    // Liikkeen oma rivi ensin, sitten samanarvoisen perusliikkeen (19.11.: ranteessa pike-punnerruksella oma
+    // ohje, olkapäässä se on kuin käsipainopystypunnerrus).
+    final own = r.avoid.contains(exercise) || r.modify.containsKey(exercise);
+    final k = own ? exercise : x;
+    if (r.avoid.contains(k)) {
       avoid.add(r.name);
-      sub ??= r.substitute[x];
+      sub ??= r.substitute[k];
     }
-    final m = r.modify[x];
+    final m = r.modify[k];
     if (m != null) modify.add(m);
   }
   return InjuryStatus(avoid, mergeInjuryNotes(modify), sub);

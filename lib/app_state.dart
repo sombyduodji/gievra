@@ -232,6 +232,23 @@ class Settings extends ChangeNotifier {
   /// Oma unitavoite minuutteina (käyttäjä 17.11.; Walsh ym. 2021: yksilöllinen; oletus 7 h = 420).
   int sleepGoal = 420;
 
+  /// Unen lähde (käyttäjä 19.11.: kaksi unimittaria, esim. Oura ja kello, kirjaavat saman yön eri arvoin).
+  /// null = automaattinen: sovellus, jolla on eniten tallennettuja öitä.
+  String? sleepApp;
+
+  void setSleepApp(String? v) {
+    sleepApp = (v == null || v.trim().isEmpty) ? null : v.trim();
+    _persist();
+  }
+
+  /// Uni-kortti on jo kysynyt oletuslähteen (kahden sovelluksen yö): ei kysytä uudelleen.
+  bool sleepSourceAsked = false;
+
+  void setSleepSourceAsked(bool v) {
+    sleepSourceAsked = v;
+    _persist();
+  }
+
   void setSleepGoal(int v) {
     sleepGoal = v.clamp(300, 720);
     _persist();
@@ -638,6 +655,8 @@ class Settings extends ChangeNotifier {
       ..write(listEquals(runBands, defaultRunBands) ? '' : 'run_bands: ${runBandsToFile(runBands)}\n')
       ..write(stepsGoal == 10000 ? '' : 'steps_goal: $stepsGoal\n')
       ..write(sleepGoal == 420 ? '' : 'sleep_goal: $sleepGoal\n')
+      ..write(sleepApp == null ? '' : 'sleep_app: $sleepApp\n')
+      ..write(sleepSourceAsked ? 'sleep_source_asked: true\n' : '')
       ..write(
         setEquals(nightTiles, recoveryTileKeys.toSet())
             ? ''
@@ -802,6 +821,10 @@ class Settings extends ChangeNotifier {
               for (final k in v.split(',').map((x) => x.trim()))
                 if (recoveryTileKeys.contains(k)) k,
             };
+          case 'sleep_source_asked':
+            sleepSourceAsked = v.trim() == 'true';
+          case 'sleep_app':
+            sleepApp = v.trim().isEmpty ? null : v.trim();
           case 'sleep_goal':
             final n = int.tryParse(v.trim());
             if (n != null && n >= 300 && n <= 720) sleepGoal = n;

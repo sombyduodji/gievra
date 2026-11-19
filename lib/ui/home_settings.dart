@@ -257,6 +257,25 @@ class HomeLayoutSettings extends StatelessWidget {
             },
             child: const Text('Kehitysversio: lisää testiyöt'),
           ),
+        // Unen lähde (käyttäjä 19.11.): kaksi unimittaria (esim. Oura ja kello) kirjaa saman yön eri arvoin.
+        if (settings.homeCardOn('sleep'))
+          ListenableBuilder(
+            listenable: sleepData,
+            builder: (context, _) {
+              final cur = sleepData.currentApp;
+              return ListTile(
+                key: const ValueKey('sleepSource'),
+                leading: const Icon(Icons.watch_outlined),
+                title: Text(t('Unen lähde')),
+                subtitle: Text(
+                  settings.sleepApp ?? (cur == null ? t('Automaattinen') : t('Automaattinen ({0})', [cur])),
+                  style: sub,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: sleepData.loading ? null : () => _pickSleepSource(context),
+              );
+            },
+          ),
         // Unitavoitetta ei enää kysytä (käyttäjä 18.11.): Uni-kortti vertaa omaan tavalliseen uneen.
         // Uni päällä: vanhempi historia Health Connectista (historialupa, kuten askeleissa).
         if (settings.homeCardOn('sleep'))
@@ -324,6 +343,82 @@ Future<void> _setSleep(BuildContext context, bool on) async {
   await sleepData.refresh(force: true);
 }
 
+/// Unen lähteen valinta: automaattinen tai jokin sovellus, jolta Health Connectissa on unta.
+bool _sleepSourceOpen = false;
+
+Future<void> _pickSleepSource(BuildContext context) async {
+  // Nopea kolmoisnapautus avasi kolme paneelia päällekkäin (Nothing-testi 19.11.).
+  if (_sleepSourceOpen) return;
+  _sleepSourceOpen = true;
+  try {
+    await _pickSleepSourceOnce(context);
+  } finally {
+    _sleepSourceOpen = false;
+  }
+}
+
+Future<void> _pickSleepSourceOnce(BuildContext context) async {
+  if (sleepData.seenApps.isEmpty) await sleepData.refresh(force: true);
+  if (!context.mounted) return;
+  final apps = {...sleepData.knownApps, ?settings.sleepApp}.toList()..sort();
+  final picked = await showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) {
+      final cs = Theme.of(ctx).colorScheme;
+      Widget row(String? app) {
+        final on = settings.sleepApp == app;
+        return ListTile(
+          key: ValueKey('sleepSource_${app ?? 'auto'}'),
+          leading: Icon(on ? Icons.radio_button_checked : Icons.radio_button_off, color: on ? cs.primary : null),
+          title: Text(app ?? t('Automaattinen')),
+          subtitle: app == null ? Text(t('Sovellus, jolla on eniten öitä.')) : null,
+          onTap: () => Navigator.pop(ctx, app ?? ''),
+        );
+      }
+
+      return SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                child: Text(t('Unen lähde'), style: Theme.of(ctx).textTheme.titleLarge),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(
+                  t(
+                    'Jos kaksi laitetta (esim. sormus ja kello) kirjaa saman yön, Gievra käyttää yhtä. Oletus koskee öitä '
+                    'tästä eteenpäin; yksittäisen yön lähteen voi vaihtaa kalenterin päivästä.',
+                  ),
+                  style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                ),
+              ),
+              row(null),
+              for (final a in apps) row(a),
+              if (apps.length < 2)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  child: Text(
+                    t('Health Connectissa ei ole unta useammasta sovelluksesta.'),
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+  if (picked == null) return;
+  final app = picked.isEmpty ? null : picked;
+  if (app == settings.sleepApp) return;
+  await sleepData.setDefault(app);
+}
+
 /// Palautuminen-kortti päälle: ensin Health Connectin sykkeen lukulupa, sitten yön alin syke (yötesti 18.–19.11.:
 /// kytkin ei kysynyt lupaa, ja kortti jäi tyhjäksi, ellei Health Connect -tuonti ollut jo päällä).
 Future<void> _setRecovery(BuildContext context, bool on) async {
@@ -333,7 +428,9 @@ Future<void> _setRecovery(BuildContext context, bool on) async {
   }
   final hc = isDemo ? 'available' : await HealthConnect.status();
   if (hc != 'available' || !(isDemo || await HealthConnect.request(heartRate: true).catchError((_) => false))) {
-    if (context.mounted) _hcMissing(context, hc, t('Palautuminen-kortti tarvitsee Health Connectin sykkeen lukuluvan.'));
+    if (context.mounted) {
+      _hcMissing(context, hc, t('Palautuminen-kortti tarvitsee Health Connectin sykkeen lukuluvan.'));
+    }
     return;
   }
   settings.setHomeCard('recovery', true);
@@ -345,7 +442,9 @@ Future<void> _setNight(BuildContext context, bool on) async {
   if (!on) return settings.setHomeCard('night', false);
   final hc = isDemo ? 'available' : await HealthConnect.status();
   if (hc != 'available' || !await sleepData.requestMetrics()) {
-    if (context.mounted) _hcMissing(context, hc, t('Yöarvot tarvitsevat luvan lukea ainakin yksi yöarvo Health Connectista.'));
+    if (context.mounted) {
+      _hcMissing(context, hc, t('Yöarvot tarvitsevat luvan lukea ainakin yksi yöarvo Health Connectista.'));
+    }
     return;
   }
   settings.setHomeCard('night', true);
