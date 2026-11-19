@@ -85,6 +85,16 @@ class GpsService : Service(), LocationListener {
             stopSelf()
             return START_NOT_STICKY
         }
+        // Android 12+: "Likimääräinen sijainti" ei kaada GPS-pyyntöä, vaan Android muuttaa sen karkeaksi (noin 2 km,
+        // päivitys 10 minuutin välein), eikä yksikään paikannus kelpaa reitille (Nothing-testi 18.11.). Kerrotaan
+        // Dartille, että tarkka sijainti puuttuu.
+        if (!running && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            emit(mapOf("status" to "permission"))
+            stopSelf()
+            return START_NOT_STICKY
+        }
         if (!running) {
             try {
                 writer = FileWriter(rawFile(this), true)

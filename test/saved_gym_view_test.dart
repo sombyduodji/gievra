@@ -13,7 +13,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     settings
-      ..name = 'Testi'
+      ..started = true
       ..introDone = true
       ..trainMode = 'gym'
       ..program = null;

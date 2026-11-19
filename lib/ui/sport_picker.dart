@@ -53,15 +53,28 @@ class _SportPickerState extends State<SportPicker> {
     builder: (context, c) {
       const gap = 8.0;
       final w = (c.maxWidth - 2 * gap) / 3;
-      return Wrap(
-        spacing: gap,
-        runSpacing: gap,
+      // Kolmen ruudun rivit samankorkuisina (kahdelle riville jaettu saamen nimi ei tee rivistä epätasaista).
+      return Column(
         children: [
-          for (final s in xs)
-            SizedBox(
-              width: w,
-              child: _SportTile(sport: s, highlight: recent, onTap: () => widget.onPick(s.name)),
+          for (var i = 0; i < xs.length; i += 3) ...[
+            if (i > 0) const SizedBox(height: gap),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var j = i; j < i + 3; j++) ...[
+                    if (j > i) const SizedBox(width: gap),
+                    SizedBox(
+                      width: w,
+                      child: j < xs.length
+                          ? _SportTile(sport: xs[j], highlight: recent, onTap: () => widget.onPick(xs[j].name))
+                          : null,
+                    ),
+                  ],
+                ],
+              ),
             ),
+          ],
         ],
       );
     },
@@ -156,12 +169,13 @@ class _SportTile extends StatelessWidget {
             children: [
               Text(sport.icon, style: const TextStyle(fontSize: 26)),
               const SizedBox(height: 4),
-              // Pitkä nimi (saame, suuri teksti) pienenee mahtuakseen, ei katkea.
+              // Pitkä nimi (saame, suuri teksti) pienenee mahtuakseen, ei katkea. Pitkät saamen yhdyssanat jaetaan
+              // kahdelle riville yhdysosien rajalta (ennen esim. Dáistalanvaláštallamat pieneni lähes lukukelvottomaksi).
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  name,
-                  maxLines: 1,
+                  tileLabel(name),
+                  maxLines: 2,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
@@ -180,3 +194,13 @@ class _SportTile extends StatelessWidget {
     );
   }
 }
+
+/// Pitkät saamen lajinimet ruudussa kahdelle riville yhdysosien rajalta (tavuviiva rivin lopussa).
+const _seBreaks = {
+  'Dáistalanvaláštallamat': 'Dáistalan-\nvaláštallamat',
+  'Joavkolihkadeapmi': 'Joavko-\nlihkadeapmi',
+  'Muohtagámavázzin': 'Muohtagáma-\nvázzin',
+  'Kanohttasuhkan': 'Kanohtta-\nsuhkan',
+};
+
+String tileLabel(String name) => _seBreaks[name] ?? name;

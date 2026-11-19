@@ -1,10 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/l10n.dart';
+import 'package:treenipaivakirja/program.dart';
 import 'package:treenipaivakirja/ui/intro.dart';
+
+import 'test_fonts.dart';
 
 // Ohjelmakyselyn järjestys (päätös 14.11): vammat heti tavoitteen jälkeen, ennätykset vain voimanostolle,
 // pikaohjelma = oletukset + vammakysymys + yhteenveto.
@@ -66,6 +70,38 @@ void main() {
     expect(pl.last, 'Ohjelma 9/9');
   });
 
+  testWidgets('Saame, kapea näyttö, suuri teksti: Takaisin ja Seuraava eivät katkea kesken sanan (yötesti 19.11.)', (
+    tester,
+  ) async {
+    await loadRoboto();
+    final se = parsePo(File('assets/l10n/se.po').readAsStringSync());
+    debugSetCatalog('se', se);
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(fontFamily: 'Roboto'),
+        builder: (c, child) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(textScaler: const TextScaler.linear(1.4)),
+          child: child!,
+        ),
+        home: const IntroScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(se['Pikaohjelma'] ?? 'Pikaohjelma').hitTestable().first);
+    await tester.pumpAndSettle();
+    for (final w in ['Takaisin', 'Seuraava']) {
+      final label = se[w]!;
+      final p = tester.renderObject<RenderParagraph>(find.text(label));
+      final lines = {
+        for (final b in p.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: label.length))) b.top.round(),
+      }.length;
+      expect(lines, 1, reason: '$label: $lines riviä');
+    }
+  });
+
   testWidgets('Pikaohjelma: vammakysymys ja sitten yhteenveto; Aloita ohjelma tallentaa ohjelman', (tester) async {
     await open(tester);
     await tapText(tester, 'Pikaohjelma');
@@ -77,6 +113,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(settings.program, isNotNull);
     expect(settings.program!.days, 3);
+    // Pikaohjelma ei huomauta omasta viikon sarjamäärästään (yötesti 18.–19.11.): uudelle käyttäjälle aloittelijan
+    // taso, 3 × 60 min, ja suositus täyttyy.
+    expect((settings.program!.experience, settings.program!.minutes), ('aloittelija', 60));
+    expect(meetsWeeklyTargets(settings.program!), isTrue);
+    expect(settings.program!.notes.where((n) => n.startsWith('Viikon sarjamäärä')), isEmpty);
+  });
+
+  testWidgets('Pikaohjelma tallennetulla keskitasolla 3 × 60 min: treeni pitenee, jotta viikon suositus täyttyy',
+      (tester) async {
+    settings.style = TrainingStyle(goal: 'lihaskasvu', experience: 'keski', days: 3, minutes: 60);
+    await open(tester);
+    await tapText(tester, 'Pikaohjelma');
+    await next(tester);
+    await tapText(tester, 'Aloita ohjelma');
+    await tester.pumpAndSettle();
+    expect((settings.program!.experience, settings.program!.minutes), ('keski', 75));
+    expect(meetsWeeklyTargets(settings.program!), isTrue);
+    expect(settings.program!.notes.where((n) => n.startsWith('Viikon sarjamäärä')), isEmpty);
   });
 
   testWidgets('Pikaohjelmasta takaisin ja Aloitan alusta: täysi kysely', (tester) async {

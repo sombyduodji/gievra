@@ -163,8 +163,24 @@ class _IntroScreenState extends State<IntroScreen> {
   }
 
   /// Pikaohjelma: seuraava sivu on vammakysymys, sitten yhteenveto.
+  ///
+  /// Pikaohjelma ei saa huomauttaa omasta viikon sarjamäärästään (yötesti 18.–19.11.: oletus keskitaso 3 × 60 min
+  /// jäi alle 10 viikkosarjan kuudelle lihasryhmälle). Uudelle käyttäjälle aloittelijan taso (6 viikkosarjaa
+  /// lihasryhmää kohden, mahtuu 3 × 60 minuuttiin); jos tallennetuilla valinnoilla sarjat eivät silti mahdu,
+  /// treeni pitenee 15 min kerrallaan (enintään 90 min) lyhimpään kestoon, jolla suositus täyttyy.
   void _startQuick() {
-    setState(() => _quick = true);
+    setState(() {
+      _quick = true;
+      if ((settings.style?.experience ?? settings.program?.experience) == null && _profile == null) {
+        _exp = 'aloittelija';
+      }
+      for (var m = _minutes; m <= 90; m += 15) {
+        if (meetsWeeklyTargets(_build(minutes: m))) {
+          _minutes = m;
+          break;
+        }
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _page.animateToPage(1, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
     });
@@ -190,11 +206,11 @@ class _IntroScreenState extends State<IntroScreen> {
     }
   }
 
-  Program _build() => generateProgram(
+  Program _build({int? minutes}) => generateProgram(
     goal: _goal,
     experience: _exp,
     days: _days,
-    minutes: _minutes,
+    minutes: minutes ?? _minutes,
     injuries: _injuries,
     maxes: _maxes,
     repStyle: _repStyle,
@@ -278,12 +294,14 @@ class _IntroScreenState extends State<IntroScreen> {
                 children: [
                   const Icon(Icons.bolt_rounded, color: Sami.yellow, size: 28),
                   const SizedBox(width: 8),
-                  Text(
-                    t('Pikaohjelma'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: AppText.headline - 2,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      t('Pikaohjelma'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: AppText.headline - 2,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -681,16 +699,34 @@ class _IntroScreenState extends State<IntroScreen> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              // Suurella tekstillä ja pitkillä käännöksillä painikkeet kapenevat ja rivittyvät (ei ylivuotoa).
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_i > 0) OutlinedButton(onPressed: _back, child: Text(t('Takaisin'))),
-                  const Spacer(),
+                  if (_i > 0)
+                    Flexible(
+                      // Yksisanainen nimi pienenee eikä katkea kesken sanan (yötesti 19.11., Nothing saame + Stuoris: "Ruovttolu / otta").
+                      child: OutlinedButton(
+                        onPressed: _back,
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Takaisin'))),
+                      ),
+                    ),
+                  const SizedBox(width: 12),
                   // Ensimmäisellä sivulla ei Seuraava-painiketta: jokainen valinta vie eteenpäin (ennen se teki saman
                   // kuin "Aloitan alusta").
                   if (_i == _pages - 1)
-                    FilledButton(onPressed: _accept, child: Text(t('Aloita ohjelma')))
+                    Flexible(
+                      flex: 2,
+                      child: FilledButton(onPressed: _accept, child: Text(t('Aloita ohjelma'))),
+                    )
                   else if (_i > 0)
-                    FilledButton(onPressed: _next, child: Text(t('Seuraava'))),
+                    Flexible(
+                      flex: 2,
+                      child: FilledButton(
+                        onPressed: _next,
+                        child: FittedBox(fit: BoxFit.scaleDown, child: Text(t('Seuraava'))),
+                      ),
+                    ),
                 ],
               ),
             ),

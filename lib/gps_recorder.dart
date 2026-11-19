@@ -136,6 +136,10 @@ class GpsRecorder extends ChangeNotifier {
   DateTime? lastFixAt;
   bool gpsDisabled = false;
 
+  /// Paikannus ei käynnisty luvan takia: Android 12+:ssa "Likimääräinen sijainti" riittää lupakyselyssä, mutta
+  /// GPS vaatii tarkan sijainnin (Nothing-testi 18.11.: näkymä odotti signaalia loputtomiin, eikä mitään tallentunut).
+  bool permissionDenied = false;
+
   /// Ajanotto: aloitus ja tauot [alku, loppu); käynnissä olevalla tauolla loppu = null.
   DateTime? startedAt;
   final pauses = <(DateTime, DateTime?)>[];
@@ -308,11 +312,13 @@ class GpsRecorder extends ChangeNotifier {
   void _listen() {
     _sub?.cancel();
     _sub = source.events.listen((e) {
+      if (e['status'] == 'permission') permissionDenied = true;
       if (e['status'] == 'disabled') gpsDisabled = true;
       if (e['status'] == 'enabled') gpsDisabled = false;
       final fix = fixFromEvent(e);
       if (fix != null) {
         gpsDisabled = false;
+        permissionDenied = false;
         _feed(fix, live: true);
       }
       if (state == RecState.searching) _syncOngoing(); // "GPS valmis", kun signaali löytyy (sama tila ei päivitä)
@@ -345,7 +351,7 @@ class GpsRecorder extends ChangeNotifier {
   /// Viimeisimmän suotimelle annetun paikannuksen aika.
   DateTime? _lastFedTime;
 
-  /// Ajanotto käyntiin (signaali löytyi tai "Aloita silti").
+  /// Ajanotto käyntiin (signaali löytyi).
   Future<void> start() async {
     startedAt = now();
     state = RecState.recording;

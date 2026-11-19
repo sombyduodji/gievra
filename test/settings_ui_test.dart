@@ -12,7 +12,7 @@ void main() {
     final onError = FlutterError.onError;
     FlutterError.onError = (d) => d.toString().contains('overflowed') ? null : onError?.call(d);
     addTearDown(() => FlutterError.onError = onError);
-    settings.name = 'Testi';
+    settings.started = true;
     settings.introDone = true;
     settings.weightStep = 2.5;
     settings.themeMode = ThemeMode.system;
@@ -64,14 +64,14 @@ void main() {
     settings.restAdjust = [0, 0, 0];
   });
 
-  testWidgets('Nimen muokkaus: peruutus, tallennus ja Enter; dialogi sulkeutuu ilman virheitä', (tester) async {
+  testWidgets('Yleiset: ei nimeä (poistettu 19.11.)', (tester) async {
     tester.view.physicalSize = const Size(1200, 4000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final onError = FlutterError.onError;
     FlutterError.onError = (d) => d.toString().contains('overflowed') ? null : onError?.call(d);
     addTearDown(() => FlutterError.onError = onError);
-    settings.name = 'Testi';
+    settings.started = true;
     settings.introDone = true;
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();
@@ -82,38 +82,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Yleiset'));
     await tester.pumpAndSettle();
-    Future<void> open() async {
-      await tester.tap(find.byIcon(Icons.edit));
-      await tester.pumpAndSettle();
-      expect(find.text('Miksi sinua kutsutaan?'), findsOneWidget);
-    }
-
-    await open();
-    await tester.enterText(find.byType(TextField), 'Ei tallennu');
-    await tester.tap(find.text('Peruuta'));
-    await tester.pumpAndSettle();
-    expect(settings.name, 'Testi');
-    await open();
-    expect(find.widgetWithText(TextField, 'Testi'), findsOneWidget, reason: 'nykyinen nimi valmiina');
-    await tester.enterText(find.byType(TextField), 'Ánde');
-    await tester.tap(find.text('Tallenna'));
-    await tester.pumpAndSettle();
-    expect(settings.name, 'Ánde');
-    await open();
-    await tester.enterText(find.byType(TextField), 'Biret');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
-    expect(settings.name, 'Biret');
-    expect(find.text('Miksi sinua kutsutaan?'), findsNothing);
+    // Nimi poistettu (käyttäjä 19.11.): ei Nimesi-riviä eikä muokkausikkunaa.
+    expect(find.text('Nimesi'), findsNothing);
+    expect(find.text('Kieli · Giella'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    settings.name = 'Testi';
   });
 
   testWidgets('Tallennus: kansion haku ei käynnisty uudelleen, kun muu asetus muuttuu', (tester) async {
     tester.view.physicalSize = const Size(1200, 4000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    settings.name = 'Testi';
+    settings.started = true;
     settings.introDone = true;
     await tester.pumpWidget(const TreeniApp());
     await tester.pump();

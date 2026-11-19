@@ -5,8 +5,6 @@ import 'dart:io';
 import 'maps_screen.dart';
 import 'licenses_screen.dart';
 import 'stats_screen.dart';
-import '../sync/sync_service.dart';
-import 'sync_screen.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -198,20 +196,6 @@ List<Widget> menuEntries(BuildContext context, {bool drawer = true}) {
           subtitle: Text(t('Offline-kartat GPS-reiteille: lataa alue tai kunnat'), style: sub),
           onTap: () => go(builder: (_) => const MapsScreen()),
         ),
-      // Synkronointi näkyy vasta, kun se on julkaistu (ei "tulossa"-paikkamerkkiä).
-      if (syncReleased)
-        ListenableBuilder(
-          listenable: sync,
-          builder: (context, _) => ListTile(
-            leading: const Icon(Icons.cloud_sync_outlined),
-            title: Text(t('Synkronointi')),
-            subtitle: Text(
-              sync.enabled ? 'Google Drive · ${sync.status ?? ''}' : t('Pois päältä (valinnainen)'),
-              style: sub,
-            ),
-            onTap: () => go(builder: (_) => const SyncScreen()),
-          ),
-        ),
       // Ohjelmapohjan (.gmd) tuonti: Tuo tiedosto, sekä Ohjelma ja tavoitteet.
       ListTile(
         leading: const Icon(Icons.import_export),
@@ -317,7 +301,6 @@ class SettingsScreen extends StatefulWidget {
   /// Haettavat asetukset ryhmittäin (otsikot käännettyinä haun hetkellä; käyttäjä 16.11.: haku asetuksiin).
   static List<(SettingsGroup, String)> get searchIndex => [
     for (final k in [
-      'Nimesi',
       'Kieli · Giella',
       'Teema',
       'Tekstin koko',
@@ -384,7 +367,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SettingsGroup.general,
         Icons.person_outline,
         // Englanniksi liikkeiden nimet ovat aina englanniksi, eikä valintaa näytetä.
-        isEnglish ? t('Nimi, kieli, teema') : t('Nimi, kieli, teema, liikkeiden nimet'),
+        isEnglish ? t('Kieli, teema') : t('Kieli, teema, liikkeiden nimet'),
       ),
       (SettingsGroup.home, Icons.home_outlined, t('Omat tavoitteet ja kortit, järjestys')),
       (SettingsGroup.training, Icons.fitness_center, t('Mitä treenaat, painon lisäys, lämmittely, vinkit ja kevennys')),
@@ -534,35 +517,6 @@ class AboutScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Nimen muokkaus. Oma tila, jotta tekstikenttä vapautetaan vasta, kun dialogi on kokonaan suljettu
-/// (sulkuanimaatio käyttää kenttää vielä muutaman ruudun ajan).
-class _NameDialog extends StatefulWidget {
-  const _NameDialog();
-
-  @override
-  State<_NameDialog> createState() => _NameDialogState();
-}
-
-class _NameDialogState extends State<_NameDialog> {
-  late final _c = TextEditingController(text: settings.name);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(t('Miksi sinua kutsutaan?')),
-    content: TextField(controller: _c, autofocus: true, onSubmitted: (v) => Navigator.pop(context, v)),
-    actions: [
-      TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Peruuta'))),
-      FilledButton(onPressed: () => Navigator.pop(context, _c.text), child: Text(t('Tallenna'))),
-    ],
-  );
 }
 
 /// Automaattiset varmuuskopiot (backup/): päiväys, versio ja koko; tallenna (esim. Lataukset) tai jaa.
@@ -750,11 +704,6 @@ class _SettingsSection extends StatelessWidget {
   final SettingsGroup group;
   const _SettingsSection(this.group);
 
-  Future<void> _editName(BuildContext context) async {
-    final v = await showDialog<String>(context: context, builder: (_) => const _NameDialog());
-    if (v != null) settings.setName(v); // tyhjä = tervehdys ilman nimeä
-  }
-
   Future<void> _pickFolder(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     // file_picker 13.4 vanhentaa getDirectoryPathin (pickDirectory palauttaa content://-osoitteen). Treenikansio
@@ -821,12 +770,6 @@ class _SettingsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (group == SettingsGroup.general) ...[
-            ListTile(
-              title: Text(t('Nimesi')),
-              subtitle: Text((settings.name ?? '').isEmpty ? t('Ei nimeä') : settings.name!, style: sub),
-              trailing: const Icon(Icons.edit, size: 18),
-              onTap: () => _editName(context),
-            ),
             const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 6), child: Text('Kieli · Giella')),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: LanguagePicker()),
             const SizedBox(height: 8),
@@ -1734,170 +1677,174 @@ Future<void> showPauseDialog(BuildContext context, {Pause? edit}) async {
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set) => AlertDialog(
         title: Text(edit == null ? t('Tauko treenaamisesta') : t('Muokkaa taukoa')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Syyt kolmena samankokoisena ruutuna rivissä (emoji sanan päällä): sirut rivittyivät epätasaisesti ja
-            // päivämääräpainikkeet olivat eri levyisiä (käyttäjä 16.11.: "sekava").
-            Row(
-              children: [
-                for (final (i, (v, l)) in [
-                  ('sairas', t('🤒 Sairas')),
-                  ('loma', t('🏖 Loma')),
-                  ('vamma', t('🩹 Vamma')),
-                ].indexed) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  Expanded(
-                    child: Material(
-                      key: ValueKey('pause_$v'),
-                      color: reason == v
-                          ? Sami.yellow.withValues(alpha: .22)
-                          : Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(color: reason == v ? yellowText(ctx) : Colors.transparent, width: 1.5),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () => set(() => reason = v),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                          child: Column(
-                            children: [
-                              Text(l.split(' ').first, style: const TextStyle(fontSize: 24)),
-                              const SizedBox(height: 2),
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  l.split(' ').skip(1).join(' '),
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    fontWeight: reason == v ? FontWeight.w700 : FontWeight.w500,
-                                    color: reason == v ? yellowText(ctx) : Theme.of(ctx).colorScheme.onSurface,
+        // Suurella tekstillä matalalla näytöllä sisältö vierii (ei ylivuotoa alareunassa).
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Syyt kolmena samankokoisena ruutuna rivissä (emoji sanan päällä): sirut rivittyivät epätasaisesti ja
+              // päivämääräpainikkeet olivat eri levyisiä (käyttäjä 16.11.: "sekava").
+              Row(
+                children: [
+                  for (final (i, (v, l)) in [
+                    ('sairas', t('🤒 Sairas')),
+                    ('loma', t('🏖 Loma')),
+                    ('vamma', t('🩹 Vamma')),
+                  ].indexed) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(
+                      child: Material(
+                        key: ValueKey('pause_$v'),
+                        color: reason == v
+                            ? Sami.yellow.withValues(alpha: .22)
+                            : Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(color: reason == v ? yellowText(ctx) : Colors.transparent, width: 1.5),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => set(() => reason = v),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                            child: Column(
+                              children: [
+                                Text(l.split(' ').first, style: const TextStyle(fontSize: 24)),
+                                const SizedBox(height: 2),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    l.split(' ').skip(1).join(' '),
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontWeight: reason == v ? FontWeight.w700 : FontWeight.w500,
+                                      color: reason == v ? yellowText(ctx) : Theme.of(ctx).colorScheme.onSurface,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Päivät kahtena samanlaisena rivinä yhdessä kehyksessä: nimi vasemmalla, päivä oikealla.
-            Material(
-              color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  dateRow(
-                    const ValueKey('pauseStart'),
-                    Icons.calendar_today,
-                    start.isAfter(today) ? t('Alkaa') : t('Alkoi'),
-                    d(start),
-                    () async {
-                      final x = await pickDate(ctx, initial: start, first: DateTime(2000), last: addDays(today, 365));
-                      if (x != null && ctx.mounted) {
-                        set(() {
-                          start = dateOnly(x);
-                          if (end != null && end!.isBefore(start)) end = start;
-                        });
-                      }
-                    },
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Theme.of(ctx).colorScheme.outlineVariant.withValues(alpha: .5),
-                  ),
-                  // Viimeinen taukopäivä (valinnainen).
-                  dateRow(
-                    const ValueKey('pauseEnd'),
-                    Icons.event_available,
-                    t('Päättyy'),
-                    end == null ? t('lopetan itse') : d(end!),
-                    () async {
-                      final x = await pickDate(
-                        ctx,
-                        initial: end ?? (start.isAfter(today) ? start : today),
-                        first: start,
-                        last: addDays(start, 730),
-                      );
-                      if (x != null && ctx.mounted) set(() => end = dateOnly(x));
-                    },
-                    muted: end == null,
-                    onClear: end == null ? null : () => set(() => end = null),
-                  ),
+                  ],
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
-            if (end != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  t('Tauko päättyy itsestään {0} jälkeen. Voit muuttaa päiviä myöhemmin etusivulta tai kalenterista.', [
-                    d(end!),
-                  ]),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ),
-            Text(
-              // Tauko jatkuu, kunnes käyttäjä lopettaa sen; treeni ja liikunta ovat silti sallittuja (käyttäjä 16.11.).
-              reason == 'loma'
-                  ? t(
-                      'Treenata ja liikkua voi silti; sovellus vain muistuttaa tauosta. Lyhyt loma ei juuri vaikuta '
-                      'voimaan; pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä kuormia.',
-                    )
-                  : t(
-                      'Lepää ja parane. Kävely ja treeni ovat silti sallittuja; sovellus vain muistuttaa tauosta. '
-                      'Tauon jälkeen noin kaksi viikkoa kevyempiä kuormia ja vähemmän sarjoja tauon pituuden mukaan.',
-                    ),
-              style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
-            ),
-            if (end == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  t('Tauko jatkuu, kunnes lopetat sen.'),
-                  style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
-                ),
-              ),
-            // Aiemmat tauot: vahingossa lisätyn voi poistaa (uusimmat ensin).
-            if (edit == null && settings.pauses.any((pause) => pause.end != null && pause.end!.isBefore(today))) ...[
               const SizedBox(height: 12),
-              Text(t('Aiemmat tauot'), style: const TextStyle(fontWeight: FontWeight.w600)),
-              for (final pause
-                  in settings.pauses
-                      .where((pause) => pause.end != null && pause.end!.isBefore(today))
-                      .toList()
-                      .reversed
-                      .take(3))
-                Row(
+              // Päivät kahtena samanlaisena rivinä yhdessä kehyksessä: nimi vasemmalla, päivä oikealla.
+              Material(
+                color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(14),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${pause.injury ? '🩹' : (pause.sick ? '🤒' : '🏖')} ${shortDate(pause.start)}–${shortDate(pause.end!)}',
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: t('Poista tauko'),
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () {
-                        removePauseUndo(context, pause);
-                        set(() {});
+                    dateRow(
+                      const ValueKey('pauseStart'),
+                      Icons.calendar_today,
+                      start.isAfter(today) ? t('Alkaa') : t('Alkoi'),
+                      d(start),
+                      () async {
+                        final x = await pickDate(ctx, initial: start, first: DateTime(2000), last: addDays(today, 365));
+                        if (x != null && ctx.mounted) {
+                          set(() {
+                            start = dateOnly(x);
+                            if (end != null && end!.isBefore(start)) end = start;
+                          });
+                        }
                       },
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Theme.of(ctx).colorScheme.outlineVariant.withValues(alpha: .5),
+                    ),
+                    // Viimeinen taukopäivä (valinnainen).
+                    dateRow(
+                      const ValueKey('pauseEnd'),
+                      Icons.event_available,
+                      t('Päättyy'),
+                      end == null ? t('lopetan itse') : d(end!),
+                      () async {
+                        final x = await pickDate(
+                          ctx,
+                          initial: end ?? (start.isAfter(today) ? start : today),
+                          first: start,
+                          last: addDays(start, 730),
+                        );
+                        if (x != null && ctx.mounted) set(() => end = dateOnly(x));
+                      },
+                      muted: end == null,
+                      onClear: end == null ? null : () => set(() => end = null),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 12),
+              if (end != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    t(
+                      'Tauko päättyy itsestään {0} jälkeen. Voit muuttaa päiviä myöhemmin etusivulta tai kalenterista.',
+                      [d(end!)],
+                    ),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              Text(
+                // Tauko jatkuu, kunnes käyttäjä lopettaa sen; treeni ja liikunta ovat silti sallittuja (käyttäjä 16.11.).
+                reason == 'loma'
+                    ? t(
+                        'Treenata ja liikkua voi silti; sovellus vain muistuttaa tauosta. Lyhyt loma ei juuri vaikuta '
+                        'voimaan; pidemmän jälkeen sovellus ehdottaa aluksi kevyempiä kuormia.',
+                      )
+                    : t(
+                        'Lepää ja parane. Kävely ja treeni ovat silti sallittuja; sovellus vain muistuttaa tauosta. '
+                        'Tauon jälkeen noin kaksi viikkoa kevyempiä kuormia ja vähemmän sarjoja tauon pituuden mukaan.',
+                      ),
+                style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+              ),
+              if (end == null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    t('Tauko jatkuu, kunnes lopetat sen.'),
+                    style: TextStyle(fontSize: 13, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              // Aiemmat tauot: vahingossa lisätyn voi poistaa (uusimmat ensin).
+              if (edit == null && settings.pauses.any((pause) => pause.end != null && pause.end!.isBefore(today))) ...[
+                const SizedBox(height: 12),
+                Text(t('Aiemmat tauot'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                for (final pause
+                    in settings.pauses
+                        .where((pause) => pause.end != null && pause.end!.isBefore(today))
+                        .toList()
+                        .reversed
+                        .take(3))
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${pause.injury ? '🩹' : (pause.sick ? '🤒' : '🏖')} ${shortDate(pause.start)}–${shortDate(pause.end!)}',
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: t('Poista tauko'),
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () {
+                          removePauseUndo(context, pause);
+                          set(() {});
+                        },
+                      ),
+                    ],
+                  ),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('Peruuta'))),

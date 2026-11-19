@@ -13,7 +13,9 @@ import android.widget.TextView
 /// Health Connectin "Tietosuojakäytäntö" / "Miksi sovellus pyytää lupia" (yötesti 18.11.: linkki avasi Gievran
 /// Health Connectin taakse, eikä mitään näkynyt). Kevyt natiivinäkymä Health Connectin omassa tehtävässä: ei
 /// Flutter-moottoria, joten se aukeaa heti eikä sekoita käynnissä olevaa treeniä. Kieli sama kuin sovelluksessa
-/// (SharedPreferences "flutter.lang"), muuten laitteen kieli.
+/// (SharedPreferences "flutter.lang"). Jos kieltä ei ole tallennettu, sovellus on suomeksi (lib/app_state.dart
+/// lukee oletuksena 'fi'), joten tämäkin on suomeksi: ennen laitteen kieli, ja englanninkielisellä puhelimella
+/// näkymä oli englanniksi suomenkielisen sovelluksen keskellä (Nothing-testi 18.11.).
 class PrivacyActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,8 +23,8 @@ class PrivacyActivity : Activity() {
             getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE).getString("flutter.lang", null)
         } catch (_: Exception) {
             null
-        } ?: java.util.Locale.getDefault().language
-        val t = privacyTexts[lang] ?: if (lang == "fi") privacyTexts["fi"]!! else privacyTexts["en"]!!
+        } ?: "fi"
+        val t = privacyTexts[lang] ?: privacyTexts["fi"]!!
         val dp = { v: Int -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).toInt() }
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

@@ -262,7 +262,7 @@ Future<Uint8List> exportZip() async {
   return ZipEncoder().encodeBytes(archive);
 }
 
-/// Yksittäiset .md-treenit (esim. PC:llä tehdyt, joita Drive-synkronointi ei näe): nimi -> sisältö.
+/// Yksittäiset .md-treenit (esim. PC:llä tehdyt): nimi -> sisältö.
 /// Päivämäärä otsikkotiedoista tai tiedostonimestä. Asetukset ja ohjelma ohitetaan.
 ImportResult readMdFiles(Map<String, String> files, {int repaired = 0, Map<String, List<int>>? unreadable}) {
   final failed = unreadable ?? <String, List<int>>{};

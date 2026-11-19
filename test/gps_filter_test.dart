@@ -116,6 +116,7 @@ const block = <(double, double)>[
 ];
 
 void main() {
+  stopAndGoTests();
   test('lajien rajat', () {
     expect(GpsLimits.forSport('Kävely'), GpsLimits.walk);
     expect(GpsLimits.forSport('Retkeily'), GpsLimits.walk);
@@ -307,5 +308,61 @@ void main() {
     expect(f.maxFixGapSec, closeTo(49, 1.5));
     expect(f.received, a.length + b.length);
     expect(f.diagnostics, contains('pisin väli'));
+  });
+}
+
+// Käyttäjän kävely 18.11. (pysähdellen): matka jäi noin 24 % lyhyeksi, koska jokainen pysähdys hylkäsi edellisen
+// alle 10 metrin keräämättömän matkan ja liikkeelle lähdön ensimmäiset metrit (ennen korjausta tällä reitillä 84–87 %). Keksitty reitti: 1,3 m/s ja 25 s:n
+// pysähdys 25 metrin välein.
+List<GpsFix> stopAndGo(
+  List<(double, double)> wps, {
+  int seed = 7,
+  double walk = 1.3,
+  double every = 25,
+  int stop = 25,
+}) {
+  final n = Noise(seed);
+  final total = pathLength(wps);
+  final fixes = <GpsFix>[];
+  var s = 0.0, sec = 0, sinceStop = 0.0, stopLeft = 0;
+  while (s <= total) {
+    final (x, y) = along(wps, s);
+    final (lat, lon) = toLatLon(x + n.gauss(3), y + n.gauss(3));
+    fixes.add(GpsFix(t0.add(Duration(seconds: sec++)), lat, lon, 5));
+    if (stopLeft > 0) {
+      stopLeft--;
+      continue;
+    }
+    s += walk;
+    sinceStop += walk;
+    if (sinceStop >= every) {
+      sinceStop = 0;
+      stopLeft = stop;
+    }
+  }
+  return fixes;
+}
+
+void stopAndGoTests() {
+  test('kävely pysähdyksineen: matka ei häviä pysähdyksissä', () {
+    const route = <(double, double)>[(0, 0), (150, 0), (150, 120), (40, 160)];
+    final truth = pathLength(route);
+    for (final seed in [7, 8, 9]) {
+      final f = run(stopAndGo(route, seed: seed), GpsLimits.walk);
+      expect(f.distance, greaterThan(truth * .86), reason: 'siemen $seed: ${f.distance} / $truth');
+      expect(f.distance, lessThan(truth * 1.08), reason: 'siemen $seed: ${f.distance} / $truth');
+    }
+  });
+
+  test('paikallaan seisominen ei kerrytä matkaa pysähdyksen jälkeenkään', () {
+    final n = Noise(3);
+    final fixes = <GpsFix>[
+      for (var sec = 0; sec < 600; sec++)
+        () {
+          final (lat, lon) = toLatLon(n.gauss(4), n.gauss(4));
+          return GpsFix(t0.add(Duration(seconds: sec)), lat, lon, 6);
+        }(),
+    ];
+    expect(run(fixes, GpsLimits.walk).distance, lessThan(15));
   });
 }

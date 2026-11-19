@@ -17,8 +17,10 @@ void main() {
       for (final m in classRe.allMatches(src)) {
         final name = m[1]!;
         String bodyFrom(int start) {
-          final next = RegExp(r'^class ', multiLine: true).firstMatch(src.substring(start + 6));
-          return src.substring(start, next == null ? src.length : start + 6 + next.start);
+          // Luokan loppu: ensimmäinen sarakkeen 0 sulkeva aaltosulje (dart format), ei seuraava luokka: välissä
+          // olevat ylätason funktiot eivät kuulu luokkaan.
+          final end = RegExp(r'^}', multiLine: true).firstMatch(src.substring(start + 6));
+          return src.substring(start, end == null ? src.length : start + 6 + end.end);
         }
 
         var body = bodyFrom(m.start);

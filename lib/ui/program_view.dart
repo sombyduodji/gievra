@@ -119,14 +119,19 @@ class ProgramView extends StatelessWidget {
                   ),
                 ),
               Expanded(child: ExName(i.exercise)),
-              Text(switch (i.kind) {
-                'H' => t('raskas, viikon mukaan'),
-                'V' => t('volyymi, viikon mukaan'),
-                _ =>
-                  '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}'
-                      '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
-                      '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
-              }, style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(width: 6),
+              // Kapea näyttö ja suuri teksti: pitkä tavoite rivittyy oikealle (ei ylivuotoa), nimi saa muun tilan.
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 150),
+                child: Text(textAlign: TextAlign.end, switch (i.kind) {
+                  'H' => t('raskas, viikon mukaan'),
+                  'V' => t('volyymi, viikon mukaan'),
+                  _ =>
+                    '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}'
+                        '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
+                        '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
+                }, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
               if (_editable) ...[const SizedBox(width: 6), Icon(Icons.edit, size: 15, color: cs.onSurfaceVariant)],
             ],
           ),
@@ -864,13 +869,15 @@ class _ItemSheetState extends State<_ItemSheet> {
           const SizedBox(height: 18),
           Row(
             children: [
-              TextButton.icon(
-                onPressed: () {
-                  widget.day.items.remove(it);
-                  Navigator.pop(context, true);
-                },
-                icon: Icon(Icons.delete_outline, color: cs.error),
-                label: Text(t('Poista'), style: TextStyle(color: cs.error)),
+              Flexible(
+                child: TextButton.icon(
+                  onPressed: () {
+                    widget.day.items.remove(it);
+                    Navigator.pop(context, true);
+                  },
+                  icon: Icon(Icons.delete_outline, color: cs.error),
+                  label: Text(t('Poista'), style: TextStyle(color: cs.error)),
+                ),
               ),
               const Spacer(),
               // Järjestys ilman vetämistä (ruudunlukija, tarkka siirto): ylös / alas päivän sisällä.
@@ -912,8 +919,9 @@ class _ItemSheetState extends State<_ItemSheet> {
           ),
           const SizedBox(height: 4),
           for (final msg in msgs) Text(msg, style: const TextStyle(fontSize: 13)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 4,
             children: [
               TextButton(onPressed: () => setState(() => _preview = null), child: Text(t('Peruuta'))),
               FilledButton(

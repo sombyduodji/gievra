@@ -1357,6 +1357,10 @@ List<String> _reachWeeklyTargets(Program p, String exp) {
   return const [];
 }
 
+/// Päälihasryhmien viikkosarjat yltävät tavoitteen suositukseen (kahvakuulaohjelmassa ei sarjatavoitetta).
+bool meetsWeeklyTargets(Program p) =>
+    p.kbFocus != null || weeklyLoad(p).every((m) => !majorMuscles.contains(m.muscle) || m.sets >= m.lo - .01);
+
 bool fitsAll(Set<String> prefs) => prefs.isEmpty || prefs.length == equipmentChoices.length;
 
 /// Toistoalue käyttäjän valinnan mukaan. Pääliikkeiden (voimanoston taulukko) toistoja ei muuteta.

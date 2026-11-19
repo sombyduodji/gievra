@@ -11,7 +11,6 @@ import 'package:treenipaivakirja/daily_steps.dart';
 import 'package:treenipaivakirja/import_export.dart';
 import 'package:treenipaivakirja/ui/widgets.dart' show longDateYear;
 import 'package:treenipaivakirja/models.dart';
-import 'package:treenipaivakirja/sync/sync_engine.dart';
 import 'package:treenipaivakirja/ui/drawer.dart';
 import 'package:treenipaivakirja/ui/home.dart';
 import 'package:treenipaivakirja/ui/onboarding.dart';
@@ -140,8 +139,7 @@ void main() {
       steps: dailySteps.days,
     );
     expect(csv.map((f) => f.name), contains('askeleet.csv'));
-    // Synkronointi ja kansion vaihto.
-    expect(isSyncable(stepsFileName), isTrue);
+    // Kansion vaihto: askeltiedosto mukana.
     expect(await Settings.mdFiles(dir), contains(stepsFileName));
   });
 

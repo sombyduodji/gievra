@@ -182,7 +182,9 @@ class NightHrData {
   @visibleForTesting
   static set debugNights(Map<DateTime, int> v) => nights.value = v;
 
-  static bool get available => !kIsWeb && !isDemo && Platform.isAndroid && settings.hcImport;
+  /// Health Connect -tuonti tai Palautuminen-kortti päällä (kortin kytkin kysyy sykkeen lukuluvan, 19.11.).
+  static bool get available =>
+      !kIsWeb && !isDemo && Platform.isAndroid && (settings.hcImport || settings.homeCardOn('recovery'));
 
   static Future<void> refresh({bool force = false}) async {
     if (isDemo) {
@@ -198,7 +200,7 @@ class NightHrData {
     if (!force && _at != null && now.difference(_at!).inMinutes < 30) return;
     _busy = true;
     try {
-      if (await HealthConnect.status() != 'available' || !await HealthConnect.granted()) return;
+      if (await HealthConnect.status() != 'available' || !await HealthConnect.granted(heartRate: true)) return;
       final today = dateOnly(now);
       nights.value = await HealthConnect.nightLowHr(addDays(today, -34), today);
       _at = now;

@@ -59,7 +59,7 @@ void main() {
           addTearDown(tester.view.reset);
           debugSetCatalog(lang, lang == 'fi' ? const {} : po[lang]!);
           settings
-            ..name = 'Testi'
+            ..started = true
             ..introDone = true
             ..program = null
             ..trainMode = 'both';
@@ -111,7 +111,7 @@ void main() {
         addTearDown(tester.view.reset);
         debugSetCatalog(lang, lang == 'fi' ? const {} : po[lang]!);
         settings
-          ..name = 'Testi'
+          ..started = true
           ..introDone = true
           ..program = null
           ..trainMode = 'both';
@@ -150,7 +150,7 @@ void main() {
       addTearDown(tester.view.reset);
       debugSetCatalog(lang, lang == 'fi' ? const {} : po[lang]!);
       settings
-        ..name = 'Testi'
+        ..started = true
         ..introDone = true
         ..trainMode = 'both'
         ..program = generateProgram(goal: 'lihaskasvu', experience: 'keski', days: 3, minutes: 60, injuries: const []);

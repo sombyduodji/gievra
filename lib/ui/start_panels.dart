@@ -25,6 +25,7 @@ import 'activity.dart';
 import 'health_import.dart';
 import 'home.dart' show explainActivityMinutes, openPendingActivity;
 import 'new_workout.dart';
+import 'sport_picker.dart' show tileLabel;
 import 'steps_ui.dart' show stepsTabAvailable;
 import 'widgets.dart';
 import 'workout.dart';
@@ -628,8 +629,19 @@ class _SportTile extends StatelessWidget {
             children: [
               Text(icon, style: const TextStyle(fontSize: 22)),
               const SizedBox(width: 10),
+              // Yksi pitkä sana (Sauvakävely suurella tekstillä, saamen yhdyssanat) ei katkea kesken sanan: nimi
+              // pienenee mahtuakseen, ja pitkät saamen nimet jaetaan yhdysosien rajalta kuten Kaikki lajit -ruuduissa
+              // (yötesti 19.11., OnePlus: "Sauvakävel / y").
               Expanded(
-                child: Text(name, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    tileLabel(name),
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
             ],
           ),
@@ -669,7 +681,15 @@ class _Row extends StatelessWidget {
               children: [
                 if (lead != null) ...[lead!, const SizedBox(width: 10)],
                 Expanded(
-                  child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  // Yksi pitkä sana (Kamppailulajit, Soabbevázzin fontilla 2,0) pienenee eikä katkea kesken sanan;
+                  // monisanainen nimi rivittyy sanojen välistä kuten ennen (yötesti 19.11.).
+                  child: title.trim().contains(' ')
+                      ? Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600))
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        ),
                 ),
                 if (trailing != null) Text(trailing!, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
               ],

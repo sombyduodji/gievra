@@ -47,6 +47,9 @@ object HealthBridge {
         HealthPermission.getReadPermission(StepsRecord::class),
     )
 
+    /** Palautuminen-kortti: vain sykkeen luku (yön alin syke; testi 18.11.: kytkin ei kysynyt lupaa lainkaan). */
+    val heartRatePermissions = setOf(HealthPermission.getReadPermission(HeartRateRecord::class))
+
     /** Päivän askeleet: vain askelten luku (ei harjoituksia, sykettä eikä kaloreita). */
     val stepsPermissions = setOf(HealthPermission.getReadPermission(StepsRecord::class))
 

@@ -250,14 +250,17 @@ class HealthConnect {
 
   /// [import]: tehdyn liikunnan lisäys tarvitsee lisäksi matkan lukuluvan.
   /// [sleep]: Uni-kortti (unijaksot ja syke); [sleep] + [history]: vanhempi unihistoria.
+  /// [heartRate]: Palautuminen-kortti (vain sykkeen luku).
   static Future<bool> granted({
     bool import = false,
     bool steps = false,
     bool history = false,
     bool sleep = false,
     bool metrics = false,
+    bool heartRate = false,
   }) async =>
       await _ch.invokeMethod<bool>('granted', {
+        'heartRate': heartRate,
         'import': import,
         'steps': steps,
         'history': history,
@@ -283,8 +286,10 @@ class HealthConnect {
     bool history = false,
     bool sleep = false,
     bool metrics = false,
+    bool heartRate = false,
   }) async =>
       await _ch.invokeMethod<bool>('request', {
+        'heartRate': heartRate,
         'write': write,
         'import': import,
         'steps': steps,

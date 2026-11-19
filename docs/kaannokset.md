@@ -11,7 +11,7 @@ vaihtaa ensimmäisellä käynnistyksellä tai Lisää → Asetukset → Kieli ·
   liikeohjeet, `.md`-tiedostojen sisältö ja tiedostomuoto, jaettu yhteenveto. Liikkeille ja lajeille ei ole
   vakiintuneita saamenkielisiä nimiä; ne käännetään myöhemmin natiivipuhujan kanssa.
 - **Vielä suomeksi:** pitkät ohjelman selitystekstit (ohjelman tarkistus, historiasta päätellyt perustelut,
-  vammatilan ohjeet, tilastojen huomiot) ja piilotettu Drive-synkronointi.
+  vammatilan ohjeet, tilastojen huomiot).
 
 ## Tiedostot
 

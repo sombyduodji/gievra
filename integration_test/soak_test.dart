@@ -145,7 +145,7 @@ void main() {
     final log = File('${Directory.systemTemp.path}${Platform.pathSeparator}gievra-soak-mem.csv')
       ..writeAsStringSync('kierros,sekunnit,rss_mt,treenit\n');
     settings.folder = dir.path;
-    settings.name = 'Testi';
+    settings.started = true;
     settings.introDone = true;
     settings.sports = true;
     store.workouts = [];

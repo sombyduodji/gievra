@@ -8,7 +8,7 @@ import 'sports.dart';
 /// Verkkodemon esimerkkitiedot: kolmen päivän ohjelma ja neljän viikon treenit, jotta etusivu, kalenteri ja
 /// tilastot näyttävät jotain. Kaikki on vain muistissa (MemoryTrainingFiles); mitään ei tallenneta.
 Future<void> seedDemo() async {
-  settings.name = 'Demo';
+  settings.started = true;
   final today = dateOnly(DateTime.now());
   final monday = addDays(today, 1 - today.weekday);
   final start = addDays(monday, -21); // neljä viikkoa, viimeinen on kuluva viikko

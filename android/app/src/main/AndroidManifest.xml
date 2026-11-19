@@ -2,7 +2,7 @@
     <!-- Synkattu treenikansio (Nextcloud, Seafile, Syncthing…) on toisen sovelluksen kirjoittama,
          joten sen lukeminen vaatii "Kaikkien tiedostojen käyttö" -luvan. Pyydetään vasta kun kansio valitaan. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <!-- Valinnainen Google Drive -synkronointi -->
+    <!-- Offline-karttojen ja korkeustietojen lataus (valinnainen, vain käyttäjän pyynnöstä) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Palautusajastin (valinnainen): ilmoitus ja värinä, kun sarjojen välinen tauko on ohi. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

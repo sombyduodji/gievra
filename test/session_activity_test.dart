@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/share_text.dart';
-import 'package:treenipaivakirja/sync/sync_engine.dart';
 
 void main() {
   test('Liikunta .md:ssä edestakaisin, vauhti lasketaan', () {
@@ -32,13 +31,11 @@ void main() {
     expect(shareText(r), contains('5:29 min/km'));
   });
 
-  test('Useampi treeni samana päivänä: omat tiedostot, synkronointi ja tallennus', () async {
+  test('Useampi treeni samana päivänä: omat tiedostot ja tallennus', () async {
     expect(workoutPath(DateTime(2026, 11, 7)), '2026/2026-11-07.md');
     expect(workoutPath(DateTime(2026, 11, 7), 2), '2026/2026-11-07-2.md');
     expect(sessionFromName('2026-11-07-2.md'), 2);
     expect(sessionFromName('2026-11-07.md'), 1);
-    expect(isSyncable('2026/2026-11-07-2.md'), isTrue);
-    expect(dateOfPath('2026/2026-11-07-3.md'), DateTime(2026, 11, 7));
 
     final dir = await Directory.systemTemp.createTemp('sessiot');
     settings.folder = dir.path;

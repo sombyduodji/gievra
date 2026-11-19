@@ -158,6 +158,11 @@ class GpsFilter {
   DateTime? _lastOutT;
   bool _newSegment = true;
   (double, double)? _mAnchor;
+  DateTime? _mAnchorT;
+
+  /// Pysähdystä edeltänyt kirjaamaton matka lasketaan, jos se kuljettiin vähintään tätä vauhtia (m/s).
+  static const walkingPace = 0.6;
+  bool _wasStill = false;
   double _mPending = 0;
   final _window = <(DateTime, double, double)>[];
 
@@ -314,6 +319,7 @@ class GpsFilter {
       _ky = _Axis(o.y, r);
       _flushMeasure();
       _mAnchor = (o.x, o.y);
+      _mAnchorT = o.t;
       _kt = o.t;
       return _emit(o.t, o.x, o.y, force: true);
     }
@@ -348,15 +354,34 @@ class GpsFilter {
         math.sqrt(math.pow(x - w0.$2, 2) + math.pow(y - w0.$3, 2)) < stopDistance;
     final m = _mAnchor;
     if (m == null || still) {
-      _mAnchor = (x, y);
+      // Pysähdys (käyttäjän kävely 18.11.: pysähdellen kävellessä matka jäi noin neljänneksen lyhyeksi):
+      // 1. Pysähdyksen alussa ennen pysähdystä kävelty, vielä kirjaamaton matka (alle [distStep]) lasketaan, jos se
+      //    kuljettiin kävelyvauhtia. Ennen se hylättiin.
+      // 2. Ankkuri on pysähdyksen aikana ikkunan keskipiste eikä viimeisin paikka: kun liike jatkuu, matka lasketaan
+      //    pysähdyspaikasta (ennen ensimmäiset noin 5 metriä hävisivät, koska ikkuna näytti vielä paikallaanololta).
+      //    Paikallaan ajelehtiminen ei kerry: keskipiste on vakaa, ja matkaa kertyy vasta [distStep] metrin päästä.
+      if (m != null && !_wasStill && _mPending >= minStep && _mAnchorT != null) {
+        final moving = w0.$1.difference(_mAnchorT!).inMicroseconds / 1e6;
+        if (moving >= 3 && _mPending / moving >= walkingPace) distance += _mPending;
+      }
+      var cx = 0.0, cy = 0.0;
+      for (final p in _window) {
+        cx += p.$2;
+        cy += p.$3;
+      }
+      _mAnchor = m == null ? (x, y) : (cx / _window.length, cy / _window.length);
+      _mAnchorT = t;
       _mPending = 0;
+      _wasStill = still;
       return;
     }
+    _wasStill = false;
     final d = math.sqrt(math.pow(x - m.$1, 2) + math.pow(y - m.$2, 2));
     _mPending = d;
     if (d >= distStep) {
       distance += d;
       _mAnchor = (x, y);
+      _mAnchorT = t;
       _mPending = 0;
     }
   }

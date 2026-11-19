@@ -24,10 +24,6 @@ import 'heart_rate.dart' show hrProfile, repairLowCoverageKcal, repairWalkKcal;
 final settings = Settings();
 final store = WorkoutStore();
 
-/// Synkronoinnin koukku: kutsutaan jokaisen tallennuksen ja poiston jälkeen polulla treenikansiossa
-/// ("asetukset.md", "ohjelma.md", "2026/2026-11-06.md"). Asetetaan lib/sync/sync_service.dart:ssa.
-void Function(String path)? onLocalChange;
-
 String workoutPath(DateTime d, [int session = 1]) => '${d.year}/${isoDate(d)}${session > 1 ? '-$session' : ''}.md';
 
 /// Treenin GPS-reitti samassa kansiossa: vvvv/vvvv-kk-pp[-n].gpx.
@@ -184,7 +180,6 @@ class Settings extends ChangeNotifier {
   static const _oldDefaults = ['Kävelymatto', 'Kuntopyörä', 'Crosstrainer', 'Porraskone', 'Soutulaite'];
 
   SharedPreferences? _p;
-  String? name;
   String? folder;
   ThemeMode themeMode = ThemeMode.system; // oletus: järjestelmän asetus
 
@@ -362,14 +357,13 @@ class Settings extends ChangeNotifier {
   /// Aloituskysely tehty tai ohitettu.
   bool introDone = false;
 
-  /// Aloitussivu (kieli, nimi, mitä treenaat…) käyty. Nimi on valinnainen, joten tieto on erikseen; vanhoissa
-  /// asetuksissa (ennen 0.6.6) aloitus on käyty, jos nimi on annettu.
+  /// Aloitussivu (kieli, mitä treenaat…) käyty. Vanhoissa asetuksissa (ennen 0.6.6) tieto oli vain nimessä: annettu
+  /// `name:` luetaan aloituksen merkiksi (applyMarkdown), itse nimeä ei enää tallenneta (käyttäjä 19.11.).
   bool started = false;
-  bool get onboarded => started || (name?.isNotEmpty ?? false);
+  bool get onboarded => started;
 
-  /// Aloitussivun "Aloitetaan": nimi (voi olla tyhjä) ja aloitus käydyksi.
-  void finishOnboarding(String v) {
-    name = v.trim();
+  /// Aloitussivun "Aloitetaan": aloitus käydyksi.
+  void finishOnboarding() {
     started = true;
     _persist();
   }
@@ -462,7 +456,6 @@ class Settings extends ChangeNotifier {
     notifyListeners();
     try {
       await files.write(bodyFileName, bodyToMarkdown(b));
-      onLocalChange?.call(bodyFileName);
     } catch (_) {}
   }
 
@@ -573,7 +566,6 @@ class Settings extends ChangeNotifier {
       } else {
         await files.write(programFileName, programToMarkdown(prog));
       }
-      onLocalChange?.call(programFileName);
     } catch (_) {}
     await _persist();
   }
@@ -621,7 +613,6 @@ class Settings extends ChangeNotifier {
     await _p?.setString('settingsMd', md);
     try {
       await files.write(settingsFileName, md);
-      onLocalChange?.call(settingsFileName);
     } catch (_) {
       // Kansio ei ehkä ole käytettävissä (lupa puuttuu); välimuisti riittää siihen asti.
     }
@@ -630,7 +621,6 @@ class Settings extends ChangeNotifier {
   String settingsToMarkdown() {
     final b = StringBuffer()
       ..writeln('---')
-      ..writeln('name: ${name ?? ''}')
       ..writeln('theme: ${themeMode.name}')
       ..writeln('text_size: $textSize')
       ..writeln('weightStep: ${fileNum(weightStep)}')
@@ -769,8 +759,8 @@ class Settings extends ChangeNotifier {
         final k = lines[i].substring(0, idx).trim();
         final v = lines[i].substring(idx + 1).trim();
         switch (k) {
-          case 'name':
-            if (v.isNotEmpty) name = v;
+          case 'name': // vanha asetus (nimi poistettu 19.11.): annettu nimi = aloitus käyty ennen 0.6.6:ta
+            if (v.isNotEmpty) started = true;
           case 'theme':
             themeMode = ThemeMode.values.firstWhere((m) => m.name == v, orElse: () => themeMode);
           case 'text_size':
@@ -1011,14 +1001,6 @@ class Settings extends ChangeNotifier {
     _syncCustomMuscles();
   }
 
-  void setName(String v) {
-    // Aloitus on käyty, jos nimeä muokataan asetuksista: ennen 0.6.6 tehdyissä asetuksissa tieto oli vain nimessä,
-    // jolloin nimen tyhjentäminen vei takaisin aloitussivulle.
-    if (onboarded) started = true;
-    name = v.trim();
-    _persist();
-  }
-
   /// Vaihtaa treenikansion. Jos uudessa kansiossa on asetukset.md, se otetaan käyttöön,
   /// muuten nykyiset asetukset kirjoitetaan sinne.
   /// Treenikansion .md-tiedostot (treenit, asetukset, ohjelma, punnitukset), GPS-reitit (.gpx) ja tallennetut
@@ -1077,7 +1059,7 @@ class Settings extends ChangeNotifier {
   void setTextSize(String v, {bool save = true}) {
     if (!textSizes.containsKey(v)) return;
     textSize = v;
-    // Aloituksessa esikatselu heti, tallennus nimen kanssa (setName).
+    // Aloituksessa esikatselu heti, tallennus aloituksen lopussa (finishOnboarding).
     save ? _persist() : notifyListeners();
   }
 
@@ -1443,7 +1425,6 @@ class WorkoutStore extends ChangeNotifier {
     if (gpx == null) return;
     final rel = routePath(w.date, w.session);
     await files.write(rel, gpx);
-    onLocalChange?.call(rel);
     w.route = rel.split('/').last;
     w.routeGpx = null;
   }
@@ -1477,7 +1458,6 @@ class WorkoutStore extends ChangeNotifier {
     await _writeRoute(w);
     // Sisältö luetaan vasta omalla vuorolla: viimeisin tila tallentuu.
     final path = await files.write(workoutPath(w.date, w.session), workoutToMarkdown(w));
-    onLocalChange?.call(workoutPath(w.date, w.session));
     workouts
       ..removeWhere((x) => x.date == w.date && x.session == w.session)
       ..add(w.copy())
@@ -1500,7 +1480,6 @@ class WorkoutStore extends ChangeNotifier {
         // Varmuuskopiosta palautettu: alkuperäinen teksti sellaisenaan (tuntemattomat rivit säilyvät).
         await files.write(rel, w.originalMd ?? workoutToMarkdown(w));
         w.originalMd = null;
-        onLocalChange?.call(rel);
         return true;
       });
       if (wrote) n++;
@@ -1514,10 +1493,8 @@ class WorkoutStore extends ChangeNotifier {
     // Vain treenin oma reitti (vvvv-kk-pp[-n].gpx): muokattu tai synkattu route:-rivi ei saa poistaa muuta tiedostoa.
     if (old?.route != null && routeRel(old!) == routePath(old.date, old.session)) {
       await files.delete(routeRel(old));
-      onLocalChange?.call(routeRel(old));
     }
     await files.delete(workoutPath(d, session));
-    onLocalChange?.call(workoutPath(d, session));
     workouts.removeWhere((x) => x.date == dateOnly(d) && x.session == session);
     notifyListeners();
   });

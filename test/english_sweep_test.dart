@@ -60,7 +60,7 @@ void main() {
     debugSetCatalog('en', en);
     nameMode = 'en';
     settings
-      ..name = 'Test'
+      ..started = true
       ..introDone = true
       ..trainMode = 'both';
     store.workouts = [];

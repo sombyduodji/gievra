@@ -22,7 +22,6 @@ import 'open_files.dart';
 import 'rest.dart';
 import 'l10n.dart';
 import 'sami_material.dart';
-import 'sync/sync_service.dart';
 import 'ongoing.dart';
 import 'theme.dart';
 import 'ui/shell.dart';
@@ -56,7 +55,6 @@ Future<void> main() async {
   // Akunsäästö: saako Gievra toimia taustalla (tila päivittyy, kun palataan asetuksista).
   WidgetsBinding.instance.addObserver(battery);
   unawaited(battery.refresh());
-  await sync.load();
   // Käynnissä oleva treeni pudotusvalikossa: päivittyy treenien ja asetusten muuttuessa.
   store.addListener(Ongoing.refresh);
   settings.addListener(Ongoing.refresh);
@@ -98,8 +96,6 @@ Future<void> main() async {
   unawaited(
     PackageInfo.fromPlatform().then((i) => autoBackup.runIfUpdated(i.version, '${i.version}+${i.buildNumber}')),
   );
-  // Drive: PC:n tai toisen puhelimen muutokset taustalla; kalenteri päivittyy, kun valmista.
-  if (syncReleased) unawaited(sync.startup());
 }
 
 // Teemat rakennetaan kerran (ColorScheme.fromSeed on raskas).

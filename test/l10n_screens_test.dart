@@ -53,6 +53,14 @@ import 'package:treenipaivakirja/whats_new.dart';
 import 'package:treenipaivakirja/rest.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph, RenderFittedBox;
 
+import 'package:treenipaivakirja/home_layout.dart' show homeCardsOffByDefault;
+import 'package:treenipaivakirja/recovery.dart' show TileState;
+import 'package:treenipaivakirja/sleep.dart';
+import 'package:treenipaivakirja/ui/home_extras_ui.dart' show NightHrData;
+import 'package:treenipaivakirja/ui/home_settings.dart';
+import 'package:treenipaivakirja/ui/plate_sheet.dart';
+import 'package:treenipaivakirja/ui/recovery_card.dart';
+
 import 'test_fonts.dart';
 
 // Käännöstarkistus näkymittäin: englanniksi ja saameksi näkyvissä ei saa olla suomenkielistä tekstiä.
@@ -79,6 +87,7 @@ List<String> _finnish(WidgetTester tester, String lang) {
   final bad = <String>{};
   for (final s in _texts(tester)) {
     if (_allowed.any(s.contains)) continue;
+    if (s.startsWith('Kehitysversio:')) continue; // vain kDebugMode-painikkeet, ei julkaisussa
     if (_keep.any((k) => k.length > 3 && s.contains(k))) continue;
     if (lang == 'se' && _exercises.any((x) => s.contains(x))) continue;
     final parts = [s, ...s.split(RegExp(r',\s*|:\s*|\s·\s|\n'))].map((x) => x.trim()).where((x) => x.length > 2);
@@ -701,6 +710,59 @@ void main() {
             return const Scaffold();
           },
         ),
+        // 0.6.9.2: Palautuminen-ruudut, Uni-kortti, kehitys tilastoissa, ruutujen asetukset ja hex bar.
+        'etusivu: palautuminen ja uni': () {
+          _recoveryData(day: true);
+          return const HomeScreen();
+        },
+        'palautumisen ruudut (asetukset)': () => const Scaffold(body: RecoveryTilesSettings()),
+        'palautumisen ohje': () => const Scaffold(body: SingleChildScrollView(child: RecoveryHelpSection())),
+        'etusivun asetukset': () {
+          _recoveryData();
+          return Scaffold(body: ListView(children: [HomeLayoutSettings()]));
+        },
+        'tilastot kehitys: palautuminen ja uni': () {
+          _recoveryData();
+          return const StatsScreen(tab: 'progress');
+        },
+        'palautuminen: neuvo (punainen yösyke)': () => Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => showTileAdvice(
+                context,
+                RecTile('nighthr', t('Yösyke'), Icons.favorite_border, '58', t('tav. {0}', [51]), TileState.red),
+                2,
+                DateTime.now(),
+              ),
+            );
+            return const Scaffold();
+          },
+        ),
+        'palautuminen: neuvo (kuormitus)': () => Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => showTileAdvice(
+                context,
+                RecTile('load', t('Kuormitus'), Icons.fitness_center, t('Kova'), '', TileState.yellow),
+                0,
+                DateTime.now(),
+              ),
+            );
+            return const Scaffold();
+          },
+        ),
+        'hex bar ja levylaskuri': () {
+          settings.hexBarKg = 25;
+          return const Scaffold(
+            body: Column(
+              children: [
+                HexBarPicker(),
+                PlateLine(kg: 85, hex: true, exercise: 'Farmer walk hex barilla'),
+                PlateLine(kg: 60, exercise: 'Takakyykky'),
+              ],
+            ),
+          );
+        },
         'etusivu: sairastauko ja vammat': () {
           settings.pauses = [Pause(day.subtract(const Duration(days: 2)), 'sairas')];
           settings.injuries = [for (final r in injuryRegions) r.id];
@@ -730,6 +792,11 @@ void main() {
           settings.sex = null;
           settings.pauses = [];
           settings.injuries = [];
+          settings.hexBarKg = null;
+          settings.homeHidden = {...homeCardsOffByDefault};
+          NightHrData.debugNights = const {};
+          sleepData.nights.clear();
+          sleepData.metrics.clear();
           await tester.pumpWidget(const SizedBox());
           await tester.pump(const Duration(milliseconds: 10)); // sykevyön lopetuksen ajastin
         });
@@ -987,5 +1054,31 @@ void _hrOn(String key, int bpm) {
     for (var i = 0; i < 3; i++) {
       _shotHr.c.add({'type': 'hr', 'bpm': bpm, 'contact': true, 't': 0});
     }
+  });
+}
+
+/// Keksityt yöt ja yöarvot Palautuminen- ja Uni-korttien käännöstarkistukseen (punainen yösyke, keltainen HRV).
+void _recoveryData({bool day = false}) {
+  final now = dateOnly(DateTime.now());
+  settings.homeHidden = {};
+  NightHrData.debugNights = {for (var i = 0; i < 40; i++) addDays(now, -i): i < 3 ? 58 : 50 + i % 3};
+  sleepData.nights.addAll({
+    for (var i = 0; i < 40; i++)
+      addDays(now, -i): SleepNight(
+        addDays(now, -i),
+        DateTime(now.year, now.month, now.day - i - 1, 23),
+        DateTime(now.year, now.month, now.day - i, 6, 30),
+        Duration(minutes: i == 0 ? 340 : 440 - i % 5 * 10),
+        app: 'Oura',
+      ),
+  });
+  sleepData.metrics.addAll({
+    for (var i = 0; i < 70; i++)
+      addDays(now, -i): NightMetrics(
+        hrv: i < 7 ? 30.0 : 50.0 + i % 4,
+        rr: i == 0 ? 17.5 : 14,
+        spo2: 96,
+        temp: i == 0 ? 0.4 : 0,
+      ),
   });
 }

@@ -508,6 +508,7 @@ class MainActivity : FlutterActivity() {
                             call.argument<Boolean>("sleep") == true -> HealthBridge.sleepPermissions
                             call.argument<Boolean>("metrics") == true -> HealthBridge.metricsPermissions(this@MainActivity)
                             call.argument<Boolean>("history") == true -> HealthBridge.historyPermissions
+                            call.argument<Boolean>("heartRate") == true -> HealthBridge.heartRatePermissions
                             call.argument<Boolean>("steps") == true -> HealthBridge.stepsPermissions
                             call.argument<Boolean>("import") == true -> HealthBridge.importPermissions
                             else -> HealthBridge.readPermissions
@@ -526,6 +527,7 @@ class MainActivity : FlutterActivity() {
                         call.argument<Boolean>("sleep") == true -> HealthBridge.sleepPermissions
                         call.argument<Boolean>("metrics") == true -> HealthBridge.metricsPermissions(this)
                         call.argument<Boolean>("history") == true -> HealthBridge.historyPermissions
+                        call.argument<Boolean>("heartRate") == true -> HealthBridge.heartRatePermissions
                         call.argument<Boolean>("steps") == true -> HealthBridge.stepsPermissions
                         call.argument<Boolean>("import") == true -> HealthBridge.importPermissions
                         else -> HealthBridge.readPermissions

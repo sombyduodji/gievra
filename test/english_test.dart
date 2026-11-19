@@ -111,7 +111,7 @@ void main() {
     addTearDown(() => FlutterError.onError = onError);
     debugSetCatalog('en', en);
     settings
-      ..name = 'Test'
+      ..started = true
       ..introDone = true
       ..program = null
       ..trainMode = 'both'

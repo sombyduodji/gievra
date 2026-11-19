@@ -139,6 +139,21 @@ void main() {
     expect(gpxFile.existsSync(), isFalse);
   });
 
+  test('Nothing-testi 18.11.: likimääräinen sijainti -> lupavirhe näkyy, paikannus nollaa sen', () async {
+    final clock = DateTime.utc(2026, 11, 8, 10);
+    final gps = FakeGps();
+    final rec = GpsRecorder(source: gps, now: () => clock);
+    await rec.open('Kävely', title: 't', text: 'x', channel: 'c');
+    expect(rec.permissionDenied, isFalse);
+    gps.ctl.add({'status': 'permission'});
+    await Future<void>.delayed(Duration.zero);
+    expect(rec.permissionDenied, isTrue);
+    gps.send(east(clock, 0));
+    await Future<void>.delayed(Duration.zero);
+    expect(rec.permissionDenied, isFalse);
+    await rec.discard();
+  });
+
   test('Tallennin: odotus, aloitus, tauko ei kerrytä matkaa eikä aikaa, lopetus', () async {
     var clock = DateTime.utc(2026, 11, 8, 10);
     final gps = FakeGps();
@@ -263,7 +278,9 @@ void main() {
       await tester.pump();
     }
     expect(find.text('Etsitään GPS-signaalia…'), findsOneWidget);
-    expect(find.textContaining('Aloita silti'), findsOneWidget);
+    // Aloita on harmaa, kunnes GPS löytää sijainnin; ohitusta ei ole (käyttäjä 19.11.).
+    expect(find.textContaining('Aloita silti'), findsNothing);
+    expect(tester.widget<ButtonStyleButton>(find.ancestor(of: find.text('Aloita'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).onPressed, isNull);
     gps.send(east(clock, 0));
     await tester.pump();
     await tester.pump();
@@ -298,6 +315,61 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('Tarkka sijainti puuttuu: Aloita harmaa; lupa katoaa kesken: varoitus tallennuksen aikana (19.11.)',
+      (tester) async {
+    final clock = DateTime.utc(2026, 11, 8, 10);
+    final gps = FakeGps();
+    final rec = GpsRecorder(source: gps, now: () => clock);
+    await tester.pumpWidget(MaterialApp(home: RecordScreen(sport: 'Kävely', recorder: rec)));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    bool startEnabled() => tester
+        .widget<ButtonStyleButton>(
+          find.ancestor(of: find.text('Aloita'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+        )
+        .onPressed != null;
+    gps.ctl.add({'status': 'permission'});
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('gpsPrecise')), findsOneWidget);
+    expect(find.textContaining('Aloita silti'), findsNothing);
+    expect(startEnabled(), isFalse, reason: 'ilman tarkkaa sijaintia ei voi aloittaa');
+    // Lupa annettiin ja paikannus tuli: aloitus.
+    gps.send(east(clock, 0));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('gpsPrecise')), findsNothing);
+    expect(startEnabled(), isTrue);
+    await tester.tap(find.text('Aloita'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 750));
+    await tester.tap(find.text('Ohita laskenta'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    expect(rec.state, RecState.recording);
+    // Lupa katoaa kesken: varoitus tallennuksen aikana.
+    gps.ctl.add({'status': 'permission'});
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('gpsPrecise')), findsOneWidget);
+    expect(find.byKey(const ValueKey('gpsPermRetry')), findsOneWidget);
+    // Sijainti pois päältä: sama tallennuksen aikana.
+    rec.permissionDenied = false;
+    gps.ctl.add({'status': 'disabled'});
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Sijainti on pois päältä puhelimen asetuksista.'), findsOneWidget);
+    // Paikannus tulee: varoitus pois.
+    gps.send(east(clock.add(const Duration(seconds: 1)), 5));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('gpsPrecise')), findsNothing);
+    expect(find.text('Sijainti on pois päältä puhelimen asetuksista.'), findsNothing);
+    await tester.runAsync(rec.discard);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('GPS-laskennan voi ohittaa: tallennus alkaa heti', (tester) async {
     final clock = DateTime.utc(2026, 11, 8, 10);
     final gps = FakeGps();
@@ -310,10 +382,13 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tester.pump();
     }
-    await tester.tap(find.textContaining('Aloita silti'));
+    gps.send(east(clock, 0));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.text('Aloita'));
     await tester.pump();
     expect(find.byKey(const ValueKey('countdown')), findsOneWidget);
-    // Tuplanapautus (painike on samassa kohdassa kuin Aloita silti): heti tuleva napautus ei ohita laskentaa.
+    // Tuplanapautus (laskennan painike on Aloita-painikkeen kohdalla): heti tuleva napautus ei ohita laskentaa.
     await tester.tap(find.text('Ohita laskenta'));
     await tester.pump();
     expect(find.byKey(const ValueKey('countdown')), findsOneWidget);

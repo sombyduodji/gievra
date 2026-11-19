@@ -22,12 +22,10 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final _c = TextEditingController();
   final _height = TextEditingController(), _weight = TextEditingController();
 
   @override
   void dispose() {
-    _c.dispose();
     _height.dispose();
     _weight.dispose();
     super.dispose();
@@ -65,7 +63,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Pelkkä kestävyys: salin ohjelmakysely ohitetaan (sen voi tehdä myöhemmin valikosta).
     if (_mode == 'cardio') settings.introDone = true;
     markBatteryHintShown(); // aloitus kertoi jo: päivityksen jälkeistä ohjetta ei näytetä
-    settings.finishOnboarding(_c.text);
+    settings.finishOnboarding();
   }
 
   @override
@@ -147,26 +145,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-            SectionLabel(t('Miksi haluat, että sinua kutsutaan?')),
-            // Valinnainen: tyhjänä tervehdys ilman nimeä. Ei automaattista näppäimistöä, joka peittäisi sivun.
-            TextField(
-              controller: _c,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: t('Nimi tai lempinimi (valinnainen)'),
-                hintMaxLines: 2,
-                filled: true,
-                fillColor: cs.surfaceContainer,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-              ),
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _done(),
-            ),
-            if (_c.text.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text('${seGreeting()}, ${_c.text.trim()}!', style: TextStyle(color: cs.onSurfaceVariant)),
-              ),
+            // Nimeä ei kysytä (käyttäjä 18.11.): etusivun tervehdys on ilman nimeä, eikä nimeä näytetä missään.
             SectionLabel(t('Mitä treenaat?')),
             TrainModePicker(value: _mode, onChanged: (v) => setState(() => _mode = v)),
             Padding(

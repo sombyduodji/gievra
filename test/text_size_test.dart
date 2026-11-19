@@ -13,7 +13,7 @@ void main() {
     store.workouts = [];
     debugSetCatalog('fi', const {});
     settings
-      ..name = 'Ánde'
+      ..started = true
       ..introDone = true
       ..program = null
       ..textSize = 'small';

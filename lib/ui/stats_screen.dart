@@ -511,16 +511,22 @@ class _StatsScreenState extends State<StatsScreen> {
               child: Row(
                 children: [
                   Expanded(child: Text(sportName(e.key))),
-                  Text(
-                    [
-                      t('{0} krt', [e.value.count]),
-                      // Alle minuutin laji näkyy tarkkana (0:16), ei piiloon pyöristettynä.
-                      if (e.value.seconds > 0)
-                        e.value.seconds < 60 ? fmtDurationSec(e.value.seconds) : _hours(e.value.minutes),
-                      if (e.value.km > 0) '${fmtNum((e.value.km * 10).round() / 10)} km',
-                      if (e.value.steps > 0) t('{0} askelta', [thousands(e.value.steps)]),
-                    ].join(' · '),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  const SizedBox(width: 8),
+                  // Suurella tekstillä ja askelilla tiedot rivittyvät oikealle (ei ylivuotoa).
+                  Flexible(
+                    flex: 2,
+                    child: Text(
+                      [
+                        t('{0} krt', [e.value.count]),
+                        // Alle minuutin laji näkyy tarkkana (0:16), ei piiloon pyöristettynä.
+                        if (e.value.seconds > 0)
+                          e.value.seconds < 60 ? fmtDurationSec(e.value.seconds) : _hours(e.value.minutes),
+                        if (e.value.km > 0) '${fmtNum((e.value.km * 10).round() / 10)} km',
+                        if (e.value.steps > 0) t('{0} askelta', [thousands(e.value.steps)]),
+                      ].join(' · '),
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ],
               ),

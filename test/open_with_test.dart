@@ -24,7 +24,7 @@ void main() {
       (_) async => tmp.path,
     );
     settings
-      ..name = 'Testi'
+      ..started = true
       ..introDone = true;
     store.workouts = [];
   });

@@ -72,7 +72,7 @@ void main() {
 
   test('Asetukset .md edestakaisin', () {
     final s = Settings()
-      ..name = 'Elle'
+      ..started = true
       ..weightStep = 1.25
       ..equipment = [const Equipment('🚴', 'Kuntopyörä'), const Equipment('⭐', 'Airbike')]
       ..customExercises = ['Oma laitesoutu', 'Oma liike']
@@ -80,7 +80,7 @@ void main() {
     final md = s.settingsToMarkdown();
     expect(md, contains('### Selkä\n- Oma laitesoutu'));
     final r = Settings()..applyMarkdown(md);
-    expect(r.name, 'Elle');
+    expect(r.onboarded, isTrue);
     expect(r.weightStep, 1.25);
     expect(r.equipment.map((e) => '${e.icon} ${e.name}'), ['🚴 Kuntopyörä', '⭐ Airbike']);
     expect(r.customExercises, ['Oma laitesoutu', 'Oma liike']);

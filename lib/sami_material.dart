@@ -309,9 +309,41 @@ class _FinnishFallback<T> extends LocalizationsDelegate<T> {
   bool shouldReload(_FinnishFallback<T> old) => false;
 }
 
-/// Sovelluksen lokalisoinnit: saame ensin, sitten Flutterin omat (suomi, englanti).
+/// Flutterin suomi korjattuna: ruudunlukija luki välilehdet "Välilehti 1 kautta 5" (Nothing-testi 18.11.).
+class FinnishMaterialLocalizations extends MaterialLocalizationFi {
+  FinnishMaterialLocalizations()
+    : super(
+        localeName: 'fi',
+        fullYearFormat: intl.DateFormat.y('fi'),
+        compactDateFormat: intl.DateFormat.yMd('fi'),
+        shortDateFormat: intl.DateFormat.yMMMd('fi'),
+        mediumDateFormat: intl.DateFormat.MMMEd('fi'),
+        longDateFormat: intl.DateFormat.yMMMMEEEEd('fi'),
+        yearMonthFormat: intl.DateFormat.yMMMM('fi'),
+        shortMonthDayFormat: intl.DateFormat.MMMd('fi'),
+        decimalFormat: intl.NumberFormat.decimalPattern('fi'),
+        twoDigitZeroPaddedFormat: intl.NumberFormat('00', 'fi'),
+      );
+
+  @override
+  String get tabLabelRaw => r'Välilehti $tabIndex/$tabCount';
+}
+
+class _FinnishMaterialDelegate extends LocalizationsDelegate<MaterialLocalizations> {
+  const _FinnishMaterialDelegate();
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'fi';
+  @override
+  Future<MaterialLocalizations> load(Locale locale) =>
+      GlobalMaterialLocalizations.delegate.load(const Locale('fi')).then((_) => FinnishMaterialLocalizations());
+  @override
+  bool shouldReload(_FinnishMaterialDelegate old) => false;
+}
+
+/// Sovelluksen lokalisoinnit: saame ensin, sitten korjattu suomi ja Flutterin omat (suomi, englanti).
 const appLocalizationsDelegates = <LocalizationsDelegate<dynamic>>[
   _SamiMaterialDelegate(),
+  _FinnishMaterialDelegate(),
   _SamiWidgetsDelegate(),
   _FinnishFallback<CupertinoLocalizations>(GlobalCupertinoLocalizations.delegate),
   ...GlobalMaterialLocalizations.delegates,

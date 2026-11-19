@@ -10,6 +10,7 @@ import '../running.dart' show runBandLabel;
 import '../share_text.dart' show thousands;
 import '../sleep.dart' show sleepData, sleepFirstDays;
 import '../sports.dart';
+import 'home_extras_ui.dart' show NightHrData;
 import 'recovery_card.dart' show RecoveryTilesSettings, recoveryTileName;
 import 'run_bands.dart';
 import 'start_panels.dart' show goalLabel;
@@ -51,8 +52,8 @@ class HomeLayoutSettings extends StatelessWidget {
             : t('Ohjelman seuraava päivä liikkeineen ja Aloita.'),
       'streak' => t('Montako viikkoa peräkkäin WHO:n suositukset täyttyivät; viimeiset 8 viikkoa.'),
       'recovery' => t(
-        'Yön alin syke kellosta Health Connectin kautta verrattuna tavalliseen tasoosi. Vaatii Health Connect -tuonnin '
-        '(sykkeen luku) ja kellon, joka mittaa sykettä yöllä. Halutessasi myös yöarvot (HRV ym.) alta.',
+        'Yön alin syke kellosta Health Connectin kautta verrattuna tavalliseen tasoosi. Päälle kytkeminen kysyy '
+        'sykkeen lukuluvan; tarvitset kellon, joka mittaa sykettä yöllä. Halutessasi myös yöarvot (HRV ym.) alta.',
       ),
       'sleep' => t(
         'Yöunet Health Connectista (esim. Oura): kesto, 7 yön pylväät, säännöllisyys ja vihje. Oletus pois; '
@@ -201,10 +202,7 @@ class HomeLayoutSettings extends StatelessWidget {
                         : id == 'sleep'
                         ? (v) => _setSleep(context, v)
                         : id == 'recovery'
-                        ? (v) {
-                            settings.setHomeCard('recovery', v);
-                            if (!v) settings.setHomeCard('night', false);
-                          }
+                        ? (v) => _setRecovery(context, v)
                         : (v) => settings.setHomeCard(id, v),
                   ),
                 ),
@@ -300,27 +298,46 @@ class HomeLayoutSettings extends StatelessWidget {
   }
 }
 
+/// Lupa puuttuu tai Health Connect puuttuu: syy, ja luvan puuttuessa painike Health Connectin asetuksiin (puhelintesti
+/// 19.11.: kerran kielletyn luvan jälkeen Android ei enää näytä lupakyselyä, joten kytkin ei muuten auttanut).
+void _hcMissing(BuildContext context, String hc, String permission) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(hc == 'available' ? permission : t('Health Connect pitää asentaa tai päivittää Play Kaupasta.')),
+      action: hc == 'available'
+          ? SnackBarAction(label: t('Avaa Health Connect'), onPressed: HealthConnect.openSettings)
+          : null,
+    ),
+  );
+}
+
 /// Uni-kortti päälle: ensin Health Connectin lupa (unijaksot ja syke), sitten 30 viimeistä yötä.
 Future<void> _setSleep(BuildContext context, bool on) async {
   if (!on) return settings.setHomeCard('sleep', false);
   // Ei Health Connectia (esim. Android 11 ilman sovellusta, testi 17.11.): oma viesti, ei lupaviestiä.
   final hc = isDemo ? 'available' : await HealthConnect.status();
   if (hc != 'available' || !await sleepData.requestPermission()) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            hc == 'available'
-                ? t('Uni-kortti tarvitsee Health Connectin unitietojen lukuluvan.')
-                : t('Health Connect pitää asentaa tai päivittää Play Kaupasta.'),
-          ),
-        ),
-      );
-    }
+    if (context.mounted) _hcMissing(context, hc, t('Uni-kortti tarvitsee Health Connectin unitietojen lukuluvan.'));
     return;
   }
   settings.setHomeCard('sleep', true);
   await sleepData.refresh(force: true);
+}
+
+/// Palautuminen-kortti päälle: ensin Health Connectin sykkeen lukulupa, sitten yön alin syke (yötesti 18.–19.11.:
+/// kytkin ei kysynyt lupaa, ja kortti jäi tyhjäksi, ellei Health Connect -tuonti ollut jo päällä).
+Future<void> _setRecovery(BuildContext context, bool on) async {
+  if (!on) {
+    settings.setHomeCard('recovery', false);
+    return settings.setHomeCard('night', false);
+  }
+  final hc = isDemo ? 'available' : await HealthConnect.status();
+  if (hc != 'available' || !(isDemo || await HealthConnect.request(heartRate: true).catchError((_) => false))) {
+    if (context.mounted) _hcMissing(context, hc, t('Palautuminen-kortti tarvitsee Health Connectin sykkeen lukuluvan.'));
+    return;
+  }
+  settings.setHomeCard('recovery', true);
+  await NightHrData.refresh(force: true);
 }
 
 /// Yöarvot-kortti päälle: Health Connectin luvat (voi sallia vain osan), sitten haku.
@@ -328,17 +345,7 @@ Future<void> _setNight(BuildContext context, bool on) async {
   if (!on) return settings.setHomeCard('night', false);
   final hc = isDemo ? 'available' : await HealthConnect.status();
   if (hc != 'available' || !await sleepData.requestMetrics()) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            hc == 'available'
-                ? t('Yöarvot tarvitsevat luvan lukea ainakin yksi yöarvo Health Connectista.')
-                : t('Health Connect pitää asentaa tai päivittää Play Kaupasta.'),
-          ),
-        ),
-      );
-    }
+    if (context.mounted) _hcMissing(context, hc, t('Yöarvot tarvitsevat luvan lukea ainakin yksi yöarvo Health Connectista.'));
     return;
   }
   settings.setHomeCard('night', true);

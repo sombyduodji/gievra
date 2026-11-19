@@ -123,11 +123,10 @@ void main() {
   testWidgets('Etusivu suomeksi: viikkokalenteri ja tilastot-painike', (tester) async {
     final key = GlobalKey();
     debugSetCatalog('fi', const {});
-    settings.name = 'Ánde'; // keksitty nimi
+    settings.started = true;
     store.workouts = [];
     await app(tester, key, const HomeScreen());
     await _shot(tester, key, 'home');
-    settings.name = null;
     debugSetCatalog('en', _en, english: _en);
   }, skip: _out == null);
 

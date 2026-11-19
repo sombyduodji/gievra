@@ -51,7 +51,7 @@ class _RecordScreenState extends State<RecordScreen> {
   int? _count;
   Timer? _countTimer;
 
-  /// Laskennan painikkeet ovat samassa kohdassa kuin Aloita silti: tuplanapautus ei saa heti ohittaa tai perua
+  /// Laskennan painikkeet ovat Aloita-painikkeen kohdalla: tuplanapautus ei saa heti ohittaa tai perua
   /// juuri alkanutta laskentaa, joten napautukset ohitetaan 0,7 s ajan.
   bool _countGuard = false;
   Timer? _guardTimer;
@@ -352,6 +352,55 @@ class _RecordScreenState extends State<RecordScreen> {
     );
   }
 
+  /// Tarkka sijainti puuttuu tai sijainti on pois päältä: varoitus ja korjauspainikkeet. Näytetään myös ajanoton
+  /// aikana (yötesti 19.11., Nothing: "Aloita silti" likimääräisellä luvalla käynnisti kävelyn, jonka matka jäi 0 km
+  /// ilman mitään mainintaa, koska varoitus oli vain odotusnäkymässä).
+  List<Widget> _gpsProblem(ColorScheme cs) {
+    if (rec.permissionDenied) {
+      return [
+        Text(
+          t(
+            'Tarkka sijainti tarvitaan reitin tallentamiseen. Valitse sovelluksen luvista Sijainti ja kytke tarkka sijainti päälle.',
+          ),
+          key: const ValueKey('gpsPrecise'),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: cs.error),
+        ),
+        Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            TextButton(onPressed: openAppSettings, child: Text(t('Avaa sovelluksen luvat'))),
+            // Luvan muutoksen jälkeen paikannuspalvelu käynnistetään uudelleen (se pysähtyi lupavirheeseen).
+            TextButton(
+              key: const ValueKey('gpsPermRetry'),
+              onPressed: () async {
+                rec.permissionDenied = false;
+                setState(() {});
+                await rec.source.start(
+                  title: t('{0} käynnissä', [sportName(widget.sport)]),
+                  text: t('Etsitään GPS-signaalia…'),
+                  channel: t('Käynnissä oleva treeni'),
+                );
+              },
+              child: Text(t('Yritä uudelleen')),
+            ),
+          ],
+        ),
+      ];
+    }
+    if (rec.gpsDisabled) {
+      return [
+        Text(
+          t('Sijainti on pois päältä puhelimen asetuksista.'),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: cs.error),
+        ),
+        TextButton(onPressed: rec.source.openSettings, child: Text(t('Avaa sijaintiasetukset'))),
+      ];
+    }
+    return const [];
+  }
+
   Widget _searching(ColorScheme cs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -368,14 +417,8 @@ class _RecordScreenState extends State<RecordScreen> {
         const SizedBox(height: 10),
         Center(child: _signal(cs)),
         const SizedBox(height: 14),
-        if (rec.gpsDisabled) ...[
-          Text(
-            t('Sijainti on pois päältä puhelimen asetuksista.'),
-            textAlign: TextAlign.center,
-            style: TextStyle(color: cs.error),
-          ),
-          TextButton(onPressed: rec.source.openSettings, child: Text(t('Avaa sijaintiasetukset'))),
-        ] else if (!rec.goodSignal)
+        ..._gpsProblem(cs),
+        if (!rec.permissionDenied && !rec.gpsDisabled && !rec.goodSignal)
           Text(
             t('Ulkona avoimella paikalla ensimmäinen paikannus kestää yleensä alle minuutin.'),
             textAlign: TextAlign.center,
@@ -388,9 +431,9 @@ class _RecordScreenState extends State<RecordScreen> {
           icon: const Icon(Icons.play_arrow),
           label: Text(t('Aloita'), style: const TextStyle(fontSize: 18)),
         ),
+        // Ei "Aloita silti" -ohitusta (käyttäjä 19.11.): kävely tai juoksu alkaa vasta, kun GPS on löytänyt
+        // sijainnin, jottei matka jää tallentumatta (likimääräinen sijainti, sijainti pois päältä tai ei signaalia).
         const SizedBox(height: 8),
-        if (!rec.goodSignal)
-          TextButton(onPressed: _beginCountdown, child: Text(t('Aloita silti (matka alkaa, kun signaali löytyy)'))),
       ],
     );
   }
@@ -522,6 +565,7 @@ class _RecordScreenState extends State<RecordScreen> {
             ),
           ],
         ),
+        ..._gpsProblem(cs),
         const SizedBox(height: 12),
         Expanded(
           child: Container(

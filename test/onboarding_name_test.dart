@@ -1,22 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treenipaivakirja/app_state.dart';
 
-// Nimi on valinnainen: sen tyhjentäminen asetuksista ei saa viedä takaisin aloitussivulle, vaikka asetukset olisi
-// tehty ennen 0.6.6:ta (aloitus tunnistettiin silloin vain nimestä, started puuttuu tiedostosta).
+// Nimi poistettu (käyttäjä 19.11.). Ennen 0.6.6 tehdyissä asetuksissa aloitus tunnistettiin vain nimestä (started
+// puuttuu tiedostosta): vanha nimi luetaan aloituksen merkiksi, eikä nimeä enää tallenneta.
 void main() {
-  test('vanhat asetukset: nimen tyhjennys säilyttää aloituksen käydyksi, myös tallennuksen jälkeen', () {
-    final old = Settings()..applyMarkdown('---\nname: Testi\n---\n');
-    final s = Settings()..applyMarkdown(old.settingsToMarkdown());
-    expect(s.started, isFalse, reason: 'vanha tiedosto: started puuttuu');
+  test('vanha name: merkitsee aloituksen käydyksi, nimeä ei tallenneta', () {
+    final s = Settings()..applyMarkdown('---\nname: Testi\n---\n');
     expect(s.onboarded, isTrue);
-    s.setName('');
-    expect(s.name, '');
-    expect(s.onboarded, isTrue);
-    expect((Settings()..applyMarkdown(s.settingsToMarkdown())).onboarded, isTrue);
+    final md = s.settingsToMarkdown();
+    expect(md, isNot(contains('name:')));
+    expect(md, isNot(contains('Testi')));
+    expect(md, contains('started: true'));
+    expect((Settings()..applyMarkdown(md)).onboarded, isTrue);
   });
 
-  test('aloittamaton: nimen asetus ei yksin merkitse aloitusta käydyksi', () {
-    final s = Settings()..setName('');
-    expect(s.onboarded, isFalse);
+  test('tyhjä vanha name: ei merkitse aloitusta', () {
+    expect((Settings()..applyMarkdown('---\nname: \n---\n')).onboarded, isFalse);
   });
 }

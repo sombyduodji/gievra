@@ -97,9 +97,8 @@ Lukija sietää käsin kirjoitettua: `- 100kg x 5` käy myös, tuntemattomat riv
   Tallennetun sarjan voi korjata napauttamalla.
 - Tauko: sairas tai loma, paluun jälkeen kevyemmät kuormat.
 - Tuonti: FitNotes-varmuuskopio (.fitnotes), oma varmuuskopio (.zip), yksittäiset .md-tiedostot. Vienti: .zip.
-- Valinnainen Google Drive -synkronointi (`lib/sync/`): tallennukset ja tuonnit lähtevät heti, käynnistyksessä
-  haetaan PC:n tai toisen puhelimen muutokset viimeisiltä N päivältä, ristiriidat talteen. Käyttöönotto
-  (Google Cloud -rekisteröinti): `docs/google-drive.md`.
+- Ei pilvisynkronointia (käyttäjä 18.11.2026: Google Drive -synkronointi poistettu, ei tule sovellukseen). Kansion voi
+  synkata toisella sovelluksella (Nextcloud, Seafile, Syncthing…).
 - Alapalkki: Tänään, Ohjelma, Tilastot ja Lisää (asetukset, kartat, tuonti ja vienti, Tietoa, vikailmoitus, tue).
 
 ## Kehitys

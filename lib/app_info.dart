@@ -17,15 +17,6 @@ class AppInfo {
   static const coffee = 'https://buymeacoffee.com/sombyduodji';
 }
 
-/// Google Drive -synkronoinnin Web-asiakastunnus (Google Cloud Console -> OAuth-asiakas, tyyppi Web).
-/// null = synkronointi ei ole käytössä tässä käännöksessä. Ks. docs/google-drive.md.
-// ignore: unnecessary_nullable_for_final_variable_declarations
-const String? googleWebClientId = null; // asetetaan, kun Drive-synkronointi julkaistaan
-
-/// Google Drive -synkronointi julkaisussa. false = valikossa "tulossa", ei taustasynkronointia.
-/// Koodi ja testit ovat valmiina (lib/sync/); kytke päälle, kun ominaisuus julkaistaan.
-const bool syncReleased = false;
-
 /// Karttojen lähteet ja lisenssit (ks. tools/map_extract.py). Kartan kulmassa näkyy aina [osm], joka avaa
 /// [osmUrl]; Tietoa-ikkunassa on koko lista. Tekijänoikeusmerkintää ei käännetä.
 class MapCredits {

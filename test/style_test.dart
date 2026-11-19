@@ -62,7 +62,7 @@ void main() {
 
   test('Treenityyli tallentuu asetukset.md:hen ja luetaan takaisin', () {
     final a = Settings()
-      ..name = 'Elle'
+      ..started = true
       ..style = TrainingStyle(
         goal: 'voimanosto',
         experience: 'keski',

@@ -170,7 +170,7 @@ class _TrendRow extends StatelessWidget {
           : good
           ? greenText(context)
           : yellowText(context);
-      change = '${series.fmt(now)} ← ${series.fmt(before)}';
+      change = '${nb(series.fmt(now))} ← ${nb(series.fmt(before))}';
     }
     return Container(
       key: ValueKey('trend_${series.key}'),
@@ -184,21 +184,39 @@ class _TrendRow extends StatelessWidget {
             children: [
               Icon(series.icon, size: 18, color: cs.onSurfaceVariant),
               const SizedBox(width: 6),
-              Expanded(
+              // Nimi vie vain tarvitsemansa tilan, muutos saa loput (käyttäjä 18.11.: "7 h 22 min ← 7 h 31 min"
+              // rivittyi, koska nimi ja muutos jakoivat rivin puoliksi).
+              Flexible(
                 child: Text(series.label, style: const TextStyle(fontWeight: FontWeight.w700)),
               ),
-              if (arrow != null) ...[
-                Icon(arrow, size: 18, color: color),
-                const SizedBox(width: 4),
-                Flexible(
+              const SizedBox(width: 8),
+              if (arrow != null)
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Icon(arrow, size: 18, color: color),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          change!,
+                          style: TextStyle(fontSize: 13, color: color),
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Expanded(
+                  flex: 3,
                   child: Text(
-                    change!,
-                    style: TextStyle(fontSize: 13, color: color),
+                    t('vertailu 8 viikon jälkeen'),
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                     textAlign: TextAlign.end,
                   ),
                 ),
-              ] else
-                Text(t('vertailu 8 viikon jälkeen'), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             ],
           ),
           const SizedBox(height: 6),
@@ -218,11 +236,19 @@ class _TrendRow extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        t('{0} vk sitten: {1}', [weeks.length - 1 - firstI, series.fmt(weeks[firstI]!)]),
+                        t('{0} vk sitten: {1}', [weeks.length - 1 - firstI, nb(series.fmt(weeks[firstI]!))]),
                         style: sub,
                       ),
                     ),
-                    Text(t('viimeisin viikko: {0}', [series.fmt(weeks[lastI]!)]), style: sub),
+                    const SizedBox(width: 8),
+                    // Suurella tekstillä kumpikin rivittyy omalle puolelleen (ei ylivuotoa).
+                    Expanded(
+                      child: Text(
+                        t('viimeisin viikko: {0}', [nb(series.fmt(weeks[lastI]!))]),
+                        style: sub,
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -280,3 +306,6 @@ class _WeekLine extends CustomPainter {
   @override
   bool shouldRepaint(_WeekLine old) => old.v != v || old.line != line;
 }
+
+/// Arvo ("7 h 31 min", "38 ms") ei katkea rivinvaihdossa keskeltä (käyttäjä 18.11.).
+String nb(String v) => v.replaceAll(' ', '\u00A0');

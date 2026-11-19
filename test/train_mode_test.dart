@@ -29,7 +29,7 @@ void main() {
     FlutterError.onError = (d) => d.toString().contains('overflowed') ? null : onError?.call(d);
     addTearDown(() => FlutterError.onError = onError);
     settings
-      ..name = 'Testi'
+      ..started = true
       ..introDone = true
       ..program = null
       ..trainMode = 'both'

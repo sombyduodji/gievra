@@ -11,17 +11,12 @@ void main() {
     for (final mode in ['gym', 'cardio', 'both']) {
       testWidgets('Aloitus: $lang, $mode', (tester) async {
         settings
-          ..name = null
           ..started = false
           ..introDone = false
           ..trainMode = mode;
         await tester.runAsync(() => setUiLang(lang));
         await tester.pumpWidget(const TreeniApp());
         await tester.pumpAndSettle();
-        // Nimikenttä ei ole enää automaattisesti valittuna (valinnainen): vieritetään se näkyviin.
-        await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
-        await tester.enterText(find.byType(TextField).first, 'Testi');
-        await tester.pump();
         final start = find.widgetWithText(FilledButton, t('Aloitetaan'));
         await tester.dragUntilVisible(start, find.byType(ListView).first, const Offset(0, -300));
         await tester.pumpAndSettle();
@@ -29,12 +24,9 @@ void main() {
         await tester.tap(start);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(settings.name, 'Testi');
-        expect(
-          find.byType(TextField).evaluate().isEmpty || find.text('Testi').evaluate().isEmpty,
-          isTrue,
-          reason: 'nimikysely ei saa jäädä näkyviin',
-        );
+        // Nimeä ei kysytä (käyttäjä 18.11.).
+        expect(find.text(t('Miksi haluat, että sinua kutsutaan?')), findsNothing);
+        expect(settings.settingsToMarkdown(), isNot(contains('name:')));
       });
     }
   }
@@ -44,7 +36,6 @@ void main() {
     for (final mode in ['gym', 'cardio']) {
       testWidgets('Aloitus, kieli vaihdetaan aloitussivulla: $lang, $mode', (tester) async {
         settings
-          ..name = null
           ..started = false
           ..introDone = false
           ..trainMode = mode;
@@ -63,17 +54,13 @@ void main() {
         });
         await tester.pumpAndSettle();
         expect(uiLang, lang);
-        // Nimikenttä ei ole enää automaattisesti valittuna (valinnainen): vieritetään se näkyviin.
-        await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
-        await tester.enterText(find.byType(TextField).first, 'Testi');
-        await tester.pump();
         final start = find.widgetWithText(FilledButton, t('Aloitetaan'));
         await tester.dragUntilVisible(start, find.byType(ListView).first, const Offset(0, -300));
         await tester.pumpAndSettle();
         await tester.tap(start);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(settings.name, 'Testi');
+        expect(settings.settingsToMarkdown(), isNot(contains('name:')));
         expect(
           find.widgetWithText(FilledButton, t('Aloitetaan')).evaluate(),
           isEmpty,
@@ -83,9 +70,8 @@ void main() {
     }
   }
 
-  testWidgets('Nimi on valinnainen: tyhjällä nimellä aloitus menee läpi ja tervehdys on ilman nimeä', (tester) async {
+  testWidgets('Aloitus ilman nimeä: menee läpi ja tervehdys on ilman nimeä', (tester) async {
     settings
-      ..name = null
       ..started = false
       ..introDone = true
       ..trainMode = 'gym';
@@ -99,7 +85,7 @@ void main() {
     await tester.tap(start);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect((settings.name, settings.started, settings.onboarded), ('', true, true));
+    expect((settings.started, settings.onboarded), (true, true));
     expect(find.widgetWithText(FilledButton, t('Aloitetaan')), findsNothing);
     // Tervehdys on aina ilman nimeä ja huutomerkkiä (18.11.: otsikossa vain "Buorre iđit" ym.).
     expect(find.text(seGreeting(DateTime.now())), findsWidgets, reason: 'tervehdys ilman nimeä');
@@ -107,11 +93,10 @@ void main() {
   });
 
   test('Vanhat asetukset: nimi annettu = aloitus käyty; started luetaan tiedostosta', () {
-    settings
-      ..name = 'Testi'
-      ..started = false;
+    settings.started = false;
+    settings.applyMarkdown('---\nname: Testi\n---\n');
     expect(settings.onboarded, isTrue);
-    settings.name = null;
+    settings.started = false;
     expect(settings.onboarded, isFalse);
     settings.applyMarkdown('---\nstarted: true\n---\n');
     expect(settings.onboarded, isTrue);
