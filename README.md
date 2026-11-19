@@ -118,6 +118,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - vammatila: 20 kehon aluetta, liikkeiden välttäminen ja korvaaminen; ohjelma valitsee vaivalle hyvin siedetyt liikkeet
   ensin ja pysyy valituissa välineissä
 - sairas- ja lomatauko kevyemmällä paluulla, palautumisen huomiointi
+- pelkkä treenipäiväkirja (terveys ja hyvinvointi pois): etusivulla treeniputki ohjelman treenipäivistä, viikon sarjat ja
+  treeniaika renkaina sekä voiman kehitys heti ensimmäisestä treenistä
 - etusivun kortit omassa järjestyksessä (*Asetukset → Etusivu*): seuraava ohjelman päivä, omat tavoitteet (myös
   juoksuvauhdin kehitys ja vauhti samalla sykkeellä), viikkoputki (montako viikkoa peräkkäin WHO:n suositukset
   täyttyivät), palautuminen, uni, viimeksi, voiman ja juoksun kehitys sekä kehonpaino; oma askeltavoite

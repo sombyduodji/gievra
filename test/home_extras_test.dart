@@ -99,6 +99,9 @@ void main() {
     final mon = weekStart(now);
     store.workouts = [...fullWeek(addDays(mon, -14)), ...fullWeek(addDays(mon, -7))];
     settings.program = generateProgram(goal: 'kunto', experience: 'keski', days: 3, minutes: 60, injuries: const []);
+    // Terveys ja hyvinvointi käytössä: WHO-putki (pelkässä treenipäiväkirjassa treeniputki, testi alla).
+    settings.bodyTracker = true;
+    addTearDown(() => settings.bodyTracker = false);
     NightHrData.debugNights = {
       for (var i = 3; i < 20; i++) addDays(now, -i): 50,
       addDays(now, -2): 57,
@@ -143,5 +146,65 @@ void main() {
     );
     expect(find.byKey(const ValueKey('nextDayCard')), findsNothing);
     expect(find.byKey(const ValueKey('nightHrCard')), findsNothing);
+  });
+
+  test('treeniputki (19.11.): ohjelman päivät viikossa, vajaa viikko katkaisee, kuluva kesken ei', () {
+    final ws = [
+      for (final w in [-3, -2, -1]) ...[
+        gym(addDays(thisMon, 7 * w)),
+        gym(addDays(thisMon, 7 * w + 2)),
+        gym(addDays(thisMon, 7 * w + 4)),
+      ],
+      gym(thisMon),
+    ];
+    final s = trainingStreak(ws, today, 3);
+    expect((s.current, s.best), (3, 3));
+    expect(s.weeks.last.$2, WeekMark.open);
+    // Juoksut eivät kerrytä salitreenaajan putkea, mutta kerryttävät molempien.
+    final runs = [
+      for (final d in [0, 2, 4]) run(addDays(thisMon, -7 + d), 30),
+    ];
+    expect(trainingStreak(runs, today, 3).current, 0);
+    expect(trainingStreak(runs, today, 3, mode: 'both').current, 1);
+    // Vajaa viikko (2/3) katkaisee.
+    final short = [
+      gym(addDays(thisMon, -14)),
+      gym(addDays(thisMon, -12)),
+      gym(addDays(thisMon, -10)),
+      gym(addDays(thisMon, -7)),
+    ];
+    final s2 = trainingStreak(short, today, 3);
+    expect((s2.current, s2.best), (0, 1));
+    expect(s2.weeks[s2.weeks.length - 2].$2, WeekMark.one);
+  });
+
+  testWidgets('pelkkä treenipäiväkirja: Treeniputki-kortti ohjelman tavoitteella', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    settings
+      ..bodyTracker = false
+      ..dailySteps = false
+      ..trainMode = 'gym';
+    final now = dateOnly(DateTime.now());
+    final mon = weekStart(now);
+    settings.program = generateProgram(
+      goal: 'lihaskasvu',
+      experience: 'keski',
+      days: 3,
+      minutes: 60,
+      injuries: const [],
+    );
+    store.workouts = [
+      for (final w in [-2, -1])
+        for (final d in [0, 2, 4]) gym(addDays(mon, 7 * w + d)),
+    ];
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: SingleChildScrollView(child: StreakCard())),
+      ),
+    );
+    expect(find.text('Treeniputki'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.textContaining('treenitavoitteessa (3 treeniä)'), findsOneWidget);
+    expect(find.textContaining('WHO'), findsNothing);
   });
 }

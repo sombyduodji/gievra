@@ -232,6 +232,18 @@ class Settings extends ChangeNotifier {
   /// Oma unitavoite minuutteina (käyttäjä 17.11.; Walsh ym. 2021: yksilöllinen; oletus 7 h = 420).
   int sleepGoal = 420;
 
+  /// Terveys ja hyvinvointi käytössä (askeleet, kehonpaino, palautuminen tai uni). Pois = pelkkä treenipäiväkirja:
+  /// etusivu näyttää treenin luvut (treeniputki, sarjat ja treeniaika) WHO:n terveysluvuista (käyttäjä 19.11.).
+  bool get wellness =>
+      dailySteps || bodyTracker || homeCardOn('recovery') || homeCardOn('sleep') || homeCardOn('night');
+
+  /// Treenipäivien viikkotavoite: ohjelman salipäivät (liikunnassa ja molemmissa ohjelman päivät), muuten 2.
+  int get weeklyTrainingTarget {
+    final p = program;
+    if (p == null || p.plan.isEmpty) return 2;
+    return trainMode == 'gym' ? p.plan.length : (p.days > p.plan.length ? p.days : p.plan.length);
+  }
+
   /// Unen lähde (käyttäjä 19.11.: kaksi unimittaria, esim. Oura ja kello, kirjaavat saman yön eri arvoin).
   /// null = automaattinen: sovellus, jolla on eniten tallennettuja öitä.
   String? sleepApp;

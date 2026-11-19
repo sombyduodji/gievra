@@ -13,6 +13,12 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.1',
+    Icons.fitness_center,
+    'Etusivu pelkälle treenaajalle',
+    'Ilman terveys- ja hyvinvointitoimintoja etusivulla treeniputki ohjelmasi treenipäivistä, viikon sarjat ja treeniaika sekä voiman kehitys heti ensimmäisestä treenistä.',
+  ),
+  NewFeature(
     '0.7',
     Icons.show_chart,
     'Palautumisen käyrät',

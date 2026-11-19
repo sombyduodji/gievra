@@ -64,6 +64,55 @@ Streak whoStreak(List<Workout> workouts, DateTime today, {List<Pause> pauses = c
   return Streak(run, best, shown);
 }
 
+/// Treenipäivät viikossa [mode]n mukaan: sali (gym), liikunta (cardio) tai kumpi tahansa (both); sama päivä kerran.
+int trainingDays(List<Workout> workouts, DateTime from, DateTime next, String mode) => {
+  for (final w in workouts)
+    if (!w.date.isBefore(from) && w.date.isBefore(next) && (mode == 'both' || (mode == 'gym') == (w.activity == null)))
+      dateOnly(w.date),
+}.length;
+
+/// Treeniputki pelkälle treenipäiväkirjalle (käyttäjä 19.11.: WHO:n putki vaatii 150 min liikuntaa, johon pelkkä
+/// salitreenaaja ei yllä): montako viikkoa peräkkäin [target] treenipäivää (ohjelman päivät tai 2) täyttyi.
+/// both = tavoite täyttyi, one = treenejä oli mutta vähemmän; kuluva viikko ja taukoviikot kuten WHO-putkessa.
+Streak trainingStreak(
+  List<Workout> workouts,
+  DateTime today,
+  int target, {
+  String mode = 'gym',
+  List<Pause> pauses = const [],
+  int show = 8,
+}) {
+  final thisMon = weekStart(dateOnly(today));
+  if (workouts.isEmpty) return Streak(0, 0, [(thisMon, WeekMark.open)]);
+  var first = weekStart(workouts.map((w) => w.date).reduce((a, b) => a.isBefore(b) ? a : b));
+  if (first.isAfter(thisMon)) first = thisMon;
+  final marks = <(DateTime, WeekMark)>[];
+  for (var mon = first; !mon.isAfter(thisMon); mon = addDays(mon, 7)) {
+    final n = trainingDays(workouts, mon, addDays(mon, 7), mode);
+    final mark = n >= target
+        ? WeekMark.both
+        : mon == thisMon
+        ? WeekMark.open
+        : _paused(mon, pauses)
+        ? WeekMark.pause
+        : n > 0
+        ? WeekMark.one
+        : WeekMark.none;
+    marks.add((mon, mark));
+  }
+  var run = 0, best = 0;
+  for (final (_, m) in marks) {
+    if (m == WeekMark.both) {
+      run++;
+      if (run > best) best = run;
+    } else if (m == WeekMark.one || m == WeekMark.none) {
+      run = 0;
+    }
+  }
+  final shown = marks.length > show ? marks.sublist(marks.length - show) : marks;
+  return Streak(run, best, shown);
+}
+
 /// Yön alin syke: viimeisin yö, kolmen viimeisen yön keskiarvo ja tavallinen taso (mediaani 28 yöstä ennen niitä).
 class NightHr {
   final DateTime lastDay;

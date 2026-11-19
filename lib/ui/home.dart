@@ -1856,7 +1856,16 @@ class _InsightsCard extends StatelessWidget {
     // Ohjelma ajoittaa kevennykset itse; vinkki vain vapaassa treenissä.
     final showDeload =
         strength && tips && ins.suggestDeload && settings.deloadDismissed != week && settings.program == null;
-    final hasProgress = strength && tips && (ins.improving.isNotEmpty || ins.stalled.isNotEmpty || ins.prs30d > 0);
+    // Pelkkä treenipäiväkirja (käyttäjä 19.11.): voiman kehitys näkyy heti ensimmäisestä salitreenistä (odotusteksti),
+    // ei vasta kahden kuukauden jälkeen.
+    final trainingOnly = !settings.wellness && settings.trainMode != 'cardio';
+    final hasProgress =
+        strength &&
+        tips &&
+        (ins.improving.isNotEmpty ||
+            ins.stalled.isNotEmpty ||
+            ins.prs30d > 0 ||
+            (trainingOnly && store.workouts.any((w) => w.activity == null && w.exercises.isNotEmpty)));
     // Juoksu matkaryhmittäin (käyttäjä 17.11.): alle 5, 5–10 ja yli 10 km, vauhti ja syke.
     final runG = strength || !tips || settings.trainMode == 'gym'
         ? const <RunGroup>[]

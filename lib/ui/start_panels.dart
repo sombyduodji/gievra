@@ -261,6 +261,52 @@ class PeriodCard extends StatelessWidget {
           stepsAvg ? t('askelta / pv') : t('askelta tänään'),
         ),
     ];
+    // Pelkkä treenipäiväkirja (käyttäjä 19.11.): salin viikon sarjat ja treeniaika ohjelman tavoitetta (ilman ohjelmaa
+    // 4 edellisen viikon keskiarvoa) vasten askelten ja WHO-lukujen tilalle.
+    final goals1 = settings.goals.length == 1;
+    if (!settings.wellness && mode != 'cardio') {
+      bool gymIn(Workout w, DateTime f, DateTime n) => w.activity == null && !w.date.isBefore(f) && w.date.isBefore(n);
+      int setsIn(DateTime f, DateTime n) => store.workouts
+          .where((w) => gymIn(w, f, n))
+          .fold(0, (x, w) => x + w.exercises.fold(0, (y, e) => y + e.workSets.length));
+      int minIn(DateTime f, DateTime n) => store.workouts
+          .where((w) => !w.date.isBefore(f) && w.date.isBefore(n) && (mode == 'both' || w.activity == null))
+          .fold(0, (x, w) => x + ((w.durationSec ?? 0) ~/ 60));
+      final p = settings.program;
+      double perWeek(int Function(DateTime, DateTime) f) {
+        var sum = 0;
+        for (var i = 1; i <= 4; i++) {
+          sum += f(addDays(weekStart(today), -7 * i), addDays(weekStart(today), -7 * i + 7));
+        }
+        return sum / 4;
+      }
+
+      final setsWeek = p != null && p.plan.isNotEmpty
+          ? p.plan
+                .expand((d) => d.items)
+                .fold(0, (x, i) => x + (i.kind == 'H' || i.kind == 'V' ? 5 : i.sets))
+                .toDouble()
+          : perWeek(setsIn);
+      final minWeek = p != null && p.plan.isNotEmpty
+          ? (p.minutes * settings.weeklyTrainingTarget).toDouble()
+          : perWeek(minIn);
+      final scale = monthView ? days / 7 : 1.0;
+      final sets = setsIn(from, next), mins = minIn(from, next);
+      final st = (setsWeek * scale).round(), mt = (minWeek * scale).round();
+      // Rivissä enintään 4 rengasta; yksi oma tavoite mahtuu silti (sarjat ennen treeniaikaa).
+      final room = (goals1 ? 3 : 4) - rings.length;
+      rings.addAll(
+        [
+          (st > 0 ? sets / st : 0.0, yellowText(context), st > 0 ? '$sets/$st' : '$sets', t('sarjaa')),
+          (
+            mt > 0 ? mins / mt : 0.0,
+            blueText(context),
+            '${mins ~/ 60}:${(mins % 60).toString().padLeft(2, '0')}',
+            t('treeniaikaa, h'),
+          ),
+        ].take(room < 0 ? 0 : room),
+      );
+    }
     // Yksi oma tavoite mahtuu WHO-renkaiden riviin; useampi omana korttinaan (GoalsCard).
     final goals = settings.goals;
     if (goals.length == 1 && rings.length < 4) rings.add(goalRing(context, goals.single, from, next, days));

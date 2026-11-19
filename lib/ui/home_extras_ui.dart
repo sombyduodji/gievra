@@ -28,7 +28,13 @@ class StreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final s = whoStreak(store.workouts, DateTime.now(), pauses: settings.pauses);
+    // Pelkkä treenipäiväkirja (ei terveyttä ja hyvinvointia): treenipäivien putki ohjelman mukaan; WHO:n putki
+    // vaatisi 150 min liikuntaa, johon pelkkä salitreenaaja ei yllä (käyttäjä 19.11.).
+    final training = !settings.wellness;
+    final target = settings.weeklyTrainingTarget;
+    final s = training
+        ? trainingStreak(store.workouts, DateTime.now(), target, mode: settings.trainMode, pauses: settings.pauses)
+        : whoStreak(store.workouts, DateTime.now(), pauses: settings.pauses);
     if (store.workouts.isEmpty) return const SizedBox.shrink();
     final open = s.weeks.last.$2 == WeekMark.open;
     return Card(
@@ -38,7 +44,7 @@ class StreakCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(t('Viikkoputki'), style: _title),
+            Text(training ? t('Treeniputki') : t('Viikkoputki'), style: _title),
             const SizedBox(height: 6),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -47,7 +53,11 @@ class StreakCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    s.current == 1
+                    training
+                        ? (s.current == 1
+                              ? t('viikko treenitavoitteessa ({0} treeniä)', [target])
+                              : t('viikkoa peräkkäin treenitavoitteessa ({0} treeniä)', [target]))
+                        : s.current == 1
                         ? t('viikko WHO:n suositusten mukaan')
                         : t('viikkoa peräkkäin WHO:n suositusten mukaan'),
                     style: TextStyle(color: cs.onSurfaceVariant),
@@ -77,7 +87,11 @@ class StreakCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              open
+              training
+                  ? (open
+                        ? t('Tämä viikko lasketaan, kun {0} treeniä on tehty. Tauot eivät katkaise putkea.', [target])
+                        : t('{0} treeniä viikossa (ohjelmasi mukaan). Tauot eivät katkaise putkea.', [target]))
+                  : open
                   ? t(
                       'Tämä viikko lasketaan, kun lihaskunto 2 päivänä ja 150 min reipasta liikuntaa täyttyvät. Tauot eivät katkaise putkea.',
                     )
