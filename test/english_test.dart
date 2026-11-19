@@ -134,7 +134,7 @@ void main() {
       expect(find.text(g), findsOneWidget);
     }
     // Englanniksi liikkeiden nimille ei ole valintaa, joten alaotsikko ei mainitse niitä.
-    expect(find.text('Name, language, theme'), findsOneWidget);
+    expect(find.text('Language, theme'), findsOneWidget);
     await tester.tap(find.text('General'));
     await tester.pumpAndSettle();
     expect(find.text('English'), findsWidgets);
