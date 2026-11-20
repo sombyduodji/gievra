@@ -191,7 +191,8 @@ class _TileTrendState extends State<TileTrend> {
                   grid: cs.outlineVariant,
                   // Asteikko oikeaan reunaan (käyttäjä 19.11.): suurin, pienin ja tavallinen taso.
                   label: (v) => key == 'sleep' ? _hm(v) : tileFmt(key, v),
-                  labelStyle: Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: 10.5, color: cs.onSurfaceVariant),
+                  labelStyle: Theme.of(context).textTheme.bodySmall!
+                      .copyWith(fontSize: 10.5, color: cs.onSurfaceVariant),
                 ),
               ),
             ),

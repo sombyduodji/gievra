@@ -302,7 +302,8 @@ class SettingsScreen extends StatefulWidget {
   static List<(SettingsGroup, String)> get searchIndex => [
     for (final k in ['Kieli · Giella', 'Teema', 'Tekstin koko', 'Liikkeiden nimet', 'Vammatilan ohjeet ja liikevinkit'])
       (SettingsGroup.general, k),
-    for (final k in ['Omat tavoitteet', 'Kortit', 'Juoksun matkaryhmät', 'Kehonpaino', 'Unen lähde']) (SettingsGroup.home, k),
+    for (final k in ['Omat tavoitteet', 'Kortit', 'Juoksun matkaryhmät', 'Kehonpaino', 'Unen lähde'])
+      (SettingsGroup.home, k),
     for (final k in [
       'Mitä treenaat?',
       'Painon lisäys (kg)',
@@ -1003,6 +1004,9 @@ class _SettingsSection extends StatelessWidget {
                 }
               },
             ),
+            // Kahden kiellon jälkeen Android ei enää kysy ilmoituslupaa: kerrotaan se tässä (yötesti 20.11., käyttäjä).
+            if (RestTimer.native && !isDemo && (settings.restTimer || settings.ongoingNote))
+              const NotificationsBlockedTile(),
             if (settings.restTimer && !isDemo) ...[
               // Kuuntele-painike otsikkoriville: neljä ääntä saa koko leveyden (saameksi "Doarggistus"
               // kutistui kapealla puhelimella lukukelvottomaksi).
@@ -1996,6 +2000,73 @@ class _RestTimes extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Ilmoitukset estetty" -rivi Palautusajastin-asetuksissa, kun ilmoituslupa puuttuu. Napautus kysyy luvan;
+/// jos Android ei enää näytä kysymystä (kielletty kahdesti), avautuvat sovelluksen asetukset.
+/// Tila tarkistetaan uudelleen, kun käyttäjä palaa asetuksista.
+class NotificationsBlockedTile extends StatefulWidget {
+  const NotificationsBlockedTile({super.key, this.check});
+
+  /// Testeille: korvaa lupatarkistuksen.
+  final Future<bool> Function()? check;
+
+  @override
+  State<NotificationsBlockedTile> createState() => _NotificationsBlockedTileState();
+}
+
+class _NotificationsBlockedTileState extends State<NotificationsBlockedTile> with WidgetsBindingObserver {
+  bool? _granted;
+
+  Future<bool> _check() => widget.check?.call() ?? Permission.notification.isGranted;
+
+  Future<void> _refresh() async {
+    final g = await _check();
+    RestTimer.notificationsOk = g;
+    if (mounted && g != _granted) setState(() => _granted = g);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  Future<void> _fix() async {
+    final st = await Permission.notification.request();
+    if (!st.isGranted) await openAppSettings();
+    await _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_granted != false) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      key: const ValueKey('notificationsBlocked'),
+      leading: Icon(Icons.notifications_off_outlined, color: cs.error),
+      title: Text(t('Ilmoitukset estetty')),
+      subtitle: Text(
+        t(
+          'Palautusajastimen ja käynnissä olevan treenin ilmoitukset eivät näy. Salli ilmoitukset sovelluksen asetuksista.',
+        ),
+      ),
+      trailing: TextButton(onPressed: _fix, child: Text(t('Avaa asetukset'))),
+      onTap: _fix,
     );
   }
 }

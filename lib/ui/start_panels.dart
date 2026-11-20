@@ -269,9 +269,14 @@ class PeriodCard extends StatelessWidget {
       int setsIn(DateTime f, DateTime n) => store.workouts
           .where((w) => gymIn(w, f, n))
           .fold(0, (x, w) => x + w.exercises.fold(0, (y, e) => y + e.workSets.length));
-      int minIn(DateTime f, DateTime n) => store.workouts
-          .where((w) => !w.date.isBefore(f) && w.date.isBefore(n) && (mode == 'both' || w.activity == null))
-          .fold(0, (x, w) => x + ((w.durationSec ?? 0) ~/ 60));
+      // Sekunnit yhteen ja minuuteiksi vasta lopuksi (yötesti 20.11.: jokainen treeni katkaistiin erikseen, joten
+      // alle minuutin treeni jäi 0 minuutiksi ja summa jäi vajaaksi).
+      int minIn(DateTime f, DateTime n) =>
+          (store.workouts
+                      .where((w) => !w.date.isBefore(f) && w.date.isBefore(n) && (mode == 'both' || w.activity == null))
+                      .fold(0, (x, w) => x + (w.durationSec ?? 0)) /
+                  60)
+              .round();
       final p = settings.program;
       double perWeek(int Function(DateTime, DateTime) f) {
         var sum = 0;
@@ -315,24 +320,29 @@ class PeriodCard extends StatelessWidget {
         ? '${uiMonth(month.month)} ${month.year}'
         : t('Viikko {0} · {1}', [weekNumber(from), '${numDate(from)}–${numDate(addDays(from, 6))}']);
     final canNext = !current && next.isBefore(addDays(today, 1));
+    // TalkBack (20.11.): valittu jakso kerrotaan ("valittu, Viikko").
     Widget seg(String text, bool on, VoidCallback tap, Key key) => Expanded(
-      child: Material(
-        key: key,
-        color: on ? cs.surfaceContainerHighest : Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
+      child: Semantics(
+        selected: on,
+        button: true,
+        child: Material(
+          key: key,
+          color: on ? cs.surfaceContainerHighest : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
-          onTap: tap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 7),
-            child: Center(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: on ? FontWeight.w700 : FontWeight.w500,
-                  color: on ? cs.onSurface : cs.onSurfaceVariant,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: tap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Center(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+                    color: on ? cs.onSurface : cs.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
@@ -454,14 +464,18 @@ class RingTile extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           // Yksi rivi, tarvittaessa pienempänä: neljän renkaan rivissä "lihaskuntopäivää" katkesi keskeltä sanaa.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              small,
-              maxLines: 1,
-              softWrap: false,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+          // Väli reunoihin (yötesti 20.11.: pienennetty selite osui naapurin selitteeseen, "lihaskuntopäivää/150").
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                small,
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+              ),
             ),
           ),
         ],

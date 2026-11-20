@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import '../app_state.dart';
@@ -533,6 +534,13 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       }
       _recomputePr();
     });
+    // TalkBack (20.11.): tallennus ei kertonut mitään; nyt "Sarja tallennettu: 5 kg × 6".
+    final last = e.sets.last;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      t('Sarja tallennettu: {0}', ['${fmtNum(last.kg)} kg × ${last.reps}']),
+      Directionality.of(context),
+    );
     // Supersarja: kesken kierroksen suoraan seuraavaan liikkeeseen, palautus vasta kierroksen jälkeen.
     var restNow = true;
     if (widget.supersetNext != null && !e.sets.last.warmup) {
@@ -1000,6 +1008,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                                     fit: BoxFit.scaleDown,
                                     child: Text(
                                       label,
+                                      // TalkBack (20.11.): "Tallenna sarja: Ei yhtään" (ennen pelkkä "Ei yhtään").
+                                      semanticsLabel: t('Tallenna sarja: {0}', [label]),
                                       maxLines: 1,
                                       softWrap: false,
                                       textAlign: TextAlign.center,
@@ -1046,67 +1056,72 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 child: Icon(Icons.delete, color: cs.error),
               ),
               onDismissed: (_) => _removeSet(i),
-              child: Material(
-                color: e.sets[i].pr ? Sami.yellow.withValues(alpha: .15) : cs.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
+              // Pyyhkäisy ei onnistu ruudunlukijalla: Poista-toiminto (TalkBack 20.11.).
+              child: Semantics(
+                customSemanticsActions: {CustomSemanticsAction(label: t('Poista')): () => _removeSet(i)},
+                child: Material(
+                  color: e.sets[i].pr ? Sami.yellow.withValues(alpha: .15) : cs.surfaceContainer,
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () =>
-                      rest.justClosed ? null : _editSet(i), // palkki sulkeutui juuri sormen alta (Ohita-tuplanapautus)
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    child: Row(
-                      children: [
-                        // Kapea näyttö tai suuri fontti: otsikko vie enintään puolet, varaa-teksti ja sarja kapenevat
-                        // (17.11.: Lämmittely + reilusti varaa + 42 kg × 2 edestakaisin vuoti yli).
-                        Flexible(
-                          child: Text(
-                            e.sets[i].warmup
-                                ? t('Lämmittely')
-                                : t('Sarja {0}', [i + 1 - e.sets.take(i).where((s) => s.warmup).length]),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: cs.onSurfaceVariant),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => rest.justClosed
+                        ? null
+                        : _editSet(i), // palkki sulkeutui juuri sormen alta (Ohita-tuplanapautus)
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          // Kapea näyttö tai suuri fontti: otsikko vie enintään puolet, varaa-teksti ja sarja kapenevat
+                          // (17.11.: Lämmittely + reilusti varaa + 42 kg × 2 edestakaisin vuoti yli).
+                          Flexible(
+                            child: Text(
+                              e.sets[i].warmup
+                                  ? t('Lämmittely')
+                                  : t('Sarja {0}', [i + 1 - e.sets.take(i).where((s) => s.warmup).length]),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: cs.onSurfaceVariant),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              if (e.sets[i].rir != null)
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                if (e.sets[i].rir != null)
+                                  Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: Text(
+                                        reserveWords(_m).short[e.sets[i].rir] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                                      ),
+                                    ),
+                                  ),
+                                // Yksi rivi, tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8").
                                 Flexible(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 10),
+                                  flex: 2,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: AlignmentDirectional.centerEnd,
                                     child: Text(
-                                      reserveWords(_m).short[e.sets[i].rir] ?? '',
+                                      '${fmtSetHand(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
+                                      textAlign: TextAlign.end,
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                                      softWrap: false,
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                                     ),
                                   ),
                                 ),
-                              // Yksi rivi, tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8").
-                              Flexible(
-                                flex: 2,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  child: Text(
-                                    '${fmtSetHand(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
-                                    textAlign: TextAlign.end,
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(Icons.edit, size: 16, color: cs.onSurfaceVariant),
-                      ],
+                          const SizedBox(width: 6),
+                          Icon(Icons.edit, size: 16, color: cs.onSurfaceVariant),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1190,6 +1205,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
           ),
           SectionLabel(weightTitle(widget.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)'))),
           ValueStepper(
+            label: weightTitle(widget.name) ?? (_m == Measure.reps ? t('Paino') : t('Lisäpaino (0 = oma paino)')),
             value: fmtNum(_kg),
             unit: 'kg',
             onMinus: () => setState(() => _kg = (_kg - step).clamp(0, 1000)),
@@ -1211,6 +1227,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
           if (isBarbell(widget.name) && _kg > 0) PlateLine(kg: _kg, onPick: (v) => setState(() => _kg = v)),
           SectionLabel(t(_m.label)[0].toUpperCase() + t(_m.label).substring(1)),
           ValueStepper(
+            label: t(_m.label)[0].toUpperCase() + t(_m.label).substring(1),
             value: '$_reps',
             unit: _m.unit,
             onMinus: () => setState(() => _reps = (_reps - _m.step).clamp(1, 9999)),
@@ -1353,10 +1370,12 @@ class _CompactStepper extends StatelessWidget {
           // tasolla (suuri tekstikoko, 15.11.).
           SizedBox(
             height: ts.scale(11) * 1.45,
+            // Otsikko luetaan arvon kanssa (alla), ei erikseen (TalkBack 20.11.: "Sarja 1 PAINO TOISTOT", sitten "5 kg").
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 label.toUpperCase(),
+                semanticsLabel: '',
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 softWrap: false,
@@ -1364,29 +1383,36 @@ class _CompactStepper extends StatelessWidget {
               ),
             ),
           ),
-          InkWell(
-            borderRadius: BorderRadius.circular(10),
+          // TalkBack (20.11.): "Paino: 5 kg", "Toistot: 6" (ennen pelkkä "5 kg" ja "6").
+          Semantics(
+            label: '$label: $value${unit.isEmpty ? '' : ' ${t(unit)}'}',
+            button: true,
+            excludeSemantics: true,
             onTap: onTap,
-            child: SizedBox(
-              width: double.infinity,
-              height: ts.scale(38) * 1.25 + 8,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: value,
-                          style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w700),
-                        ),
-                        if (unit.isNotEmpty)
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: onTap,
+              child: SizedBox(
+                width: double.infinity,
+                height: ts.scale(38) * 1.25 + 8,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
                           TextSpan(
-                            text: ' ${t(unit)}',
-                            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                            text: value,
+                            style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w700),
                           ),
-                      ],
+                          if (unit.isNotEmpty)
+                            TextSpan(
+                              text: ' ${t(unit)}',
+                              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

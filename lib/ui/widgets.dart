@@ -139,6 +139,8 @@ String shortDateY(DateTime d) => d.year == DateTime.now().year
 
 /// Iso +/- -säädin. Arvoa napauttamalla voi kirjoittaa luvun.
 class ValueStepper extends StatelessWidget {
+  /// Ruudunlukijalle: "Vähennä: Kesto", "Kesto: 10 min" (TalkBack 20.11.: ennen pelkkä "Vähennä").
+  final String? label;
   final String value;
   final String unit;
   final VoidCallback onMinus;
@@ -146,6 +148,7 @@ class ValueStepper extends StatelessWidget {
   final VoidCallback? onTap;
   const ValueStepper({
     super.key,
+    this.label,
     required this.value,
     required this.unit,
     required this.onMinus,
@@ -173,32 +176,38 @@ class ValueStepper extends StatelessWidget {
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14)),
       child: Row(
         children: [
-          btn(Icons.remove, onMinus, t('Vähennä')),
+          btn(Icons.remove, onMinus, label == null ? t('Vähennä') : t('Vähennä: {0}', [label!])),
           Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
+            child: Semantics(
+              label: label == null ? null : '${label!}: $value ${t(unit)}',
+              excludeSemantics: label != null,
+              button: onTap != null,
               onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: value,
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
-                      ),
-                      TextSpan(
-                        text: '  ${t(unit)}',
-                        style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-                      ),
-                    ],
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: value,
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                        ),
+                        TextSpan(
+                          text: '  ${t(unit)}',
+                          style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
           ),
-          btn(Icons.add, onPlus, t('Lisää')),
+          btn(Icons.add, onPlus, label == null ? t('Lisää') : t('Lisää: {0}', [label!])),
         ],
       ),
     );

@@ -617,7 +617,12 @@ class MainActivity : FlutterActivity() {
                 "nightLowHr" -> scope.launch {
                     try {
                         result.success(
-                            HealthBridge.nightLowHr(this@MainActivity, call.argument<String>("from")!!, call.argument<String>("to")!!),
+                            HealthBridge.nightLowHr(
+                                this@MainActivity,
+                                call.argument<String>("from")!!,
+                                call.argument<String>("to")!!,
+                                call.argument<String>("app"),
+                            ),
                         )
                     } catch (e: Exception) {
                         result.error("health", e.message, null)

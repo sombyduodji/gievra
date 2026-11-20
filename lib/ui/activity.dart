@@ -1188,6 +1188,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       if (_timed) ...[
         SectionLabel(t('Aika')),
         ValueStepper(
+          label: t('Aika'),
           value: fmtDurationSec(_sec),
           unit: '',
           onMinus: () => setState(() => _setSec(_sec - 60)),
@@ -1197,6 +1198,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       ] else ...[
         SectionLabel(t('Kesto')),
         ValueStepper(
+          label: t('Kesto'),
           // Ajanotosta tarkka aika (m:ss); käsin muutettaessa minuutit.
           value: w.seconds != null ? fmtDurationSec(w.seconds!) : '${w.minutes}',
           unit: w.seconds != null ? '' : 'min',
@@ -1396,6 +1398,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   List<Widget> _distanceSection() => [
     SectionLabel(t('Matka')),
     ValueStepper(
+      label: t('Matka'),
       value: fmtNum(w.distanceKm ?? 0),
       unit: 'km',
       onMinus: () => setState(() {

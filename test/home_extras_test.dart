@@ -7,6 +7,7 @@ import 'package:treenipaivakirja/insights.dart' show weekStart;
 import 'package:treenipaivakirja/models.dart';
 import 'package:treenipaivakirja/program.dart';
 import 'package:treenipaivakirja/ui/home_extras_ui.dart';
+import 'package:treenipaivakirja/ui/start_panels.dart' show PeriodCard;
 
 // Etusivun lisäkortit (17.11.): viikkoputki, seuraava ohjelman päivä ja yön alin syke. Keksityt tiedot.
 void main() {
@@ -206,5 +207,35 @@ void main() {
     expect(find.text('2'), findsOneWidget);
     expect(find.textContaining('treenitavoitteessa (3 treeniä)'), findsOneWidget);
     expect(find.textContaining('WHO'), findsNothing);
+  });
+
+  testWidgets('pelkkä treenipäiväkirja: treeniaika lasketaan sekunneista yhteen (yötesti 20.11.)', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    settings
+      ..bodyTracker = false
+      ..dailySteps = false
+      ..trainMode = 'gym'
+      ..program = null;
+    final mon = weekStart(dateOnly(DateTime.now()));
+    // 51 s + 2 min 30 s = 3 min 21 s: ennen jokainen treeni katkaistiin minuuteiksi erikseen (0 + 2 = 0:02).
+    store.workouts = [gym(mon)..seconds = 51, gym(addDays(mon, 1))..seconds = 150];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PeriodCard(
+              monthView: false,
+              month: DateTime(mon.year, mon.month),
+              weekOf: mon,
+              onMode: (_) {},
+              onShift: (_) {},
+              calendar: const SizedBox(),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('0:03'), findsOneWidget);
+    expect(find.text('0:02'), findsNothing);
   });
 }

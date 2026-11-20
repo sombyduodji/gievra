@@ -648,6 +648,16 @@ void main() {
     expect(find.byKey(const ValueKey('hrNow')), findsOneWidget);
     expect(find.text('72'), findsOneWidget);
     expect(find.textContaining('akku 87 %'), findsOneWidget);
+    // −/+ -painikkeet kertovat ruudunlukijalle, mitä säädetään (yötesti 20.11.: ennen pelkkä "−" / "+").
+    for (final tip in [
+      'Vähennä: Palautunut sarjojen välillä',
+      'Lisää: Palautunut sarjojen välillä',
+      'Vähennä: Kalorien korjaus',
+      'Lisää: Kalorien korjaus',
+    ]) {
+      expect(find.byTooltip(tip, skipOffstage: false), findsOneWidget, reason: tip);
+    }
+    expect(find.byTooltip('−', skipOffstage: false), findsNothing);
     await tester.scrollUntilVisible(find.text('Unohda vyö'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pump();
     await tester.tap(find.text('Unohda vyö'));

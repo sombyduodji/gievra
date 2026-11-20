@@ -70,7 +70,7 @@ msgstr "Automatic backup failed: {0}"
 msgid "luettava vienti, ei varmuuskopio"
 msgstr "readable export, not a backup"
 
-#: lib/csv_export.dart:84 lib/ui/activity.dart:1314 lib/ui/drawer.dart:1144 lib/ui/hr_ui.dart:37 …
+#: lib/csv_export.dart:84 lib/ui/activity.dart:1316 lib/ui/drawer.dart:1148 lib/ui/hr_ui.dart:37 …
 msgid "Sykevyö"
 msgstr "Heart rate strap"
 
@@ -106,7 +106,7 @@ msgstr "Exercise"
 msgid "Sarja"
 msgstr "Set"
 
-#: lib/csv_export.dart:148 lib/csv_export.dart:277 lib/ui/set_logger.dart:881 lib/ui/set_logger.dart:1198
+#: lib/csv_export.dart:148 lib/csv_export.dart:277 lib/ui/set_logger.dart:889 lib/ui/set_logger.dart:1214
 msgid "Paino (kg)"
 msgstr "Weight (kg)"
 
@@ -122,15 +122,15 @@ msgstr "Measured as"
 msgid "Varaa (toistoja)"
 msgstr "Reps in reserve"
 
-#: lib/csv_export.dart:152 lib/exercises.dart:772 lib/ui/new_workout.dart:553 lib/ui/set_logger.dart:1065
+#: lib/csv_export.dart:152 lib/exercises.dart:772 lib/ui/new_workout.dart:554 lib/ui/set_logger.dart:1079
 msgid "Lämmittely"
 msgstr "Warm-up"
 
-#: lib/csv_export.dart:153 lib/ui/home.dart:1431
+#: lib/csv_export.dart:153 lib/ui/home.dart:1446 lib/ui/home.dart:1557
 msgid "Ennätys"
 msgstr "Record"
 
-#: lib/csv_export.dart:154 lib/csv_export.dart:200 lib/ui/activity.dart:1606 lib/ui/activity.dart:1758 …
+#: lib/csv_export.dart:154 lib/csv_export.dart:200 lib/ui/activity.dart:1609 lib/ui/activity.dart:1761 …
 msgid "Muistiinpanot"
 msgstr "Notes"
 
@@ -142,11 +142,11 @@ msgstr "activities"
 msgid "Laji"
 msgstr "Sport"
 
-#: lib/csv_export.dart:189 lib/csv_export.dart:231 lib/health_update.dart:100 lib/ui/activity.dart:1198 …
+#: lib/csv_export.dart:189 lib/csv_export.dart:231 lib/health_update.dart:100 lib/ui/activity.dart:1199 …
 msgid "Kesto"
 msgstr "Duration"
 
-#: lib/csv_export.dart:190 lib/ui/activity.dart:1410
+#: lib/csv_export.dart:190 lib/ui/activity.dart:1413
 msgid "Matka (km)"
 msgstr "Distance (km)"
 
@@ -198,7 +198,7 @@ msgstr "heart rate"
 msgid "Kellonaika"
 msgstr "Time of day"
 
-#: lib/csv_export.dart:262 lib/health_update.dart:55 lib/ui/activity.dart:1300 lib/ui/drawer.dart:1112 …
+#: lib/csv_export.dart:262 lib/health_update.dart:55 lib/ui/activity.dart:1302 lib/ui/drawer.dart:1116 …
 msgid "Syke"
 msgstr "Heart rate"
 
@@ -210,7 +210,7 @@ msgstr "weigh-ins"
 msgid "Pituus (cm)"
 msgstr "Height (cm)"
 
-#: lib/csv_export.dart:290 lib/exercises.dart:474 lib/ui/activity.dart:1297 lib/ui/watch.dart:134 …
+#: lib/csv_export.dart:290 lib/exercises.dart:474 lib/ui/activity.dart:1299 lib/ui/watch.dart:134 …
 msgid "askeleet"
 msgstr "steps"
 
@@ -375,7 +375,7 @@ msgstr "meters"
 msgid "Voimanosto"
 msgstr "Powerlifting"
 
-#: lib/exercises.dart:760 lib/program.dart:353 lib/ui/program_view.dart:958 lib/program.dart:499 …
+#: lib/exercises.dart:760 lib/program.dart:353 lib/ui/program_view.dart:962 lib/program.dart:499 …
 msgid "Jalat"
 msgstr "Legs"
 
@@ -399,7 +399,7 @@ msgstr "Arms"
 msgid "Keskivartalo"
 msgstr "Core"
 
-#: lib/exercises.dart:766 lib/ui/home.dart:2504 lib/ui/home_settings.dart:35 lib/ui/stats_screen.dart:1000 …
+#: lib/exercises.dart:766 lib/ui/home.dart:2539 lib/ui/home_settings.dart:35 lib/ui/stats_screen.dart:1000 …
 msgid "Kehonpaino"
 msgstr "Bodyweight"
 
@@ -411,11 +411,11 @@ msgstr "Kettlebell"
 msgid "Kardio"
 msgstr "Cardio"
 
-#: lib/exercises.dart:769 lib/program.dart:348 lib/ui/program_view.dart:959 lib/program.dart:361 …
+#: lib/exercises.dart:769 lib/program.dart:348 lib/ui/program_view.dart:963 lib/program.dart:361 …
 msgid "Koko keho"
 msgstr "Full body"
 
-#: lib/exercises.dart:770 lib/ui/home.dart:1711 lib/ui/home_settings.dart:32 lib/ui/sport_picker.dart:126
+#: lib/exercises.dart:770 lib/ui/home.dart:1746 lib/ui/home_settings.dart:32 lib/ui/sport_picker.dart:126
 msgid "Viimeksi"
 msgstr "Recent"
 
@@ -495,7 +495,7 @@ msgstr "current value was calculated from heart rate or entered manually"
 msgid "kello synkronoi myöhemmin: enemmän askeleita"
 msgstr "the watch synced later: more steps"
 
-#: lib/health_update.dart:92 lib/ui/activity.dart:1289 lib/ui/activity.dart:1397 lib/ui/home_settings.dart:502
+#: lib/health_update.dart:92 lib/ui/activity.dart:1291 lib/ui/activity.dart:1399 lib/ui/activity.dart:1401 …
 msgid "Matka"
 msgstr "Distance"
 
@@ -590,7 +590,7 @@ msgstr "last workout {0} days ago: start lighter"
 msgid "Palauttava"
 msgstr "Recovery run"
 
-#: lib/hr_calc.dart:237 lib/sports.dart:62 lib/ui/recovery_card.dart:94 lib/ui/start_panels.dart:1120
+#: lib/hr_calc.dart:237 lib/sports.dart:62 lib/ui/recovery_card.dart:94 lib/ui/start_panels.dart:1134
 msgid "Kevyt"
 msgstr "Easy"
 
@@ -821,12 +821,12 @@ msgstr "✓ Recovered"
 msgid "✓ Tauko ohi"
 msgstr "✓ Rest over"
 
-#: lib/ongoing.dart:206 lib/ui/widgets.dart:814 lib/ui/workout.dart:1615
+#: lib/ongoing.dart:206 lib/ui/widgets.dart:823 lib/ui/workout.dart:1618
 msgid "1 sarja"
 msgstr "1 set"
 
 #. {0} = n
-#: lib/ongoing.dart:206 lib/share_text.dart:29 lib/ui/widgets.dart:814 lib/ui/workout.dart:1615
+#: lib/ongoing.dart:206 lib/share_text.dart:29 lib/ui/widgets.dart:823 lib/ui/workout.dart:1618
 msgid "{0} sarjaa"
 msgstr "{0} sets"
 
@@ -836,11 +836,11 @@ msgstr "{0} sets"
 msgid "{0} liikettä · {1} sarjaa"
 msgstr "{0} exercises · {1} sets"
 
-#: lib/ongoing.dart:221 lib/ui/activity.dart:1147 lib/ui/home.dart:1007 lib/ui/record_screen.dart:215 …
+#: lib/ongoing.dart:221 lib/ui/activity.dart:1147 lib/ui/home.dart:1015 lib/ui/record_screen.dart:215 …
 msgid "Jatka"
 msgstr "Continue"
 
-#: lib/ongoing.dart:221 lib/ui/activity.dart:1147 lib/ui/home.dart:1432 lib/ui/program_screen.dart:191 …
+#: lib/ongoing.dart:221 lib/ui/activity.dart:1147 lib/ui/home.dart:1447 lib/ui/home.dart:1559 …
 msgid "Tauko"
 msgstr "Pause"
 
@@ -890,7 +890,7 @@ msgid "Viikko {0} · {1} %"
 msgstr "Week {0} · {1} %"
 
 #. {0} = week + 1
-#: lib/program.dart:954 lib/ui/home.dart:1245 lib/ui/stats_tabs.dart:90
+#: lib/program.dart:954 lib/ui/home.dart:1256 lib/ui/stats_tabs.dart:90
 msgid "Viikko {0}"
 msgstr "Week {0}"
 
@@ -1233,19 +1233,19 @@ msgstr "Foundation with one kettlebell"
 msgid "Heilautus, ylösnousu ja perusliikkeet, sopii aloittajalle"
 msgstr "Swing, get-up and basic exercises, suitable for beginners"
 
-#: lib/program.dart:349 lib/ui/program_view.dart:954 lib/program.dart:421 lib/program.dart:443 …
+#: lib/program.dart:349 lib/ui/program_view.dart:958 lib/program.dart:421 lib/program.dart:443 …
 msgid "Ylävartalo"
 msgstr "Upper body"
 
-#: lib/program.dart:350 lib/ui/program_view.dart:955 lib/program.dart:432 lib/program.dart:454 …
+#: lib/program.dart:350 lib/ui/program_view.dart:959 lib/program.dart:432 lib/program.dart:454 …
 msgid "Alavartalo"
 msgstr "Lower body"
 
-#: lib/program.dart:351 lib/ui/program_view.dart:956 lib/program.dart:479 lib/program.dart:512 …
+#: lib/program.dart:351 lib/ui/program_view.dart:960 lib/program.dart:479 lib/program.dart:512 …
 msgid "Työntö"
 msgstr "Push"
 
-#: lib/program.dart:352 lib/ui/program_view.dart:957 lib/program.dart:489 lib/program.dart:522 …
+#: lib/program.dart:352 lib/ui/program_view.dart:961 lib/program.dart:489 lib/program.dart:522 …
 msgid "Veto"
 msgstr "Pull"
 
@@ -1752,7 +1752,7 @@ msgid "Palautunut! 💪"
 msgstr "Recovered! 💪"
 
 #. {0} = exerciseLabel(exercise)
-#: lib/rest.dart:205 lib/rest.dart:322 lib/ui/set_logger.dart:209
+#: lib/rest.dart:205 lib/rest.dart:322 lib/ui/set_logger.dart:210
 msgid "Seuraava sarja: {0}"
 msgstr "Next set: {0}"
 
@@ -1827,7 +1827,7 @@ msgid "kevennysviikko"
 msgstr "deload week"
 
 #. {0} = thousands(w.steps!)
-#: lib/share_text.dart:18 lib/ui/health_import.dart:302 lib/ui/health_import.dart:318 lib/ui/hr_ui.dart:1374 …
+#: lib/share_text.dart:18 lib/ui/health_import.dart:302 lib/ui/health_import.dart:318 lib/ui/home.dart:1558 …
 msgid "{0} askelta"
 msgstr "{0} steps"
 
@@ -2019,7 +2019,7 @@ msgstr "easy"
 msgid "reipas"
 msgstr "moderate"
 
-#: lib/sports.dart:62 lib/ui/start_panels.dart:1120
+#: lib/sports.dart:62 lib/ui/start_panels.dart:1134
 msgid "Reipas"
 msgstr "Moderate"
 
@@ -2027,7 +2027,7 @@ msgstr "Moderate"
 msgid "kova"
 msgstr "hard"
 
-#: lib/sports.dart:62 lib/ui/recovery_card.dart:96 lib/ui/start_panels.dart:1120
+#: lib/sports.dart:62 lib/ui/recovery_card.dart:96 lib/ui/start_panels.dart:1134
 msgid "Kova"
 msgstr "Hard"
 
@@ -2059,7 +2059,7 @@ msgstr "Long run"
 msgid "Viikon pisin, tasainen vauhti"
 msgstr "Longest of the week, steady pace"
 
-#: lib/sports.dart:78 lib/ui/activity.dart:405 lib/ui/activity.dart:1294 lib/ui/activity.dart:1427 …
+#: lib/sports.dart:78 lib/ui/activity.dart:405 lib/ui/activity.dart:1296 lib/ui/activity.dart:1430 …
 msgid "vauhti"
 msgstr "pace"
 
@@ -2200,7 +2200,7 @@ msgstr "Saturday"
 msgid "Sunnuntain"
 msgstr "Sunday"
 
-#: lib/ui/activity.dart:230 lib/ui/workout.dart:1981 lib/ui/workout.dart:1986
+#: lib/ui/activity.dart:230 lib/ui/workout.dart:1984 lib/ui/workout.dart:1989
 msgid "Aloitusaika"
 msgstr "Start time"
 
@@ -2216,7 +2216,7 @@ msgstr "📍 Measured with GPS"
 msgid "Korjaa"
 msgstr "Correct"
 
-#: lib/ui/activity.dart:392 lib/ui/home.dart:298 lib/ui/start_panels.dart:1113
+#: lib/ui/activity.dart:392 lib/ui/home.dart:298 lib/ui/start_panels.dart:1127
 msgid "aika"
 msgstr "time"
 
@@ -2224,11 +2224,11 @@ msgstr "time"
 msgid "matka"
 msgstr "distance"
 
-#: lib/ui/activity.dart:408 lib/ui/activity.dart:1296 lib/ui/activity.dart:1430
+#: lib/ui/activity.dart:408 lib/ui/activity.dart:1298 lib/ui/activity.dart:1433
 msgid "keskinopeus"
 msgstr "average speed"
 
-#: lib/ui/activity.dart:418 lib/ui/activity.dart:1301
+#: lib/ui/activity.dart:418 lib/ui/activity.dart:1303
 msgid "askelpituus"
 msgstr "stride length"
 
@@ -2313,7 +2313,7 @@ msgstr "The distance was entered by hand, so snapping only changes the route."
 msgid "Lataa kartat"
 msgstr "Download maps"
 
-#: lib/ui/activity.dart:806 lib/ui/activity.dart:1189 lib/ui/activity.dart:1288 lib/ui/rest_banner.dart:112
+#: lib/ui/activity.dart:806 lib/ui/activity.dart:1189 lib/ui/activity.dart:1191 lib/ui/activity.dart:1290 …
 msgid "Aika"
 msgstr "Time"
 
@@ -2321,7 +2321,7 @@ msgstr "Time"
 msgid "min:s tai h:min:s"
 msgstr "min:s or h:min:s"
 
-#: lib/ui/activity.dart:815 lib/ui/activity.dart:849 lib/ui/activity.dart:882 lib/ui/activity.dart:1252 …
+#: lib/ui/activity.dart:815 lib/ui/activity.dart:849 lib/ui/activity.dart:882 lib/ui/activity.dart:1254 …
 msgid "Peruuta"
 msgstr "Cancel"
 
@@ -2341,7 +2341,7 @@ msgstr "Otherwise the changes are discarded."
 msgid "Hylkää"
 msgstr "Discard"
 
-#: lib/ui/activity.dart:850 lib/ui/activity.dart:903 lib/ui/drawer.dart:663 lib/ui/drawer.dart:1848 …
+#: lib/ui/activity.dart:850 lib/ui/activity.dart:903 lib/ui/drawer.dart:664 lib/ui/drawer.dart:1852 …
 msgid "Tallenna"
 msgstr "Save"
 
@@ -2381,11 +2381,11 @@ msgstr "{0} km in {1} is about {2} km/h. Is the distance or time wrong?"
 msgid "Tallenna silti"
 msgstr "Save anyway"
 
-#: lib/ui/activity.dart:935 lib/ui/activity.dart:1358 lib/ui/body_screen.dart:142 lib/ui/home.dart:286 …
+#: lib/ui/activity.dart:935 lib/ui/activity.dart:1360 lib/ui/body_screen.dart:142 lib/ui/home.dart:286 …
 msgid "Muokkaa"
 msgstr "Edit"
 
-#: lib/ui/activity.dart:1031 lib/ui/activity.dart:1871 lib/ui/start_panels.dart:1278
+#: lib/ui/activity.dart:1031 lib/ui/activity.dart:1874 lib/ui/start_panels.dart:1292
 msgid "Ajanotto"
 msgstr "Stopwatch"
 
@@ -2393,11 +2393,11 @@ msgstr "Stopwatch"
 msgid "Lopeta ajanotto ensin."
 msgstr "Stop timing first."
 
-#: lib/ui/activity.dart:1070 lib/ui/workout.dart:1984
+#: lib/ui/activity.dart:1070 lib/ui/workout.dart:1987
 msgid "ei tiedossa"
 msgstr "not known"
 
-#: lib/ui/activity.dart:1079 lib/ui/drawer.dart:1740
+#: lib/ui/activity.dart:1079 lib/ui/drawer.dart:1744
 msgid "Alkoi"
 msgstr "Started"
 
@@ -2427,7 +2427,7 @@ msgstr "Stop"
 msgid "Ajanotto jatkuu, vaikka sulkisit sovelluksen."
 msgstr "Timing continues even if you close the app."
 
-#: lib/ui/activity.dart:1169 lib/ui/record_screen.dart:432 lib/ui/start_panels.dart:1035
+#: lib/ui/activity.dart:1169 lib/ui/record_screen.dart:432 lib/ui/start_panels.dart:1049
 msgid "Aloita"
 msgstr "Start"
 
@@ -2435,106 +2435,106 @@ msgstr "Start"
 msgid "Aloitus- ja loppuaika tallentuvat; voit korjata ne lopuksi."
 msgstr "Start and end times are saved; you can correct them at the end."
 
-#: lib/ui/activity.dart:1208 lib/ui/new_workout.dart:301 lib/ui/workout.dart:1973
+#: lib/ui/activity.dart:1210 lib/ui/new_workout.dart:302 lib/ui/workout.dart:1976
 msgid "Kesto (min)"
 msgstr "Duration (min)"
 
-#: lib/ui/activity.dart:1224
+#: lib/ui/activity.dart:1226
 msgid "Alkuaika on vapaaehtoinen; loppu lasketaan kestosta."
 msgstr "Start time is optional; the end is calculated from the duration."
 
-#: lib/ui/activity.dart:1247
+#: lib/ui/activity.dart:1249
 msgid "Poistetaanko liikunta?"
 msgstr "Delete this activity?"
 
 #. {0} = workoutPath(w.date, w.session).split('/').last.replaceAll('.md', '')
-#: lib/ui/activity.dart:1249 lib/ui/workout.dart:368
+#: lib/ui/activity.dart:1251 lib/ui/workout.dart:368
 msgid "Tiedosto {0}.md poistetaan."
 msgstr "The file {0}.md will be deleted."
 
-#: lib/ui/activity.dart:1253 lib/ui/body_screen.dart:150 lib/ui/drawer.dart:585 lib/ui/drawer.dart:675 …
+#: lib/ui/activity.dart:1255 lib/ui/body_screen.dart:150 lib/ui/drawer.dart:586 lib/ui/drawer.dart:676 …
 msgid "Poista"
 msgstr "Delete"
 
-#: lib/ui/activity.dart:1299 lib/ui/watch.dart:101
+#: lib/ui/activity.dart:1301 lib/ui/watch.dart:101
 msgid "kalorit"
 msgstr "calories"
 
 #. {0} = w.hrAvg
-#: lib/ui/activity.dart:1300 lib/ui/hr_ui.dart:1219
+#: lib/ui/activity.dart:1302 lib/ui/hr_ui.dart:1219
 msgid "ka {0}"
 msgstr "avg {0}"
 
-#: lib/ui/activity.dart:1488
+#: lib/ui/activity.dart:1491
 msgid "Reitti tallennettu"
 msgstr "Route saved"
 
-#: lib/ui/activity.dart:1488
+#: lib/ui/activity.dart:1491
 msgid "Reitti"
 msgstr "Route"
 
-#: lib/ui/activity.dart:1489
+#: lib/ui/activity.dart:1492
 msgid "GPS-reitti tallentuu .gpx-tiedostona treenin viereen."
 msgstr "The GPS route is saved as a .gpx file next to the workout."
 
-#: lib/ui/activity.dart:1496
+#: lib/ui/activity.dart:1499
 msgid "Poista reitti"
 msgstr "Remove route"
 
-#: lib/ui/activity.dart:1563 lib/ui/workout.dart:1419
+#: lib/ui/activity.dart:1566 lib/ui/workout.dart:1419
 msgid "Treeni valmis!"
 msgstr "Workout done!"
 
-#: lib/ui/activity.dart:1568 lib/ui/home.dart:486 lib/ui/home.dart:1008 lib/ui/home.dart:1430 …
+#: lib/ui/activity.dart:1571 lib/ui/home.dart:486 lib/ui/home.dart:1016 lib/ui/home.dart:1445 …
 msgid "Liikunta"
 msgstr "Activity"
 
-#: lib/ui/activity.dart:1575 lib/ui/drawer.dart:669 lib/ui/share_card.dart:333 lib/ui/workout.dart:1050 …
+#: lib/ui/activity.dart:1578 lib/ui/drawer.dart:670 lib/ui/share_card.dart:333 lib/ui/workout.dart:1050 …
 msgid "Jaa"
 msgstr "Share"
 
-#: lib/ui/activity.dart:1576
+#: lib/ui/activity.dart:1579
 msgid "Poista liikunta"
 msgstr "Delete activity"
 
-#: lib/ui/activity.dart:1612 lib/ui/activity.dart:1764
+#: lib/ui/activity.dart:1615 lib/ui/activity.dart:1767
 msgid "Reitti, sää, joukkue, tulos… (vapaaehtoinen)"
 msgstr "Route, weather, team, result… (optional)"
 
-#: lib/ui/activity.dart:1645
+#: lib/ui/activity.dart:1648
 msgid "Vaihda laji"
 msgstr "Change sport"
 
-#: lib/ui/activity.dart:1678
+#: lib/ui/activity.dart:1681
 msgid "Tämän alueen karttaa ei ole ladattu. GPS toimii ilmankin."
 msgstr "This area's map isn't downloaded. GPS works without it."
 
-#: lib/ui/activity.dart:1682 lib/ui/maps_screen.dart:642
+#: lib/ui/activity.dart:1685 lib/ui/maps_screen.dart:642
 msgid "Lataa"
 msgstr "Download"
 
 #. {0} = sportNameParts(w.activity!).$1
-#: lib/ui/activity.dart:1689
+#: lib/ui/activity.dart:1692
 msgid "Viimeksi: {0}"
 msgstr "Last time: {0}"
 
-#: lib/ui/activity.dart:1843
+#: lib/ui/activity.dart:1846
 msgid "Aloita GPS:llä"
 msgstr "Start with GPS"
 
-#: lib/ui/activity.dart:1847
+#: lib/ui/activity.dart:1850
 msgid "Aika, matka, reitti ja korkeus"
 msgstr "Time, distance, route and elevation"
 
-#: lib/ui/activity.dart:1872
+#: lib/ui/activity.dart:1875
 msgid "Ilman GPS:ää, esim. juoksumatto"
 msgstr "Without GPS, e.g. a treadmill"
 
-#: lib/ui/activity.dart:1881
+#: lib/ui/activity.dart:1884
 msgid "Syötä itse"
 msgstr "Enter yourself"
 
-#: lib/ui/activity.dart:1882
+#: lib/ui/activity.dart:1885
 msgid "Jo tehty: aika ja matka"
 msgstr "Already done: time and distance"
 
@@ -2640,7 +2640,7 @@ msgstr ""
 msgid "Anna pituus 100–250 cm."
 msgstr "Enter a height of 100–250 cm."
 
-#: lib/ui/body_screen.dart:30 lib/ui/home.dart:2369
+#: lib/ui/body_screen.dart:30 lib/ui/home.dart:2404
 msgid "Anna paino 20–400 kg."
 msgstr "Enter a weight of 20–400 kg."
 
@@ -2648,17 +2648,17 @@ msgstr "Enter a weight of 20–400 kg."
 msgid "Pituus"
 msgstr "Height"
 
-#: lib/ui/body_screen.dart:37 lib/ui/set_logger.dart:875 lib/ui/set_logger.dart:1191
+#: lib/ui/body_screen.dart:37 lib/ui/set_logger.dart:883 lib/ui/set_logger.dart:1206 lib/ui/set_logger.dart:1208
 msgid "Paino"
 msgstr "Weight"
 
 #. {0} = fmtNum(previous.$2)
 #. {1} = shortDate(previous.$1)
-#: lib/ui/body_screen.dart:51 lib/ui/home.dart:2430
+#: lib/ui/body_screen.dart:51 lib/ui/home.dart:2465
 msgid "Edellinen {0} kg ({1})"
 msgstr "Previous {0} kg ({1})"
 
-#: lib/ui/body_screen.dart:82 lib/ui/drawer.dart:1099
+#: lib/ui/body_screen.dart:82 lib/ui/drawer.dart:1103
 msgid "Paino ja pituus"
 msgstr "Weight and height"
 
@@ -2910,7 +2910,7 @@ msgstr ""
 "Workouts {0} · mode {1} · folder {2} · Health Connect {3} · heart "
 "rate strap {4}"
 
-#: lib/ui/bug_report.dart:337 lib/ui/drawer.dart:1948
+#: lib/ui/bug_report.dart:337 lib/ui/drawer.dart:1952
 msgid "oletus"
 msgstr "default"
 
@@ -2955,11 +2955,11 @@ msgid "Liitteet: {0}"
 msgstr "Attachments: {0}"
 
 #. {0} = errorText(e)
-#: lib/ui/bug_report.dart:395 lib/ui/drawer.dart:563 lib/ui/dumbbell_review.dart:115 lib/ui/import_export.dart:67 …
+#: lib/ui/bug_report.dart:395 lib/ui/drawer.dart:564 lib/ui/dumbbell_review.dart:115 lib/ui/import_export.dart:67 …
 msgid "Virhe: {0}"
 msgstr "Error: {0}"
 
-#: lib/ui/bug_report.dart:450 lib/ui/drawer.dart:270 lib/ui/drawer.dart:492 lib/ui/drawer.dart:1435
+#: lib/ui/bug_report.dart:450 lib/ui/drawer.dart:270 lib/ui/drawer.dart:493 lib/ui/drawer.dart:1439
 msgid "Ilmoita ongelmasta"
 msgstr "Report a problem"
 
@@ -2990,7 +2990,7 @@ msgstr ""
 "E.g. what you did, what you expected and what happened. Does the "
 "problem repeat?"
 
-#: lib/ui/bug_report.dart:516 lib/ui/drawer.dart:1422
+#: lib/ui/bug_report.dart:516 lib/ui/drawer.dart:1426
 msgid "Voit kirjoittaa suomeksi, saameksi tai englanniksi."
 msgstr "You can write in Finnish, Sámi or English."
 
@@ -3073,7 +3073,7 @@ msgid "Käytössä"
 msgstr "In use"
 
 #. {0} = AppInfo.author
-#: lib/ui/drawer.dart:122 lib/ui/drawer.dart:453 lib/ui/program_template.dart:99
+#: lib/ui/drawer.dart:122 lib/ui/drawer.dart:454 lib/ui/program_template.dart:99
 msgid "Tekijä: {0}"
 msgstr "Author: {0}"
 
@@ -3099,7 +3099,7 @@ msgstr ""
 "Gym, running and steps: periods, comparison, feeling and strength "
 "progress"
 
-#: lib/ui/drawer.dart:151 lib/ui/home.dart:2139 lib/ui/injury_screen.dart:75 lib/ui/program_screen.dart:181
+#: lib/ui/drawer.dart:151 lib/ui/home.dart:2174 lib/ui/injury_screen.dart:75 lib/ui/program_screen.dart:181
 msgid "Vammatila"
 msgstr "Injury mode"
 
@@ -3120,7 +3120,7 @@ msgstr "{0} areas selected"
 msgid "Tauko: sairas tai loma"
 msgstr "Break: sick or vacation"
 
-#: lib/ui/drawer.dart:167 lib/ui/home.dart:2216
+#: lib/ui/drawer.dart:167 lib/ui/home.dart:2251
 msgid "Lopeta tauko"
 msgstr "End break"
 
@@ -3140,7 +3140,7 @@ msgstr "On vacation"
 msgid "Tiedot ja laitteet"
 msgstr "Data and devices"
 
-#: lib/ui/drawer.dart:195 lib/ui/drawer.dart:1350 lib/ui/maps_screen.dart:464
+#: lib/ui/drawer.dart:195 lib/ui/drawer.dart:1354 lib/ui/maps_screen.dart:464
 msgid "Kartat"
 msgstr "Maps"
 
@@ -3152,139 +3152,139 @@ msgstr "Offline maps for GPS routes: download an area or municipalities"
 msgid "Tuonti, vienti ja varmuuskopio"
 msgstr "Import, export and backup"
 
-#: lib/ui/drawer.dart:209 lib/ui/drawer.dart:375 lib/ui/import_export.dart:517
+#: lib/ui/drawer.dart:209 lib/ui/drawer.dart:376 lib/ui/import_export.dart:517
 msgid "Asetukset"
 msgstr "Settings"
 
-#: lib/ui/drawer.dart:214 lib/ui/drawer.dart:434
+#: lib/ui/drawer.dart:214 lib/ui/drawer.dart:435
 msgid "Tietoa, palaute ja tuki"
 msgstr "About, feedback and support"
 
 #. {0} = snap.data!.version
-#: lib/ui/drawer.dart:222 lib/ui/drawer.dart:456
+#: lib/ui/drawer.dart:222 lib/ui/drawer.dart:457
 msgid "Versio {0}"
 msgstr "Version {0}"
 
-#: lib/ui/drawer.dart:281 lib/ui/drawer.dart:504
+#: lib/ui/drawer.dart:281 lib/ui/drawer.dart:505
 msgid "Tarjoa kahvit"
 msgstr "Buy me a coffee"
 
-#: lib/ui/drawer.dart:282 lib/ui/drawer.dart:505
+#: lib/ui/drawer.dart:282 lib/ui/drawer.dart:506
 msgid "Vapaaehtoinen tuki kehitykselle"
 msgstr "Optional support for development"
 
-#: lib/ui/drawer.dart:334
+#: lib/ui/drawer.dart:335
 msgid "Yleiset"
 msgstr "General"
 
-#: lib/ui/drawer.dart:335 lib/ui/home.dart:2662
+#: lib/ui/drawer.dart:336 lib/ui/home.dart:2697
 msgid "Etusivu"
 msgstr "Home"
 
-#: lib/ui/drawer.dart:336
+#: lib/ui/drawer.dart:337
 msgid "Harjoittelu"
 msgstr "Training"
 
-#: lib/ui/drawer.dart:337 lib/ui/drawer.dart:990
+#: lib/ui/drawer.dart:338 lib/ui/drawer.dart:991
 msgid "Palautusajastin"
 msgstr "Rest timer"
 
-#: lib/ui/drawer.dart:338
+#: lib/ui/drawer.dart:339
 msgid "Keho ja laitteet"
 msgstr "Body and devices"
 
-#: lib/ui/drawer.dart:339
+#: lib/ui/drawer.dart:340
 msgid "Tallennus"
 msgstr "Storage"
 
-#: lib/ui/drawer.dart:364
+#: lib/ui/drawer.dart:365
 msgid "Kieli, teema"
 msgstr "Language, theme"
 
-#: lib/ui/drawer.dart:364
+#: lib/ui/drawer.dart:365
 msgid "Kieli, teema, liikkeiden nimet"
 msgstr "Language, theme, exercise names"
 
-#: lib/ui/drawer.dart:366
+#: lib/ui/drawer.dart:367
 msgid "Omat tavoitteet ja kortit, järjestys"
 msgstr "Your goals and cards, order"
 
-#: lib/ui/drawer.dart:367
+#: lib/ui/drawer.dart:368
 msgid "Mitä treenaat, painon lisäys, lämmittely, vinkit ja kevennys"
 msgstr "What you train, weight increment, warm-up, tips and deloads"
 
-#: lib/ui/drawer.dart:368
+#: lib/ui/drawer.dart:369
 msgid "Ääni, palautusajat ja ilmoitus"
 msgstr "Sound, rest times and notification"
 
-#: lib/ui/drawer.dart:369
+#: lib/ui/drawer.dart:370
 msgid "Kehonpaino, sykemittari, Health Connect"
 msgstr "Body weight, heart rate monitor, Health Connect"
 
-#: lib/ui/drawer.dart:371 lib/ui/drawer.dart:1215
+#: lib/ui/drawer.dart:372 lib/ui/drawer.dart:1219
 msgid "Treenikansio (.md)"
 msgstr "Workout folder (.md)"
 
-#: lib/ui/drawer.dart:388
+#: lib/ui/drawer.dart:389
 msgid "Hae asetuksista…"
 msgstr "Search settings…"
 
-#: lib/ui/drawer.dart:400 lib/ui/sport_picker.dart:120
+#: lib/ui/drawer.dart:401 lib/ui/sport_picker.dart:120
 msgid "Ei osumia."
 msgstr "No matches."
 
-#: lib/ui/drawer.dart:465
+#: lib/ui/drawer.dart:466
 msgid "Tietoa"
 msgstr "About"
 
-#: lib/ui/drawer.dart:472
+#: lib/ui/drawer.dart:473
 msgid "Uutta tässä versiossa"
 msgstr "New in this version"
 
-#: lib/ui/drawer.dart:480 lib/ui/drawer.dart:1394
+#: lib/ui/drawer.dart:481 lib/ui/drawer.dart:1398
 msgid "Avoin lähdekoodi ja lisenssit"
 msgstr "Open source and licenses"
 
-#: lib/ui/drawer.dart:486 lib/ui/drawer.dart:1413 lib/ui/drawer.dart:1510
+#: lib/ui/drawer.dart:487 lib/ui/drawer.dart:1417 lib/ui/drawer.dart:1514
 msgid "Lähetä palautetta"
 msgstr "Send feedback"
 
-#: lib/ui/drawer.dart:493
+#: lib/ui/drawer.dart:494
 msgid "Tallennus, tuonti, vienti… liitteineen"
 msgstr "Saving, import, export… with attachments"
 
-#: lib/ui/drawer.dart:499 lib/ui/drawer.dart:1472
+#: lib/ui/drawer.dart:500 lib/ui/drawer.dart:1476
 msgid "Osallistu ja tue"
 msgstr "Get involved and support"
 
-#: lib/ui/drawer.dart:558 lib/ui/import_export.dart:189
+#: lib/ui/drawer.dart:559 lib/ui/import_export.dart:189
 msgid "Tallenna varmuuskopio"
 msgstr "Save backup"
 
-#: lib/ui/drawer.dart:561
+#: lib/ui/drawer.dart:562
 msgid "Varmuuskopio tallennettu."
 msgstr "Backup saved."
 
 #. {0} = numDate(at, year: true)
 #. {1} = '${at.hour}${isEnglish ? ':' : '.'}${at.minute.toString().padLeft(2, '0')}'
-#: lib/ui/drawer.dart:571
+#: lib/ui/drawer.dart:572
 msgid "{0} klo {1}"
 msgstr "{0} at {1}"
 
 #. {0} = _title(f)
-#: lib/ui/drawer.dart:581 lib/ui/programs_screen.dart:98
+#: lib/ui/drawer.dart:582 lib/ui/programs_screen.dart:98
 msgid "Poistetaanko \"{0}\"?"
 msgstr "Delete \"{0}\"?"
 
-#: lib/ui/drawer.dart:582
+#: lib/ui/drawer.dart:583
 msgid "Poistettua varmuuskopiota ei voi palauttaa."
 msgstr "A deleted backup can't be restored."
 
-#: lib/ui/drawer.dart:620
+#: lib/ui/drawer.dart:621
 msgid "Automaattiset varmuuskopiot"
 msgstr "Automatic backups"
 
-#: lib/ui/drawer.dart:630
+#: lib/ui/drawer.dart:631
 msgid ""
 "Tehdään, kun uusi versio käynnistyy ensimmäisen kerran, ennen kuin se "
 "muuttaa mitään. Enintään 3; oma varmuuskopio korvaa ne. Ne ovat "
@@ -3296,29 +3296,29 @@ msgstr ""
 "workout folder, so they're deleted if the app is uninstalled while it "
 "uses the default folder: save an important copy somewhere else."
 
-#: lib/ui/drawer.dart:640
+#: lib/ui/drawer.dart:641
 msgid "Ei vielä automaattisia varmuuskopioita."
 msgstr "No automatic backups yet."
 
 #. {0} = AutoBackup.shortVersion(parsed.$2)
 #. {1} = fmtBytes(size)
-#: lib/ui/drawer.dart:656
+#: lib/ui/drawer.dart:657
 msgid "ennen {0} · {1}"
 msgstr "before {0} · {1}"
 
-#: lib/ui/drawer.dart:707
+#: lib/ui/drawer.dart:708
 msgid "Valitse treenikansio"
 msgstr "Choose workout folder"
 
-#: lib/ui/drawer.dart:715
+#: lib/ui/drawer.dart:716
 msgid "Kansion käyttö vaatii luvan \"Kaikkien tiedostojen käyttö\"."
 msgstr "Using the folder requires the \"All files access\" permission."
 
-#: lib/ui/drawer.dart:734
+#: lib/ui/drawer.dart:735
 msgid "Tehdäänkö treeniohjelma?"
 msgstr "Shall we create a workout program?"
 
-#: lib/ui/drawer.dart:737
+#: lib/ui/drawer.dart:738
 msgid ""
 "Vastaa muutamaan kysymykseen (tavoite, kokemus, päivät, kesto), niin "
 "saat salille valmiin ohjelman. Voit myös treenata vapaasti ja tehdä "
@@ -3328,43 +3328,43 @@ msgstr ""
 "ready-made gym program. You can also train freely and create a "
 "program later."
 
-#: lib/ui/drawer.dart:742 lib/ui/home.dart:640
+#: lib/ui/drawer.dart:743 lib/ui/home.dart:640
 msgid "Myöhemmin"
 msgstr "Later"
 
-#: lib/ui/drawer.dart:743 lib/ui/program_screen.dart:51
+#: lib/ui/drawer.dart:744 lib/ui/program_screen.dart:51
 msgid "Tee ohjelma"
 msgstr "Create program"
 
-#: lib/ui/drawer.dart:772
+#: lib/ui/drawer.dart:773
 msgid "Teema"
 msgstr "Theme"
 
-#: lib/ui/drawer.dart:781
+#: lib/ui/drawer.dart:782
 msgid "Auto"
 msgstr "Auto"
 
-#: lib/ui/drawer.dart:785
+#: lib/ui/drawer.dart:786
 msgid "Tumma"
 msgstr "Dark"
 
-#: lib/ui/drawer.dart:789
+#: lib/ui/drawer.dart:790
 msgid "Vaalea"
 msgstr "Light"
 
-#: lib/ui/drawer.dart:799 lib/ui/onboarding.dart:88 lib/whats_new.dart:270
+#: lib/ui/drawer.dart:800 lib/ui/onboarding.dart:88 lib/whats_new.dart:288
 msgid "Tekstin koko"
 msgstr "Text size"
 
-#: lib/ui/drawer.dart:809
+#: lib/ui/drawer.dart:810
 msgid "Vammatilan ohjeet ja liikevinkit"
 msgstr "Injury guidance and exercise tips"
 
-#: lib/ui/drawer.dart:816 lib/ui/drawer.dart:846
+#: lib/ui/drawer.dart:817 lib/ui/drawer.dart:847
 msgid "Suomi"
 msgstr "Finnish"
 
-#: lib/ui/drawer.dart:827
+#: lib/ui/drawer.dart:828
 msgid ""
 "Vammatilan ohjeita ja liikevinkkejä ei ole käännetty saameksi: "
 "valitse, näytetäänkö ne suomeksi vai englanniksi."
@@ -3372,15 +3372,15 @@ msgstr ""
 "Injury guidance and exercise tips aren't translated into Sámi: choose "
 "whether they're shown in Finnish or English."
 
-#: lib/ui/drawer.dart:837
+#: lib/ui/drawer.dart:838
 msgid "Liikkeiden nimet"
 msgstr "Exercise names"
 
-#: lib/ui/drawer.dart:854 lib/ui/widgets.dart:751
+#: lib/ui/drawer.dart:855 lib/ui/widgets.dart:760
 msgid "Molemmat"
 msgstr "Both"
 
-#: lib/ui/drawer.dart:865
+#: lib/ui/drawer.dart:866
 msgid ""
 "Liikkeiden ja lajien nimet. Haku löytää ne aina molemmilla kielillä, "
 "ja tiedostoihin nimet tallentuvat suomeksi."
@@ -3388,11 +3388,11 @@ msgstr ""
 "Exercise and sport names. Search always finds them in both languages, "
 "and files always store the names in Finnish."
 
-#: lib/ui/drawer.dart:878 lib/ui/onboarding.dart:149
+#: lib/ui/drawer.dart:879 lib/ui/onboarding.dart:149
 msgid "Mitä treenaat?"
 msgstr "What do you train?"
 
-#: lib/ui/drawer.dart:892
+#: lib/ui/drawer.dart:893
 msgid ""
 "Sali: salitreenit ja ohjelma. Liikunta: juoksu, pyöräily, hiihto ja "
 "muut lajit. Molemmat: etusivulla valinta Sali / Liikunta."
@@ -3400,58 +3400,58 @@ msgstr ""
 "Gym: gym workouts and a program. Activity: running, cycling, skiing "
 "and other sports. Both: choose Gym / Activity on the home screen."
 
-#: lib/ui/drawer.dart:901
+#: lib/ui/drawer.dart:902
 msgid "Uinnin vauhti"
 msgstr "Swimming pace"
 
-#: lib/ui/drawer.dart:917
+#: lib/ui/drawer.dart:918
 msgid "Painon lisäys (kg)"
 msgstr "Weight increment (kg)"
 
-#: lib/ui/drawer.dart:934
+#: lib/ui/drawer.dart:935
 msgid "Levyt ja tanko"
 msgstr "Plates and bar"
 
 #. {0} = settings.plates.map(fmtNum).join(', ')
 #. {1} = fmtNum(settings.barKg)
-#: lib/ui/drawer.dart:937
+#: lib/ui/drawer.dart:938
 msgid "Levylaskuri: {0} · tanko {1} kg"
 msgstr "Plate calculator: {0} · bar {1} kg"
 
-#: lib/ui/drawer.dart:942
+#: lib/ui/drawer.dart:943
 msgid "hex bar: ei asetettu"
 msgstr "hex bar: not set"
 
 #. {0} = fmtNum(settings.hexBarKg!)
-#: lib/ui/drawer.dart:943
+#: lib/ui/drawer.dart:944
 msgid "hex bar {0} kg"
 msgstr "hex bar {0} kg"
 
-#: lib/ui/drawer.dart:951
+#: lib/ui/drawer.dart:952
 msgid "Lämmittelylaitteet"
 msgstr "Warm-up machines"
 
-#: lib/ui/drawer.dart:955
+#: lib/ui/drawer.dart:956
 msgid "Palauta"
 msgstr "Restore"
 
-#: lib/ui/drawer.dart:960
+#: lib/ui/drawer.dart:961
 msgid "Laitteita voi lisätä ja poistaa uuden treenin Muokkaa-napista."
 msgstr "You can add and remove machines with the Edit button in a new workout."
 
-#: lib/ui/drawer.dart:964
+#: lib/ui/drawer.dart:965
 msgid "Vinkit ja edistyminen"
 msgstr "Tips and progress"
 
-#: lib/ui/drawer.dart:965
+#: lib/ui/drawer.dart:966
 msgid "Edistyminen etusivulla ja kevennysviikon ehdotukset."
 msgstr "Progress on the home screen and deload week suggestions."
 
-#: lib/ui/drawer.dart:970
+#: lib/ui/drawer.dart:971
 msgid "Ehdota kevennystä (viikon välein)"
 msgstr "Suggest a deload (interval in weeks)"
 
-#: lib/ui/drawer.dart:993
+#: lib/ui/drawer.dart:994
 msgid ""
 "Sarjan tallennus käynnistää palautuksen: raskaissa ja lähellä "
 "maksimia pidempi, kevennysviikolla lyhyempi. Ohjelman liikkeillä "
@@ -3461,27 +3461,27 @@ msgstr ""
 "efforts, shorter during a deload week. Program exercises use the "
 "program's rest."
 
-#: lib/ui/drawer.dart:1013
+#: lib/ui/drawer.dart:1017
 msgid "Ilmoitusääni"
 msgstr "Alert sound"
 
-#: lib/ui/drawer.dart:1015
+#: lib/ui/drawer.dart:1019
 msgid "Kuuntele"
 msgstr "Listen"
 
-#: lib/ui/drawer.dart:1036
+#: lib/ui/drawer.dart:1040
 msgid "Kello"
 msgstr "Chime"
 
-#: lib/ui/drawer.dart:1037
+#: lib/ui/drawer.dart:1041
 msgid "Värinä"
 msgstr "Vibrate"
 
-#: lib/ui/drawer.dart:1056
+#: lib/ui/drawer.dart:1060
 msgid "Ilmoitus käynnissä olevasta treenistä"
 msgstr "Notification for a workout in progress"
 
-#: lib/ui/drawer.dart:1058
+#: lib/ui/drawer.dart:1062
 msgid ""
 "Pudotusvalikossa näkyy esim. \"Salitreeni käynnissä\" ja kulunut aika, "
 "kunnes treeni on valmis."
@@ -3489,31 +3489,31 @@ msgstr ""
 "The notification shade shows e.g. \"Gym workout in progress\" and the "
 "time elapsed until the workout is done."
 
-#: lib/ui/drawer.dart:1066
+#: lib/ui/drawer.dart:1070
 msgid "Keho"
 msgstr "Body"
 
-#: lib/ui/drawer.dart:1072
+#: lib/ui/drawer.dart:1076
 msgid "Syntymävuosi ja sukupuoli"
 msgstr "Birth year and sex"
 
-#: lib/ui/drawer.dart:1075
+#: lib/ui/drawer.dart:1079
 msgid "Valinnainen: tarkempi maksimisyke ja kalorit"
 msgstr "Optional: more accurate max heart rate and calories"
 
-#: lib/ui/drawer.dart:1078 lib/ui/hr_ui.dart:706
+#: lib/ui/drawer.dart:1082 lib/ui/hr_ui.dart:706
 msgid "mies"
 msgstr "male"
 
-#: lib/ui/drawer.dart:1078 lib/ui/hr_ui.dart:706
+#: lib/ui/drawer.dart:1082 lib/ui/hr_ui.dart:706
 msgid "nainen"
 msgstr "female"
 
-#: lib/ui/drawer.dart:1087
+#: lib/ui/drawer.dart:1091
 msgid "Kehonpainon seuranta"
 msgstr "Body weight tracking"
 
-#: lib/ui/drawer.dart:1089
+#: lib/ui/drawer.dart:1093
 msgid ""
 "Aamupaino kysytään etusivulla kerran päivässä. Painon kehitys ja "
 "painoindeksi tilastoissa."
@@ -3521,15 +3521,15 @@ msgstr ""
 "Asks your morning weight on the home screen once a day. Weight trend "
 "and BMI in statistics."
 
-#: lib/ui/drawer.dart:1102
+#: lib/ui/drawer.dart:1106
 msgid "Lisää punnitus ja pituus"
 msgstr "Add a weigh-in and your height"
 
-#: lib/ui/drawer.dart:1114
+#: lib/ui/drawer.dart:1118
 msgid "Sykemittari ja älykello"
 msgstr "Heart rate monitor and smartwatch"
 
-#: lib/ui/drawer.dart:1116
+#: lib/ui/drawer.dart:1120
 msgid ""
 "Kirjaa kellosta kesto, kalorit sekä keski- ja maksimisyke treeneihin "
 "ja liikuntaan."
@@ -3537,11 +3537,11 @@ msgstr ""
 "Log duration, calories, and average and max heart rate from your "
 "watch for workouts and activities."
 
-#: lib/ui/drawer.dart:1129 lib/ui/hr_ui.dart:776
+#: lib/ui/drawer.dart:1133 lib/ui/hr_ui.dart:776
 msgid "Sykealueet ja kalorit"
 msgstr "Heart rate zones and calories"
 
-#: lib/ui/drawer.dart:1146
+#: lib/ui/drawer.dart:1150
 msgid ""
 "Polar H10, Verity Sense, Garmin HRM ym. Bluetoothilla: syke treenin "
 "aikana."
@@ -3549,11 +3549,11 @@ msgstr ""
 "Polar H10, Verity Sense, Garmin HRM etc. over Bluetooth: heart rate "
 "during workouts."
 
-#: lib/ui/drawer.dart:1157 lib/ui/import_export.dart:335 lib/whats_new.dart:318
+#: lib/ui/drawer.dart:1161 lib/ui/import_export.dart:335 lib/whats_new.dart:336
 msgid "Päivän askeleet"
 msgstr "Daily steps"
 
-#: lib/ui/drawer.dart:1160
+#: lib/ui/drawer.dart:1164
 msgid ""
 "Askeleet päivittäin Health Connectista (esim. puhelin ja Oura) ilman "
 "päällekkäisyyksiä: etusivulla ja tilastoissa. Vain luku; treeneihin "
@@ -3563,11 +3563,11 @@ msgstr ""
 "duplicates: on the home screen and in statistics. Read-only; workouts "
 "aren't touched."
 
-#: lib/ui/drawer.dart:1178 lib/ui/health_import.dart:131
+#: lib/ui/drawer.dart:1182 lib/ui/health_import.dart:131
 msgid "Lisää tehty liikunta Health Connectista"
 msgstr "Add completed exercise from Health Connect"
 
-#: lib/ui/drawer.dart:1181
+#: lib/ui/drawer.dart:1185
 msgid ""
 "Etusivulle painike, josta kellon tai muun sovelluksen Health "
 "Connectiin tallentama liikunta lisätään Gievraan: laji, aika, matka, "
@@ -3577,7 +3577,7 @@ msgstr ""
 "saved to Health Connect into Gievra: sport, time, distance, heart "
 "rate, calories and steps."
 
-#: lib/ui/drawer.dart:1200
+#: lib/ui/drawer.dart:1204
 msgid ""
 "Liikunnan lisäys tarvitsee luvan lukea harjoitukset Health "
 "Connectista. Voit antaa sen myöhemmin."
@@ -3585,51 +3585,51 @@ msgstr ""
 "Adding activities needs permission to read workouts from Health "
 "Connect. You can give it later."
 
-#: lib/ui/drawer.dart:1217
+#: lib/ui/drawer.dart:1221
 msgid ""
 "Valitse esim. Nextcloud-, Seafile-, ownCloud- tai Drive-synkattu "
 "kansio."
 msgstr "Choose e.g. a Nextcloud, Seafile, ownCloud or Drive synced folder."
 
-#: lib/ui/drawer.dart:1228
+#: lib/ui/drawer.dart:1232
 msgid "Palauta oletuskansio"
 msgstr "Restore default folder"
 
-#: lib/ui/drawer.dart:1278
+#: lib/ui/drawer.dart:1282
 msgid "verkkodemo"
 msgstr "web demo"
 
-#: lib/ui/drawer.dart:1278
+#: lib/ui/drawer.dart:1282
 msgid "työpöytä"
 msgstr "desktop"
 
-#: lib/ui/drawer.dart:1289
+#: lib/ui/drawer.dart:1293
 msgid "Sinun treenisi, sinun tiedostosi."
 msgstr "Your workouts, your files."
 
 #. {0} = info.version
 #. {1} = platform
-#: lib/ui/drawer.dart:1293
+#: lib/ui/drawer.dart:1297
 msgid "Versio {0} ({1})"
 msgstr "Version {0} ({1})"
 
-#: lib/ui/drawer.dart:1302
+#: lib/ui/drawer.dart:1306
 msgid "Maksuton ja avoin treenipäiväkirja salille ja kuntoiluun."
 msgstr "A free and open training log for the gym and fitness."
 
-#: lib/ui/drawer.dart:1305
+#: lib/ui/drawer.dart:1309
 msgid "Tekijä"
 msgstr "Author"
 
-#: lib/ui/drawer.dart:1314 lib/ui/drawer.dart:1513
+#: lib/ui/drawer.dart:1318 lib/ui/drawer.dart:1517
 msgid "GitHub"
 msgstr "GitHub"
 
-#: lib/ui/drawer.dart:1317
+#: lib/ui/drawer.dart:1321
 msgid "Treenit ovat sinun"
 msgstr "Your workouts are yours"
 
-#: lib/ui/drawer.dart:1320
+#: lib/ui/drawer.dart:1324
 msgid ""
 "Jokainen treeni tallentuu tavallisena Markdown-tiedostona (.md) "
 "valitsemaasi kansioon, yksi tiedosto treeniä kohden. Tiedostot "
@@ -3642,11 +3642,11 @@ msgstr ""
 "for example, Obsidian, and they move between devices via Nextcloud, "
 "Seafile, ownCloud or Drive."
 
-#: lib/ui/drawer.dart:1326
+#: lib/ui/drawer.dart:1330
 msgid "Tietosuoja"
 msgstr "Privacy"
 
-#: lib/ui/drawer.dart:1329
+#: lib/ui/drawer.dart:1333
 msgid ""
 "Sovelluksessa ei ole tiliä, mainoksia eikä analytiikkaa, eikä se "
 "lähetä tietoja minnekään. Treenit pysyvät omassa kansiossasi."
@@ -3654,7 +3654,7 @@ msgstr ""
 "The app has no account, ads or analytics, and it doesn't send data "
 "anywhere. Your workouts stay in your own folder."
 
-#: lib/ui/drawer.dart:1337
+#: lib/ui/drawer.dart:1341
 msgid ""
 "Health Connectista Gievra lukee vain ne tiedot, joihin annat luvan, "
 "ja vain itse käyttöön ottamiisi toimintoihin: treenien tuonti ja "
@@ -3670,11 +3670,11 @@ msgstr ""
 "uni.md), and Gievra does not write to Health Connect. You can revoke "
 "the permissions in Health Connect settings."
 
-#: lib/ui/drawer.dart:1343
+#: lib/ui/drawer.dart:1347
 msgid "Saamelainen teema"
 msgstr "Sámi theme"
 
-#: lib/ui/drawer.dart:1346
+#: lib/ui/drawer.dart:1350
 msgid ""
 "Värit ja aurinko/kuu-ympyrä tulevat saamen lipusta, ja koristenauha "
 "on lainattu gáktin reunuksista. Kalenterissa kuukaudet näkyvät myös "
@@ -3685,7 +3685,7 @@ msgstr ""
 "dress). In the calendar, months are also shown in Northern Sámi."
 
 #. {0} = MapCredits.osm
-#: lib/ui/drawer.dart:1353
+#: lib/ui/drawer.dart:1357
 msgid ""
 "Karttatiedot {0}, lisenssi ODbL 1.0. Rannikot ja rajat pienillä "
 "mittakaavoilla: Natural Earth (public domain). Kunta- ja "
@@ -3696,7 +3696,7 @@ msgstr ""
 "boundaries: Statistics Finland, CC BY 4.0."
 
 #. {0} = MapCredits.osm
-#: lib/ui/drawer.dart:1361
+#: lib/ui/drawer.dart:1365
 msgid ""
 "Muiden maiden aluerajat: Ruotsi, Norja, Tanska, Islanti, Espanja ja "
 "Irlanti {0} (ODbL). Iso-Britannia: Office for National Statistics, "
@@ -3708,7 +3708,7 @@ msgstr ""
 "Statistics, Open Government Licence v3.0; contains OS data © Crown "
 "copyright and database right 2024."
 
-#: lib/ui/drawer.dart:1370
+#: lib/ui/drawer.dart:1374
 msgid ""
 "Korkeustiedot (Suomi): Maanmittauslaitos, Korkeusmalli 10 m (2019), "
 "CC BY 4.0; muunnettu Gievraa varten 25 metrin ruudukoksi."
@@ -3716,7 +3716,7 @@ msgstr ""
 "Elevation data (Finland): National Land Survey of Finland, Elevation "
 "model 10 m (2019), CC BY 4.0; converted to a 25 m grid for Gievra."
 
-#: lib/ui/drawer.dart:1377
+#: lib/ui/drawer.dart:1381
 msgid ""
 "Korkeustiedot (Ruotsi, Norja, Tanska, Islanti, Iso-Britannia, Espanja "
 "ja Irlanti): Copernicus DEM GLO-30, muunnettu Gievraa varten noin 30 "
@@ -3726,19 +3726,19 @@ msgstr ""
 "Spain and Ireland): Copernicus DEM GLO-30, converted to a grid of "
 "about 30 m for Gievra."
 
-#: lib/ui/drawer.dart:1402
+#: lib/ui/drawer.dart:1406
 msgid "Lisenssit"
 msgstr "Licenses"
 
-#: lib/ui/drawer.dart:1404 lib/ui/drawer.dart:1463 lib/ui/drawer.dart:1553 lib/ui/home.dart:2291
+#: lib/ui/drawer.dart:1408 lib/ui/drawer.dart:1467 lib/ui/drawer.dart:1557 lib/ui/home.dart:2326 …
 msgid "Sulje"
 msgstr "Close"
 
-#: lib/ui/drawer.dart:1420
+#: lib/ui/drawer.dart:1424
 msgid "Virheet, puuttuvat liikkeet, toiveet ja ideat ovat tervetulleita."
 msgstr "Bugs, missing exercises, wishes and ideas are welcome."
 
-#: lib/ui/drawer.dart:1425
+#: lib/ui/drawer.dart:1429
 msgid ""
 "Jos jokin ei toimi, käytä mieluummin Ilmoita ongelmasta: se liittää "
 "mukaan tarvittavat tiedot."
@@ -3746,28 +3746,28 @@ msgstr ""
 "If something doesn't work, use Report a problem instead: it attaches "
 "the information needed."
 
-#: lib/ui/drawer.dart:1447
+#: lib/ui/drawer.dart:1451
 msgid "Osoite kopioitu"
 msgstr "Address copied"
 
-#: lib/ui/drawer.dart:1449 lib/ui/drawer.dart:1886
+#: lib/ui/drawer.dart:1453 lib/ui/drawer.dart:1890
 msgid "Kopioi"
 msgstr "Copy"
 
-#: lib/ui/drawer.dart:1458
+#: lib/ui/drawer.dart:1462
 msgid "Gievra-palaute"
 msgstr "Gievra feedback"
 
-#: lib/ui/drawer.dart:1459 lib/ui/suggest_exercise.dart:103
+#: lib/ui/drawer.dart:1463 lib/ui/suggest_exercise.dart:103
 msgid "Avaa sähköposti"
 msgstr "Open email"
 
-#: lib/ui/drawer.dart:1462
+#: lib/ui/drawer.dart:1466
 msgid "Tee ilmoitus GitHubissa"
 msgstr "Report on GitHub"
 
 #. {0} = AppInfo.fullName
-#: lib/ui/drawer.dart:1478
+#: lib/ui/drawer.dart:1482
 msgid ""
 "{0} on maksuton ja avoin sovellus kaikille salista ja kuntoilusta "
 "kiinnostuneille. Siinä ei ole mainoksia, tilauksia eikä maksullisia "
@@ -3776,7 +3776,7 @@ msgstr ""
 "{0} is a free and open app for everyone interested in the gym and "
 "fitness. It has no ads, subscriptions or paid add-ons, and never will."
 
-#: lib/ui/drawer.dart:1486
+#: lib/ui/drawer.dart:1490
 msgid ""
 "Gievra on vapaa ohjelma GNU GPL v3.0 -lisenssillä: sen lähdekoodia "
 "saa käyttää, tutkia, muokata ja jakaa, kunhan muokatut versiot "
@@ -3789,41 +3789,41 @@ msgstr ""
 "are shared under the same license. The app uses open source "
 "libraries, listed under About → Open source and licenses."
 
-#: lib/ui/drawer.dart:1493
+#: lib/ui/drawer.dart:1497
 msgid "Näin voit auttaa"
 msgstr "How you can help"
 
-#: lib/ui/drawer.dart:1495
+#: lib/ui/drawer.dart:1499
 msgid "Ehdota liikkeitä:"
 msgstr "Suggest exercises:"
 
-#: lib/ui/drawer.dart:1495
+#: lib/ui/drawer.dart:1499
 msgid "kerro, jos luettelosta puuttuu salilla yleinen liike."
 msgstr "let us know if a common gym exercise is missing from the list."
 
-#: lib/ui/drawer.dart:1496
+#: lib/ui/drawer.dart:1500
 msgid "Ilmoita virheistä:"
 msgstr "Report bugs:"
 
-#: lib/ui/drawer.dart:1496
+#: lib/ui/drawer.dart:1500
 msgid "kerro, jos jokin ei toimi tai treeni ei tallennu oikein."
 msgstr ""
 "let us know if something doesn't work or a workout isn't saved "
 "correctly."
 
-#: lib/ui/drawer.dart:1497
+#: lib/ui/drawer.dart:1501
 msgid "Ehdota ideoita:"
 msgstr "Suggest ideas:"
 
-#: lib/ui/drawer.dart:1497
+#: lib/ui/drawer.dart:1501
 msgid "uusia ominaisuuksia, tilastoja tai käyttöliittymän muutoksia."
 msgstr "new features, statistics or UI changes."
 
-#: lib/ui/drawer.dart:1498
+#: lib/ui/drawer.dart:1502
 msgid "Saavutettavuus:"
 msgstr "Accessibility:"
 
-#: lib/ui/drawer.dart:1498
+#: lib/ui/drawer.dart:1502
 msgid ""
 "kerro, mikä helpottaisi käyttöä esimerkiksi näkö- tai liikuntavamman "
 "kanssa."
@@ -3831,27 +3831,27 @@ msgstr ""
 "tell us what would make the app easier to use, for example with a "
 "visual or mobility impairment."
 
-#: lib/ui/drawer.dart:1499
+#: lib/ui/drawer.dart:1503
 msgid "Käännökset:"
 msgstr "Translations:"
 
-#: lib/ui/drawer.dart:1499
+#: lib/ui/drawer.dart:1503
 msgid "auta tuomaan sovellus saameksi."
 msgstr "help bring the app to Sámi."
 
-#: lib/ui/drawer.dart:1500
+#: lib/ui/drawer.dart:1504
 msgid "Osallistu kehitykseen:"
 msgstr "Contribute to development:"
 
-#: lib/ui/drawer.dart:1500
+#: lib/ui/drawer.dart:1504
 msgid "lähdekoodi on avointa, ja korjaukset ovat tervetulleita."
 msgstr "the source code is open, and fixes are welcome."
 
-#: lib/ui/drawer.dart:1516
+#: lib/ui/drawer.dart:1520
 msgid "Miksi tukea?"
 msgstr "Why support?"
 
-#: lib/ui/drawer.dart:1519
+#: lib/ui/drawer.dart:1523
 msgid ""
 "Sovelluksen kehittäminen ja ylläpito tehdään vapaa-ajalla. "
 "Tarjoamalla kahvit tuet suoraan tätä työtä:"
@@ -3859,11 +3859,11 @@ msgstr ""
 "The app is developed and maintained in my free time. By buying me a "
 "coffee, you directly support this work:"
 
-#: lib/ui/drawer.dart:1525
+#: lib/ui/drawer.dart:1529
 msgid "sovellus pysyy maksuttomana ja mainoksettomana kaikille"
 msgstr "the app stays free and ad-free for everyone"
 
-#: lib/ui/drawer.dart:1529
+#: lib/ui/drawer.dart:1533
 msgid ""
 "sovellus pysyy ajan tasalla, ja Windows- ja Linux-versiot "
 "valmistuvat, kun sovellus on hiottu valmiiksi"
@@ -3871,15 +3871,15 @@ msgstr ""
 "the app stays up to date, and the Windows and Linux versions get done "
 "once the app is polished"
 
-#: lib/ui/drawer.dart:1533
+#: lib/ui/drawer.dart:1537
 msgid "saamenkielinen versio ja uudet ominaisuudet etenevät nopeammin"
 msgstr "the Sámi version and new features progress faster"
 
-#: lib/ui/drawer.dart:1541
+#: lib/ui/drawer.dart:1545
 msgid "Buy me a coffee"
 msgstr "Buy me a coffee"
 
-#: lib/ui/drawer.dart:1546
+#: lib/ui/drawer.dart:1550
 msgid ""
 "Tuki on vapaaehtoista eikä avaa mitään lisäominaisuuksia: sovellus "
 "pysyy kaikille maksuttomana."
@@ -3887,15 +3887,15 @@ msgstr ""
 "Support is voluntary and doesn't unlock any extra features: the app "
 "stays free for everyone."
 
-#: lib/ui/drawer.dart:1550
+#: lib/ui/drawer.dart:1554
 msgid "Giitu! Kiitos, että tuet sovellusta!"
 msgstr "Giitu! Thank you for supporting the app!"
 
-#: lib/ui/drawer.dart:1570
+#: lib/ui/drawer.dart:1574
 msgid "Tauko kesti vain päivän"
 msgstr "The break lasted only a day"
 
-#: lib/ui/drawer.dart:1573
+#: lib/ui/drawer.dart:1577
 msgid ""
 "Tauko alkoi tänään. Jos jätät sen, koko päivä merkitään tauoksi, myös "
 "tämän päivän treenit. Poista tauko, jos lisäsit sen vahingossa."
@@ -3904,60 +3904,60 @@ msgstr ""
 "break, including today's workouts. Delete the break if you added it "
 "by mistake."
 
-#: lib/ui/drawer.dart:1579 lib/ui/drawer.dart:1830 lib/ui/home.dart:2209
+#: lib/ui/drawer.dart:1583 lib/ui/drawer.dart:1834 lib/ui/home.dart:2244
 msgid "Poista tauko"
 msgstr "Delete break"
 
-#: lib/ui/drawer.dart:1580
+#: lib/ui/drawer.dart:1584
 msgid "Jätä tauko"
 msgstr "Keep break"
 
-#: lib/ui/drawer.dart:1597
+#: lib/ui/drawer.dart:1601
 msgid "Tauko poistettu"
 msgstr "Break deleted"
 
-#: lib/ui/drawer.dart:1602 lib/ui/hc_update.dart:125
+#: lib/ui/drawer.dart:1606 lib/ui/hc_update.dart:125
 msgid "Kumoa"
 msgstr "Undo"
 
-#: lib/ui/drawer.dart:1657
+#: lib/ui/drawer.dart:1661
 msgid "Ei päättymispäivää"
 msgstr "No end date"
 
-#: lib/ui/drawer.dart:1673
+#: lib/ui/drawer.dart:1677
 msgid "Tauko treenaamisesta"
 msgstr "Break from training"
 
-#: lib/ui/drawer.dart:1673
+#: lib/ui/drawer.dart:1677
 msgid "Muokkaa taukoa"
 msgstr "Edit break"
 
-#: lib/ui/drawer.dart:1685
+#: lib/ui/drawer.dart:1689
 msgid "🤒 Sairas"
 msgstr "🤒 Sick"
 
-#: lib/ui/drawer.dart:1686
+#: lib/ui/drawer.dart:1690
 msgid "🏖 Loma"
 msgstr "🏖 Vacation"
 
-#: lib/ui/drawer.dart:1687
+#: lib/ui/drawer.dart:1691
 msgid "🩹 Vamma"
 msgstr "🩹 Injury"
 
-#: lib/ui/drawer.dart:1740
+#: lib/ui/drawer.dart:1744
 msgid "Alkaa"
 msgstr "Starts"
 
-#: lib/ui/drawer.dart:1762
+#: lib/ui/drawer.dart:1766
 msgid "Päättyy"
 msgstr "Ends"
 
-#: lib/ui/drawer.dart:1763
+#: lib/ui/drawer.dart:1767
 msgid "lopetan itse"
 msgstr "I'll end it myself"
 
 #. {0} = d(end!)
-#: lib/ui/drawer.dart:1785
+#: lib/ui/drawer.dart:1789
 msgid ""
 "Tauko päättyy itsestään {0} jälkeen. Voit muuttaa päiviä myöhemmin "
 "etusivulta tai kalenterista."
@@ -3965,7 +3965,7 @@ msgstr ""
 "The break ends by itself after {0}. You can change the days later "
 "from the home screen or the calendar."
 
-#: lib/ui/drawer.dart:1795
+#: lib/ui/drawer.dart:1799
 msgid ""
 "Treenata ja liikkua voi silti; sovellus vain muistuttaa tauosta. "
 "Lyhyt loma ei juuri vaikuta voimaan; pidemmän jälkeen sovellus "
@@ -3975,7 +3975,7 @@ msgstr ""
 "A short holiday hardly affects strength; after a longer one the app "
 "suggests lighter loads at first."
 
-#: lib/ui/drawer.dart:1799
+#: lib/ui/drawer.dart:1803
 msgid ""
 "Lepää ja parane. Kävely ja treeni ovat silti sallittuja; sovellus "
 "vain muistuttaa tauosta. Tauon jälkeen noin kaksi viikkoa kevyempiä "
@@ -3985,37 +3985,37 @@ msgstr ""
 "only reminds you of the break. After the break, about two weeks of "
 "lighter loads and fewer sets depending on the length of the break."
 
-#: lib/ui/drawer.dart:1808
+#: lib/ui/drawer.dart:1812
 msgid "Tauko jatkuu, kunnes lopetat sen."
 msgstr "The break continues until you end it."
 
-#: lib/ui/drawer.dart:1815
+#: lib/ui/drawer.dart:1819
 msgid "Aiemmat tauot"
 msgstr "Earlier breaks"
 
-#: lib/ui/drawer.dart:1848
+#: lib/ui/drawer.dart:1852
 msgid "Aloita tauko"
 msgstr "Start break"
 
-#: lib/ui/drawer.dart:1876
+#: lib/ui/drawer.dart:1880
 msgid "Kopioidaanko treenit?"
 msgstr "Copy workouts?"
 
 #. {0} = oldFiles.length
-#: lib/ui/drawer.dart:1878
+#: lib/ui/drawer.dart:1882
 msgid "Nykyisessä kansiossa on {0} tiedostoa (treenit, asetukset ja ohjelma)."
 msgstr "The current folder has {0} files (workouts, settings and program)."
 
-#: lib/ui/drawer.dart:1879
+#: lib/ui/drawer.dart:1883
 msgid "Uusi kansio on tyhjä."
 msgstr "The new folder is empty."
 
 #. {0} = newFiles.length
-#: lib/ui/drawer.dart:1879
+#: lib/ui/drawer.dart:1883
 msgid "Uudessa kansiossa on jo {0} .md-tiedostoa."
 msgstr "The new folder already has {0} .md files."
 
-#: lib/ui/drawer.dart:1880
+#: lib/ui/drawer.dart:1884
 msgid ""
 "Kopioidaanko treenit uuteen kansioon? Uuden kansion tiedostoja ei "
 "ylikirjoiteta, ja alkuperäiset jäävät myös vanhaan kansioon."
@@ -4023,70 +4023,86 @@ msgstr ""
 "Copy the workouts to the new folder? Files in the new folder won't be "
 "overwritten, and the originals also stay in the old folder."
 
-#: lib/ui/drawer.dart:1885
+#: lib/ui/drawer.dart:1889
 msgid "Älä kopioi"
 msgstr "Don't copy"
 
 #. {0} = c
 #. {1} = sk
-#: lib/ui/drawer.dart:1898
+#: lib/ui/drawer.dart:1902
 msgid "Kopioitu {0} tiedostoa, {1} oli jo uudessa kansiossa. "
 msgstr "Copied {0} files, {1} were already in the new folder. "
 
 #. {0} = c
-#: lib/ui/drawer.dart:1899
+#: lib/ui/drawer.dart:1903
 msgid "Kopioitu {0} tiedostoa. "
 msgstr "Copied {0} files. "
 
 #. {0} = errorText(e)
-#: lib/ui/drawer.dart:1901
+#: lib/ui/drawer.dart:1905
 msgid "Kopiointi epäonnistui: {0}"
 msgstr "Copying failed: {0}"
 
 #. {0} = msg
 #. {1} = store.workouts.length
-#: lib/ui/drawer.dart:1909
+#: lib/ui/drawer.dart:1913
 msgid "{0}Löytyi {1} treeniä."
 msgstr "{0}Found {1} workouts."
 
-#: lib/ui/drawer.dart:1928
+#: lib/ui/drawer.dart:1932
 msgid "Kevyt kuorma (yli 12 toistoa)"
 msgstr "Light load (over 12 reps)"
 
-#: lib/ui/drawer.dart:1929
+#: lib/ui/drawer.dart:1933
 msgid "Keskiraskas (6–12 toistoa)"
 msgstr "Moderate (6–12 reps)"
 
-#: lib/ui/drawer.dart:1930
+#: lib/ui/drawer.dart:1934
 msgid "Raskas (1–5 toistoa tai lähellä maksimia)"
 msgstr "Heavy (1–5 reps or near max)"
 
-#: lib/ui/drawer.dart:1937
+#: lib/ui/drawer.dart:1941
 msgid "Palautusajat"
 msgstr "Rest times"
 
-#: lib/ui/drawer.dart:1948
+#: lib/ui/drawer.dart:1952
 msgid "ohjelmasi oletus"
 msgstr "your program's default"
 
 #. {0} = _mmss(defs[c])
 #. {1} = settings.restAdjust[c] > 0 ? '+' : ''
 #. {2} = settings.restAdjust[c]
-#: lib/ui/drawer.dart:1949
+#: lib/ui/drawer.dart:1953
 msgid "oletus {0}, oma säätö {1}{2} s"
 msgstr "default {0}, your adjustment {1}{2} s"
 
-#: lib/ui/drawer.dart:1990
+#: lib/ui/drawer.dart:1994
 msgid "Palauta oletukset"
 msgstr "Restore defaults"
 
-#: lib/ui/drawer.dart:1994
+#: lib/ui/drawer.dart:1998
 msgid ""
 "Eristävät liikkeet ja lämmittelysarjat lyhyemmin. Ei varaa: +30 s. "
 "Kevennysviikolla × 0,75."
 msgstr ""
 "Shorter for isolation exercises and warm-up sets. No reps in reserve: "
 "+30 s. Deload week: × 0.75."
+
+#: lib/ui/drawer.dart:2062 lib/whats_new.dart:24
+msgid "Ilmoitukset estetty"
+msgstr "Notifications blocked"
+
+#: lib/ui/drawer.dart:2065
+msgid ""
+"Palautusajastimen ja käynnissä olevan treenin ilmoitukset eivät näy. "
+"Salli ilmoitukset sovelluksen asetuksista."
+msgstr ""
+"Rest timer and ongoing workout notifications won't show. Allow "
+"notifications in the app's settings."
+
+#: lib/ui/drawer.dart:2068
+msgid "Avaa asetukset"
+msgstr "Open settings"
 
 #. {0} = n
 #: lib/ui/dumbbell_review.dart:120
@@ -4163,19 +4179,19 @@ msgstr "km/h per kilometre"
 msgid "min/km kilometreittäin, ilman taukoja"
 msgstr "min/km per kilometre, pauses excluded"
 
-#: lib/ui/exercise_guide.dart:36 lib/ui/set_logger.dart:299
+#: lib/ui/exercise_guide.dart:36 lib/ui/set_logger.dart:300
 msgid "Näin teet"
 msgstr "How to do it"
 
-#: lib/ui/exercise_guide.dart:45 lib/ui/set_logger.dart:312
+#: lib/ui/exercise_guide.dart:45 lib/ui/set_logger.dart:313
 msgid "Ei saatavilla saameksi: liikevinkit näkyvät englanniksi."
 msgstr "Not available in Sámi: exercise tips are shown in English."
 
-#: lib/ui/exercise_guide.dart:46 lib/ui/set_logger.dart:313
+#: lib/ui/exercise_guide.dart:46 lib/ui/set_logger.dart:314
 msgid "Ei saatavilla saameksi: liikevinkit näkyvät suomeksi."
 msgstr "Not available in Sámi: exercise tips are shown in Finnish."
 
-#: lib/ui/exercise_guide.dart:63 lib/ui/set_logger.dart:330
+#: lib/ui/exercise_guide.dart:63 lib/ui/set_logger.dart:331
 msgid ""
 "⚠️ Kokeellinen: animaatio ja vinkit ovat suuntaa antavia eikä niitä "
 "ole vielä tarkistanut ammattilainen. Varmista oikea tekniikka "
@@ -4192,7 +4208,7 @@ msgstr ""
 msgid "Valitse tämä liike"
 msgstr "Choose this exercise"
 
-#: lib/ui/finish_sheet.dart:105 lib/ui/finish_sheet.dart:670 lib/ui/workout.dart:1645 lib/ui/workout.dart:1738
+#: lib/ui/finish_sheet.dart:105 lib/ui/finish_sheet.dart:670 lib/ui/workout.dart:1648 lib/ui/workout.dart:1741
 msgid "Miltä tuntui?"
 msgstr "How did it feel?"
 
@@ -4220,7 +4236,7 @@ msgstr "duration"
 msgid "sarja"
 msgstr "set"
 
-#: lib/ui/finish_sheet.dart:212 lib/ui/start_panels.dart:300 lib/ui/stats_screen.dart:436 lib/ui/stats_tabs.dart:112 …
+#: lib/ui/finish_sheet.dart:212 lib/ui/start_panels.dart:305 lib/ui/stats_screen.dart:436 lib/ui/stats_tabs.dart:112 …
 msgid "sarjaa"
 msgstr "sets"
 
@@ -4241,7 +4257,7 @@ msgid "ennätystä"
 msgstr "records"
 
 #. {0} = name
-#: lib/ui/finish_sheet.dart:251 lib/ui/workout.dart:1517
+#: lib/ui/finish_sheet.dart:251 lib/ui/workout.dart:1520
 msgid "Giitu! {0} tehty"
 msgstr "Giitu! {0} done"
 
@@ -4322,12 +4338,12 @@ msgstr "Update 1 item"
 msgid "Päivitä {0} tietoa"
 msgstr "Update {0} items"
 
-#: lib/ui/health_import.dart:133 lib/ui/home.dart:2784
+#: lib/ui/health_import.dart:133 lib/ui/home.dart:2819
 msgid "1 uusi harjoitus"
 msgstr "1 new workout"
 
 #. {0} = n
-#: lib/ui/health_import.dart:134 lib/ui/home.dart:2784
+#: lib/ui/health_import.dart:134 lib/ui/home.dart:2819
 msgid "{0} uutta harjoitusta"
 msgstr "{0} new workouts"
 
@@ -4341,11 +4357,11 @@ msgstr "Today · {0}"
 msgid "Eilen · {0}"
 msgstr "Yesterday · {0}"
 
-#: lib/ui/health_import.dart:283 lib/ui/start_panels.dart:1057
+#: lib/ui/health_import.dart:283 lib/ui/start_panels.dart:1071
 msgid "Kellon tiedot lisätty salitreeniin."
 msgstr "Watch data added to the gym workout."
 
-#: lib/ui/health_import.dart:316 lib/ui/running_bar.dart:92
+#: lib/ui/health_import.dart:316 lib/ui/home.dart:1555 lib/ui/running_bar.dart:92
 msgid "Salitreeni"
 msgstr "Gym workout"
 
@@ -4590,7 +4606,7 @@ msgstr "Health Connect"
 msgid "Harjoitus"
 msgstr "Exercise session"
 
-#: lib/ui/home.dart:180 lib/ui/new_workout.dart:98 lib/ui/stats_screen.dart:131 lib/ui/workout.dart:1027
+#: lib/ui/home.dart:180 lib/ui/home.dart:1562 lib/ui/new_workout.dart:98 lib/ui/stats_screen.dart:131 …
 msgid "Tänään"
 msgstr "Today"
 
@@ -4636,7 +4652,7 @@ msgstr "Workouts ({0})"
 msgid "Ei treenejä tälle päivälle."
 msgstr "No workouts for this day."
 
-#: lib/ui/home.dart:430 lib/ui/new_workout.dart:430 lib/ui/program_view.dart:1054 lib/ui/workout.dart:521
+#: lib/ui/home.dart:430 lib/ui/new_workout.dart:431 lib/ui/program_view.dart:1058 lib/ui/workout.dart:521
 msgid "kesken"
 msgstr "in progress"
 
@@ -4648,7 +4664,7 @@ msgstr "Start gym workout"
 msgid "Jatka treeniä"
 msgstr "Continue workout"
 
-#: lib/ui/home.dart:474 lib/ui/home.dart:1007 lib/ui/home.dart:1429 lib/ui/start_panels.dart:158 …
+#: lib/ui/home.dart:474 lib/ui/home.dart:1015 lib/ui/home.dart:1444 lib/ui/start_panels.dart:158 …
 msgid "Sali"
 msgstr "Gym"
 
@@ -4724,15 +4740,15 @@ msgstr "Same move, merge"
 msgid "Yhdistetty: {0} treeniä siirtyi liikkeelle {1}."
 msgstr "Merged: {0} workouts moved to {1}."
 
-#: lib/ui/home.dart:773
+#: lib/ui/home.dart:781
 msgid "Ohje"
 msgstr "Help"
 
-#: lib/ui/home.dart:805
+#: lib/ui/home.dart:813
 msgid "Varmuuskopioidaan treenit päivityksen jälkeen…"
 msgstr "Backing up your workouts after the update…"
 
-#: lib/ui/home.dart:819
+#: lib/ui/home.dart:827
 msgid ""
 "Yritetään uudelleen seuraavalla käynnistyksellä. Tee varmuuskopio "
 "itse: Lisää → Tuonti, vienti ja varmuuskopio."
@@ -4740,11 +4756,11 @@ msgstr ""
 "Will try again at the next start. Make a backup yourself: More → "
 "Import, export and backup."
 
-#: lib/ui/home.dart:829
+#: lib/ui/home.dart:837
 msgid "Tarkista käsipainojen painot"
 msgstr "Check dumbbell weights"
 
-#: lib/ui/home.dart:831
+#: lib/ui/home.dart:839
 msgid ""
 "Kahden käsipainon liikkeet kirjataan nyt yhteispainona. Tarkista "
 "kerran, olivatko vanhat painot yhteensä vai käsipainoa kohden."
@@ -4752,7 +4768,7 @@ msgstr ""
 "Two-dumbbell exercises are now logged as a total. Check once whether "
 "older weights were the total or per dumbbell."
 
-#: lib/ui/home.dart:852
+#: lib/ui/home.dart:860
 msgid ""
 "🧪 Demo selaimessa: esimerkkitreenit, mitään ei tallenneta. Kokeile "
 "treenin kirjausta, tilastoja ja ohjelman tekoa (Ohjelma → Tee uusi "
@@ -4764,56 +4780,56 @@ msgstr ""
 "program → Save template). The real app saves workouts as .md files in "
 "your own folder."
 
-#: lib/ui/home.dart:868
+#: lib/ui/home.dart:876
 msgid "Tee oma treeniohjelma"
 msgstr "Create your own training program"
 
-#: lib/ui/home.dart:1064
+#: lib/ui/home.dart:1072
 msgid "Aloita liikunta"
 msgstr "Start activity"
 
-#: lib/ui/home.dart:1254 lib/ui/start_panels.dart:355
+#: lib/ui/home.dart:1265 lib/ui/start_panels.dart:365
 msgid "Kuukausi"
 msgstr "Month"
 
 #. {0} = gym
-#: lib/ui/home.dart:1308
+#: lib/ui/home.dart:1320
 msgid "sali {0}"
 msgstr "gym {0}"
 
 #. {0} = a.moderateEq
 #. {1} = whoMinutes
-#: lib/ui/home.dart:1315
+#: lib/ui/home.dart:1327
 msgid "{0}/{1} min"
 msgstr "{0}/{1} min"
 
 #. {0} = '${at.hour}.${at.minute.toString().padLeft(2, '0')}'
-#: lib/ui/home.dart:1325
+#: lib/ui/home.dart:1337
 msgid "klo {0}"
 msgstr "at {0}"
 
-#: lib/ui/home.dart:1376 lib/ui/start_panels.dart:367
+#: lib/ui/home.dart:1391 lib/ui/start_panels.dart:377
 msgid "Edellinen"
 msgstr "Previous"
 
-#: lib/ui/home.dart:1396 lib/ui/intro.dart:727 lib/ui/start_panels.dart:380
+#: lib/ui/home.dart:1411 lib/ui/intro.dart:727 lib/ui/start_panels.dart:390
 msgid "Seuraava"
 msgstr "Next"
 
-#: lib/ui/home.dart:1410
+#: lib/ui/home.dart:1425
 msgid "Vain tämä viikko"
 msgstr "This week only"
 
 #. {0} = thousands(stepsGoal)
-#: lib/ui/home.dart:1460
+#: lib/ui/home.dart:1475
 msgid "Askeleet (täysi rengas {0})"
 msgstr "Steps (full ring {0})"
 
-#: lib/ui/home.dart:1588 lib/whats_new.dart:282
+#: lib/ui/home.dart:1623 lib/whats_new.dart:300
 msgid "Viikon liikunta"
 msgstr "Weekly activity"
 
-#: lib/ui/home.dart:1592
+#: lib/ui/home.dart:1627
 msgid ""
 "Maailman terveysjärjestö WHO suosittelee aikuisille viikossa "
 "vähintään 150 minuuttia reipasta liikuntaa ja lihaskuntoharjoittelua "
@@ -4828,7 +4844,7 @@ msgstr ""
 #. {1} = a.moderate
 #. {2} = a.light
 #. {3} = a.strengthDays
-#: lib/ui/home.dart:1598
+#: lib/ui/home.dart:1633
 msgid ""
 "Tällä viikolla (ma–su): kova {0} min, reipas {1} min, kevyt {2} min. "
 "Lihaskuntopäiviä {3}."
@@ -4836,7 +4852,7 @@ msgstr ""
 "This week (Mon–Sun): vigorous {0} min, moderate {1} min, light {2} "
 "min. Strength days: {3}."
 
-#: lib/ui/home.dart:1609
+#: lib/ui/home.dart:1644
 msgid ""
 "Näin lasketaan: liikunnan rasitus (Kevyt, Reipas, Kova) ratkaisee. "
 "Jos rasitusta ei ole valittu, kävely on reipasta vähintään 4 km/h:n "
@@ -4850,7 +4866,7 @@ msgstr ""
 "count as light, and other sports as moderate. A strength day is a day "
 "with a gym workout."
 
-#: lib/ui/home.dart:1616
+#: lib/ui/home.dart:1651
 msgid ""
 "Lähde: WHO:n liikuntasuositukset 2020; askeltiheys: Tudor-Locke ym. "
 "2018."
@@ -4858,15 +4874,15 @@ msgstr ""
 "Source: WHO physical activity guidelines 2020; step cadence: "
 "Tudor-Locke et al. 2018."
 
-#: lib/ui/home.dart:1716
+#: lib/ui/home.dart:1751
 msgid "Kaikki ›"
 msgstr "All ›"
 
-#: lib/ui/home.dart:1891
+#: lib/ui/home.dart:1926
 msgid "junnaa"
 msgstr "stalled"
 
-#: lib/ui/home.dart:1909
+#: lib/ui/home.dart:1944
 msgid ""
 "Odotetaan lisää treenejä. Vertailu näkyy, kun samaa liikettä on tehty "
 "viimeisten 4 viikon aikana ja 2 kuukautta ennen sitä."
@@ -4874,17 +4890,17 @@ msgstr ""
 "Waiting for more workouts. The comparison appears once the same "
 "exercise has been done in the last 4 weeks and in the 2 months before."
 
-#: lib/ui/home.dart:1916
+#: lib/ui/home.dart:1951
 msgid "Arvioitu 1RM: viimeiset 4 viikkoa vs. 2 kuukautta ennen"
 msgstr "Estimated 1RM: last 4 weeks vs. the 2 months before"
 
-#: lib/ui/home.dart:1944
+#: lib/ui/home.dart:1979
 msgid "Kevennysviikon paikka?"
 msgstr "Time for a deload week?"
 
 #. {0} = ins.loadingWeeks
 #. {1} = ins.stalled.length
-#: lib/ui/home.dart:1955
+#: lib/ui/home.dart:1990
 msgid ""
 "Olet treenannut {0} viikkoa putkeen, ja {1} liikettä junnaa "
 "paikallaan. Väsymys voi peittää kehityksen."
@@ -4893,11 +4909,11 @@ msgstr ""
 "Fatigue can mask progress."
 
 #. {0} = ins.loadingWeeks
-#: lib/ui/home.dart:1959
+#: lib/ui/home.dart:1994
 msgid "Olet treenannut {0} viikkoa putkeen ilman kevennystä."
 msgstr "You've trained {0} weeks in a row without a deload."
 
-#: lib/ui/home.dart:1964
+#: lib/ui/home.dart:1999
 msgid ""
 "Kevennysviikko: sama treenitiheys, noin puolet sarjoista ja "
 "toistoista, painot noin 10 % kevyemmät, ei maksimiyrityksiä. Voima- "
@@ -4908,60 +4924,60 @@ msgstr ""
 "weights about 10% lighter, no max attempts. Strength and physique "
 "athletes typically deload every 5–6 weeks for about a week."
 
-#: lib/ui/home.dart:1986 lib/ui/running_screen.dart:82 lib/ui/stats_screen.dart:653
+#: lib/ui/home.dart:2021 lib/ui/running_screen.dart:82 lib/ui/stats_screen.dart:653
 msgid "Kehitys"
 msgstr "Progress"
 
-#: lib/ui/home.dart:1986 lib/ui/home_settings.dart:34 lib/ui/running_screen.dart:17 lib/ui/stats_screen.dart:359 …
+#: lib/ui/home.dart:2021 lib/ui/home_settings.dart:34 lib/ui/running_screen.dart:17 lib/ui/stats_screen.dart:359 …
 msgid "Juoksun kehitys"
 msgstr "Running progress"
 
-#: lib/ui/home.dart:1993
+#: lib/ui/home.dart:2028
 msgid "Tilastot ›"
 msgstr "Stats ›"
 
-#: lib/ui/home.dart:2008
+#: lib/ui/home.dart:2043
 msgid "🏆 1 ennätys / 30 pv"
 msgstr "🏆 1 record / 30 days"
 
 #. {0} = ins.prs30d
-#: lib/ui/home.dart:2009
+#: lib/ui/home.dart:2044
 msgid "🏆 {0} ennätystä / 30 pv"
 msgstr "🏆 {0} records / 30 days"
 
-#: lib/ui/home.dart:2022
+#: lib/ui/home.dart:2057
 msgid "Juoksu: viimeiset 4 viikkoa vs. 8 viikkoa ennen"
 msgstr "Running: last 4 weeks vs. the 8 weeks before"
 
-#: lib/ui/home.dart:2154
+#: lib/ui/home.dart:2189
 msgid "🩹  Vammatauko – parane pian!"
 msgstr "🩹  Injury break – get well soon!"
 
-#: lib/ui/home.dart:2156
+#: lib/ui/home.dart:2191
 msgid "🤒  Sairastat – parane pian!"
 msgstr "🤒  You're sick – get well soon!"
 
-#: lib/ui/home.dart:2157
+#: lib/ui/home.dart:2192
 msgid "🏖  Lomalla – nauti!"
 msgstr "🏖  On vacation – enjoy!"
 
 #. {0} = p.start.day
 #. {1} = p.start.month
 #. {2} = p.start.year
-#: lib/ui/home.dart:2164
+#: lib/ui/home.dart:2199
 msgid "Alkoi {0}.{1}.{2}"
 msgstr "Started {1}/{0}/{2}"
 
 #. {0} = shortDate(p.start)
 #. {1} = shortDate(p.end!)
 #. {2} = p.days
-#: lib/ui/home.dart:2165
+#: lib/ui/home.dart:2200
 msgid "{0}–{1} · {2}. päivä"
 msgstr "{0}–{1} · day {2}"
 
 #. {0} = shortDate(p.start)
 #. {1} = p.days
-#: lib/ui/home.dart:2176
+#: lib/ui/home.dart:2211
 msgid ""
 "Tauko alkoi {0} ({1} pv). Kun palaat, sovellus ehdottaa kevyempiä "
 "kuormia ja vähemmän sarjoja noin kahden viikon ajan."
@@ -4970,33 +4986,33 @@ msgstr ""
 "loads and fewer sets for about two weeks."
 
 #. {0} = shortDate(p.end!)
-#: lib/ui/home.dart:2184
+#: lib/ui/home.dart:2219
 msgid "Päättyy itsestään {0} jälkeen."
 msgstr "Ends by itself after {0}."
 
-#: lib/ui/home.dart:2189
+#: lib/ui/home.dart:2224
 msgid "Älä treenaa kuumeisena tai jos koko kroppa on kipeä."
 msgstr "Don't train with a fever or if your whole body aches."
 
-#: lib/ui/home.dart:2235
+#: lib/ui/home.dart:2270
 msgid "Tauko tulossa"
 msgstr "Break coming up"
 
 #. {0} = shortDate(p.start)
-#: lib/ui/home.dart:2236
+#: lib/ui/home.dart:2271
 msgid "alkaa {0}"
 msgstr "starts {0}"
 
 #. {0} = [for (final e in files.entries) '${e.key} (${e.value})'].join('; ')
-#: lib/ui/home.dart:2256 lib/ui/home.dart:2330 lib/ui/import_export.dart:529 lib/ui/import_export.dart:613
+#: lib/ui/home.dart:2291 lib/ui/home.dart:2365 lib/ui/import_export.dart:529 lib/ui/import_export.dart:613
 msgid "Treenitiedostoja ei voitu lukea: {0}"
 msgstr "Could not read workout files: {0}"
 
-#: lib/ui/home.dart:2267
+#: lib/ui/home.dart:2302
 msgid "Treenitiedostoja ei voitu lukea"
 msgstr "Could not read workout files"
 
-#: lib/ui/home.dart:2275
+#: lib/ui/home.dart:2310
 msgid ""
 "Näitä treenejä ei näytetä historiassa. Tiedosto voi olla vaurioitunut "
 "tai tallennettu toisella merkistöllä (esim. muokattu Windowsin "
@@ -5006,44 +5022,44 @@ msgstr ""
 "or saved in a different character encoding (e.g. edited in Windows "
 "Notepad). The files are not deleted."
 
-#: lib/ui/home.dart:2298 lib/ui/import_export.dart:540
+#: lib/ui/home.dart:2333 lib/ui/import_export.dart:540
 msgid "Lähetä ongelmaraportti"
 msgstr "Report a problem"
 
-#: lib/ui/home.dart:2309
+#: lib/ui/home.dart:2344
 msgid "Tiedostoja ei voitu korjata. Lähetä ne ongelmaraporttina."
 msgstr "The files could not be fixed. Send them in a problem report."
 
 #. {0} = fixed
-#: lib/ui/home.dart:2311
+#: lib/ui/home.dart:2346
 msgid "Korjattu {0}. Alkuperäiset ovat tallessa .bak-päätteellä."
 msgstr "Fixed {0}. The originals are kept with the .bak extension."
 
 #. {0} = fixed
 #. {1} = store.unreadable.length
-#: lib/ui/home.dart:2312
+#: lib/ui/home.dart:2347
 msgid ""
 "Korjattu {0}, jäljellä {1}. Alkuperäiset ovat tallessa "
 ".bak-päätteellä."
 msgstr "Fixed {0}, {1} left. The originals are kept with the .bak extension."
 
-#: lib/ui/home.dart:2320
+#: lib/ui/home.dart:2355
 msgid "Yritä korjata"
 msgstr "Try to fix"
 
-#: lib/ui/home.dart:2404 lib/ui/home.dart:2512
+#: lib/ui/home.dart:2439 lib/ui/home.dart:2547
 msgid "Aamupaino"
 msgstr "Morning weight"
 
-#: lib/ui/home.dart:2457
+#: lib/ui/home.dart:2492
 msgid "Ei tänään"
 msgstr "Not today"
 
-#: lib/ui/home.dart:2518
+#: lib/ui/home.dart:2553
 msgid "Merkitse ›"
 msgstr "Log ›"
 
-#: lib/ui/home.dart:2523
+#: lib/ui/home.dart:2558
 msgid "Ei vielä punnituksia."
 msgstr "No weigh-ins yet."
 
@@ -5052,15 +5068,15 @@ msgstr "No weigh-ins yet."
                                   : change < 0
                                   ? '−'
                                   : '±'}${fmtNum(double.parse(change.abs().toStringAsFixed(1)))}'
-#: lib/ui/home.dart:2536
+#: lib/ui/home.dart:2571
 msgid "{0} kg / 30 pv"
 msgstr "{0} kg / 30 days"
 
-#: lib/ui/home.dart:2664
+#: lib/ui/home.dart:2699
 msgid "Sali ja Liikunta"
 msgstr "Gym and Activity"
 
-#: lib/ui/home.dart:2666
+#: lib/ui/home.dart:2701
 msgid ""
 "Sali avaa ohjelmasi päivät (ehdotus ylimpänä) ja vapaan treenin; "
 "Liikunta avaa viimeksi käyttämäsi lajit ja sitten kirjaustavan (GPS, "
@@ -5072,19 +5088,19 @@ msgstr ""
 "stopwatch or already done). Swipe down or press Back to close the "
 "panel."
 
-#: lib/ui/home.dart:2670
+#: lib/ui/home.dart:2705
 msgid "Kellon harjoitukset Health Connectista näkyvät paneelin ylälaidassa."
 msgstr "Watch workouts from Health Connect appear at the top of the panel."
 
-#: lib/ui/home.dart:2672
+#: lib/ui/home.dart:2707
 msgid "Viikko ja kuukausi"
 msgstr "Week and month"
 
-#: lib/ui/home.dart:2672
+#: lib/ui/home.dart:2707
 msgid "Valitse Viikko tai Kuukausi; ‹ › vaihtaa jaksoa."
 msgstr "Choose Week or Month; ‹ › changes the period."
 
-#: lib/ui/home.dart:2675
+#: lib/ui/home.dart:2710
 msgid ""
 "Lihaskuntopäivät: tavoitteena ohjelmasi päivät viikossa, ilman "
 "ohjelmaa WHO:n vähimmäismäärä 2."
@@ -5092,7 +5108,7 @@ msgstr ""
 "Strength days: the goal is your program's days per week; without a "
 "program, the WHO minimum of 2."
 
-#: lib/ui/home.dart:2680
+#: lib/ui/home.dart:2715
 msgid ""
 "Reipas liikunta: WHO suosittaa 150 min viikossa; kova minuutti "
 "lasketaan kahdesti. Hidas kävely näkyy kokonaisminuuteissa. Napauta "
@@ -5103,7 +5119,7 @@ msgstr ""
 "to see how it is counted."
 
 #. {0} = thousands(stepsGoal)
-#: lib/ui/home.dart:2687
+#: lib/ui/home.dart:2722
 msgid ""
 "Askeleet: viikossa tämän päivän, kuukaudessa keskiarvo päivää kohden; "
 "tavoite {0}."
@@ -5111,36 +5127,36 @@ msgstr ""
 "Steps: today's in the week view, the daily average in the month view; "
 "goal {0}."
 
-#: lib/ui/home.dart:2694
+#: lib/ui/home.dart:2729
 msgid "Oma tavoitteesi keltaisella renkaana tässä rivissä."
 msgstr "Your own goal as a yellow ring in this row."
 
-#: lib/ui/home.dart:2696
+#: lib/ui/home.dart:2731
 msgid "Päivät"
 msgstr "Days"
 
 #. {0} = thousands(stepsGoal)
-#: lib/ui/home.dart:2704
+#: lib/ui/home.dart:2739
 msgid "Kehä täyttyy päivän askelista; täysi = {0} askelta."
 msgstr "The circle fills with the day's steps; full = {0} steps."
 
-#: lib/ui/home.dart:2706
+#: lib/ui/home.dart:2741
 msgid "Salitreeni tehty"
 msgstr "Gym workout done"
 
-#: lib/ui/home.dart:2707
+#: lib/ui/home.dart:2742
 msgid "Liikuntaa tehty"
 msgstr "Activity done"
 
-#: lib/ui/home.dart:2713
+#: lib/ui/home.dart:2748
 msgid "Tänään keltaisella · napauta päivää nähdäksesi sen treenit"
 msgstr "Today in yellow · tap a day to see its workouts"
 
-#: lib/ui/home.dart:2716 lib/whats_new.dart:90
+#: lib/ui/home.dart:2751 lib/whats_new.dart:108
 msgid "Omat tavoitteet ja kortit"
 msgstr "Your goals and cards"
 
-#: lib/ui/home.dart:2718
+#: lib/ui/home.dart:2753
 msgid ""
 "Asetukset → Etusivu: enintään 3 omaa tavoitetta, askeltavoite ja "
 "kortit päälle, pois ja järjestykseen."
@@ -5148,11 +5164,11 @@ msgstr ""
 "Settings → Home page: up to 3 goals of your own, the steps goal, and "
 "cards on, off and in order."
 
-#: lib/ui/home.dart:2723 lib/ui/home_extras_ui.dart:47 lib/ui/home_settings.dart:28
+#: lib/ui/home.dart:2758 lib/ui/home_extras_ui.dart:47 lib/ui/home_settings.dart:28
 msgid "Viikkoputki"
 msgstr "Week streak"
 
-#: lib/ui/home.dart:2725
+#: lib/ui/home.dart:2760
 msgid ""
 "Montako viikkoa peräkkäin molemmat WHO:n suositukset täyttyivät "
 "(lihaskunto 2 päivänä ja 150 min reipasta liikuntaa). Vihreä = "
@@ -5166,11 +5182,11 @@ msgstr ""
 "at least 4 days) doesn't end the streak. The current week counts once "
 "it is met."
 
-#: lib/ui/home.dart:2734 lib/ui/home_extras_ui.dart:461 lib/ui/home_settings.dart:30 lib/ui/recovery_card.dart:78 …
+#: lib/ui/home.dart:2769 lib/ui/home_extras_ui.dart:466 lib/ui/home_settings.dart:30 lib/ui/recovery_card.dart:78 …
 msgid "Uni"
 msgstr "Sleep"
 
-#: lib/ui/home.dart:2736
+#: lib/ui/home.dart:2771
 msgid ""
 "Valinnainen kortti (Asetukset → Etusivu, oletus pois): yöunet Health "
 "Connectista, esim. Ouralta. Viime yön uni ilman valveillaoloa, 7 yön "
@@ -5198,11 +5214,11 @@ msgstr ""
 "Home page → Sleep source). Nights are saved in the uni.md file and "
 "included in backups."
 
-#: lib/ui/home.dart:2748
+#: lib/ui/home.dart:2783
 msgid "Askeleet ja Health Connect"
 msgstr "Steps and Health Connect"
 
-#: lib/ui/home.dart:2750
+#: lib/ui/home.dart:2785
 msgid ""
 "Askeleet ja kellon harjoitukset tulevat Health Connectista. Ne "
 "päivittyvät, kun avaat sovelluksen, ja 15 minuutin välein sen ollessa "
@@ -5212,25 +5228,25 @@ msgstr ""
 "you open the app and every 15 minutes while it is open. Pull the home "
 "screen down to update now."
 
-#: lib/ui/home.dart:2832
+#: lib/ui/home.dart:2867
 msgid "Yön lähde"
 msgstr "Source for this night"
 
-#: lib/ui/home.dart:2837
+#: lib/ui/home.dart:2872
 msgid "Vain tämä yö; oletuslähde: Asetukset → Etusivu → Unen lähde."
 msgstr "This night only; default source: Settings → Home page → Sleep source."
 
 #. {0} = fmtDuration(n.asleep.inMinutes)
-#: lib/ui/home.dart:2885
+#: lib/ui/home.dart:2920
 msgid "Uni {0}"
 msgstr "Sleep {0}"
 
 #. {0} = n.app
-#: lib/ui/home.dart:2891
+#: lib/ui/home.dart:2926
 msgid "{0} (valittu)"
 msgstr "{0} (chosen)"
 
-#: lib/ui/home.dart:2899
+#: lib/ui/home.dart:2934
 msgid "Vaihda lähde"
 msgstr "Change source"
 
@@ -5261,7 +5277,7 @@ msgstr "weeks in a row meeting the WHO recommendations"
 msgid "Paras {0}"
 msgstr "Best {0}"
 
-#: lib/ui/home_extras_ui.dart:76 lib/ui/start_panels.dart:354 lib/ui/stats_screen.dart:652 lib/ui/steps_ui.dart:118
+#: lib/ui/home_extras_ui.dart:76 lib/ui/start_panels.dart:364 lib/ui/stats_screen.dart:652 lib/ui/steps_ui.dart:118
 msgid "Viikko"
 msgstr "Week"
 
@@ -5303,19 +5319,19 @@ msgstr "Next workout"
 msgid "Aloita ›"
 msgstr "Start ›"
 
-#: lib/ui/home_extras_ui.dart:296
+#: lib/ui/home_extras_ui.dart:301
 msgid "Salli unitietojen luku Health Connectista."
 msgstr "Allow reading sleep data from Health Connect."
 
-#: lib/ui/home_extras_ui.dart:304 lib/ui/steps_ui.dart:433 lib/ui/steps_ui.dart:726
+#: lib/ui/home_extras_ui.dart:309 lib/ui/steps_ui.dart:433 lib/ui/steps_ui.dart:726
 msgid "Salli"
 msgstr "Allow"
 
-#: lib/ui/home_extras_ui.dart:322
+#: lib/ui/home_extras_ui.dart:327
 msgid "Haetaan öitä Health Connectista…"
 msgstr "Fetching nights from Health Connect…"
 
-#: lib/ui/home_extras_ui.dart:323
+#: lib/ui/home_extras_ui.dart:328
 msgid ""
 "Ei viime öitä. Kortti näyttää unen, kun kello tai sormus kirjaa sen "
 "Health Connectiin."
@@ -5323,7 +5339,7 @@ msgstr ""
 "No recent nights. The card shows your sleep once a watch or ring "
 "records it in Health Connect."
 
-#: lib/ui/home_extras_ui.dart:339
+#: lib/ui/home_extras_ui.dart:344
 msgid ""
 "Lyhyt yö ja tavallista korkeampi yösyke: kevyempi päivä tai enemmän "
 "varaa sarjoihin."
@@ -5331,7 +5347,7 @@ msgstr ""
 "Short night and a higher night heart rate than usual: a lighter day, "
 "or leave more reps in reserve."
 
-#: lib/ui/home_extras_ui.dart:345
+#: lib/ui/home_extras_ui.dart:350
 msgid ""
 "Lyhyt yö (6 h tai alle): suorituskyky voi olla heikompi, eniten "
 "illalla ja taitoa vaativissa liikkeissä. Jätä enemmän varaa. Aiempi "
@@ -5343,7 +5359,7 @@ msgstr ""
 
 #. {0} = fmtDuration((s.avg7 ?? Duration.zero).inMinutes)
 #. {1} = fmtDuration(ref.inMinutes)
-#: lib/ui/home_extras_ui.dart:352
+#: lib/ui/home_extras_ui.dart:357
 msgid ""
 "Viikon keskiarvo {0}, tavallisesti {1}: tavallista lyhyempi. Aiempi "
 "nukkumaanmeno tai lyhyt päiväuni voi auttaa."
@@ -5351,11 +5367,11 @@ msgstr ""
 "Week's average {0}, usually {1}: shorter than usual. An earlier "
 "bedtime or a short nap may help."
 
-#: lib/ui/home_extras_ui.dart:358
+#: lib/ui/home_extras_ui.dart:363
 msgid "Ei huomautettavaa."
 msgstr "Nothing to note."
 
-#: lib/ui/home_extras_ui.dart:376
+#: lib/ui/home_extras_ui.dart:381
 msgid ""
 "Eilinen kova treeni päättyi {0}, {1} min ennen tavallista "
 "nukkumaanmenoasi ({2}). Uni jäi {3} (tavallisesti {4}). Kova treeni "
@@ -5367,7 +5383,7 @@ msgstr ""
 "an hour before bed can make it harder to fall asleep; light evening "
 "exercise doesn't."
 
-#: lib/ui/home_extras_ui.dart:382
+#: lib/ui/home_extras_ui.dart:387
 msgid ""
 "Eilinen kova treeni päättyi {0}, tavallisen nukkumaanmenosi ({2}) "
 "jälkeen. Uni jäi {3} (tavallisesti {4}). Kova treeni alle tunti ennen "
@@ -5379,36 +5395,36 @@ msgstr ""
 "before bed can make it harder to fall asleep; light evening exercise "
 "doesn't."
 
-#: lib/ui/home_extras_ui.dart:411
+#: lib/ui/home_extras_ui.dart:416
 msgid "viime yö"
 msgstr "last night"
 
-#: lib/ui/home_extras_ui.dart:419
+#: lib/ui/home_extras_ui.dart:424
 msgid "7 pv keskiarvo"
 msgstr "7-day average"
 
-#: lib/ui/home_extras_ui.dart:427
+#: lib/ui/home_extras_ui.dart:432
 msgid "säännöllisyys, min"
 msgstr "regularity, min"
 
 #. {0} = fmtDuration(s.usual!.inMinutes)
-#: lib/ui/home_extras_ui.dart:441
+#: lib/ui/home_extras_ui.dart:446
 msgid "tavallisesti {0}"
 msgstr "usually {0}"
 
-#: lib/ui/home_extras_ui.dart:465
+#: lib/ui/home_extras_ui.dart:470
 msgid "Vihje"
 msgstr "Hint"
 
-#: lib/ui/home_extras_ui.dart:573
+#: lib/ui/home_extras_ui.dart:578
 msgid "HRV on ollut kaksi päivää omaa tavallista vaihteluväliäsi alempana."
 msgstr "Your HRV has been below your usual range for two days."
 
-#: lib/ui/home_extras_ui.dart:574
+#: lib/ui/home_extras_ui.dart:579
 msgid "Viime yö jäi lyhyeksi, mikä laskee HRV:tä usein."
 msgstr "Last night was short, which often lowers HRV."
 
-#: lib/ui/home_extras_ui.dart:575
+#: lib/ui/home_extras_ui.dart:580
 msgid ""
 "Eilinen kova treeni voi laskea HRV:tä yhdeksi tai kahdeksi yöksi; se "
 "on odotettua."
@@ -5416,7 +5432,7 @@ msgstr ""
 "Yesterday's hard workout can lower HRV for one or two nights; that's "
 "expected."
 
-#: lib/ui/home_extras_ui.dart:577
+#: lib/ui/home_extras_ui.dart:582
 msgid ""
 "Harkitse tänään kevyempää tai kohtuullista treeniä kovan sijaan, "
 "mutta liiku silti. Muita yleisiä syitä: sairastuminen, alkoholi, "
@@ -5426,27 +5442,27 @@ msgstr ""
 "keep moving. Other common causes: illness, alcohol, stress or travel. "
 "Not a medical measurement."
 
-#: lib/ui/home_extras_ui.dart:595
+#: lib/ui/home_extras_ui.dart:600
 msgid "Leposyke"
 msgstr "Resting HR"
 
-#: lib/ui/home_extras_ui.dart:596
+#: lib/ui/home_extras_ui.dart:601
 msgid "Hengitys"
 msgstr "Breathing"
 
-#: lib/ui/home_extras_ui.dart:597
+#: lib/ui/home_extras_ui.dart:602
 msgid "Happi"
 msgstr "Oxygen"
 
-#: lib/ui/home_extras_ui.dart:598
+#: lib/ui/home_extras_ui.dart:603
 msgid "Lämpö"
 msgstr "Temp"
 
-#: lib/ui/home_extras_ui.dart:644 lib/ui/recovery_card.dart:212
+#: lib/ui/home_extras_ui.dart:649 lib/ui/recovery_card.dart:212
 msgid "Haetaan yöarvoja Health Connectista…"
 msgstr "Fetching night metrics from Health Connect…"
 
-#: lib/ui/home_extras_ui.dart:645 lib/ui/recovery_card.dart:213
+#: lib/ui/home_extras_ui.dart:650 lib/ui/recovery_card.dart:213
 msgid ""
 "Ei yöarvoja. Kortti näyttää ne, kun kello tai sormus kirjaa ne Health "
 "Connectiin."
@@ -5454,16 +5470,16 @@ msgstr ""
 "No night metrics. The card shows them once a watch or ring records "
 "them in Health Connect."
 
-#: lib/ui/home_extras_ui.dart:738 lib/ui/recovery_card.dart:66
+#: lib/ui/home_extras_ui.dart:743 lib/ui/recovery_card.dart:66
 msgid "vertailu 2 viikon jälkeen"
 msgstr "compared after 2 weeks"
 
 #. {0} = value(e.key, metricUsual(e.key, e.value)!)
-#: lib/ui/home_extras_ui.dart:739 lib/ui/recovery_card.dart:50 lib/ui/recovery_card.dart:67 lib/ui/recovery_card.dart:81
+#: lib/ui/home_extras_ui.dart:744 lib/ui/recovery_card.dart:50 lib/ui/recovery_card.dart:67 lib/ui/recovery_card.dart:81
 msgid "tav. {0}"
 msgstr "usually {0}"
 
-#: lib/ui/home_extras_ui.dart:757
+#: lib/ui/home_extras_ui.dart:762
 msgid ""
 "Useampi yöarvo poikkeaa tavallisesta: mahdollinen sairastuminen tai "
 "kova kuormitus. Kevyt päivä tai lepo."
@@ -5471,7 +5487,7 @@ msgstr ""
 "Several night metrics differ from usual: possibly getting ill or "
 "heavy strain. An easy day or rest."
 
-#: lib/ui/home_extras_ui.dart:767
+#: lib/ui/home_extras_ui.dart:772
 msgid ""
 "Yksi yöarvo poikkeaa tavallisesta. Yksittäinen yö voi johtua esim. "
 "alkoholista tai myöhäisestä treenistä; seuraa huomenna."
@@ -5479,11 +5495,11 @@ msgstr ""
 "One night metric differs from usual. A single night can come from "
 "e.g. alcohol or a late workout; check again tomorrow."
 
-#: lib/ui/home_extras_ui.dart:772
+#: lib/ui/home_extras_ui.dart:777
 msgid "Yöarvot tavallisella tasolla."
 msgstr "Night metrics at your usual level."
 
-#: lib/ui/home_extras_ui.dart:779
+#: lib/ui/home_extras_ui.dart:784
 msgid ""
 "Happisaturaatio tavallista matalampi. Kellon tai sormuksen lukema on "
 "suuntaa-antava; jos se toistuu ja olet väsynyt tai kuorsaat, kysy "
@@ -5492,7 +5508,7 @@ msgstr ""
 "Blood oxygen lower than usual. A watch or ring reading is indicative; "
 "if it repeats and you are tired or snore, ask a doctor."
 
-#: lib/ui/home_extras_ui.dart:797 lib/ui/home_extras_ui.dart:823
+#: lib/ui/home_extras_ui.dart:802 lib/ui/home_extras_ui.dart:828
 msgid ""
 "Omaan tasoosi verrattuna, kun öitä on vähintään 2 viikkoa. Vain "
 "vihjeitä, ei diagnoosia. Lähteet: Lisää → Tietoa."
@@ -5500,16 +5516,16 @@ msgstr ""
 "Compared with your own level once there are at least 2 weeks of "
 "nights. Hints only, not a diagnosis. Sources: More → About."
 
-#: lib/ui/home_extras_ui.dart:815 lib/ui/home_settings.dart:31
+#: lib/ui/home_extras_ui.dart:820 lib/ui/home_settings.dart:31
 msgid "Yöarvot"
 msgstr "Night metrics"
 
 #. {0} = shortDate(day)
-#: lib/ui/home_extras_ui.dart:893
+#: lib/ui/home_extras_ui.dart:898
 msgid "Kaksi sovellusta kirjasi yön {0}: kumpaa käytetään?"
 msgstr "Two apps recorded the night of {0}: which one should be used?"
 
-#: lib/ui/home_extras_ui.dart:915
+#: lib/ui/home_extras_ui.dart:920
 msgid ""
 "Valinta on oletus tästä eteenpäin; muuta: Asetukset → Etusivu → Unen "
 "lähde. Yksittäisen yön voi vaihtaa kalenterin päivästä."
@@ -5518,11 +5534,11 @@ msgstr ""
 "page → Sleep source. A single night can be changed from its day in "
 "the calendar."
 
-#: lib/ui/home_extras_ui.dart:924
+#: lib/ui/home_extras_ui.dart:929
 msgid "Pidä automaattinen"
 msgstr "Keep automatic"
 
-#: lib/ui/home_settings.dart:27 lib/ui/home_settings.dart:103 lib/ui/start_panels.dart:538
+#: lib/ui/home_settings.dart:27 lib/ui/home_settings.dart:103 lib/ui/start_panels.dart:552
 msgid "Omat tavoitteet"
 msgstr "Your goals"
 
@@ -5672,7 +5688,7 @@ msgstr "Night metrics in the Recovery card"
 msgid "Palautumisen ruudut"
 msgstr "Recovery tiles"
 
-#: lib/ui/home_settings.dart:269 lib/ui/home_settings.dart:388 lib/whats_new.dart:30
+#: lib/ui/home_settings.dart:269 lib/ui/home_settings.dart:388 lib/whats_new.dart:48
 msgid "Unen lähde"
 msgstr "Sleep source"
 
@@ -5910,7 +5926,7 @@ msgstr "Own max heart rate (0 = estimate from age)"
 msgid "Mitä sykealueet tarkoittavat?"
 msgstr "What do the heart rate zones mean?"
 
-#: lib/ui/hr_ui.dart:211 lib/whats_new.dart:258
+#: lib/ui/hr_ui.dart:211 lib/whats_new.dart:276
 msgid "Palautus sykkeen mukaan"
 msgstr "Rest by heart rate"
 
@@ -6014,7 +6030,7 @@ msgstr ""
 
 #. {0} = i + 1
 #. {1} = t(zoneNames[i])
-#: lib/ui/hr_ui.dart:441 lib/ui/hr_ui.dart:1441
+#: lib/ui/hr_ui.dart:441 lib/ui/hr_ui.dart:1442
 msgid "{0} {1}"
 msgstr "{0} {1}"
 
@@ -6200,39 +6216,49 @@ msgstr "Zone {0} · {1} · {2} %"
 msgid "max {0}"
 msgstr "max {0}"
 
-#: lib/ui/hr_ui.dart:1363
+#. {0} = title
+#: lib/ui/hr_ui.dart:1267 lib/ui/set_logger.dart:1425 lib/ui/widgets.dart:179
+msgid "Vähennä: {0}"
+msgstr "Decrease: {0}"
+
+#. {0} = title
+#: lib/ui/hr_ui.dart:1272 lib/ui/set_logger.dart:1426 lib/ui/widgets.dart:210
+msgid "Lisää: {0}"
+msgstr "Increase: {0}"
+
+#: lib/ui/hr_ui.dart:1364
 msgid "Kävelyn tiedot löytyivät"
 msgstr "Walk data found"
 
-#: lib/ui/hr_ui.dart:1363
+#: lib/ui/hr_ui.dart:1364
 msgid "Kävelymaton tai kellon askeleet"
 msgstr "Steps from walking pad or watch"
 
-#: lib/ui/hr_ui.dart:1378
+#: lib/ui/hr_ui.dart:1379
 msgid "Etsitään Health Connectista…"
 msgstr "Searching Health Connect…"
 
-#: lib/ui/hr_ui.dart:1379
+#: lib/ui/hr_ui.dart:1380
 msgid "Ei vielä löytynyt. Laite voi synkronoida muutaman minuutin viiveellä."
 msgstr "Not found yet. The device may sync a few minutes later."
 
-#: lib/ui/hr_ui.dart:1382
+#: lib/ui/hr_ui.dart:1383
 msgid "Syke ja kalorit pysyvät sykevyöstä."
 msgstr "Heart rate and calories stay from the strap."
 
-#: lib/ui/hr_ui.dart:1386
+#: lib/ui/hr_ui.dart:1387
 msgid "Lisää askeleet ja matka"
 msgstr "Add steps and distance"
 
-#: lib/ui/hr_ui.dart:1390
+#: lib/ui/hr_ui.dart:1391
 msgid "Hae uudelleen"
 msgstr "Search again"
 
-#: lib/ui/hr_ui.dart:1423
+#: lib/ui/hr_ui.dart:1424
 msgid "Sykealueet"
 msgstr "Heart rate zones"
 
-#: lib/ui/hr_ui.dart:1426
+#: lib/ui/hr_ui.dart:1427
 msgid ""
 "Alueet lasketaan prosentteina maksimisykkeestä. Mitä tarkempi "
 "maksimisyke, sitä osuvammat alueet."
@@ -6240,11 +6266,11 @@ msgstr ""
 "Zones are percentages of max heart rate. The more accurate your max "
 "heart rate, the better the zones fit."
 
-#: lib/ui/hr_ui.dart:1403
+#: lib/ui/hr_ui.dart:1404
 msgid "Hyvin kevyt: lämmittely, jäähdyttely ja palauttava liikunta."
 msgstr "Very light: warm-up, cool-down and recovery exercise."
 
-#: lib/ui/hr_ui.dart:1404
+#: lib/ui/hr_ui.dart:1405
 msgid ""
 "Kevyt peruskestävyys: pystyt puhumaan kokonaisin lausein. Suurin osa "
 "kestävyysharjoittelusta kannattaa tehdä tällä."
@@ -6252,11 +6278,11 @@ msgstr ""
 "Easy base endurance: you can talk in full sentences. Most endurance "
 "training is best done here."
 
-#: lib/ui/hr_ui.dart:1405
+#: lib/ui/hr_ui.dart:1406
 msgid "Reipas tasainen kestävyys: puhuminen onnistuu lyhyin lausein."
 msgstr "Brisk steady endurance: you can talk in short sentences."
 
-#: lib/ui/hr_ui.dart:1406
+#: lib/ui/hr_ui.dart:1407
 msgid ""
 "Kynnys: lähellä maitohappokynnystä, jonka yläpuolella väsymys kasvaa "
 "nopeasti. Kova, mutta kestettävissä noin 20–60 min."
@@ -6264,7 +6290,7 @@ msgstr ""
 "Threshold: near the lactate threshold, above which fatigue builds "
 "fast. Hard, but sustainable for about 20–60 min."
 
-#: lib/ui/hr_ui.dart:1407
+#: lib/ui/hr_ui.dart:1408
 msgid "Maksimi: lyhyet kovat vedot ja intervallit, kestää vain minuutteja."
 msgstr "Maximum: short hard efforts and intervals, lasting only minutes."
 
@@ -7941,7 +7967,7 @@ msgstr "Weight too heavy?"
 msgid "Kyllä"
 msgstr "Yes"
 
-#: lib/ui/move_feedback.dart:103 lib/ui/program_view.dart:855
+#: lib/ui/move_feedback.dart:103 lib/ui/program_view.dart:859
 msgid "Ei"
 msgstr "No"
 
@@ -7984,11 +8010,11 @@ msgstr "Gym workout ✓"
 msgid "Liikunta tai laji"
 msgstr "Activity or sport"
 
-#: lib/ui/new_workout.dart:143 lib/ui/start_panels.dart:892
+#: lib/ui/new_workout.dart:143 lib/ui/start_panels.dart:906
 msgid "Mitä treenataan?"
 msgstr "What are you training?"
 
-#: lib/ui/new_workout.dart:189 lib/ui/new_workout.dart:551 lib/ui/start_panels.dart:850
+#: lib/ui/new_workout.dart:189 lib/ui/new_workout.dart:552 lib/ui/start_panels.dart:864
 msgid "Vapaa treeni"
 msgstr "Free workout"
 
@@ -8020,46 +8046,46 @@ msgstr "Machine"
 msgid "Uusi laite, esim. Airbike"
 msgstr "New machine, e.g. Airbike"
 
-#: lib/ui/new_workout.dart:313
+#: lib/ui/new_workout.dart:314
 msgid "Aloita treeni →"
 msgstr "Start workout →"
 
-#: lib/ui/new_workout.dart:315 lib/ui/new_workout.dart:592
+#: lib/ui/new_workout.dart:316 lib/ui/new_workout.dart:594
 msgid "Ohita lämmittely"
 msgstr "Skip warm-up"
 
-#: lib/ui/new_workout.dart:428
+#: lib/ui/new_workout.dart:429
 msgid "ehdotus"
 msgstr "suggested"
 
-#: lib/ui/new_workout.dart:432 lib/ui/program_view.dart:1056
+#: lib/ui/new_workout.dart:433 lib/ui/program_view.dart:1060
 msgid "tehty tänään ✓"
 msgstr "done today ✓"
 
-#: lib/ui/new_workout.dart:434
+#: lib/ui/new_workout.dart:435
 msgid "tehty tällä viikolla"
 msgstr "done this week"
 
 #. {0} = mins
 #. {1} = day.items.length
-#: lib/ui/new_workout.dart:437
+#: lib/ui/new_workout.dart:438
 msgid "~{0} min · {1} liikettä"
 msgstr "~{0} min · {1} exercises"
 
-#: lib/ui/new_workout.dart:441 lib/ui/program_view.dart:203
+#: lib/ui/new_workout.dart:442 lib/ui/program_view.dart:203
 msgid "Nimeä päivä"
 msgstr "Name the day"
 
-#: lib/ui/new_workout.dart:454
+#: lib/ui/new_workout.dart:455
 msgid "tai"
 msgstr "or"
 
 #. {0} = day.uiName
-#: lib/ui/new_workout.dart:479
+#: lib/ui/new_workout.dart:480
 msgid "Aloita: {0}"
 msgstr "Start: {0}"
 
-#: lib/ui/new_workout.dart:600
+#: lib/ui/new_workout.dart:602
 msgid "Aloita lämmittely"
 msgstr "Start warm-up"
 
@@ -8172,33 +8198,33 @@ msgstr "May Gievra run in the background?"
 msgid "Aloitetaan"
 msgstr "Let's start"
 
-#: lib/ui/percent_sheet.dart:67 lib/ui/set_logger.dart:717 lib/whats_new.dart:342
+#: lib/ui/percent_sheet.dart:67 lib/ui/set_logger.dart:725 lib/whats_new.dart:360
 msgid "Prosenttia maksimista"
 msgstr "Percent of max"
 
-#: lib/ui/percent_sheet.dart:69
+#: lib/ui/percent_sheet.dart:69 lib/ui/percent_sheet.dart:71
 msgid "Arvioitu maksimi (1 toisto)"
 msgstr "Estimated max (1 rep)"
 
-#: lib/ui/percent_sheet.dart:76
+#: lib/ui/percent_sheet.dart:77
 msgid "Maksimi (kg)"
 msgstr "Max (kg)"
 
-#: lib/ui/percent_sheet.dart:84
+#: lib/ui/percent_sheet.dart:85
 msgid "Ei vielä arviota: kirjaa sarjoja tai anna maksimi itse."
 msgstr "No estimate yet: log sets or enter your max."
 
 #. {0} = fmtNum(_estimate.roundToDouble())
-#: lib/ui/percent_sheet.dart:85
+#: lib/ui/percent_sheet.dart:86
 msgid "Arvio kirjatuista sarjoista: {0} kg. Voit muuttaa sitä tässä."
 msgstr "Estimate from your logged sets: {0} kg. You can change it here."
 
 #. {0} = reps
-#: lib/ui/percent_sheet.dart:122
+#: lib/ui/percent_sheet.dart:123
 msgid "n. {0} toistoa"
 msgstr "about {0} reps"
 
-#: lib/ui/percent_sheet.dart:134
+#: lib/ui/percent_sheet.dart:135
 msgid ""
 "Toistomäärät ovat suuntaa antavia (Epleyn kaava). Napauta riviä "
 "käyttääksesi painoa."
@@ -8293,7 +8319,7 @@ msgstr "Plates per side: {0}"
 msgid "ei tarkalleen"
 msgstr "not exact"
 
-#: lib/ui/plate_sheet.dart:94 lib/whats_new.dart:336
+#: lib/ui/plate_sheet.dart:94 lib/whats_new.dart:354
 msgid "Levylaskuri"
 msgstr "Plate calculator"
 
@@ -8604,7 +8630,7 @@ msgid "Poista päivä"
 msgstr "Delete day"
 
 #. {0} = estimateMinutes(d.items).round()
-#: lib/ui/program_view.dart:220 lib/ui/share_card.dart:223 lib/ui/start_panels.dart:844 lib/ui/start_panels.dart:1019
+#: lib/ui/program_view.dart:220 lib/ui/share_card.dart:223 lib/ui/start_panels.dart:858 lib/ui/start_panels.dart:1033
 msgid "~{0} min"
 msgstr "~{0} min"
 
@@ -8756,43 +8782,43 @@ msgstr ""
 "{0}: different movement pattern from {1}. Weekly volume splits the "
 "sets evenly between the alternatives (alternating)."
 
-#: lib/ui/program_view.dart:769
+#: lib/ui/program_view.dart:769 lib/ui/program_view.dart:771
 msgid "Sarjat"
 msgstr "Sets"
 
 #. {0} = t(m.label)[0].toUpperCase()
 #. {1} = t(m.label).substring(1)
-#: lib/ui/program_view.dart:776
+#: lib/ui/program_view.dart:777 lib/ui/program_view.dart:779
 msgid "{0}{1}: alaraja"
 msgstr "{0}{1}: minimum"
 
 #. {0} = t(m.label)[0].toUpperCase()
 #. {1} = t(m.label).substring(1)
-#: lib/ui/program_view.dart:786
+#: lib/ui/program_view.dart:788 lib/ui/program_view.dart:790
 msgid "{0}{1}: yläraja"
 msgstr "{0}{1}: maximum"
 
-#: lib/ui/program_view.dart:800
+#: lib/ui/program_view.dart:803 lib/ui/program_view.dart:813
 msgid "Paino prosentteina maksimista"
 msgstr "Weight as percent of max"
 
-#: lib/ui/program_view.dart:802
+#: lib/ui/program_view.dart:805
 msgid "Sovellus laskee painon arvioidusta maksimista (e1RM)."
 msgstr "The app works out the weight from your estimated max (e1RM)."
 
-#: lib/ui/program_view.dart:824
+#: lib/ui/program_view.dart:828
 msgid "Voima 3–6"
 msgstr "Strength 3–6"
 
-#: lib/ui/program_view.dart:824
+#: lib/ui/program_view.dart:828
 msgid "Perus 6–12"
 msgstr "Standard 6–12"
 
-#: lib/ui/program_view.dart:824
+#: lib/ui/program_view.dart:828
 msgid "Kevyt 12–20"
 msgstr "Light 12–20"
 
-#: lib/ui/program_view.dart:839
+#: lib/ui/program_view.dart:843
 msgid ""
 "Pääliikkeen sarjat ja toistot tulevat voimanoston 10 viikon "
 "taulukosta."
@@ -8800,11 +8826,11 @@ msgstr ""
 "The main lift's sets and reps come from the 10-week powerlifting "
 "table."
 
-#: lib/ui/program_view.dart:843
+#: lib/ui/program_view.dart:847
 msgid "Supersarja"
 msgstr "Superset"
 
-#: lib/ui/program_view.dart:846
+#: lib/ui/program_view.dart:850
 msgid ""
 "Saman kirjaimen liikkeet tehdään vuorotellen, tauko vasta kierroksen "
 "jälkeen. 3 tai useampi = kiertoharjoittelu."
@@ -8812,73 +8838,73 @@ msgstr ""
 "Exercises with the same letter are done in turn, resting only after "
 "the round. 3 or more = circuit."
 
-#: lib/ui/program_view.dart:885
+#: lib/ui/program_view.dart:889
 msgid "Siirrä ylös"
 msgstr "Move up"
 
-#: lib/ui/program_view.dart:890
+#: lib/ui/program_view.dart:894
 msgid "Siirrä alas"
 msgstr "Move down"
 
-#: lib/ui/program_view.dart:932
+#: lib/ui/program_view.dart:936
 msgid "Vaihda"
 msgstr "Swap"
 
-#: lib/ui/program_view.dart:932
+#: lib/ui/program_view.dart:936
 msgid "Vaihda silti"
 msgstr "Swap anyway"
 
-#: lib/ui/program_view.dart:947
+#: lib/ui/program_view.dart:951
 msgid "Maanantai"
 msgstr "Monday"
 
-#: lib/ui/program_view.dart:948
+#: lib/ui/program_view.dart:952
 msgid "Tiistai"
 msgstr "Tuesday"
 
-#: lib/ui/program_view.dart:949
+#: lib/ui/program_view.dart:953
 msgid "Keskiviikko"
 msgstr "Wednesday"
 
-#: lib/ui/program_view.dart:950
+#: lib/ui/program_view.dart:954
 msgid "Torstai"
 msgstr "Thursday"
 
-#: lib/ui/program_view.dart:951
+#: lib/ui/program_view.dart:955
 msgid "Perjantai"
 msgstr "Friday"
 
-#: lib/ui/program_view.dart:952
+#: lib/ui/program_view.dart:956
 msgid "Lauantai"
 msgstr "Saturday"
 
-#: lib/ui/program_view.dart:953
+#: lib/ui/program_view.dart:957
 msgid "Sunnuntai"
 msgstr "Sunday"
 
 #. {0} = base
-#: lib/ui/program_view.dart:966
+#: lib/ui/program_view.dart:970
 msgid "Nimeä: {0}"
 msgstr "Rename: {0}"
 
 #. {0} = base
-#: lib/ui/program_view.dart:975
+#: lib/ui/program_view.dart:979
 msgid "Tyhjä = {0}"
 msgstr "Empty = {0}"
 
-#: lib/ui/program_view.dart:988
+#: lib/ui/program_view.dart:992
 msgid "Oletusnimi"
 msgstr "Default name"
 
-#: lib/ui/program_view.dart:1052
+#: lib/ui/program_view.dart:1056
 msgid "suositus"
 msgstr "recommendation"
 
-#: lib/ui/program_view.dart:1058
+#: lib/ui/program_view.dart:1062
 msgid "tehty tällä viikolla ✓"
 msgstr "done this week ✓"
 
-#: lib/ui/program_view.dart:1075 lib/ui/programs_screen.dart:173
+#: lib/ui/program_view.dart:1079 lib/ui/programs_screen.dart:173
 msgid "Nimeä"
 msgstr "Rename"
 
@@ -9031,7 +9057,7 @@ msgstr "usual after a week"
 msgid "Kuormitus"
 msgstr "Load"
 
-#: lib/ui/recovery_card.dart:95 lib/ui/set_logger.dart:1425
+#: lib/ui/recovery_card.dart:95 lib/ui/set_logger.dart:1451
 msgid "Tavallinen"
 msgstr "Normal"
 
@@ -9552,20 +9578,20 @@ msgid "Maraton"
 msgstr "Marathon"
 
 #. {0} = -s
-#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:1909
+#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:1912
 msgid "{0} s/km nopeampi"
 msgstr "{0} s/km faster"
 
 #. {0} = s
-#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:1909
+#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:1912
 msgid "{0} s/km hitaampi"
 msgstr "{0} s/km slower"
 
-#: lib/ui/set_logger.dart:102
+#: lib/ui/set_logger.dart:103
 msgid "Viimeistä sarjaa ei ole tallennettu"
 msgstr "Last set not saved"
 
-#: lib/ui/set_logger.dart:103
+#: lib/ui/set_logger.dart:104
 msgid ""
 "Tallenna sarja ensin valitsemalla, jäikö varaa. Merkitse sitten liike "
 "valmiiksi."
@@ -9573,306 +9599,306 @@ msgstr ""
 "Save the set first by choosing how much was left in reserve. Then "
 "mark the exercise done."
 
-#: lib/ui/set_logger.dart:105
+#: lib/ui/set_logger.dart:106
 msgid "Merkitse silti"
 msgstr "Mark anyway"
 
-#: lib/ui/set_logger.dart:106 lib/ui/workout.dart:852
+#: lib/ui/set_logger.dart:107 lib/ui/workout.dart:852
 msgid "OK"
 msgstr "OK"
 
 #. {0} = _cdTotal
-#: lib/ui/set_logger.dart:160
+#: lib/ui/set_logger.dart:161
 msgid "Aika täynnä: {0} s. Tallenna sarja."
 msgstr "Time: {0} s. Save the set."
 
 #. {0} = exerciseLabel(_next!)
-#: lib/ui/set_logger.dart:201 lib/ui/set_logger.dart:1033
+#: lib/ui/set_logger.dart:202 lib/ui/set_logger.dart:1043
 msgid "Seuraavaksi: {0}"
 msgstr "Next: {0}"
 
-#: lib/ui/set_logger.dart:206
+#: lib/ui/set_logger.dart:207
 msgid "Tavoitteen sarjat tehty ✓"
 msgstr "Target sets done ✓"
 
 #. {0} = done + 1
 #. {1} = target.sets
 #. {2} = set
-#: lib/ui/set_logger.dart:207
+#: lib/ui/set_logger.dart:208
 msgid "Seuraava sarja {0}/{1}: {2}"
 msgstr "Next set {0}/{1}: {2}"
 
-#: lib/ui/set_logger.dart:301
+#: lib/ui/set_logger.dart:302
 msgid "Kokeellinen ohje"
 msgstr "Experimental guide"
 
 #. {0} = exerciseLabel(e.name)
-#: lib/ui/set_logger.dart:339
+#: lib/ui/set_logger.dart:340
 msgid "Miten {0} mitataan?"
 msgstr "How is {0} measured?"
 
-#: lib/ui/set_logger.dart:376
+#: lib/ui/set_logger.dart:377
 msgid "yhteensä"
 msgstr "total"
 
-#: lib/ui/set_logger.dart:379
+#: lib/ui/set_logger.dart:380
 msgid "ei aiempaa"
 msgstr "no previous"
 
-#: lib/ui/set_logger.dart:406
+#: lib/ui/set_logger.dart:407
 msgid "Tavoite"
 msgstr "Goal"
 
 #. {0} = fmtSet(e.name, SetEntry(sugg.kg, sugg.reps))
-#: lib/ui/set_logger.dart:422
+#: lib/ui/set_logger.dart:423
 msgid "Työsarjat: {0}"
 msgstr "Working sets: {0}"
 
 #. {0} = fmtNum(sugg.kg * mul)
-#: lib/ui/set_logger.dart:423
+#: lib/ui/set_logger.dart:424
 msgid "yhteensä {0} kg"
 msgstr "total {0} kg"
 
-#: lib/ui/set_logger.dart:434
+#: lib/ui/set_logger.dart:435
 msgid "Käytä"
 msgstr "Use"
 
 #. {0} = target.label
 #. {1} = e.workSets.length
 #. {2} = target.sets
-#: lib/ui/set_logger.dart:442
+#: lib/ui/set_logger.dart:443
 msgid "{0} · tehty {1}/{2}"
 msgstr "{0} · done {1}/{2}"
 
 #. {0} = fmtNum(target.restSec / 60)
-#: lib/ui/set_logger.dart:443
+#: lib/ui/set_logger.dart:444
 msgid "tauko {0} min"
 msgstr "rest {0} min"
 
-#: lib/ui/set_logger.dart:455
+#: lib/ui/set_logger.dart:456
 msgid "Edellinen kerta: "
 msgstr "Last time: "
 
-#: lib/ui/set_logger.dart:458 lib/ui/set_logger.dart:458
+#: lib/ui/set_logger.dart:459 lib/ui/set_logger.dart:459
 msgid "Paras: "
 msgstr "Best: "
 
+#. {0} = '${fmtNum(last.kg)} kg × ${last.reps}'
+#: lib/ui/set_logger.dart:541
+msgid "Sarja tallennettu: {0}"
+msgstr "Set saved: {0}"
+
 #. {0} = fmtSet(e.name, e.sets.last)
-#: lib/ui/set_logger.dart:566
+#: lib/ui/set_logger.dart:574
 msgid "🏆 Uusi ennätys: {0}! Giitu, hienoa!"
 msgstr "🏆 New record: {0}! Giitu, great job!"
 
 #. {0} = fmtDurationSec(_reps)
-#: lib/ui/set_logger.dart:611
+#: lib/ui/set_logger.dart:619
 msgid "Aloita ajastin ({0})"
 msgstr "Start timer ({0})"
 
 #. {0} = _cdTotal - left
-#: lib/ui/set_logger.dart:650
+#: lib/ui/set_logger.dart:658
 msgid "Lopeta nyt ({0} s)"
 msgstr "Stop now ({0} s)"
 
 #. {0} = exerciseLabel(e.name)
-#: lib/ui/set_logger.dart:692
+#: lib/ui/set_logger.dart:700
 msgid "{0} valmis"
 msgstr "{0} done"
 
-#: lib/ui/set_logger.dart:700
+#: lib/ui/set_logger.dart:708
 msgid "palaa treenilistaan · treeni jatkuu"
 msgstr "back to the workout list · the workout continues"
 
-#: lib/ui/set_logger.dart:722
+#: lib/ui/set_logger.dart:730
 msgid "Ohje ja mittaustapa"
 msgstr "Guide and measurement"
 
-#: lib/ui/set_logger.dart:747
+#: lib/ui/set_logger.dart:755
 msgid "Kiertoharjoittelu: "
 msgstr "Circuit: "
 
-#: lib/ui/set_logger.dart:747
+#: lib/ui/set_logger.dart:755
 msgid "Supersarja: "
 msgstr "Superset: "
 
-#: lib/ui/set_logger.dart:758
+#: lib/ui/set_logger.dart:766
 msgid "Tauko vasta kierroksen jälkeen."
 msgstr "Rest only after the round."
 
 #. {0} = _inj.avoid.map(t).join(', ')
-#: lib/ui/set_logger.dart:777
+#: lib/ui/set_logger.dart:785
 msgid "Vammatila ({0}): tätä liikettä kannattaa välttää."
 msgstr "Injury mode ({0}): best to avoid this exercise."
 
 #. {0} = exerciseLabel(_inj.substitute!)
-#: lib/ui/set_logger.dart:778
+#: lib/ui/set_logger.dart:786
 msgid "Kokeile: {0}."
 msgstr "Try: {0}."
 
-#: lib/ui/set_logger.dart:781
+#: lib/ui/set_logger.dart:789
 msgid "Kipua enintään 3–5/10, ja sen pitää rauhoittua aamuun mennessä."
 msgstr "Pain at most 3–5/10, and it should settle by the next morning."
 
 #. {0} = _sameDay.map(t).join(', ')
-#: lib/ui/set_logger.dart:783
+#: lib/ui/set_logger.dart:791
 msgid "Tänään toisessa treenissä kuormittui jo {0}. Jätä enemmän varaa."
 msgstr ""
 "Already worked today in another workout: {0}. Leave more reps in "
 "reserve."
 
 #. {0} = exerciseLabel(_inj.substitute!)
-#: lib/ui/set_logger.dart:802
+#: lib/ui/set_logger.dart:810
 msgid "Vaihda: {0}"
 msgstr "Swap: {0}"
 
-#: lib/ui/set_logger.dart:808
+#: lib/ui/set_logger.dart:816
 msgid "Valitse muu liike"
 msgstr "Choose another exercise"
 
 #. {0} = e.workSets.length
-#: lib/ui/set_logger.dart:829
+#: lib/ui/set_logger.dart:837
 msgid "Kaikki {0} sarjaa tehty"
 msgstr "All {0} sets done"
 
-#: lib/ui/set_logger.dart:834
+#: lib/ui/set_logger.dart:842
 msgid "uusi ennätys"
 msgstr "new record"
 
 #. {0} = e.workSets.length + 1
-#: lib/ui/set_logger.dart:844
+#: lib/ui/set_logger.dart:852
 msgid "Lisää sarja ({0}.)"
 msgstr "Add set ({0})"
 
 #. {0} = e.sets.where((s) => !s.warmup).length + 1
-#: lib/ui/set_logger.dart:864
+#: lib/ui/set_logger.dart:872
 msgid "Sarja {0} · lisäsarja"
 msgstr "Set {0} · extra set"
 
 #. {0} = e.sets.where((s) => !s.warmup).length + 1
-#: lib/ui/set_logger.dart:865 lib/ui/set_logger.dart:1066
+#: lib/ui/set_logger.dart:873 lib/ui/set_logger.dart:1080
 msgid "Sarja {0}"
 msgstr "Set {0}"
 
-#: lib/ui/set_logger.dart:875 lib/ui/set_logger.dart:1191
+#: lib/ui/set_logger.dart:883 lib/ui/set_logger.dart:1206 lib/ui/set_logger.dart:1208
 msgid "Lisäpaino (0 = oma paino)"
 msgstr "Added weight (0 = bodyweight)"
 
-#: lib/ui/set_logger.dart:889
+#: lib/ui/set_logger.dart:897
 msgid " (per puoli)"
 msgstr " (per side)"
 
-#: lib/ui/set_logger.dart:933
+#: lib/ui/set_logger.dart:941
 msgid "Aseta hex barin paino"
 msgstr "Set hex bar weight"
 
-#: lib/ui/set_logger.dart:947
+#: lib/ui/set_logger.dart:955
 msgid "Pudotus: kevyempi paino heti edellisen sarjan perään, ilman taukoa."
 msgstr "Drop set: a lighter weight right after the previous set, without rest."
 
-#: lib/ui/set_logger.dart:948
+#: lib/ui/set_logger.dart:956
 msgid "AMRAP: niin monta toistoa kuin jaksat. Päivittää arvioidun maksimin."
 msgstr "AMRAP: as many reps as you can. Updates your estimated max."
 
-#: lib/ui/set_logger.dart:959
+#: lib/ui/set_logger.dart:967
 msgid "Tallenna AMRAP-sarja"
 msgstr "Save AMRAP set"
 
-#: lib/ui/set_logger.dart:970
+#: lib/ui/set_logger.dart:978
 msgid "Tallenna lämmittelysarjana"
 msgstr "Save as warm-up set"
 
 #. {0} = reserveWords(_m).question[0].toLowerCase()
 #. {1} = reserveWords(_m).question.substring(1)
-#: lib/ui/set_logger.dart:976
+#: lib/ui/set_logger.dart:984
 msgid "Tallenna sarja – {0}{1}"
 msgstr "Save set – {0}{1}"
 
+#. {0} = label
+#: lib/ui/set_logger.dart:1012
+msgid "Tallenna sarja: {0}"
+msgstr "Save set: {0}"
+
 #. {0} = exerciseLabel(_next!)
-#: lib/ui/set_logger.dart:1032
+#: lib/ui/set_logger.dart:1042
 msgid "Tauon jälkeen: {0}"
 msgstr "After the rest: {0}"
 
 #. {0} = e.sets.where((s) => !s.warmup).length
-#: lib/ui/set_logger.dart:1038
+#: lib/ui/set_logger.dart:1048
 msgid "Tehdyt sarjat · {0}"
 msgstr "Sets done · {0}"
 
-#: lib/ui/set_logger.dart:1119
+#: lib/ui/set_logger.dart:1134
 msgid "Napauta sarjaa korjataksesi, pyyhkäise vasemmalle poistaaksesi."
 msgstr "Tap a set to edit it, swipe left to delete it."
 
-#: lib/ui/set_logger.dart:1139
+#: lib/ui/set_logger.dart:1154
 msgid "Merkitse liike valmiiksi"
 msgstr "Mark move as done"
 
-#: lib/ui/set_logger.dart:1188
+#: lib/ui/set_logger.dart:1203
 msgid "Korjaa lämmittelysarja"
 msgstr "Edit warm-up set"
 
 #. {0} = widget.index + 1
-#: lib/ui/set_logger.dart:1188
+#: lib/ui/set_logger.dart:1203
 msgid "Korjaa sarja {0}"
 msgstr "Edit set {0}"
 
-#: lib/ui/set_logger.dart:1227
+#: lib/ui/set_logger.dart:1244
 msgid "Lämmittelysarja"
 msgstr "Warm-up set"
 
-#: lib/ui/set_logger.dart:1229
+#: lib/ui/set_logger.dart:1246
 msgid "Ei lasketa työsarjoihin eikä ehdotuksiin."
 msgstr "Not counted in working sets or suggestions."
 
-#: lib/ui/set_logger.dart:1236
+#: lib/ui/set_logger.dart:1253
 msgid "Sarjan tyyppi"
 msgstr "Set type"
 
-#: lib/ui/set_logger.dart:1290
+#: lib/ui/set_logger.dart:1307
 msgid "Paino per kuula (2 kuulaa)"
 msgstr "Weight per kettlebell (2 kettlebells)"
 
-#: lib/ui/set_logger.dart:1293
+#: lib/ui/set_logger.dart:1310
 msgid "Paino (tanko ja levyt)"
 msgstr "Weight (bar and plates)"
 
-#: lib/ui/set_logger.dart:1294
+#: lib/ui/set_logger.dart:1311
 msgid "Paino yhteensä (2 painoa)"
 msgstr "Total weight (2 weights)"
 
-#: lib/ui/set_logger.dart:1295
+#: lib/ui/set_logger.dart:1312
 msgid "Paino yhteensä (2 käsipainoa)"
 msgstr "Total weight (2 dumbbells)"
 
-#: lib/ui/set_logger.dart:1296
+#: lib/ui/set_logger.dart:1313
 msgid "Paino per kuula"
 msgstr "Weight per kettlebell"
 
-#: lib/ui/set_logger.dart:1299
+#: lib/ui/set_logger.dart:1316
 msgid "Paino (yksi käsipaino tai kuula)"
 msgstr "Weight (one dumbbell or kettlebell)"
 
-#: lib/ui/set_logger.dart:1299
+#: lib/ui/set_logger.dart:1316
 msgid "Paino per käsipaino"
 msgstr "Weight per dumbbell"
 
 #. {0} = fmtNum(kg * 2)
-#: lib/ui/set_logger.dart:1308
+#: lib/ui/set_logger.dart:1325
 msgid "Molemmissa käsissä · yhteensä {0} kg"
 msgstr "In both hands · total {0} kg"
 
 #. {0} = fmtNum(kg / 2)
-#: lib/ui/set_logger.dart:1310
+#: lib/ui/set_logger.dart:1327
 msgid "{0} kg kummassakin kädessä"
 msgstr "{0} kg in each hand"
 
-#. {0} = label
-#: lib/ui/set_logger.dart:1399
-msgid "Vähennä: {0}"
-msgstr "Decrease: {0}"
-
-#. {0} = label
-#: lib/ui/set_logger.dart:1400
-msgid "Lisää: {0}"
-msgstr "Increase: {0}"
-
-#: lib/ui/set_logger.dart:1426
+#: lib/ui/set_logger.dart:1452
 msgid "Pudotus"
 msgstr "Drop"
 
@@ -9904,7 +9930,7 @@ msgstr "The whole workout as a file (opens in note-taking apps)"
 msgid "treenipäiväkirja"
 msgstr "workout diary"
 
-#: lib/ui/share_card.dart:136 lib/ui/start_panels.dart:1116 lib/ui/stats_screen.dart:487 lib/ui/watch.dart:112 …
+#: lib/ui/share_card.dart:136 lib/ui/start_panels.dart:1130 lib/ui/stats_screen.dart:487 lib/ui/watch.dart:112 …
 msgid "keskisyke"
 msgstr "avg heart rate"
 
@@ -9950,7 +9976,7 @@ msgstr "Show less"
 msgid "Näytä kaikki ({0})"
 msgstr "Show all ({0})"
 
-#: lib/ui/start_panels.dart:91 lib/ui/tile_trend.dart:207
+#: lib/ui/start_panels.dart:91 lib/ui/tile_trend.dart:208
 msgid "tänään"
 msgstr "today"
 
@@ -9975,210 +10001,210 @@ msgstr "steps / day"
 msgid "askelta tänään"
 msgstr "steps today"
 
-#: lib/ui/start_panels.dart:305
+#: lib/ui/start_panels.dart:310
 msgid "treeniaikaa, h"
 msgstr "training time, h"
 
 #. {0} = weekNumber(from)
 #. {1} = '${numDate(from)}–${numDate(addDays(from, 6))}'
-#: lib/ui/start_panels.dart:316
+#: lib/ui/start_panels.dart:321
 msgid "Viikko {0} · {1}"
 msgstr "Week {0} · {1}"
 
 #. {0} = total
-#: lib/ui/start_panels.dart:412
+#: lib/ui/start_panels.dart:422
 msgid "kaikkiaan {0} min liikuntaa"
 msgstr "{0} min of activity in total"
 
-#: lib/ui/start_panels.dart:477
+#: lib/ui/start_panels.dart:491
 msgid "salipäivää"
 msgstr "gym days"
 
-#: lib/ui/start_panels.dart:478
+#: lib/ui/start_panels.dart:492
 msgid "juoksuvauhti vs. 4 vk"
 msgstr "running pace vs. 4 wk"
 
-#: lib/ui/start_panels.dart:479
+#: lib/ui/start_panels.dart:493
 msgid "vauhti samalla sykkeellä"
 msgstr "pace at same heart rate"
 
-#: lib/ui/start_panels.dart:480
+#: lib/ui/start_panels.dart:494
 msgid "km liikuntaa"
 msgstr "km of activity"
 
 #. {0} = s
-#: lib/ui/start_panels.dart:480
+#: lib/ui/start_panels.dart:494
 msgid "km · {0}"
 msgstr "km · {0}"
 
-#: lib/ui/start_panels.dart:481
+#: lib/ui/start_panels.dart:495
 msgid "min liikuntaa"
 msgstr "min of activity"
 
 #. {0} = s
-#: lib/ui/start_panels.dart:481
+#: lib/ui/start_panels.dart:495
 msgid "min · {0}"
 msgstr "min · {0}"
 
-#: lib/ui/start_panels.dart:482
+#: lib/ui/start_panels.dart:496
 msgid "kertaa liikuntaa"
 msgstr "activity sessions"
 
 #. {0} = s
-#: lib/ui/start_panels.dart:482
+#: lib/ui/start_panels.dart:496
 msgid "kertaa · {0}"
 msgstr "times · {0}"
 
-#: lib/ui/start_panels.dart:779
+#: lib/ui/start_panels.dart:793
 msgid "❤ HEALTH CONNECTISTA · 1 UUSI"
 msgstr "❤ FROM HEALTH CONNECT · 1 NEW"
 
 #. {0} = items.length
-#: lib/ui/start_panels.dart:780
+#: lib/ui/start_panels.dart:794
 msgid "❤ HEALTH CONNECTISTA · {0} UUTTA"
 msgstr "❤ FROM HEALTH CONNECT · {0} NEW"
 
 #. {0} = shortDate(w.date)
-#: lib/ui/start_panels.dart:821
+#: lib/ui/start_panels.dart:835
 msgid "✓ tehty {0}"
 msgstr "✓ done {0}"
 
-#: lib/ui/start_panels.dart:844 lib/ui/start_panels.dart:1014
+#: lib/ui/start_panels.dart:858 lib/ui/start_panels.dart:1028
 msgid "★ ehdotus"
 msgstr "★ suggested"
 
 #. {0} = _hm(c.start)
 #. {1} = _hm(c.end)
-#: lib/ui/start_panels.dart:870
+#: lib/ui/start_panels.dart:884
 msgid "Mitä teit {0}–{1}?"
 msgstr "What did you do {0}–{1}?"
 
-#: lib/ui/start_panels.dart:877
+#: lib/ui/start_panels.dart:891
 msgid "Kellon tiedot tulevat treeniin; kirjaat vain sarjat."
 msgstr "The watch data goes into the workout; you only log the sets."
 
-#: lib/ui/start_panels.dart:903
+#: lib/ui/start_panels.dart:917
 msgid "Voimaharjoittelu"
 msgstr "Strength training"
 
 #. {0} = // Sama treeni
 #. {1} = johon liitos menee (lähimpänä samaa aikaa, ks. gymFromHealth).
                             trName(gymFromHealth(c, store.onDay(today), nextSession: 0).$1.title)
-#: lib/ui/start_panels.dart:916
+#: lib/ui/start_panels.dart:930
 msgid "Liitä tämän päivän treeniin: {0}"
 msgstr "Add to today's workout: {0}"
 
-#: lib/ui/start_panels.dart:930
+#: lib/ui/start_panels.dart:944
 msgid "Kirjaa sarjat"
 msgstr "Log sets"
 
-#: lib/ui/start_panels.dart:941
+#: lib/ui/start_panels.dart:955
 msgid "Ilman sarjoja"
 msgstr "Without sets"
 
 #. {0} = trName(w.title)
-#: lib/ui/start_panels.dart:952
+#: lib/ui/start_panels.dart:966
 msgid "Jatka: {0}"
 msgstr "Continue: {0}"
 
-#: lib/ui/start_panels.dart:963
+#: lib/ui/start_panels.dart:977
 msgid "Tauolla ei ehdotuksia; voit silti treenata."
 msgstr "No suggestions during a break; you can still train."
 
-#: lib/ui/start_panels.dart:965
+#: lib/ui/start_panels.dart:979
 msgid "ALOITA"
 msgstr "START"
 
-#: lib/ui/start_panels.dart:965
+#: lib/ui/start_panels.dart:979
 msgid "ALOITA UUSI"
 msgstr "START NEW"
 
-#: lib/ui/start_panels.dart:974
+#: lib/ui/start_panels.dart:988
 msgid "Toinen päivä tai ohjelman muokkaus"
 msgstr "Another date or edit the program"
 
 #. {0} = day.items.length
-#: lib/ui/start_panels.dart:1020
+#: lib/ui/start_panels.dart:1034
 msgid "{0} liikettä"
 msgstr "{0} exercises"
 
-#: lib/ui/start_panels.dart:1075
+#: lib/ui/start_panels.dart:1089
 msgid "Salitreeni tallennettu kellon tiedoin."
 msgstr "Gym workout saved with the watch data."
 
-#: lib/ui/start_panels.dart:1118
+#: lib/ui/start_panels.dart:1132
 msgid "aktiivisia"
 msgstr "active"
 
-#: lib/ui/start_panels.dart:1160
+#: lib/ui/start_panels.dart:1174
 msgid "RASITUS"
 msgstr "EFFORT"
 
 #. {0} = sportName(w.activity!)
-#: lib/ui/start_panels.dart:1207
+#: lib/ui/start_panels.dart:1221
 msgid "Tallennettu: {0}"
 msgstr "Saved: {0}"
 
-#: lib/ui/start_panels.dart:1276
+#: lib/ui/start_panels.dart:1290
 msgid "Miten kirjataan?"
 msgstr "How to record it?"
 
-#: lib/ui/start_panels.dart:1277
+#: lib/ui/start_panels.dart:1291
 msgid "GPS"
 msgstr "GPS"
 
-#: lib/ui/start_panels.dart:1277
+#: lib/ui/start_panels.dart:1291
 msgid "Aika, matka, reitti ja nousut"
 msgstr "Time, distance, route and climbs"
 
-#: lib/ui/start_panels.dart:1278
+#: lib/ui/start_panels.dart:1292
 msgid "Ilman GPS:ää, esim. kävelymatto"
 msgstr "Without GPS, e.g. a walking pad"
 
-#: lib/ui/start_panels.dart:1279
+#: lib/ui/start_panels.dart:1293
 msgid "Jo tehty"
 msgstr "Already done"
 
-#: lib/ui/start_panels.dart:1279
+#: lib/ui/start_panels.dart:1293
 msgid "Syötä aika ja matka itse"
 msgstr "Enter the time and distance yourself"
 
 #. {0} = hr.name ?? t('Sykevyö')
-#: lib/ui/start_panels.dart:1284
+#: lib/ui/start_panels.dart:1298
 msgid "{0} yhdistyy, kun aloitat"
 msgstr "{0} connects when you start"
 
-#: lib/ui/start_panels.dart:1306
+#: lib/ui/start_panels.dart:1320
 msgid "Mitä liikuntaa?"
 msgstr "What activity?"
 
-#: lib/ui/start_panels.dart:1309
+#: lib/ui/start_panels.dart:1323
 msgid "Tauolla, ei viikkotavoitetta"
 msgstr "On a break, no weekly goal"
 
 #. {0} = week.moderateEq
 #. {1} = whoMinutes
-#: lib/ui/start_panels.dart:1310
+#: lib/ui/start_panels.dart:1324
 msgid "Tällä viikolla {0} / {1} min reipasta"
 msgstr "This week {0} / {1} min brisk"
 
-#: lib/ui/start_panels.dart:1360
+#: lib/ui/start_panels.dart:1374
 msgid "ALOITA UUSI · VIIMEKSI"
 msgstr "START NEW · RECENT"
 
-#: lib/ui/start_panels.dart:1360
+#: lib/ui/start_panels.dart:1374
 msgid "VIIMEKSI"
 msgstr "RECENT"
 
-#: lib/ui/start_panels.dart:1370
+#: lib/ui/start_panels.dart:1384
 msgid "LAJIT"
 msgstr "SPORTS"
 
-#: lib/ui/start_panels.dart:1370
+#: lib/ui/start_panels.dart:1384
 msgid "MUUT"
 msgstr "MORE"
 
-#: lib/ui/start_panels.dart:1401
+#: lib/ui/start_panels.dart:1415
 msgid "Kaikki lajit…"
 msgstr "All sports…"
 
@@ -10801,23 +10827,23 @@ msgid "{0}: käyrä"
 msgstr "{0}: graph"
 
 #. {0} = 11
-#: lib/ui/tile_trend.dart:203
+#: lib/ui/tile_trend.dart:204
 msgid "{0} vk sitten"
 msgstr "{0} wk ago"
 
-#: lib/ui/tile_trend.dart:207
+#: lib/ui/tile_trend.dart:208
 msgid "tämä viikko"
 msgstr "this week"
 
 #. {0} = tileFmt(key, a7)
 #. {1} = tileFmt(key, a30)
-#: lib/ui/tile_trend.dart:218
+#: lib/ui/tile_trend.dart:219
 msgid "Päiväkeskiarvo: 7 pv {0} · 30 pv {1}"
 msgstr "Daily average: 7 d {0} · 30 d {1}"
 
 #. {0} = tileFmt(key, a7)
 #. {1} = tileFmt(key, a30)
-#: lib/ui/tile_trend.dart:219
+#: lib/ui/tile_trend.dart:220
 msgid "Keskiarvo: 7 pv {0} · 30 pv {1}"
 msgstr "Average: 7 d {0} · 30 d {1}"
 
@@ -10903,86 +10929,86 @@ msgstr "Good afternoon"
 msgid "Hyvää iltaa"
 msgstr "Good evening"
 
-#: lib/ui/widgets.dart:176
+#: lib/ui/widgets.dart:179
 msgid "Vähennä"
 msgstr "Decrease"
 
-#: lib/ui/widgets.dart:243
+#: lib/ui/widgets.dart:252
 msgid "Valitse päivä"
 msgstr "Choose a date"
 
 #. {0} = fmtNum(min)
 #. {1} = fmtNum(max)
-#: lib/ui/widgets.dart:294 lib/ui/workout.dart:1974
+#: lib/ui/widgets.dart:303 lib/ui/workout.dart:1977
 msgid "Sallittu {0}–{1}"
 msgstr "Allowed {0}–{1}"
 
-#: lib/ui/widgets.dart:302
+#: lib/ui/widgets.dart:311
 msgid "Tarkista luku"
 msgstr "Check the number"
 
-#: lib/ui/widgets.dart:711
+#: lib/ui/widgets.dart:720
 msgid "Pieni"
 msgstr "Small"
 
-#: lib/ui/widgets.dart:711
+#: lib/ui/widgets.dart:720
 msgid "Normaali"
 msgstr "Normal"
 
-#: lib/ui/widgets.dart:711
+#: lib/ui/widgets.dart:720
 msgid "Suuri"
 msgstr "Large"
 
-#: lib/ui/widgets.dart:787
+#: lib/ui/widgets.dart:796
 msgid "Muokataanko tallennettua treeniä?"
 msgstr "Edit the saved workout?"
 
-#: lib/ui/widgets.dart:788
+#: lib/ui/widgets.dart:797
 msgid "Treeni on merkitty valmiiksi. Muutokset tallentuvat sen tiedostoon."
 msgstr "The workout is marked as done. Changes are saved to its file."
 
-#: lib/ui/widgets.dart:806
+#: lib/ui/widgets.dart:815
 msgid "Tallennettu treeni: muokkaa"
 msgstr "Saved workout: edit"
 
-#: lib/ui/widgets.dart:836
+#: lib/ui/widgets.dart:845
 msgid "Mikä laji tämä on?"
 msgstr "Which activity is this?"
 
-#: lib/ui/widgets.dart:854
+#: lib/ui/widgets.dart:863
 msgid "Ohita, älä tuo"
 msgstr "Skip, don't import"
 
 #. {0} = p.days
-#: lib/ui/widgets.dart:951
+#: lib/ui/widgets.dart:960
 msgid "🩹 Vammatauko päällä · {0}. päivä"
 msgstr "🩹 Injury break on · day {0}"
 
 #. {0} = p.days
-#: lib/ui/widgets.dart:953
+#: lib/ui/widgets.dart:962
 msgid "🤒 Sairastauko päällä · {0}. päivä"
 msgstr "🤒 Sick break on · day {0}"
 
 #. {0} = p.days
-#: lib/ui/widgets.dart:954
+#: lib/ui/widgets.dart:963
 msgid "🏖 Loma päällä · {0}. päivä"
 msgstr "🏖 Holiday on · day {0}"
 
-#: lib/ui/widgets.dart:974
+#: lib/ui/widgets.dart:983
 msgid "Treenaa ja liiku kevyesti. Tauko jatkuu, kunnes lopetat sen itse."
 msgstr "Train and move lightly. The break continues until you end it yourself."
 
 #. {0} = shortDate(p.end!)
-#: lib/ui/widgets.dart:975
+#: lib/ui/widgets.dart:984
 msgid "Treenaa ja liiku kevyesti. Tauko päättyy {0} jälkeen."
 msgstr "Train and move lightly. The break ends after {0}."
 
 #. {0} = names
-#: lib/ui/widgets.dart:1008
+#: lib/ui/widgets.dart:1017
 msgid "🩹 Vammatila: {0}"
 msgstr "🩹 Injury mode: {0}"
 
-#: lib/ui/widgets.dart:1013
+#: lib/ui/widgets.dart:1022
 msgid ""
 "Merkityt liikkeet: 🩹 kevennä, ⚠️ vältä. Kipu yli 3–5/10? Lopeta liike "
 "tai vaihda se."
@@ -10990,16 +11016,16 @@ msgstr ""
 "Marked exercises: 🩹 go lighter, ⚠️ avoid. Pain above 3–5/10? Stop the "
 "exercise or swap it."
 
-#: lib/ui/widgets.dart:1027
+#: lib/ui/widgets.dart:1036
 msgid "vältä"
 msgstr "avoid"
 
 #. {0} = exerciseLabel(st.substitute!)
-#: lib/ui/widgets.dart:1027
+#: lib/ui/widgets.dart:1036
 msgid "korvaava: {0}"
 msgstr "alternative: {0}"
 
-#: lib/ui/widgets.dart:1029
+#: lib/ui/widgets.dart:1038
 msgid "kevennä (vammatila)"
 msgstr "go lighter (injury mode)"
 
@@ -11135,7 +11161,7 @@ msgstr "duration {0}"
 msgid "Nimeä treeni"
 msgstr "Rename workout"
 
-#: lib/ui/workout.dart:1054 lib/ui/workout.dart:1961
+#: lib/ui/workout.dart:1054 lib/ui/workout.dart:1964
 msgid "Muokkaa kestoa"
 msgstr "Edit duration"
 
@@ -11186,47 +11212,47 @@ msgid "Tiedosto"
 msgstr "File"
 
 #. {0} = workout.healthSource
-#: lib/ui/workout.dart:1554 lib/ui/workout.dart:1691
+#: lib/ui/workout.dart:1557 lib/ui/workout.dart:1694
 msgid "Health Connectista ({0})"
 msgstr "From Health Connect ({0})"
 
-#: lib/ui/workout.dart:1571 lib/ui/workout.dart:1708
+#: lib/ui/workout.dart:1574 lib/ui/workout.dart:1711
 msgid "Hae kellon tiedot"
 msgstr "Get watch data"
 
-#: lib/ui/workout.dart:1572 lib/ui/workout.dart:1709
+#: lib/ui/workout.dart:1575 lib/ui/workout.dart:1712
 msgid "Kalorit ja syke Health Connectista tai käsin"
 msgstr "Calories and heart rate from Health Connect or by hand"
 
 #. {0} = t(feel.$3).toLowerCase()
-#: lib/ui/workout.dart:1645 lib/ui/workout.dart:1738
+#: lib/ui/workout.dart:1648 lib/ui/workout.dart:1741
 msgid "Fiilis: {0}"
 msgstr "Feeling: {0}"
 
 #. {0} = workout.tooHeavy.map(exerciseLabel).join(', ')
-#: lib/ui/workout.dart:1654 lib/ui/workout.dart:1747
+#: lib/ui/workout.dart:1657 lib/ui/workout.dart:1750
 msgid "Liian raskas: {0}"
 msgstr "Too heavy: {0}"
 
-#: lib/ui/workout.dart:1662 lib/ui/workout.dart:1755
+#: lib/ui/workout.dart:1665 lib/ui/workout.dart:1758
 msgid "Valitse"
 msgstr "Choose"
 
-#: lib/ui/workout.dart:1662 lib/ui/workout.dart:1755
+#: lib/ui/workout.dart:1665 lib/ui/workout.dart:1758
 msgid "Muuta"
 msgstr "Change"
 
 #. {0} = c.prs
-#: lib/ui/workout.dart:1783
+#: lib/ui/workout.dart:1786
 msgid "{0} ennätystä!"
 msgstr "{0} records!"
 
-#: lib/ui/workout.dart:1783
+#: lib/ui/workout.dart:1786
 msgid "1 ennätys!"
 msgstr "1 record!"
 
 #. {0} = c.skipReason
-#: lib/ui/workout.dart:1796
+#: lib/ui/workout.dart:1799
 msgid ""
 "Tämä oli {0}: kuorma on tarkoituksella pienempi, joten tätä kertaa ei "
 "verrata aiempiin. Tärkeintä on palautua."
@@ -11234,46 +11260,46 @@ msgstr ""
 "This was a {0}: the load is intentionally lower, so this session "
 "isn't compared with earlier ones. Recovery comes first."
 
-#: lib/ui/workout.dart:1802
+#: lib/ui/workout.dart:1805
 msgid "Ensimmäinen kerta tällä treenillä. Ensi kerralla näet, miten kehityit."
 msgstr "First time with this workout. Next time you'll see how you progressed."
 
 #. {0} = sportName(workout.activity!)
 #. {1} = shortDateY(c.previous!.date)
-#: lib/ui/workout.dart:1805
+#: lib/ui/workout.dart:1808
 msgid "Edellinen kerta: {0} ({1})"
 msgstr "Last time: {0} ({1})"
 
 #. {0} = shortDateY(c.previous!.date)
-#: lib/ui/workout.dart:1812
+#: lib/ui/workout.dart:1815
 msgid "Verrattuna edelliseen kertaan ({0})"
 msgstr "Compared with last time ({0})"
 
 #. {0} = kg(c.previousVolume!)
 #. {1} = kg(c.volume)
 #. {2} = pct(c.volume, c.previousVolume!)
-#: lib/ui/workout.dart:1818
+#: lib/ui/workout.dart:1821
 msgid "Volyymi {0} → {1} ({2})"
 msgstr "Volume {0} → {1} ({2})"
 
 #. {0} = fmtDuration(c.previous!.minutes!)
 #. {1} = fmtDuration(workout.minutes!)
-#: lib/ui/workout.dart:1827
+#: lib/ui/workout.dart:1830
 msgid "Kesto {0} → {1}"
 msgstr "Duration {0} → {1}"
 
 #. {0} = feelingOf(c.previous!.feeling)!.$2
 #. {1} = feelingOf(workout.feeling)!.$2
-#: lib/ui/workout.dart:1832
+#: lib/ui/workout.dart:1835
 msgid "Fiilis {0} → {1}"
 msgstr "Feeling {0} → {1}"
 
 #. {0} = c.history.where((h) => h.$2 > 0).map((h) => fmtNum(h.$2.roundToDouble())).join(' → ')
-#: lib/ui/workout.dart:1873
+#: lib/ui/workout.dart:1876
 msgid "Volyymi viime kerroilla: {0} kg"
 msgstr "Volume in recent sessions: {0} kg"
 
-#: lib/ui/workout.dart:1882
+#: lib/ui/workout.dart:1885
 msgid ""
 "Paras sarja verrataan arvioituna maksimina, joten raskaampi paino tai "
 "useampi toisto näkyy nousuna. Kevennys- ja paluuviikot jätetään "
@@ -11286,24 +11312,59 @@ msgstr ""
 #. {0} = t('juoksu')
 #. {1} = shortDate(prev.date)
 #. {2} = fmtPace(prev.paceSecPerKm!)
-#: lib/ui/workout.dart:1908
+#: lib/ui/workout.dart:1911
 msgid "Edellinen {0} ({1}): {2} min/km"
 msgstr "Previous {0} ({1}): {2} min/km"
 
-#: lib/ui/workout.dart:1908
+#: lib/ui/workout.dart:1911
 msgid "juoksu"
 msgstr "run"
 
 #. {0} = end(_start!, m)
-#: lib/ui/workout.dart:1994
+#: lib/ui/workout.dart:1997
 msgid "Päättyi klo {0}"
 msgstr "Ended at {0}"
 
 #: lib/whats_new.dart:18
+msgid "Yöarvot unen lähteestä"
+msgstr "Night values from your sleep source"
+
+#: lib/whats_new.dart:19
+msgid ""
+"Yösyke ja HRV lasketaan vain valitsemastasi unen lähteestä, ja alin "
+"syke 5 minuutin jaksosta kuten esim. Ouran sovelluksessa."
+msgstr ""
+"Night heart rate and HRV now come only from your chosen sleep source, "
+"and the lowest heart rate uses 5-minute stretches, as in Oura's app "
+"for example."
+
+#: lib/whats_new.dart:25
+msgid ""
+"Jos ilmoitukset on estetty, Palautusajastin-asetukset kertovat sen, "
+"ja painike vie sovelluksen asetuksiin."
+msgstr ""
+"If notifications are blocked, the Rest timer settings say so, and a "
+"button opens the app's settings."
+
+#: lib/whats_new.dart:30
+msgid "Parempi ruudunlukijan tuki"
+msgstr "Better screen reader support"
+
+#: lib/whats_new.dart:31
+msgid ""
+"TalkBack lukee sarjan painon ja toistot, kertoo tallennetun sarjan ja "
+"kalenterin päivät kokonaisina, ja tehdyn sarjan voi poistaa "
+"toiminnoista."
+msgstr ""
+"TalkBack reads the weight and reps of a set, announces a saved set "
+"and reads calendar days in full, and a done set can be deleted from "
+"the actions menu."
+
+#: lib/whats_new.dart:36
 msgid "Etusivu pelkälle treenaajalle"
 msgstr "Home page for training only"
 
-#: lib/whats_new.dart:19
+#: lib/whats_new.dart:37
 msgid ""
 "Ilman terveys- ja hyvinvointitoimintoja etusivulla treeniputki "
 "ohjelmasi treenipäivistä, viikon sarjat ja treeniaika sekä voiman "
@@ -11313,11 +11374,11 @@ msgstr ""
 "training streak based on your program's training days, weekly sets "
 "and training time, and strength progress from your first workout."
 
-#: lib/whats_new.dart:24
+#: lib/whats_new.dart:42
 msgid "Palautumisen käyrät"
 msgstr "Recovery graphs"
 
-#: lib/whats_new.dart:25
+#: lib/whats_new.dart:43
 msgid ""
 "Napauta Palautuminen-ruutua: arvo 30 päivältä tai 12 viikolta, oma "
 "tavallinen vaihtelusi vihreänä vyönä ja asteikko."
@@ -11325,7 +11386,7 @@ msgstr ""
 "Tap a Recovery tile: the value over 30 days or 12 weeks, your usual "
 "range as a green band, and a scale."
 
-#: lib/whats_new.dart:31
+#: lib/whats_new.dart:49
 msgid ""
 "Jos kaksi laitetta (esim. sormus ja kello) kirjaa saman yön, "
 "Uni-kortti kysyy kerran, kumpaa käytetään. Yksittäisen yön lähteen "
@@ -11335,11 +11396,11 @@ msgstr ""
 "Sleep card asks once which one to use. A single night's source can be "
 "changed from its day in the calendar."
 
-#: lib/whats_new.dart:36
+#: lib/whats_new.dart:54
 msgid "Paremmat ohjelmaehdotukset"
 msgstr "Better program suggestions"
 
-#: lib/whats_new.dart:37
+#: lib/whats_new.dart:55
 msgid ""
 "Liikkeet valituilla välineillä kaikissa yhdistelmissä; vammatilassa "
 "vaivalle hyvin siedetyt liikkeet ensin."
@@ -11347,11 +11408,11 @@ msgstr ""
 "Exercises use your chosen equipment in every combination; in injury "
 "mode, exercises that the problem usually tolerates well come first."
 
-#: lib/whats_new.dart:42
+#: lib/whats_new.dart:60
 msgid "Palautuminen uudistettu"
 msgstr "Recovery redesigned"
 
-#: lib/whats_new.dart:43
+#: lib/whats_new.dart:61
 msgid ""
 "Ruudut värireunoin (vihreä, keltainen, punainen) omaan tasoosi "
 "verrattuna; ⚠-ruudusta neuvo. Mukana HRV, hengitys, happi, lämpö, uni "
@@ -11363,11 +11424,11 @@ msgstr ""
 "temperature, sleep and load when your watch or ring records them. "
 "Tiles and order: Settings → Home page."
 
-#: lib/whats_new.dart:48
+#: lib/whats_new.dart:66
 msgid "Uni-kortti"
 msgstr "Sleep card"
 
-#: lib/whats_new.dart:49
+#: lib/whats_new.dart:67
 msgid ""
 "Viime yö, viikon keskiarvo ja säännöllisyys omaan tavalliseen uneesi "
 "verrattuna. Valinnainen: Asetukset → Etusivu."
@@ -11375,11 +11436,11 @@ msgstr ""
 "Last night, the week's average and regularity compared with your own "
 "usual sleep. Optional: Settings → Home page."
 
-#: lib/whats_new.dart:54
+#: lib/whats_new.dart:72
 msgid "Kehitys Tilastoissa"
 msgstr "Progress in Stats"
 
-#: lib/whats_new.dart:55
+#: lib/whats_new.dart:73
 msgid ""
 "Yösyke, HRV ja uni 12 viikolta: Tilastot → Kehitys → Palautuminen ja "
 "uni."
@@ -11387,11 +11448,11 @@ msgstr ""
 "Night heart rate, HRV and sleep over 12 weeks: Stats → Progress → "
 "Recovery and sleep."
 
-#: lib/whats_new.dart:60
+#: lib/whats_new.dart:78
 msgid "Juoksun kehitystavoitteet ja oma askeltavoite"
 msgstr "Running progress goals and your own steps goal"
 
-#: lib/whats_new.dart:61
+#: lib/whats_new.dart:79
 msgid ""
 "Vauhdin kehitys ja vauhti samalla sykkeellä omiin tavoitteisiin; "
 "askeltavoite Asetukset → Etusivu."
@@ -11399,21 +11460,21 @@ msgstr ""
 "Pace progress and pace at the same heart rate as goals; steps goal in "
 "Settings → Home page."
 
-#: lib/whats_new.dart:66
+#: lib/whats_new.dart:84
 msgid "Hex bar ja liikekohtainen tanko"
 msgstr "Hex bar and per-exercise bar"
 
-#: lib/whats_new.dart:67
+#: lib/whats_new.dart:85
 msgid "Hex barin paino asetuksiin; levylaskuri muistaa tangon liikkeittäin."
 msgstr ""
 "Hex bar weight in settings; the plate calculator remembers the bar "
 "for each exercise."
 
-#: lib/whats_new.dart:72
+#: lib/whats_new.dart:90
 msgid "Uusia etusivun kortteja"
 msgstr "New home page cards"
 
-#: lib/whats_new.dart:73
+#: lib/whats_new.dart:91
 msgid ""
 "Seuraava treeni ohjelmasta Aloita-painikkeella, Viikkoputki (montako "
 "viikkoa peräkkäin WHO:n suositukset täyttyivät; tauot eivät katkaise) "
@@ -11427,11 +11488,11 @@ msgstr ""
 "compared with your usual level (Health Connect, heart rate only). On, "
 "off and order: Settings → Home page."
 
-#: lib/whats_new.dart:78
+#: lib/whats_new.dart:96
 msgid "Lihaskuntopäivät yhtenä renkaana"
 msgstr "Strength days as one ring"
 
-#: lib/whats_new.dart:79
+#: lib/whats_new.dart:97
 msgid ""
 "Salipäivät lasketaan lihaskuntopäiviin. Tavoite on ohjelmasi päivät "
 "viikossa, ilman ohjelmaa WHO:n vähimmäismäärä 2. Uusi liike: Reiden "
@@ -11441,11 +11502,11 @@ msgstr ""
 "week, or the WHO minimum of 2 without a program. New exercise: Seated "
 "Leg Curl Machine."
 
-#: lib/whats_new.dart:84 lib/whats_new.dart:222
+#: lib/whats_new.dart:102 lib/whats_new.dart:240
 msgid "Uusi etusivu"
 msgstr "New home screen"
 
-#: lib/whats_new.dart:85
+#: lib/whats_new.dart:103
 msgid ""
 "Sali | Liikunta -painike avaa valinnan etusivun päälle: ohjelman "
 "päivät, viimeksi käytetyt lajit ja kellon harjoitukset. Viikko tai "
@@ -11455,7 +11516,7 @@ msgstr ""
 "program days, recently used sports and workouts from your watch. Week "
 "or month with rings, and each day's steps in the calendar."
 
-#: lib/whats_new.dart:91
+#: lib/whats_new.dart:109
 msgid ""
 "Asetukset → Etusivu: WHO:n suositusten lisäksi enintään kolme omaa "
 "tavoitetta (salipäivät, matka, aika tai kerrat) sekä kortit omassa "
@@ -11467,11 +11528,11 @@ msgstr ""
 "your own order: Recent, Strength progress, Running progress and Body "
 "weight."
 
-#: lib/whats_new.dart:96
+#: lib/whats_new.dart:114
 msgid "Juoksun kehitys matkoittain"
 msgstr "Running progress by distance"
 
-#: lib/whats_new.dart:97
+#: lib/whats_new.dart:115
 msgid ""
 "Vauhti ja syke viimeiset 4 viikkoa vs. 8 viikkoa ennen, omilla "
 "matkaryhmillä (oletus alle 5, 5–10 ja yli 10 km)."
@@ -11479,11 +11540,11 @@ msgstr ""
 "Pace and heart rate in the last 4 weeks vs. the 8 weeks before, in "
 "your own distance groups (by default under 5, 5–10 and over 10 km)."
 
-#: lib/whats_new.dart:102
+#: lib/whats_new.dart:120
 msgid "Lämmittelysarjat"
 msgstr "Warm-up sets"
 
-#: lib/whats_new.dart:103
+#: lib/whats_new.dart:121
 msgid ""
 "Tallenna lämmittelysarjana -painike painoliikkeissä ensimmäiseen "
 "työsarjaan asti. Lämmittely ei vaikuta tavoitteeseen, ehdotuksiin "
@@ -11493,11 +11554,11 @@ msgstr ""
 "working set. Warm-ups don't count towards the goal, suggestions or "
 "records, and a set can be marked as a warm-up afterwards."
 
-#: lib/whats_new.dart:108
+#: lib/whats_new.dart:126
 msgid "Uusi ulkoasu"
 msgstr "Fresh look"
 
-#: lib/whats_new.dart:109
+#: lib/whats_new.dart:127
 msgid ""
 "Alapalkki: Tänään, Ohjelma, Tilastot ja Lisää. Etusivulla Sali- ja "
 "Liikunta-valinta, päivän ehdotus ja viikon renkaat."
@@ -11505,11 +11566,11 @@ msgstr ""
 "A bottom bar: Today, Program, Stats and More. On the home screen, a "
 "Gym and Activity choice, today's suggestion and week rings."
 
-#: lib/whats_new.dart:114
+#: lib/whats_new.dart:132
 msgid "Treeni jatkuu taustalla"
 msgstr "Workouts continue in the background"
 
-#: lib/whats_new.dart:115
+#: lib/whats_new.dart:133
 msgid ""
 "Takaisin kesken liikunnan ei enää kysy tallennusta: ajanotto, GPS ja "
 "sykevyö jatkavat. Alapalkin yläpuolelta ja etusivun Jatka treeniä "
@@ -11519,11 +11580,11 @@ msgstr ""
 "and heart rate strap keep going. Return from the bar above the bottom "
 "bar or the home screen's Continue workout button."
 
-#: lib/whats_new.dart:120
+#: lib/whats_new.dart:138
 msgid "Kalorit renkaana"
 msgstr "Calories as a ring"
 
-#: lib/whats_new.dart:121
+#: lib/whats_new.dart:139
 msgid ""
 "Kokonaiskulutus ja aktiiviset kalorit erikseen. Kävelyn kalorit "
 "lasketaan vauhdista ja pituudesta, myös ilman sykevyötä."
@@ -11531,11 +11592,11 @@ msgstr ""
 "Total and active calories shown separately. Walking calories come "
 "from speed and height, also without a heart rate strap."
 
-#: lib/whats_new.dart:126
+#: lib/whats_new.dart:144
 msgid "Tilastot välilehdillä"
 msgstr "Stats in tabs"
 
-#: lib/whats_new.dart:127
+#: lib/whats_new.dart:145
 msgid ""
 "Viikko, Kehitys, Ennätykset, Kalenteri ja Askeleet omina "
 "välilehtinään. Paino ja pituus kuvaajalla."
@@ -11543,11 +11604,11 @@ msgstr ""
 "Week, Progress, Records, Calendar and Steps as their own tabs. Weight "
 "and height with a chart."
 
-#: lib/whats_new.dart:132
+#: lib/whats_new.dart:150
 msgid "Vammatila ja tauko"
 msgstr "Injury mode and breaks"
 
-#: lib/whats_new.dart:133
+#: lib/whats_new.dart:151
 msgid ""
 "Vammatila keventää merkittyjen liikkeiden painoehdotusta ja tarjoaa "
 "korvaavan liikkeen. Tauolle voi valita viimeisen päivän tai merkitä "
@@ -11557,11 +11618,11 @@ msgstr ""
 "offers a substitute. A break can have a last day, and an upcoming "
 "holiday can be marked in advance."
 
-#: lib/whats_new.dart:138
+#: lib/whats_new.dart:156
 msgid "Ohjaus ilmoituksesta"
 msgstr "Control from the notification"
 
-#: lib/whats_new.dart:139
+#: lib/whats_new.dart:157
 msgid ""
 "Palautukseen −15 s, +15 s ja Ohita, liikuntaan Tauko ja Jatka. "
 "Palautuksen voi mitata ajalla tai sykkeellä."
@@ -11569,11 +11630,11 @@ msgstr ""
 "−15 s, +15 s and Skip for rest, Pause and Continue for activities. "
 "Rest can be timed or measured by heart rate."
 
-#: lib/whats_new.dart:144
+#: lib/whats_new.dart:162
 msgid "Haku asetuksissa"
 msgstr "Search in settings"
 
-#: lib/whats_new.dart:145
+#: lib/whats_new.dart:163
 msgid ""
 "Asetuksista löytää haulla. Health Connectin tiedot päivitetään tieto "
 "kerrallaan, ja päivityksen voi perua."
@@ -11581,11 +11642,11 @@ msgstr ""
 "Find settings by searching. Health Connect data is updated one value "
 "at a time, and an update can be undone."
 
-#: lib/whats_new.dart:150
+#: lib/whats_new.dart:168
 msgid "Tämä tai tuo -liikkeet"
 msgstr "This-or-that exercises"
 
-#: lib/whats_new.dart:151
+#: lib/whats_new.dart:169
 msgid ""
 "Ohjelman liikkeelle voi lisätä vaihtoehtoja (esim. penkki tai "
 "taukopenkki). Treenissä valitset, minkä teet tänään; jokaisella oma "
@@ -11595,11 +11656,11 @@ msgstr ""
 "bench). In the workout you choose which one to do today; each has its "
 "own history and weight suggestion."
 
-#: lib/whats_new.dart:156
+#: lib/whats_new.dart:174
 msgid "Ohjelman muokkaus"
 msgstr "Program editing"
 
-#: lib/whats_new.dart:157
+#: lib/whats_new.dart:175
 msgid ""
 "Liikkeiden järjestys vetämällä tai Siirrä ylös / alas, ja päiviä voi "
 "lisätä ja poistaa. Ohjelman ja treenin voi jakaa kuvana (WhatsApp "
@@ -11609,11 +11670,11 @@ msgstr ""
 "delete days. Share your program or workout as an image (WhatsApp "
 "etc.)."
 
-#: lib/whats_new.dart:162
+#: lib/whats_new.dart:180
 msgid "Tarkempi viikon kuorma"
 msgstr "More detailed weekly volume"
 
-#: lib/whats_new.dart:163
+#: lib/whats_new.dart:181
 msgid ""
 "Olkapää ja selkä osineen, käsivarret ja jalat ryhminä, pohkeet, "
 "kyynärvarret, lähentäjät ja keskivartalo omina riveinään."
@@ -11621,11 +11682,11 @@ msgstr ""
 "Shoulders and back with their parts, arms and legs as groups, and "
 "calves, forearms, adductors and core on their own rows."
 
-#: lib/whats_new.dart:168
+#: lib/whats_new.dart:186
 msgid "Liikeohje liikettä valitessa"
 msgstr "Exercise guide while choosing"
 
-#: lib/whats_new.dart:169
+#: lib/whats_new.dart:187
 msgid ""
 "Liikevalitsimen ▶ näyttää animaation ja vinkit ennen valintaa. Uudet "
 "liikkeet: kapea taukopenkki ja vinopenkki tauolla."
@@ -11634,11 +11695,11 @@ msgstr ""
 "choose. New exercises: paused close grip bench press and paused "
 "incline bench press."
 
-#: lib/whats_new.dart:174
+#: lib/whats_new.dart:192
 msgid "Omat liikkeet"
 msgstr "Your own exercises"
 
-#: lib/whats_new.dart:175
+#: lib/whats_new.dart:193
 msgid ""
 "Omalle liikkeelle valitaan lihakset, jolloin se näkyy viikon "
 "kuormassa. Liikkeen voi ehdottaa Gievraan (💡) ja poistaa pitkällä "
@@ -11647,11 +11708,11 @@ msgstr ""
 "Choose the muscles for your own exercise so it shows in the weekly "
 "volume. Suggest it to Gievra (💡) or delete it with a long press."
 
-#: lib/whats_new.dart:180
+#: lib/whats_new.dart:198
 msgid "Uinnin vauhti 100 metrille"
 msgstr "Swimming pace per 100 m"
 
-#: lib/whats_new.dart:181
+#: lib/whats_new.dart:199
 msgid ""
 "Uinnin vauhdin voi näyttää muodossa min/100 m: Asetukset → "
 "Harjoittelu → Uinnin vauhti."
@@ -11659,11 +11720,11 @@ msgstr ""
 "Swimming pace can be shown as min/100 m: Settings → Training → "
 "Swimming pace."
 
-#: lib/whats_new.dart:186
+#: lib/whats_new.dart:204
 msgid "Matkan ja ajan tarkistus"
 msgstr "Distance and time check"
 
-#: lib/whats_new.dart:187
+#: lib/whats_new.dart:205
 msgid ""
 "Jos käsin syötetty matka ja aika tekevät lajille mahdottoman nopeuden "
 "(esim. 1 km ajassa 0:10), Gievra pyytää tarkistamaan ne ennen "
@@ -11673,11 +11734,11 @@ msgstr ""
 "the sport (e.g. 1 km in 0:10), Gievra asks you to check them before "
 "saving."
 
-#: lib/whats_new.dart:192
+#: lib/whats_new.dart:210
 msgid "Käsipainot yhteispainona"
 msgstr "Dumbbells as a total"
 
-#: lib/whats_new.dart:193
+#: lib/whats_new.dart:211
 msgid ""
 "Kahden käsipainon liikkeissä syötät nyt molempien käsipainojen "
 "yhteispainon, ja alla näkyy kummankin käden paino. Etusivu pyytää "
@@ -11688,11 +11749,11 @@ msgstr ""
 "and the weight in each hand shows below. The home screen asks you "
 "once to check whether older weights were the total or per dumbbell."
 
-#: lib/whats_new.dart:198
+#: lib/whats_new.dart:216
 msgid "Aiempi salitreeni yhteenvetona"
 msgstr "Past gym workouts as a summary"
 
-#: lib/whats_new.dart:199
+#: lib/whats_new.dart:217
 msgid ""
 "Kalenterista avattu salitreeni näyttää yhteenvedon liikkeineen ja "
 "sarjoineen. Muokkaa avaa liikelistan."
@@ -11700,11 +11761,11 @@ msgstr ""
 "A gym workout opened from the calendar shows a summary with its "
 "exercises and sets. Edit opens the exercise list."
 
-#: lib/whats_new.dart:204
+#: lib/whats_new.dart:222
 msgid "Selkeämpi sarjan kirjaus"
 msgstr "Clearer set logging"
 
-#: lib/whats_new.dart:205
+#: lib/whats_new.dart:223
 msgid ""
 "Paino, toistot ja tallennus ovat omana korttinaan, ja Merkitse liike "
 "valmiiksi on tehtyjen sarjojen alla, jottei sitä paina vahingossa."
@@ -11712,11 +11773,11 @@ msgstr ""
 "Weight, reps and saving are in their own card, and Mark exercise done "
 "is below the sets you have done, so it is not pressed by accident."
 
-#: lib/whats_new.dart:210
+#: lib/whats_new.dart:228
 msgid "Farmer walk hex barilla"
 msgstr "Hex Bar Farmer Walk"
 
-#: lib/whats_new.dart:211
+#: lib/whats_new.dart:229
 msgid ""
 "Oma liike kuusikulmatangolla tehtävälle farmer walkille. Vanhat "
 "Farmer walk -kerrat voi siirtää siihen käsipainojen tarkistuksessa."
@@ -11724,11 +11785,11 @@ msgstr ""
 "A separate exercise for farmer walks with a hex bar. Older Farmer "
 "walk sessions can be moved to it in the dumbbell check."
 
-#: lib/whats_new.dart:216
+#: lib/whats_new.dart:234
 msgid "Kellon sykekäyrä"
 msgstr "Watch heart rate curve"
 
-#: lib/whats_new.dart:217
+#: lib/whats_new.dart:235
 msgid ""
 "Health Connectista haettu syke tallentuu nyt käyränä ja sykealueina, "
 "kuten sykevyöllä. Vanhoihin treeneihin: hae kellon tiedot uudelleen."
@@ -11737,7 +11798,7 @@ msgstr ""
 "heart rate zones, like with a strap. For older workouts, fetch the "
 "watch data again."
 
-#: lib/whats_new.dart:223
+#: lib/whats_new.dart:241
 msgid ""
 "Tänään-kortissa Sali ja Liikunta ovat rinnakkain: useammin tekemäsi "
 "on leveämpi, ja Liikunta-puolella on viimeksi tekemäsi lajin kuvake. "
@@ -11749,11 +11810,11 @@ msgstr ""
 "An unfinished gym workout continues from Continue. The same pair is "
 "also in a calendar day."
 
-#: lib/whats_new.dart:228
+#: lib/whats_new.dart:246
 msgid "Uusi Treeni valmis -ikkuna"
 msgstr "New Workout done window"
 
-#: lib/whats_new.dart:229
+#: lib/whats_new.dart:247
 msgid ""
 "Rasitus arvioidaan sykkeestä tai vauhdista (voit vaihtaa), "
 "salitreenin ennätykset ja painojen nousut näkyvät heti, ja voit "
@@ -11763,11 +11824,11 @@ msgstr ""
 "records and weight increases show right away, and you can mark the "
 "moves that felt too heavy."
 
-#: lib/whats_new.dart:234
+#: lib/whats_new.dart:252
 msgid "Tallennettu liikunta"
 msgstr "Saved activities"
 
-#: lib/whats_new.dart:235
+#: lib/whats_new.dart:253
 msgid ""
 "Vanha liikunta aukeaa yhteenvetona: aika, matka, vauhti, reitti ja "
 "syke. Muokkaa-painike avaa muokkauksen."
@@ -11775,11 +11836,11 @@ msgstr ""
 "A past activity opens as a summary: time, distance, pace, route and "
 "heart rate. The Edit button opens editing."
 
-#: lib/whats_new.dart:240
+#: lib/whats_new.dart:258
 msgid "Kyyti tunnistetaan"
 msgstr "Rides are detected"
 
-#: lib/whats_new.dart:241
+#: lib/whats_new.dart:259
 msgid ""
 "Jos GPS-kävelyssä tai -juoksussa on autolla tai bussilla ajettu "
 "pätkä, Gievra kysyy, poistetaanko se matkasta ja ajasta."
@@ -11787,11 +11848,11 @@ msgstr ""
 "If a GPS walk or run includes a stretch driven by car or bus, Gievra "
 "asks whether to remove it from the distance and time."
 
-#: lib/whats_new.dart:246
+#: lib/whats_new.dart:264
 msgid "Avaa Gievralla"
 msgstr "Open with Gievra"
 
-#: lib/whats_new.dart:247
+#: lib/whats_new.dart:265
 msgid ""
 "FitNotes-varmuuskopion, Gievran varmuuskopion (.zip), Garminin CSV:n "
 "ja .md-treenit voi avata Gievralla suoraan tiedostoista, "
@@ -11801,11 +11862,11 @@ msgstr ""
 "workouts open in Gievra straight from your files, email or the Share "
 "menu."
 
-#: lib/whats_new.dart:252
+#: lib/whats_new.dart:270
 msgid "Treeni pysyy käynnissä"
 msgstr "Your workout keeps running"
 
-#: lib/whats_new.dart:253
+#: lib/whats_new.dart:271
 msgid ""
 "Käynnissä olevan treenin ilmoitus pitää nyt Gievran käynnissä, kun "
 "näyttö on pois päältä: palautuksen ilmoitus tulee ajallaan. Älä sulje "
@@ -11817,7 +11878,7 @@ msgstr ""
 "notification during a workout. Also make sure Gievra may run in the "
 "background: Settings → General → Background use."
 
-#: lib/whats_new.dart:259
+#: lib/whats_new.dart:277
 msgid ""
 "Sykevyön kanssa palautusajastin voi odottaa, kunnes syke on laskenut, "
 "ja ilmoittaa silloin. Palautuksen ilmoitus on nyt lyhyt ponnahdus, "
@@ -11828,7 +11889,7 @@ msgstr ""
 "pop-up that goes away by itself. Settings → Body and devices → Heart "
 "rate strap."
 
-#: lib/whats_new.dart:265
+#: lib/whats_new.dart:283
 msgid ""
 "Sykevyö Bluetoothilla (esim. Polar H10, Verity Sense, Garmin HRM): "
 "syke näkyy treenin ja palautuksen aikana, ja treeniin tallentuvat "
@@ -11840,7 +11901,7 @@ msgstr ""
 "saves the heart rate curve, zones and calories calculated with "
 "validated methods. Settings → Body and devices → Heart rate strap."
 
-#: lib/whats_new.dart:271
+#: lib/whats_new.dart:289
 msgid ""
 "Tekstin koon voi nyt valita. Sinun tekstisi pysyi ennallaan (Pieni). "
 "Isompi teksti: Asetukset → Yleiset → Tekstin koko → Normaali tai "
@@ -11849,11 +11910,11 @@ msgstr ""
 "You can now choose the text size. Your text stayed the same (Small). "
 "For larger text: Settings → General → Text size → Normal or Large."
 
-#: lib/whats_new.dart:276
+#: lib/whats_new.dart:294
 msgid "Askeleet kalenterissa"
 msgstr "Steps in the calendar"
 
-#: lib/whats_new.dart:277
+#: lib/whats_new.dart:295
 msgid ""
 "Vihreä rengas kalenterin päivämäärän ympärillä on sen päivän "
 "askeleet: täysi rengas on 10 000 askelta. Napauta päivää, niin näet "
@@ -11862,7 +11923,7 @@ msgstr ""
 "The green ring around a date in the calendar shows that day's steps: "
 "a full ring is 10,000 steps. Tap the day to see the exact number."
 
-#: lib/whats_new.dart:283
+#: lib/whats_new.dart:301
 msgid ""
 "Etusivun kortin Viikko-puoli: reipasta liikuntaa 150 minuutin "
 "tavoitetta vasten (kova minuutti lasketaan kahdesti) ja "
@@ -11872,11 +11933,11 @@ msgstr ""
 "150-minute goal (a hard minute counts twice) and strength days, as "
 "the WHO recommends."
 
-#: lib/whats_new.dart:288
+#: lib/whats_new.dart:306
 msgid "Treeni valmis ja fiilis"
 msgstr "Workout done and feeling"
 
-#: lib/whats_new.dart:289
+#: lib/whats_new.dart:307
 msgid ""
 "Treenin ja liikunnan lopussa yksi painike, ja fiilis (liikunnassa "
 "myös rasitus) kysytään samassa ikkunassa. Uusi yhteenveto näyttää "
@@ -11886,11 +11947,11 @@ msgstr ""
 "(plus effort for activities) is asked in the same window. The new "
 "summary shows only the details you filled in."
 
-#: lib/whats_new.dart:294
+#: lib/whats_new.dart:312
 msgid "Liikkeen pitkä painallus"
 msgstr "Long press on a move"
 
-#: lib/whats_new.dart:295
+#: lib/whats_new.dart:313
 msgid ""
 "Paina liikettä pitkään: lisää supersarjaan, pura supersarja tai "
 "poista liike tästä treenistä."
@@ -11898,11 +11959,11 @@ msgstr ""
 "Press and hold a move: add it to a superset, split a superset or "
 "remove the move from this workout."
 
-#: lib/whats_new.dart:300
+#: lib/whats_new.dart:318
 msgid "Seuraava sarja palautuksessa"
 msgstr "Next set during rest"
 
-#: lib/whats_new.dart:301
+#: lib/whats_new.dart:319
 msgid ""
 "Palautusajastin näyttää seuraavan sarjan painon ja toistot, joten "
 "voit vaihtaa painot tauon aikana."
@@ -11910,11 +11971,11 @@ msgstr ""
 "The rest timer shows the next set's weight and reps, so you can "
 "change the weights during the rest."
 
-#: lib/whats_new.dart:306
+#: lib/whats_new.dart:324
 msgid "Uusi lajivalinta ja ajanotto"
 msgstr "New sport picker and timing"
 
-#: lib/whats_new.dart:307
+#: lib/whats_new.dart:325
 msgid ""
 "Lajit hakuna ja ryhminä, viimeisimmät ensin. Ilman GPS:ää valitse "
 "Ajanotto (aloita, tauko, lopeta) tai Syötä itse."
@@ -11922,11 +11983,11 @@ msgstr ""
 "Sports with search and groups, most recent first. Without GPS, choose "
 "Stopwatch (start, pause, stop) or Enter yourself."
 
-#: lib/whats_new.dart:312
+#: lib/whats_new.dart:330
 msgid "GPS: 5 sekunnin laskenta"
 msgstr "GPS: 5-second countdown"
 
-#: lib/whats_new.dart:313
+#: lib/whats_new.dart:331
 msgid ""
 "Tallennus alkaa 5 sekunnin laskennan jälkeen, joten ehdit laittaa "
 "puhelimen taskuun. Ohita laskenta aloittaa heti."
@@ -11934,7 +11995,7 @@ msgstr ""
 "Recording starts after a 5-second countdown, so you have time to put "
 "your phone in your pocket. Skip countdown starts right away."
 
-#: lib/whats_new.dart:319
+#: lib/whats_new.dart:337
 msgid ""
 "Askeleet päivittäin Health Connectista (esim. puhelin ja Oura) ilman "
 "päällekkäisyyksiä; kävelymaton askeleet lisätään. Etusivun kortissa, "
@@ -11946,11 +12007,11 @@ msgstr ""
 "rings in the calendar and in the statistics Steps tab. Turn on: "
 "Settings → Body and devices → Daily steps."
 
-#: lib/whats_new.dart:324
+#: lib/whats_new.dart:342
 msgid "Päivän yhteenveto"
 msgstr "Day summary"
 
-#: lib/whats_new.dart:325
+#: lib/whats_new.dart:343
 msgid ""
 "Kalenterin päivän napautus näyttää päivän treenit, ajan, matkan ja "
 "askeleet. Pyyhkäise sivulle vaihtaaksesi päivää."
@@ -11958,11 +12019,11 @@ msgstr ""
 "Tapping a day in the calendar shows its workouts, time, distance and "
 "steps. Swipe sideways to change the day."
 
-#: lib/whats_new.dart:330
+#: lib/whats_new.dart:348
 msgid "Juoksu etusivun kortissa"
 msgstr "Running in the home screen card"
 
-#: lib/whats_new.dart:331
+#: lib/whats_new.dart:349
 msgid ""
 "Etusivun kortissa Edistyminen, Juoksu ja Askeleet: pyyhkäise tai "
 "valitse otsikosta. Juoksu näkyy, kun juoksuja on tallennettu."
@@ -11970,7 +12031,7 @@ msgstr ""
 "The home screen card has Progress, Running and Steps: swipe or pick "
 "from the header. Running shows once you have saved runs."
 
-#: lib/whats_new.dart:337
+#: lib/whats_new.dart:355
 msgid ""
 "Tankoliikkeissä painon alla näkyy levyt puolta kohden. Napauta: kuva "
 "tangosta ja omat levyt."
@@ -11978,7 +12039,7 @@ msgstr ""
 "Barbell exercises show the plates per side under the weight. Tap it "
 "for a picture of the bar and your own plates."
 
-#: lib/whats_new.dart:343
+#: lib/whats_new.dart:361
 msgid ""
 "Sarjan kirjauksen %-painike näyttää painot 50–95 % arvioidusta "
 "maksimista. Ohjelmassa painon voi antaa prosentteina."
@@ -11986,11 +12047,11 @@ msgstr ""
 "The % button when logging sets shows weights at 50–95 % of your "
 "estimated max. In a program, weights can be given as percentages."
 
-#: lib/whats_new.dart:348
+#: lib/whats_new.dart:366
 msgid "Supersarjat ja kiertoharjoittelu"
 msgstr "Supersets and circuits"
 
-#: lib/whats_new.dart:349
+#: lib/whats_new.dart:367
 msgid ""
 "Liikkeet vuorotellen, tauko vasta kierroksen jälkeen. Ohjelmassa "
 "liikkeen kohdalla Supersarja A–D, treenissä ⋮ → Supersarjat."
@@ -11998,11 +12059,11 @@ msgstr ""
 "Exercises in turn, resting only after the round. In a program, set "
 "Superset A–D for an exercise; in a workout, ⋮ → Supersets."
 
-#: lib/whats_new.dart:354
+#: lib/whats_new.dart:372
 msgid "Pudotus- ja AMRAP-sarjat"
 msgstr "Drop and AMRAP sets"
 
-#: lib/whats_new.dart:355
+#: lib/whats_new.dart:373
 msgid ""
 "Sarjan tyyppi tallennuspainikkeiden yläpuolella: pudotus (kevyempi "
 "paino heti perään) tai AMRAP (niin monta toistoa kuin jaksat)."
@@ -12010,11 +12071,11 @@ msgstr ""
 "Set type above the save buttons: drop (a lighter weight right after) "
 "or AMRAP (as many reps as you can)."
 
-#: lib/whats_new.dart:360
+#: lib/whats_new.dart:378
 msgid "Ajastin aikaliikkeisiin"
 msgstr "Timer for timed exercises"
 
-#: lib/whats_new.dart:361
+#: lib/whats_new.dart:379
 msgid ""
 "Lankku ja muut sekunteina mitattavat liikkeet: Aloita ajastin laskee "
 "alas ja ilmoittaa äänellä."
@@ -12022,11 +12083,11 @@ msgstr ""
 "Plank and other exercises measured in seconds: Start timer counts "
 "down and tells you with a sound."
 
-#: lib/whats_new.dart:366
+#: lib/whats_new.dart:384
 msgid "Tarkemmat painoehdotukset"
 msgstr "Better weight suggestions"
 
-#: lib/whats_new.dart:367
+#: lib/whats_new.dart:385
 msgid ""
 "Tankoliikkeissä paino nousee 5 tai 10 kg ja toistot palaavat "
 "alueelle; toistoja ei lisätä loputtomiin. Kahvakuulalla seuraava "

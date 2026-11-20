@@ -116,8 +116,19 @@ object HealthBridge {
             try { all(SkinTemperatureRecord::class) } catch (e: Throwable) { emptyList() }
         } else emptyList()
         val zone = java.time.ZoneId.systemDefault()
-        return ws.map { (day, a, b) ->
+        // Ikkunan neljäs arvo = unen lähteen sovellus (käyttäjä 20.11.): vain sen arvot; tyhjä = kaikki lähteet.
+        val apps = windows.map { (it.getOrNull(3) as? String).orEmpty() }
+        val labels = mutableMapOf<String, String>()
+        fun from(r: Record, app: String) =
+            app.isEmpty() || labels.getOrPut(r.metadata.dataOrigin.packageName) { appLabel(context, r.metadata.dataOrigin.packageName) } == app
+        return ws.mapIndexed { idx, (day, a, b) ->
+            val app = apps[idx]
             fun inside(t: Instant) = !t.isBefore(a) && t.isBefore(b)
+            val hrv = hrv.filter { from(it, app) }
+            val spo2 = spo2.filter { from(it, app) }
+            val rr = rr.filter { from(it, app) }
+            val rest = rest.filter { from(it, app) }
+            val skin = skin.filter { from(it, app) }
             val h = hrv.filter { inside(it.time) }.map { it.heartRateVariabilityMillis }
             val s = spo2.filter { inside(it.time) }.map { it.percentage.value }
             val r = rr.filter { inside(it.time) }.map { it.rate }
@@ -495,7 +506,7 @@ object HealthBridge {
 
     /**
      * Unijaksot aikaväliltä (Uni-kortti): alku, loppu, valveilla olo jakson aikana (vaiheista: hereillä, sängystä
-     * poissa, hereillä sängyssä), onko vaiheita, sovellus ja jakson alin 15 minuutin sykekeskiarvo (null, jos
+     * poissa, hereillä sängyssä), onko vaiheita, sovellus ja jakson alin 5 minuutin sykekeskiarvo omasta lähteestä (null, jos
      * sykettä ei ole tai lupaa ei ole). Lähteen valinta ja öiden yhdistäminen tehdään Dartissa.
      */
     suspend fun sleepSessions(context: Context, start: Long, end: Long): List<Map<String, Any?>> {
@@ -517,7 +528,7 @@ object HealthBridge {
                 val awake = r.stages.filter { it.stage in awakeTypes }
                     .sumOf { Duration.between(it.startTime, it.endTime).toMillis() }
                 val low = try {
-                    lowHr(c, r.startTime, r.endTime)
+                    lowHr(c, r.startTime, r.endTime, r.metadata.dataOrigin.packageName)
                 } catch (e: Throwable) {
                     null
                 }
@@ -547,6 +558,7 @@ object HealthBridge {
         c: androidx.health.connect.client.HealthConnectClient,
         start: Instant,
         end: Instant,
+        source: (String) -> Boolean = { true },
     ): List<HeartRateRecord.Sample> {
         val out = mutableListOf<HeartRateRecord.Sample>()
         var token: String? = null
@@ -555,63 +567,65 @@ object HealthBridge {
             val r = c.readRecords(
                 ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(start, end), pageSize = 5000, pageToken = token),
             )
-            r.records.flatMapTo(out) { rec -> rec.samples.filter { !it.time.isBefore(start) && it.time.isBefore(end) && it.beatsPerMinute in 25..220 } }
+            r.records.filter { source(it.metadata.dataOrigin.packageName) }.flatMapTo(out) { rec -> rec.samples.filter { !it.time.isBefore(start) && it.time.isBefore(end) && it.beatsPerMinute in 25..220 } }
             token = r.pageToken
             pages++
         } while (token != null && pages < 20)
         return out.sortedBy { it.time }
     }
 
-    /** Alin 15 minuutin sykekeskiarvo aikaväliltä (vähintään 12 näytettä ja 2 näytettä ikkunassa). */
-    private suspend fun lowHr(c: androidx.health.connect.client.HealthConnectClient, start: Instant, end: Instant): Int? {
-        val s = hrSamples(c, start, end)
+    /**
+     * Alin 5 minuutin sykekeskiarvo (käyttäjä 20.11.: kuten Ouran oma "alin syke"; ennen 15 min, joka antoi
+     * Ouran arvoa noin lyönnin korkeamman). Vähintään 12 näytettä. Harvaan mittaava lähde (Oura: näyte 5 min
+     * välein) riittää yhdellä näytteellä ikkunassa, koska näyte on jo lähteen oma 5 minuutin keskiarvo; tiheästi
+     * mittaava (kello) tarvitsee 3, ettei yksittäinen virhenäyte jää alimmaksi.
+     */
+    private fun lowWindow(s: List<HeartRateRecord.Sample>): Int? {
         if (s.size < 12) return null
+        val gaps = (1 until s.size).map { Duration.between(s[it - 1].time, s[it].time).seconds }.sorted()
+        val minN = if (gaps[gaps.size / 2] >= 150) 1 else 3
         var low = Double.MAX_VALUE
         var j = 0
         var sum = 0L
         for (i in s.indices) {
-            if (i > 0) sum -= s[i - 1].beatsPerMinute
+            if (i > 0 && j > i - 1) sum -= s[i - 1].beatsPerMinute
             if (j < i) { j = i; sum = 0 }
-            while (j < s.size && s[j].time.isBefore(s[i].time.plus(Duration.ofMinutes(15)))) {
+            while (j < s.size && s[j].time.isBefore(s[i].time.plus(Duration.ofMinutes(5)))) {
                 sum += s[j].beatsPerMinute; j++
             }
             val n = j - i
-            if (n >= 2) low = minOf(low, sum.toDouble() / n)
+            if (n >= minN) low = minOf(low, sum.toDouble() / n)
         }
         return if (low < Double.MAX_VALUE) Math.round(low).toInt() else null
     }
 
+    /** Unijakson alin syke vain unijakson omasta lähteestä (käyttäjä 20.11.: ei muiden laitteiden sykettä). */
+    private suspend fun lowHr(
+        c: androidx.health.connect.client.HealthConnectClient,
+        start: Instant,
+        end: Instant,
+        pkg: String,
+    ): Int? = lowWindow(hrSamples(c, start, end) { it == pkg })
+
     /**
      * Yön alin syke (etusivun palautumiskortti, käyttäjä 17.11.): kunkin aamun [from]..[to] yöltä (edellinen ilta
-     * 21:00 – aamu 10:00) sykenäytteiden alin 15 minuutin keskiarvo. Käyttää samaa sykkeen lukulupaa kuin
+     * 21:00 – aamu 10:00) sykenäytteiden alin 5 minuutin keskiarvo (vain valitun unen lähteen, jos se on tiedossa). Käyttää samaa sykkeen lukulupaa kuin
      * harjoitusten tuonti; unitietoja eikä leposyketietuetta lueta (ne vaatisivat uudet luvat). Yö jätetään pois,
      * jos näytteitä on alle 12 (kello ei mitannut yöllä).
      */
-    suspend fun nightLowHr(context: Context, from: String, to: String): List<List<Any>> {
+    suspend fun nightLowHr(context: Context, from: String, to: String, app: String? = null): List<List<Any>> {
         val zone = java.time.ZoneId.systemDefault()
         val out = mutableListOf<List<Any>>()
         var d = LocalDate.parse(from)
         val last = LocalDate.parse(to)
+        // Valittu unen lähde (käyttäjä 20.11.): vain sen syke; muuten kaikki lähteet.
+        val labels = mutableMapOf<String, String>()
+        val src: (String) -> Boolean =
+            if (app.isNullOrEmpty()) { _ -> true } else { pkg -> labels.getOrPut(pkg) { appLabel(context, pkg) } == app }
         while (!d.isAfter(last)) {
             val start = d.minusDays(1).atTime(21, 0).atZone(zone).toInstant()
             val end = d.atTime(10, 0).atZone(zone).toInstant()
-            val s = hrSamples(client(context), start, end)
-            if (s.size >= 12) {
-                var low = Double.MAX_VALUE
-                var j = 0
-                var sum = 0L
-                // Liukuva 15 min ikkuna: [s[i], s[i] + 15 min), vähintään 2 näytettä.
-                for (i in s.indices) {
-                    if (i > 0) sum -= s[i - 1].beatsPerMinute
-                    if (j < i) { j = i; sum = 0 }
-                    while (j < s.size && s[j].time.isBefore(s[i].time.plus(Duration.ofMinutes(15)))) {
-                        sum += s[j].beatsPerMinute; j++
-                    }
-                    val n = j - i
-                    if (n >= 2) low = minOf(low, sum.toDouble() / n)
-                }
-                if (low < Double.MAX_VALUE) out.add(listOf(d.toString(), Math.round(low).toInt()))
-            }
+            lowWindow(hrSamples(client(context), start, end, src))?.let { out.add(listOf(d.toString(), it)) }
             d = d.plusDays(1)
         }
         return out

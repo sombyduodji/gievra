@@ -282,7 +282,7 @@ void main() {
     expect(find.text('–'), findsNothing, reason: 'ei tyhjiä ruutuja');
     expect(find.text('Fiilis: loistava'), findsOneWidget);
     expect(find.byKey(const ValueKey('fetchWatch')), findsOneWidget);
-    expect(find.text('Valmis'), findsOneWidget);
+    expect(find.text('Sulje'), findsOneWidget, reason: 'treeni on jo tallennettu: Sulje, ei Valmis');
     expect(find.text('Tiedosto'), findsOneWidget);
     // Kellon tiedot paneelissa; arvot näkyvät sen jälkeen lukuina.
     w.kcal = 410;

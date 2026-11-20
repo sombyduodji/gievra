@@ -1478,10 +1478,13 @@ class _SavedScreenState extends State<SavedScreen> {
                   label: Text(t('Muokkaa'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 )
               else
+                // Treeni on jo tallennettu: painike vain sulkee yhteenvedon (käyttäjä 19.11.: "Valmis" näytti siltä,
+                // että jotain pitää vielä tallentaa).
                 FilledButton(
+                  key: const ValueKey('savedClose'),
                   style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                   onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
-                  child: Text(t('Valmis'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  child: Text(t('Sulje'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
             ],
           ),

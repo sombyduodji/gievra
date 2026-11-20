@@ -768,6 +768,7 @@ class _ItemSheetState extends State<_ItemSheet> {
           if (!main) ...[
             SectionLabel(t('Sarjat')),
             ValueStepper(
+              label: t('Sarjat'),
               value: '${it.sets}',
               unit: 'sarjaa',
               onMinus: () => _set(() => it.sets = (it.sets - 1).clamp(1, 10)),
@@ -775,6 +776,7 @@ class _ItemSheetState extends State<_ItemSheet> {
             ),
             SectionLabel(t('{0}{1}: alaraja', [t(m.label)[0].toUpperCase(), t(m.label).substring(1)])),
             ValueStepper(
+              label: t('{0}{1}: alaraja', [t(m.label)[0].toUpperCase(), t(m.label).substring(1)]),
               value: '${it.lo}',
               unit: m.unit,
               onMinus: () => _set(() => it.lo = (it.lo - m.step).clamp(1, it.hi)),
@@ -785,6 +787,7 @@ class _ItemSheetState extends State<_ItemSheet> {
             ),
             SectionLabel(t('{0}{1}: yläraja', [t(m.label)[0].toUpperCase(), t(m.label).substring(1)])),
             ValueStepper(
+              label: t('{0}{1}: yläraja', [t(m.label)[0].toUpperCase(), t(m.label).substring(1)]),
               value: '${it.hi}',
               unit: m.unit,
               onMinus: () => _set(() {
@@ -807,6 +810,7 @@ class _ItemSheetState extends State<_ItemSheet> {
               ),
               if (it.pct != null)
                 ValueStepper(
+                  label: t('Paino prosentteina maksimista'),
                   value: fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1))),
                   unit: '%',
                   onMinus: () => _set(() => it.pct = ((it.pct! * 100 - 2.5).clamp(40, 100)) / 100),

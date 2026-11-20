@@ -75,7 +75,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('startWarmup')), findsOneWidget);
     // Kesto-säädin toimii.
-    await tester.tap(find.byTooltip('Lisää'));
+    await tester.tap(find.byTooltip('Lisää: Kesto'));
     await tester.pump();
     expect(find.textContaining('11'), findsOneWidget);
   });

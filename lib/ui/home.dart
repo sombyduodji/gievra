@@ -749,20 +749,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     alignment: AlignmentDirectional.centerStart,
                     child: MediaQuery.withClampedTextScaling(
                       maxScaleFactor: 1.3,
-                      child: Column(
-                        key: const ValueKey('homeDate'),
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${seWeekdays[now.weekday - 1]} ${now.day}.${now.month}.',
-                            style: TextStyle(fontSize: 13.5, height: 1.2, color: cs.onSurface.withValues(alpha: .85)),
-                          ),
-                          Text(
-                            '(${(isEnglish ? enWeekdays : fiWeekdays)[now.weekday - 1]})',
-                            style: TextStyle(fontSize: 13, height: 1.2, color: cs.onSurfaceVariant),
-                          ),
-                        ],
+                      // TalkBack (20.11.): yksi selkeä päiväys ("perjantai 20. marraskuuta"); ennen sulkeissa oleva
+                      // viikonpäivä luettiin ensin ja saamenkielinen sen jälkeen.
+                      child: Semantics(
+                        label: longDate(now),
+                        excludeSemantics: true,
+                        child: Column(
+                          key: const ValueKey('homeDate'),
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${seWeekdays[now.weekday - 1]} ${now.day}.${now.month}.',
+                              style: TextStyle(fontSize: 13.5, height: 1.2, color: cs.onSurface.withValues(alpha: .85)),
+                            ),
+                            // Saamenkielisessä käyttöliittymässä ei suomenkielistä päivää suluissa (käyttäjä 20.11.).
+                            if (!isSami)
+                              Text(
+                                '(${(isEnglish ? enWeekdays : fiWeekdays)[now.weekday - 1]})',
+                                style: TextStyle(fontSize: 13, height: 1.2, color: cs.onSurfaceVariant),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1190,26 +1198,29 @@ class MonthCalendar extends StatelessWidget {
   /// Viikonpäivien rivi; etusivulla tämän päivän viikonpäivä keltaisella lihavoituna.
   Widget _weekdays(BuildContext context, int? todayCol) {
     final cs = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        for (final (i, d) in uiWeekdaysShort.indexed)
-          Expanded(
-            // Yhdelle riville, pienennetään tarvittaessa (fontti 2,0: "Mo / n", "We / d" katkesivat, Samsung 18.11.).
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  d,
-                  maxLines: 1,
-                  softWrap: false,
-                  style: i == todayCol
-                      ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
-                      : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+    // Koriste ruudunlukijalle: päivien omat nimet kertovat viikonpäivän (TalkBack 20.11.).
+    return ExcludeSemantics(
+      child: Row(
+        children: [
+          for (final (i, d) in uiWeekdaysShort.indexed)
+            Expanded(
+              // Yhdelle riville, pienennetään tarvittaessa (fontti 2,0: "Mo / n", "We / d" katkesivat, Samsung 18.11.).
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    d,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: i == todayCol
+                        ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
+                        : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1269,6 +1280,7 @@ class MonthCalendar extends StatelessWidget {
               for (final d in days7)
                 _DayCell(
                   day: d.day,
+                  date: d,
                   isToday: d == today,
                   yellowToday: home,
                   workout: byDate[d]?.first,
@@ -1337,16 +1349,18 @@ class MonthCalendar extends StatelessWidget {
     final inMonth = today.year == month.year && today.month == month.month;
     final cells = <Widget>[
       for (final (i, d) in uiWeekdaysShort.indexed)
-        Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              d,
-              maxLines: 1,
-              softWrap: false,
-              style: home && inMonth && i == today.weekday - 1
-                  ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
-                  : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+        ExcludeSemantics(
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                d,
+                maxLines: 1,
+                softWrap: false,
+                style: home && inMonth && i == today.weekday - 1
+                    ? TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: yellowText(context))
+                    : TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+              ),
             ),
           ),
         ),
@@ -1354,6 +1368,7 @@ class MonthCalendar extends StatelessWidget {
       for (var d = 1; d <= days; d++)
         _DayCell(
           day: d,
+          date: DateTime(month.year, month.month, d),
           isToday: DateTime(month.year, month.month, d) == today,
           yellowToday: home,
           workout: byDay[d]?.first,
@@ -1472,6 +1487,9 @@ class MonthCalendar extends StatelessWidget {
 
 class _DayCell extends StatelessWidget {
   final int day;
+
+  /// Ruudunlukijalle koko päivä (TalkBack 20.11.: ennen pelkkä "16").
+  final DateTime date;
   final bool isToday;
   final Workout? workout;
   final List<Color> dots;
@@ -1487,6 +1505,7 @@ class _DayCell extends StatelessWidget {
   final bool yellowToday;
   const _DayCell({
     required this.day,
+    required this.date,
     required this.isToday,
     this.yellowToday = false,
     this.workout,
@@ -1531,43 +1550,59 @@ class _DayCell extends StatelessWidget {
         ),
       ),
     );
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
+    // "perjantai 20. marraskuuta, tänään: salitreeni, liikunta, 5 200 askelta".
+    final what = [
+      if (dots.contains(Sami.redLight)) t('Salitreeni'),
+      if (dots.contains(Sami.greenLight)) t('Liikunta'),
+      if (dots.contains(Sami.yellow)) t('Ennätys'),
+      if (steps != null && steps! > 0) t('{0} askelta', [thousandsSep(steps!)]),
+      if (pause) t('Tauko'),
+    ];
+    final say =
+        '${longDate(date)}${isToday ? ', ${t('Tänään').toLowerCase()}' : ''}${what.isEmpty ? '' : ': ${what.join(', ')}'}';
+    return Semantics(
+      label: say,
+      button: onTap != null,
+      excludeSemantics: true,
       onTap: onTap,
-      // Sisältö pienenee tarvittaessa (päivä ja pisteet kapeassa solussa).
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Tänään: keltainen kehä askelrenkaan ympärillä (luonnos viikko-askeleet B).
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: (isToday && !yellowToday) || pause
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: pause ? Sami.blue.withValues(alpha: .38) : null,
-                      border: isToday && !yellowToday ? Border.all(color: Sami.yellow, width: 2) : null,
-                    )
-                  : null,
-              child: ring,
-            ),
-            SizedBox(
-              height: 9,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final c in dots)
-                    Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.fromLTRB(1, 3, 1, 0),
-                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-                    ),
-                ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        // Sisältö pienenee tarvittaessa (päivä ja pisteet kapeassa solussa).
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tänään: keltainen kehä askelrenkaan ympärillä (luonnos viikko-askeleet B).
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: (isToday && !yellowToday) || pause
+                    ? BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: pause ? Sami.blue.withValues(alpha: .38) : null,
+                        border: isToday && !yellowToday ? Border.all(color: Sami.yellow, width: 2) : null,
+                      )
+                    : null,
+                child: ring,
               ),
-            ),
-          ],
+              SizedBox(
+                height: 9,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final c in dots)
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.fromLTRB(1, 3, 1, 0),
+                        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

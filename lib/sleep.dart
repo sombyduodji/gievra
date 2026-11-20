@@ -159,7 +159,7 @@ String sleepToMarkdown(Map<DateTime, SleepNight> nights) {
     ..writeln('# Uni')
     ..writeln()
     ..writeln('Yöunet Health Connectista: herätyspäivä, nukkumaan–herätys, uni ilman valveillaoloa, yön alin syke')
-    ..writeln('(alin 15 minuutin keskiarvo unen aikana) ja sovellus. Yksi lähde yötä kohden.')
+    ..writeln('(alin 5 minuutin keskiarvo unen aikana, vain unen lähteestä) ja sovellus. Yksi lähde yötä kohden.')
     ..writeln();
   final keys = nights.keys.toList()..sort((a, c) => c.compareTo(a));
   for (final d in keys) {
@@ -588,6 +588,10 @@ class SleepData extends ChangeNotifier {
   final Map<DateTime, NightMetrics> metrics = {};
   bool loading = false, needsPermission = false, _loaded = false;
 
+  /// uni.md on tehty vanhalla laskennalla (alin 15 min, kaikki lähteet): haetaan kerran 60 yötä uudelleen
+  /// (käyttäjä 20.11.), jottei tavallinen taso sekoitu vanhoihin arvoihin.
+  bool _oldMethod = false;
+
   /// Testeille: korvaa yöarvojen haun.
   Future<Map<DateTime, NightMetrics>> Function(Map<DateTime, (DateTime, DateTime)> windows)? debugMetrics;
 
@@ -612,6 +616,7 @@ class SleepData extends ChangeNotifier {
       metrics
         ..clear()
         ..addAll(text == null ? const {} : parseMetrics(text));
+      _oldMethod = text != null && text.contains('alin 15 minuutin');
     } catch (_) {}
     if (isDemo && nights.isEmpty) nights.addAll(demoNights(DateTime.now()));
     if (isDemo && metrics.isEmpty) metrics.addAll(demoMetrics(DateTime.now()));
@@ -718,7 +723,8 @@ class SleepData extends ChangeNotifier {
     final now = DateTime.now();
     if (!force && from == null && _at != null && now.difference(_at!).inMinutes < 30) return;
     final today = dateOnly(now);
-    final start = from ?? addDays(today, -((nights.isEmpty ? sleepFirstDays : sleepRefreshDays) - 1));
+    final start =
+        from ?? addDays(today, -((nights.isEmpty ? sleepFirstDays : (_oldMethod ? 60 : sleepRefreshDays)) - 1));
     loading = true;
     error = null;
     notifyListeners();
@@ -778,8 +784,12 @@ class SleepData extends ChangeNotifier {
       try {
         if (metricsEnabled && (debugMetrics != null || await HealthConnect.granted(metrics: true))) {
           final windows = <DateTime, (DateTime, DateTime)>{};
+          // Yön arvot vain sen unen lähteestä (käyttäjä 20.11.); yö ilman unta: valittu tai tavallisin lähde.
+          final apps = <DateTime, String>{};
+          final usual = settings.sleepApp ?? currentApp ?? '';
           for (var d = dateOnly(start); !d.isAfter(today); d = addDays(d, 1)) {
             final n = nights[d];
+            apps[d] = n != null && n.app.isNotEmpty ? n.app : usual;
             windows[d] = n != null
                 ? (n.bed, n.wake)
                 : (DateTime(d.year, d.month, d.day - 1, 21), DateTime(d.year, d.month, d.day, 10));
@@ -787,7 +797,11 @@ class SleepData extends ChangeNotifier {
           final keys = windows.keys.toList();
           for (var i = 0; i < keys.length; i += 31) {
             final part = {for (final k in keys.skip(i).take(31)) k: windows[k]!};
-            final got = parseMetrics(metricsToMarkdown(await (debugMetrics ?? HealthConnect.nightMetrics)(part)));
+            final got = parseMetrics(
+              metricsToMarkdown(
+                await (debugMetrics != null ? debugMetrics!(part) : HealthConnect.nightMetrics(part, apps: apps)),
+              ),
+            );
             for (final e in got.entries) {
               if (metrics[e.key] != e.value) {
                 metrics[e.key] = e.value;
@@ -797,7 +811,8 @@ class SleepData extends ChangeNotifier {
           }
         }
       } catch (_) {}
-      if (changed) await files.write(sleepFileName, _md());
+      if (changed || _oldMethod) await files.write(sleepFileName, _md());
+      _oldMethod = false;
       _at = now;
     } catch (e) {
       error = '$e';

@@ -13,6 +13,24 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.2',
+    Icons.monitor_heart_outlined,
+    'Yöarvot unen lähteestä',
+    'Yösyke ja HRV lasketaan vain valitsemastasi unen lähteestä, ja alin syke 5 minuutin jaksosta kuten esim. Ouran sovelluksessa.',
+  ),
+  NewFeature(
+    '0.7.2',
+    Icons.notifications_off_outlined,
+    'Ilmoitukset estetty',
+    'Jos ilmoitukset on estetty, Palautusajastin-asetukset kertovat sen, ja painike vie sovelluksen asetuksiin.',
+  ),
+  NewFeature(
+    '0.7.2',
+    Icons.accessibility_new,
+    'Parempi ruudunlukijan tuki',
+    'TalkBack lukee sarjan painon ja toistot, kertoo tallennetun sarjan ja kalenterin päivät kokonaisina, ja tehdyn sarjan voi poistaa toiminnoista.',
+  ),
+  NewFeature(
     '0.7.1',
     Icons.fitness_center,
     'Etusivu pelkälle treenaajalle',

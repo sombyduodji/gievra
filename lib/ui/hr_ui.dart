@@ -1263,12 +1263,13 @@ class _Stepper extends StatelessWidget {
             ),
           ),
           IconButton.filledTonal(
-            tooltip: '−',
+            // Ruudunlukija sanoo, mitä säädetään (yötesti 20.11.: pelkkä "−" / "+").
+            tooltip: t('Vähennä: {0}', [title]),
             onPressed: value - step < min ? null : () => onChanged(value - step),
             icon: const Icon(Icons.remove),
           ),
           IconButton.filledTonal(
-            tooltip: '+',
+            tooltip: t('Lisää: {0}', [title]),
             onPressed: value + step > max ? null : () => onChanged(value + step),
             icon: const Icon(Icons.add),
           ),

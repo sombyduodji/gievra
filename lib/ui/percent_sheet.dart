@@ -68,6 +68,7 @@ class _PercentSheetState extends State<_PercentSheet> {
           Text(exerciseLabel(widget.exercise), style: sub),
           SectionLabel(t('Arvioitu maksimi (1 toisto)')),
           ValueStepper(
+            label: t('Arvioitu maksimi (1 toisto)'),
             value: fmtNum(_max),
             unit: 'kg',
             onMinus: () => setState(() => _max = (_max - step).clamp(step, 1000)),

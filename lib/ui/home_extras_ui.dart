@@ -216,7 +216,12 @@ class NightHrData {
     try {
       if (await HealthConnect.status() != 'available' || !await HealthConnect.granted(heartRate: true)) return;
       final today = dateOnly(now);
-      nights.value = await HealthConnect.nightLowHr(addDays(today, -34), today);
+      // Vain unen lähteen syke, jos lähde tiedetään (käyttäjä 20.11.).
+      nights.value = await HealthConnect.nightLowHr(
+        addDays(today, -34),
+        today,
+        app: settings.sleepApp ?? sleepData.currentApp,
+      );
       _at = now;
     } catch (_) {
       // Ei lupaa tai Health Connect ei vastaa: kortti pysyy piilossa.

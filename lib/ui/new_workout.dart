@@ -291,6 +291,7 @@ class _NewWorkoutScreenState extends State<NewWorkoutScreen> {
                     ),
                   SectionLabel(t('Kesto')),
                   ValueStepper(
+                    label: t('Kesto'),
                     value: '$_minutes',
                     unit: 'min',
                     onMinus: () => setState(() => _minutes = (_minutes - 1).clamp(1, 600)),
@@ -574,6 +575,7 @@ Future<void> askWarmupAndStart(
                   Expanded(
                     flex: 5,
                     child: ValueStepper(
+                      label: t('Kesto'),
                       value: '$minutes',
                       unit: 'min',
                       onMinus: () => set(() => minutes = (minutes - 1).clamp(1, 600)),

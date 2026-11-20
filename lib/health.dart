@@ -300,11 +300,15 @@ class HealthConnect {
       false;
 
   /// Yöarvot öittäin (Yöarvot-kortti): [windows] = päivä -> (alku, loppu).
-  static Future<Map<DateTime, NightMetrics>> nightMetrics(Map<DateTime, (DateTime, DateTime)> windows) async {
+  /// [apps] = päivä -> unen lähteen sovellus: sen yön arvot vain siitä sovelluksesta (käyttäjä 20.11.).
+  static Future<Map<DateTime, NightMetrics>> nightMetrics(
+    Map<DateTime, (DateTime, DateTime)> windows, {
+    Map<DateTime, String> apps = const {},
+  }) async {
     final r = await _ch.invokeMethod<List>('nightMetrics', {
       'windows': [
         for (final e in windows.entries)
-          [isoDate(e.key), e.value.$1.millisecondsSinceEpoch, e.value.$2.millisecondsSinceEpoch],
+          [isoDate(e.key), e.value.$1.millisecondsSinceEpoch, e.value.$2.millisecondsSinceEpoch, apps[e.key] ?? ''],
       ],
     });
     final out = <DateTime, NightMetrics>{};
@@ -423,8 +427,9 @@ class HealthConnect {
   }
 
   /// Yön alin syke aamuittain [from]..[to] (etusivun palautumiskortti); sykkeen lukulupa riittää.
-  static Future<Map<DateTime, int>> nightLowHr(DateTime from, DateTime to) async {
-    final r = await _ch.invokeMethod<List>('nightLowHr', {'from': isoDate(from), 'to': isoDate(to)});
+  /// [app]: vain tämän sovelluksen syke (valittu unen lähde), muuten kaikki lähteet.
+  static Future<Map<DateTime, int>> nightLowHr(DateTime from, DateTime to, {String? app}) async {
+    final r = await _ch.invokeMethod<List>('nightLowHr', {'from': isoDate(from), 'to': isoDate(to), 'app': app});
     return {for (final e in (r ?? const []).cast<List>()) DateTime.parse(e[0] as String): (e[1] as num).toInt()};
   }
 
