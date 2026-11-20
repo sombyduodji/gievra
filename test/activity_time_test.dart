@@ -243,17 +243,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('KESTO'), findsOneWidget);
     await tester.tap(find.text('Treeni valmis!'));
-    for (var k = 0; k < 20 && find.byKey(const ValueKey('feelingTile')).evaluate().isEmpty; k++) {
+    for (var k = 0; k < 20 && find.byKey(const ValueKey('face_5')).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('feelingTile')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Loistava'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('finishSave')));
+    // Hymiön napautus tallentaa heti (käyttäjä 20.11.).
+    await tester.tap(find.byKey(const ValueKey('face_5')));
     for (var k = 0; k < 20 && store.workouts.isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
@@ -350,11 +346,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Treeni valmis!'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
+    expect(find.byKey(const ValueKey('finishSkip')), findsOneWidget);
     // Takaisin: kysely sulkeutuu, ollaan yhä kirjauksessa, mitään ei tallennettu.
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('feelingTile')), findsNothing);
+    expect(find.byKey(const ValueKey('finishSkip')), findsNothing);
     expect(find.byType(ActivityScreen), findsOneWidget);
     expect(store.workouts.where((x) => x.activity == 'Jooga'), isEmpty);
     // Ohita: tallentuu ilman fiilistä.
@@ -440,7 +436,9 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('Uusi liikunta: rasitus ja fiilis samassa kyselyssä lopussa, ei sivulla', (tester) async {
+  testWidgets('Uusi liikunta: ei rasitusvalintaa; Tahmea kysyy mikä painoi ja tallentaa syyt (käyttäjä 20.11.)', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('gievra-rasitus');
     settings.folder = dir.path;
     addTearDown(() {
@@ -449,25 +447,25 @@ void main() {
       dir.deleteSync(recursive: true);
     });
     final w = await open(tester, sport: 'Koripallo');
-    expect(find.text('RASITUS'), findsNothing, reason: 'kysytään lopussa');
+    expect(find.text('RASITUS'), findsNothing);
     await tester.tap(find.text('Syötä aika'));
     await tester.pump();
     await tester.tap(find.text('Treeni valmis!'));
     await tester.pumpAndSettle();
-    expect(find.text('Rasitus'), findsOneWidget);
-    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
-    await tester.tap(find.textContaining('Reipas'));
+    expect(find.text('Rasitus'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('face_2')));
+    await tester.pumpAndSettle();
+    expect(find.text('Mikä painoi?'), findsOneWidget);
+    await tester.tap(find.text('stressi'));
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('feelingTile')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hyvä'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('finishSave')));
+    await tester.ensureVisible(find.byKey(const ValueKey('heavyDone')));
+    await tester.tap(find.byKey(const ValueKey('heavyDone')));
     for (var k = 0; k < 20 && store.workouts.isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect((w.intensity, w.feeling), ('reipas', 4));
+    expect((w.intensity, w.feeling), (null, 2));
+    expect(w.dayReasons, ['stressi']);
     // Itse syötetty aika: ei erillistä yhteenvetoa (käyttäjä 20.11.), tallennus ja paluu.
     expect(find.byType(SavedScreen), findsNothing);
     expect(store.workouts, hasLength(1));

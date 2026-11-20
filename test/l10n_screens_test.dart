@@ -704,9 +704,9 @@ void main() {
             return const Scaffold();
           },
         ),
-        'fiilis ja rasitus': () => Builder(
+        'fiilis': () => Builder(
           builder: (context) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => askFeeling(context, askIntensity: true));
+            WidgetsBinding.instance.addPostFrameCallback((_) => askFeeling(context));
             return const Scaffold();
           },
         ),

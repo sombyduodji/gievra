@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart' show openAppSettings
 
 import '../app_state.dart';
 import '../body.dart';
+import '../effort.dart' show hrEffort;
 import '../heart_rate.dart';
 import '../health.dart';
 import '../sports.dart' show sportOf;
@@ -334,6 +335,67 @@ class _HrScreenState extends State<HrScreen> {
 
 /// Treenin syke: käyrä (ylös ja alas), aika sykealueilla ja tietojen lähde. Näkyy, kun treenissä on sykevyön
 /// käyrä (hr_series).
+/// Rasitus sykkeestä (käyttäjä 20.11.): ei kysytä, vaan näytetään syke-kortissa, kun liikunnassa on sykettä ja
+/// maksimisyke tiedetään. Ilman sykettä riviä ei ole. Alla minuutit viikon reippaan liikunnan tavoitteeseen.
+class HrEffortRow extends StatelessWidget {
+  final Workout w;
+  final int? maxHr;
+  const HrEffortRow(this.w, {super.key, this.maxHr});
+
+  static const _labels = {'kevyt': 'Kevyt', 'reipas': 'Reipas', 'kova': 'Kova'};
+
+  @override
+  Widget build(BuildContext context) {
+    if (w.activity == null) return const SizedBox.shrink();
+    final e = hrEffort(w, maxHr ?? hrProfile()?.maxHr(w.date) ?? maxHrFor(w.date));
+    if (e == null) return const SizedBox.shrink();
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final i = ['kevyt', 'reipas', 'kova'].indexOf(e.level);
+    final (bg, fg) = dark
+        ? const [
+            (Color(0xFF12301F), Color(0xFF5BD08A)),
+            (Color(0xFF3A2F14), Color(0xFFF2C060)),
+            (Color(0xFF3B1A18), Color(0xFFFF8378)),
+          ][i]
+        : const [
+            (Color(0xFFE3F3E9), Color(0xFF007229)),
+            (Color(0xFFFFF4D6), Color(0xFF7A5C00)),
+            (Color(0xFFFBE6E4), Color(0xFFC0261B)),
+          ][i];
+    final weekMin = ((e.moderateSec + 2 * e.vigorousSec) / 60).round();
+    return Padding(
+      key: const ValueKey('hrEffort'),
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8,
+              children: [
+                Text(
+                  t('Rasitus: {0}', [t(_labels[e.level]!).toLowerCase()]),
+                  style: TextStyle(color: fg, fontWeight: FontWeight.w700),
+                ),
+                Text(t('{0} % maksimisykkeestä', [e.pct]), style: TextStyle(color: fg, fontSize: 13)),
+              ],
+            ),
+            Text(
+              weekMin > 0
+                  ? t('Laskettu sykkeestä · {0} min viikon reippaaseen liikuntaan', [weekMin])
+                  : t('Laskettu sykkeestä · kevyt liikunta ei kerrytä viikon reippaita minuutteja'),
+              style: TextStyle(color: fg, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class HrDetails extends StatelessWidget {
   final Workout w;
 
@@ -397,6 +459,7 @@ class HrDetails extends StatelessWidget {
                 ),
               ],
             ),
+            HrEffortRow(w, maxHr: maxHr),
             const SizedBox(height: 8),
             Semantics(
               label: '${t('Syke')}: ${t('ka {0} · max {1}', [w.hrAvg ?? s.avg ?? '–', w.hrMax ?? s.max ?? '–'])}',

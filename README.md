@@ -74,8 +74,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - kahden käsipainon liikkeet yhteispainona (alla kummankin käden paino), sarjat luetteloissa muodossa 12 × 10
   "kg kummassakin kädessä"; Farmer walk myös hex barilla omana liikkeenään
 - valmis treeni lukittuu 🔒: avautuu yhteenvetona (liikkeet sarjoineen), Muokkaa avaa liikelistan ja kysyy ensin; ei palautusajastinta eikä painoehdotuksia;
-  tallennettu liikunta avautuu yhteenvetona (aika, matka, vauhti, reitti, syke, rasitus ja fiilis)
-- *Treeni valmis!* tallentaa heti ja avaa tiiviin yhteenvedon (luvut ruutuina, reitti, liikkeet, sykekäyrä, rasitus);
+  tallennettu liikunta avautuu yhteenvetona (aika, matka, vauhti, reitti, syke, rasitus sykkeestä ja fiilis)
+- *Treeni valmis!* tallentaa heti ja avaa tiiviin yhteenvedon (luvut ruutuina, reitti, liikkeet, sykekäyrä);
   alareunassa fiilis tai *Ohita*, joka vie etusivulle; GPS-liikunnassa *Lopeta ja tallenna* vie suoraan yhteenvetoon,
   jossa *Korjaa reittiä*; kellon tiedot odotetaan samalla sivulla
 
@@ -154,8 +154,10 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   yhteenvedon (treenit, aika, matka, askeleet), jossa pyyhkäisy vaihtaa päivää
 - *Viikon liikunta* etusivun kortin Viikko-puolella: reipas liikunta 150 minuutin viikkotavoitetta vasten (kova
   minuutti lasketaan kahdesti) ja lihaskuntopäivät (tavoite 2) WHO:n liikuntasuosituksen mukaan
-- treenin lopussa yksi *Treeni valmis!* -painike: fiilis (liikunnassa myös rasitus) kysytään yhteenvedossa, joka
-  näyttää vain täytetyt tiedot; lajivalinta haulla ja ryhminä, ilman GPS:ää *Ajanotto* (aloita, tauko,
+- rasitusta ei kysytä: kun sykettä on, se lasketaan (keskisyke % maksimisykkeestä, ACSM-rajat) ja näkyy
+  syke-kortissa, ja viikon reippaat minuutit tulevat sykkeestä; maksimisykkeeksi riittää syntymävuosi
+- treenin lopussa yksi *Treeni valmis!* -painike: hymiö tallentaa yhdellä napautuksella; vain Raskas tai Tahmea kysyy
+  *Mikä painoi?* (päivän syyt, salissa myös raskaat liikkeet); yhteenveto näyttää vain täytetyt tiedot; lajivalinta haulla ja ryhminä, ilman GPS:ää *Ajanotto* (aloita, tauko,
   lopeta, korjattava alku ja loppu) tai *Syötä itse*; käsin syötetyn matkan ja ajan mahdoton nopeus (esim. 1 km
   ajassa 0:10) kysytään ennen tallennusta; uinnin vauhti min/km tai min/100 m (*Asetukset → Harjoittelu*)
 - GPS-tallennus alkaa 5 sekunnin laskennan jälkeen (ehdit laittaa puhelimen taskuun); askelpituus (matka /

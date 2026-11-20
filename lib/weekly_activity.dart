@@ -2,13 +2,19 @@
 // liikuntaa viikossa (rasittava minuutti = 2 kohtuullista) ja lihaskuntoa vähintään 2 päivänä.
 //
 // Rasitus liikunnasta:
-// - käyttäjän valitsema rasitus: Kevyt = kevyt, Reipas = kohtuullinen, Kova = rasittava;
+// - sykkeestä, kun sykettä on (käyttäjä 20.11.): sykekäyrästä minuutit tasoittain (alle 64 % maksimista kevyt,
+//   64–76 % kohtuullinen, 77 % ja yli rasittava), pelkästä keskisykkeestä koko kesto samalla tasolla;
+// - muuten aiemmin valittu rasitus (vanhoissa tiedostoissa): Kevyt = kevyt, Reipas = kohtuullinen, Kova = rasittava;
 // - ilman valintaa kävelylajit vauhdista (≥ 4 km/h) tai askeltiheydestä (≥ 100 askelta/min, Tudor-Locke ym. 2018),
 //   liikkuvuus, jooga ja pilates kevyenä, muut lajit kohtuullisena.
 // Lihaskuntopäivä: salitreeni, jossa on vähintään yksi työsarja.
 
+import 'effort.dart' show hrEffort;
 import 'insights.dart' show weekStart;
 import 'models.dart';
+
+/// Maksimisyke päivälle (sovellus asettaa käynnistyessä sykeprofiilista; null = ei tiedossa, rasitus muuten).
+int? Function(DateTime day)? weeklyMaxHr;
 
 const whoMinutes = 150;
 const whoStrengthDays = 2;
@@ -81,6 +87,13 @@ WeekActivity periodActivity(Iterable<Workout> workouts, DateTime from, DateTime 
     }
     final m = _secondsOf(w);
     if (m == null || m <= 0) continue;
+    final he = hrEffort(w, weeklyMaxHr?.call(w.date));
+    if (he != null) {
+      light += he.lightSec;
+      mod += he.moderateSec;
+      vig += he.vigorousSec;
+      continue;
+    }
     switch (effortOf(w)) {
       case Effort.light:
         light += m;

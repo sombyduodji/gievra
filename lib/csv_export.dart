@@ -5,10 +5,12 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 
 import 'body.dart';
+import 'effort.dart' show hrEffort;
 import 'exercises.dart';
 import 'import_detect.dart' show gievraCsvMarker;
 import 'l10n.dart';
 import 'models.dart';
+import 'weekly_activity.dart' show weeklyMaxHr;
 
 /// Luettava CSV-vienti käyttäjän kielellä (taulukkolaskentaan, valmentajalle tai toiseen sovellukseen).
 /// Ei varmuuskopio: liikkeet, lajit ja otsikot ovat käyttöliittymän kielellä, eikä Gievra tuo tätä takaisin.
@@ -175,7 +177,9 @@ List<CsvFile> buildCsvExport(
           _source(w.kcalSource),
           w.steps,
           w.strideM == null ? '' : _num((w.strideM! * 100).round() / 100),
+          _effortCsv(w),
           w.feeling == null ? '' : t(feelingOf(w.feeling)!.$3),
+          _reasonsCsv(w),
           if (o.notes) w.notes.trim(),
         ],
     ];
@@ -196,7 +200,9 @@ List<CsvFile> buildCsvExport(
             t('Kalorien lähde'),
             t('Askeleet'),
             t('Askelpituus (m)'),
+            t('Rasitus'),
             t('Fiilis'),
+            t('Mikä painoi'),
             if (o.notes) t('Muistiinpanot'),
           ], rows),
           rows.length,
@@ -219,6 +225,7 @@ List<CsvFile> buildCsvExport(
           _source(w.hrSource),
           _source(w.kcalSource),
           w.feeling == null ? '' : t(feelingOf(w.feeling)!.$3),
+          _reasonsCsv(w),
         ],
     ];
     if (rows.any((r) => r.skip(2).take(4).any((v) => v != null && v != ''))) {
@@ -235,6 +242,7 @@ List<CsvFile> buildCsvExport(
             t('Sykkeen lähde'),
             t('Kalorien lähde'),
             t('Fiilis'),
+            t('Mikä painoi'),
           ], rows),
           rows.length,
         ),
@@ -321,3 +329,17 @@ List<CsvFile> buildCsvExport(
 /// Tiedostonimi samaan muotoon kaikilla kielillä (käyttäjä 16.11.): pienet kirjaimet, välit ja alaviivat
 /// väliviivoiksi ("heart rate" → heart-rate.csv, "gym_workouts" → gym-workouts.csv).
 String _fileName(String word) => '${word.trim().toLowerCase().replaceAll(RegExp(r'[\s_]+'), '-')}.csv';
+
+/// Rasitus CSV:hen (käyttäjä 20.11.): sykkeestä laskettu, muuten vanhoissa tiedostoissa valittu; muuten tyhjä.
+String _effortCsv(Workout w) {
+  final k = hrEffort(w, weeklyMaxHr?.call(w.date))?.level ?? w.intensity;
+  return switch (k) {
+    'kevyt' => t('Kevyt'),
+    'reipas' => t('Reipas'),
+    'kova' => t('Kova'),
+    _ => '',
+  };
+}
+
+/// Mikä painoi (Raskas tai Tahmea): päivän syyt käännettyinä.
+String _reasonsCsv(Workout w) => w.dayReasons.map(t).join(', ');

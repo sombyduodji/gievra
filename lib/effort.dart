@@ -56,3 +56,58 @@ enum EffortSource { heartRate, pace }
   }
   return (prs, best);
 }
+
+/// Rasitus sykkeestä (käyttäjä 20.11.): ei kysytä, vaan lasketaan, kun sykettä on; ilman sykettä ei rasitusta.
+/// [level] keskisykkeestä ('kevyt' / 'reipas' / 'kova', samat ACSM-rajat kuin yllä), [pct] keskisyke prosentteina
+/// maksimista ja ajat (s) rasitustasoittain viikon liikuntaminuutteihin: sykekäyrästä lukema kerrallaan
+/// (skaalattuna koko kestoon, katkot jakautuvat samassa suhteessa), pelkästä keskisykkeestä koko kesto samalla tasolla.
+class HrEffort {
+  final String level;
+  final int pct;
+  final int lightSec, moderateSec, vigorousSec;
+  final bool fromCurve;
+  const HrEffort(this.level, this.pct, this.lightSec, this.moderateSec, this.vigorousSec, {this.fromCurve = false});
+}
+
+String effortLevel(double pctOfMax) => pctOfMax < .64 ? 'kevyt' : (pctOfMax < .77 ? 'reipas' : 'kova');
+
+HrEffort? hrEffort(Workout w, int? maxHr) {
+  if (maxHr == null || maxHr <= 0) return null;
+  final dur = w.durationSec ?? 0;
+  final s = w.hrSeries;
+  final avg = s?.avg;
+  if (s != null && avg != null && dur > 0 && s.coverage(dur) >= .5) {
+    var l = 0, m = 0, v = 0;
+    for (final x in s.values) {
+      if (x <= 0) continue;
+      switch (effortLevel(x / maxHr)) {
+        case 'kevyt':
+          l += s.interval;
+        case 'reipas':
+          m += s.interval;
+        default:
+          v += s.interval;
+      }
+    }
+    final measured = l + m + v;
+    final k = measured > 0 ? dur / measured : 1.0;
+    return HrEffort(
+      effortLevel(avg / maxHr),
+      (avg / maxHr * 100).round(),
+      (l * k).round(),
+      (m * k).round(),
+      (v * k).round(),
+      fromCurve: true,
+    );
+  }
+  final a = w.hrAvg;
+  if (a == null || a <= 0) return null;
+  final level = effortLevel(a / maxHr);
+  return HrEffort(
+    level,
+    (a / maxHr * 100).round(),
+    level == 'kevyt' ? dur : 0,
+    level == 'reipas' ? dur : 0,
+    level == 'kova' ? dur : 0,
+  );
+}

@@ -87,6 +87,15 @@ class HrStats {
   const HrStats(this.avg, this.max, this.samples, [this.series]);
 }
 
+/// Maksimisyke päivälle: oma mittaus tai arvio syntymävuodesta (Tanaka 208 − 0,7 × ikä, kuten profiilissa).
+/// Rasitukseen ja sykealueisiin riittää syntymävuosi; null, jos kumpaakaan ei ole.
+int? maxHrFor(DateTime d) {
+  final own = settings.maxHr;
+  if (own != null) return own;
+  final y = settings.birthYear;
+  return y == null ? null : (208 - 0.7 * (d.year - y)).round();
+}
+
 /// Kalorilaskennan tiedot asetuksista: syntymävuosi, sukupuoli, pituus ja viimeisin paino. null, jos jokin puuttuu.
 HrProfile? hrProfile() {
   final y = settings.birthYear, sex = settings.sex, h = settings.body.heightCm;

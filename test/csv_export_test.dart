@@ -10,6 +10,7 @@ import 'package:treenipaivakirja/hr_calc.dart';
 import 'package:treenipaivakirja/import_detect.dart';
 import 'package:treenipaivakirja/l10n.dart';
 import 'package:treenipaivakirja/models.dart';
+import 'package:treenipaivakirja/weekly_activity.dart' show weeklyMaxHr;
 import 'package:treenipaivakirja/program.dart';
 
 // Luettava CSV-vienti ja tuotavan tiedoston tunnistus. Keksityt treenit.
@@ -55,8 +56,30 @@ void main() {
     expect(gym, contains('"Hyvä päivä; jalat ""raskaat"""'), reason: 'lainausmerkit kahdennetaan');
     expect(gym, isNot(contains('Bench Press')), reason: 'aikavälin ulkopuolella');
     expect(files[0].rows, 3);
-    expect(files[1].text, contains('2026-11-03,Running,26:00,5.2,5:00,150,,,,,,,Good'));
+    expect(files[1].text, contains('2026-11-03,Running,26:00,5.2,5:00,150,,,,,,,,Good,'));
+    expect(files[1].text, contains('Stride length (m),Effort,Feeling,What weighed on you'));
     expect(files[2].text, contains('2026-11-03,82.4,180'));
+  });
+
+  test('Rasitus ja Mikä painoi CSV:ssä: vanha valinta, sykkeestä laskettu ja syyt (käyttäjä 20.11.)', () {
+    debugSetCatalog('fi', const {});
+    weeklyMaxHr = (_) => 180;
+    addTearDown(() => weeklyMaxHr = null);
+    final d = DateTime(2026, 11, 5);
+    final old = Workout(date: d, title: 'Kävely', activity: 'Kävely', session: 1)
+      ..seconds = 1800
+      ..intensity = 'reipas'
+      ..feeling = 2
+      ..dayReasons = ['kipua', 'stressi'];
+    final hr = Workout(date: d, title: 'Juoksu', activity: 'Juoksu', session: 2)
+      ..seconds = 1800
+      ..hrAvg = 150
+      ..intensity = 'kevyt';
+    final files = buildCsvExport([old, hr], body, CsvExportOptions(from: d, to: d));
+    final txt = files.firstWhere((f) => f.name.startsWith('liikunta')).text;
+    expect(txt, contains('Rasitus;Fiilis;Mikä painoi'));
+    expect(txt, contains('Reipas;Tahmea;kipua, stressi'));
+    expect(txt, contains('Kova;'), reason: 'syke 83 % maksimista ohittaa vanhan valinnan');
   });
 
   test('Suomeksi: puolipiste ja desimaalipilkku; valinnat rajaavat tiedostot ja sarakkeet', () {

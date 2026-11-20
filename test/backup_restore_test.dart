@@ -187,6 +187,61 @@ void main() {
     _expectHr();
   });
 
+  test('Uusimmat kentät (fiilis, Mikä painoi, vanha rasitus, kellon lähde ja käyrä) säilyvät tavu tavulta', () async {
+    _fresh(a);
+    final d = DateTime(2026, 11, 20);
+    await store.save(
+      Workout(date: d, title: 'Kävely', activity: 'Kävely', session: 1)
+        ..seconds = 9126
+        ..distanceKm = 6.67
+        ..steps = 11765
+        ..kcal = 409
+        ..intensity = 'kevyt'
+        ..feeling = 2
+        ..dayReasons = ['kipua', 'huonosti nukuttu']
+        ..hcId = 'testi-hc-1'
+        ..healthSource = 'Kävelymatto'
+        ..notes = 'Testi; "lainaus"',
+    );
+    await store.save(
+      Workout(date: d, title: 'Juoksu', activity: 'Juoksu', session: 2)
+        ..seconds = 1805
+        ..distanceKm = 5.1
+        ..hrAvg = 152
+        ..hrMax = 171
+        ..hrSource = 'kello'
+        ..feeling = 4
+        ..hrSeries = HrSeries(DateTime(2026, 11, 20, 17), 5, [140, 150, 0, 160]),
+    );
+    await store.save(
+      Workout(date: d, title: 'Koko keho A', session: 3)
+        ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(80, 5)]))
+        ..feeling = 1
+        ..tooHeavy.add('Takakyykky')
+        ..moveFeeling['Takakyykky'] = 1
+        ..dayReasons = ['väsynyt'],
+    );
+    final before = {
+      for (final f in a.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.md')))
+        p.relative(f.path, from: a.path): f.readAsStringSync(),
+    };
+    final zip = await exportZip();
+    _fresh(b);
+    expect(await applyImport(readZip(zip)), 3);
+    for (final e in before.entries) {
+      if (!e.key.startsWith('2026')) continue;
+      expect(File(p.join(b.path, e.key)).readAsStringSync(), e.value, reason: e.key);
+    }
+    final walk = store.workouts.firstWhere((w) => w.activity == 'Kävely');
+    expect((walk.intensity, walk.feeling, walk.hcId), ('kevyt', 2, 'testi-hc-1'));
+    expect(walk.dayReasons, ['kipua', 'huonosti nukuttu']);
+    final gym = store.workouts.firstWhere((w) => w.activity == null);
+    expect(gym.feeling, 1);
+    expect(gym.tooHeavy.toList(), ['Takakyykky']);
+    expect(gym.dayReasons, ['väsynyt']);
+    expect(store.workouts.firstWhere((w) => w.activity == 'Juoksu').hrSeries?.encode(), '5 17:00:00 140 150 0 160');
+  });
+
   test('Käytössä olevaan päiväkirjaan yhdistetään: nykyiset asetukset ja ohjelma säilyvät', () async {
     await _fill(a);
     final zip = await exportZip();

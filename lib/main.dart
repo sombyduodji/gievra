@@ -6,7 +6,8 @@ import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 
 import 'battery.dart';
-import 'heart_rate.dart' show hr;
+import 'heart_rate.dart' show hr, hrProfile, maxHrFor;
+import 'weekly_activity.dart' show weeklyMaxHr;
 
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -90,6 +91,7 @@ Future<void> main() async {
   if (RestTimer.native) {
     unawaited(Permission.notification.isGranted.then((v) => RestTimer.notificationsOk = v));
   }
+  weeklyMaxHr = (d) => hrProfile()?.maxHr(d) ?? maxHrFor(d);
   runApp(const TreeniApp());
   listenOpenedFiles();
   // Uuden version ensimmäinen käynnistys: treenikansio backup/-kansioon (etusivulla edistymisrivi).

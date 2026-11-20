@@ -346,14 +346,9 @@ Future<double?> askNumber(
 /// [askFeeling]: Ohita (ei fiilistä, jatketaan).
 const feelingSkipped = 0;
 
-/// Viimeisin [askFeeling]-kyselyssä valittu rasitus (kun kysyttiin).
-String? askedIntensity;
-
-Future<int?> askFeeling(BuildContext context, {bool askIntensity = false, String? intensity}) async {
+Future<int?> askFeeling(BuildContext context) async {
   // Uusi Treeni valmis -ikkuna (finish_sheet.dart); tämä säilyy yksinkertaisena kutsuna ilman yhteenvetoa.
-  askedIntensity = intensity;
-  final r = await showFinishSheet(context, askIntensity: askIntensity, intensity: intensity);
-  if (r != null) askedIntensity = r.intensity;
+  final r = await showFinishSheet(context);
   return r?.feeling;
 }
 

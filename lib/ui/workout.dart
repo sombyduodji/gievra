@@ -37,7 +37,6 @@ import 'record_screen.dart' show RoutePainter;
 import '../maps/map_view.dart' show RouteMap;
 import '../gpx.dart' show parseGpx;
 import '../gps_filter.dart' show TrackPoint;
-import '../effort.dart' show estimateEffort;
 import '../heart_rate.dart' show hr, applyHeartRate, activeKcal, hrProfile;
 import '../l10n.dart';
 import '../time_zone.dart';
@@ -1164,16 +1163,7 @@ class SavedScreen extends StatefulWidget {
   /// Juuri lopetettu treeni (käyttäjä 20.11.): tiivis yhteenveto yhdelle ruudulle ja alareunassa "Miltä tuntui?"
   /// kasvoina ja leveä Ohita; valinta vie etusivulle. Treeni on jo tallennettu.
   final bool fresh;
-
-  /// Uusi liikunta: rasitus valitaan yhteenvedossa (esivalittu sykkeestä tai vauhdista).
-  final bool askIntensity;
-  const SavedScreen({
-    super.key,
-    required this.workout,
-    this.history = false,
-    this.fresh = false,
-    this.askIntensity = false,
-  });
+  const SavedScreen({super.key, required this.workout, this.history = false, this.fresh = false});
   @override
   State<SavedScreen> createState() => _SavedScreenState();
 }
@@ -1219,20 +1209,6 @@ class _SavedScreenState extends State<SavedScreen> {
   @override
   void initState() {
     super.initState();
-    // Rasitus esivalittuna sykkeestä tai vauhdista ja tallennettuna heti (takaisin-painike ei hukkaa sitä).
-    if (widget.askIntensity && workout.intensity == null) {
-      final w = workout; // tallennettu versio (sama, jota yhteenveto näyttää)
-      final e = estimateEffort(
-        w,
-        series: w.hrSeries,
-        maxHr: hrProfile()?.maxHr(DateTime.now()),
-        durationSec: w.durationSec,
-      );
-      if (e != null) {
-        w.intensity = e.$1;
-        Future.microtask(_persist);
-      }
-    }
     if (widget.fresh) {
       store.readRoute(workout).then((g) {
         if (g != null && mounted) setState(() => _route = parseGpx(g));
@@ -1277,7 +1253,8 @@ class _SavedScreenState extends State<SavedScreen> {
     try {
       final w = workout;
       if (v != null) {
-        if (w.activity == null && v <= 2 && w.exercises.any((e) => e.workSets.isNotEmpty)) {
+        // Raskas tai Tahmea: mikä painoi (salissa myös raskaat liikkeet), kaikissa lajeissa (käyttäjä 20.11.).
+        if (v <= 2) {
           final r = await showHeavySheet(context, w, v);
           if (r == null || !mounted) return; // paneeli suljettiin: jäädään yhteenvetoon
         }
@@ -1497,18 +1474,8 @@ class _SavedScreenState extends State<SavedScreen> {
             ),
           ],
           HrDetails(w, compact: true),
-          if (widget.askIntensity) ...[
-            const SizedBox(height: 10),
-            Text(t('Rasitus'), style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            EffortScale(
-              value: w.intensity,
-              onChanged: (v) {
-                setState(() => w.intensity = v);
-                _persist();
-              },
-            ),
-          ],
+          // Rasitus sykkeestä (käyttäjä 20.11.): käyrän kanssa syke-kortissa, pelkällä keskisykkeellä omana rivinään.
+          if (w.hrSeries == null) HrEffortRow(w),
           // Kellon tiedot: odotus ja lisäys (valinta tiedoittain) samalla sivulla.
           if (HcUpdateRow.wanted(w))
             HcUpdateRow(
@@ -1545,16 +1512,10 @@ class _SavedScreenState extends State<SavedScreen> {
 
   Future<void> _changeFeeling() async {
     final sport = workout.activity != null;
-    final r = await showFinishSheet(
-      context,
-      w: workout,
-      askIntensity: sport,
-      intensity: workout.intensity,
-      heavyStep: !sport,
-    );
+    final r = await showFinishSheet(context, w: workout, heavyStep: !sport);
     if (r == null || !mounted) return;
+    // Rasitus tulee sykkeestä (käyttäjä 20.11.): vanha tallennettu rasitus säilyy tiedostossa.
     setState(() {
-      if (sport) workout.intensity = r.intensity;
       if (r.feeling != feelingSkipped) workout.feeling = r.feeling;
     });
     await _persist();

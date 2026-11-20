@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../effort.dart';
 import '../exercises.dart';
-import '../heart_rate.dart' show hrProfile;
 import '../hr_calc.dart';
 import '../l10n.dart';
 import '../models.dart';
@@ -13,15 +12,14 @@ import '../session_compare.dart' show workVolume;
 import '../share_text.dart' show thousands;
 import 'widgets.dart';
 
-/// Treeni valmis -ikkunan tulos: fiilis 1–5 tai [feelingSkipped] (Ohita) ja rasitus (jos kysyttiin).
+/// Treeni valmis -ikkunan tulos: fiilis 1–5 tai [feelingSkipped] (Ohita).
 class FinishResult {
   final int feeling;
-  final String? intensity;
-  const FinishResult(this.feeling, this.intensity);
+  const FinishResult(this.feeling);
 }
 
-/// Treeni valmis -ikkuna (mockup 8 ja 9, käyttäjän valinta 14.11.): yhteenveto ylhäällä, liikunnassa rasitus
-/// värillisenä asteikkona (esivalittu sykkeestä tai vauhdista), fiilis isoina kasvoina; kasvon napautus tallentaa.
+/// Treeni valmis -ikkuna: yhteenveto ylhäällä ja fiilis isoina kasvoina; kasvon napautus tallentaa. Rasitusta ei
+/// kysytä (käyttäjä 20.11.): se lasketaan sykkeestä, kun sykettä on.
 /// Salitreenissä ylhäällä ennätykset ja suurin painonnousu, ja Raskas/Tahmea avaa samaan ikkunaan
 /// "Mikä tuntui raskaalta?" -vaiheen ([heavyStep]): valitut liikkeet tallentuvat liian raskaiksi (seuraavalla
 /// kerralla kevyempi paino) ja päivän syyt kuten ennen erillisessä ikkunassa.
@@ -29,8 +27,6 @@ class FinishResult {
 Future<FinishResult?> showFinishSheet(
   BuildContext context, {
   Workout? w,
-  bool askIntensity = false,
-  String? intensity,
   HrSeries? series,
   int? durationSec,
   bool heavyStep = false,
@@ -38,14 +34,7 @@ Future<FinishResult?> showFinishSheet(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
-  builder: (ctx) => FinishSheet(
-    w: w,
-    askIntensity: askIntensity,
-    intensity: intensity,
-    series: series,
-    durationSec: durationSec,
-    heavyStep: heavyStep,
-  ),
+  builder: (ctx) => FinishSheet(w: w, series: series, durationSec: durationSec, heavyStep: heavyStep),
 );
 
 /// Yhteenvedon Raskas/Tahmea (käyttäjä 20.11.): pelkkä "Mikä tuntui raskaalta?" -vaihe paneelina.
@@ -60,19 +49,16 @@ Future<FinishResult?> showHeavySheet(BuildContext context, Workout w, int feelin
 
 class FinishSheet extends StatefulWidget {
   final Workout? w;
-  final bool askIntensity, heavyStep;
+  final bool heavyStep;
 
   /// Vain raskaiden liikkeiden vaihe (yhteenvedon fiilisrivistä); [initialFeeling] on jo valittu.
   final bool heavyOnly;
   final int? initialFeeling;
-  final String? intensity;
   final HrSeries? series;
   final int? durationSec;
   const FinishSheet({
     super.key,
     this.w,
-    this.askIntensity = false,
-    this.intensity,
     this.series,
     this.durationSec,
     this.heavyStep = false,
@@ -85,19 +71,17 @@ class FinishSheet extends StatefulWidget {
 }
 
 class _FinishSheetState extends State<FinishSheet> {
-  late final (String, EffortSource)? _estimate = widget.askIntensity && widget.intensity == null && widget.w != null
-      ? estimateEffort(
-          widget.w!,
-          series: widget.series ?? widget.w!.hrSeries,
-          maxHr: hrProfile()?.maxHr(DateTime.now()),
-          durationSec: widget.durationSec,
-        )
-      : null;
-  late String? _intensity = widget.intensity ?? _estimate?.$1;
-  bool get _estimated => _estimate != null && _intensity == _estimate.$1 && widget.intensity == null;
-
   late int? _feeling = widget.initialFeeling;
   late bool _heavyStage = widget.heavyOnly;
+
+  /// Kaksoisnapautus ei sulje kahta näkymää (ikkuna ja sen alla oleva sivu).
+  bool _closed = false;
+  void _close(FinishResult r) {
+    if (_closed) return;
+    _closed = true;
+    Navigator.pop(context, r);
+  }
+
   late final Set<String> _heavy = {...?widget.w?.tooHeavy};
   late final Set<String> _reasons = {...?widget.w?.dayReasons};
 
@@ -106,34 +90,22 @@ class _FinishSheetState extends State<FinishSheet> {
       if (e.workSets.isNotEmpty) e.name,
   ];
 
-  /// Fiiliksen valinta (ulkoasun kohennus 16.11.): ei tallenna heti, vaan erillinen Tallenna. Raskas/Tahmea avaa
-  /// samaan ikkunaan "Mikä tuntui raskaalta?".
-  void _pickFeeling(int v) => setState(() {
-    _feeling = v;
-    _heavyStage = widget.heavyStep && v <= 2 && _moves.isNotEmpty;
-  });
-
-  /// Fiilis-ruudun napautus: pieni valitsin viidellä kasvolla.
-  Future<void> _askFeeling() async {
-    final v = await showDialog<int>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('Miltä tuntui?')),
-        content: SizedBox(
-          width: 360,
-          child: FaceRow(value: _feeling, onTap: (v) => Navigator.pop(ctx, v)),
-        ),
-      ),
-    );
-    if (v != null && mounted) _pickFeeling(v);
-  }
-
-  void _save() {
-    if (_heavyStage) return _heavyDone();
-    Navigator.pop(context, FinishResult(_feeling ?? feelingSkipped, _intensity));
+  /// Vähemmän kysymyksiä (käyttäjä 20.11.): hymiön napautus tallentaa heti. Vain Raskas tai Tahmea (jokin ei
+  /// mennyt hyvin) avaa samaan ikkunaan "Mikä painoi?" -vaiheen: päivän syyt ja salitreenissä raskaat liikkeet.
+  void _pickFeeling(int v) {
+    if (_closed) return;
+    if (v <= 2 && widget.w != null) {
+      setState(() {
+        _feeling = v;
+        _heavyStage = true;
+      });
+      return;
+    }
+    _close(FinishResult(v));
   }
 
   void _heavyDone() {
+    if (_closed) return;
     final w = widget.w!;
     for (final m in _moves) {
       if (_heavy.contains(m)) {
@@ -146,7 +118,7 @@ class _FinishSheetState extends State<FinishSheet> {
     w.dayReasons
       ..clear()
       ..addAll(_reasons);
-    Navigator.pop(context, FinishResult(_feeling!, _intensity));
+    _close(FinishResult(_feeling!));
   }
 
   @override
@@ -167,49 +139,25 @@ class _FinishSheetState extends State<FinishSheet> {
               _header(w, cs, sub, dark),
               Divider(height: 28, color: cs.outlineVariant),
             ],
-            if (widget.askIntensity) ...[
-              _title(t('Rasitus'), t('Kuinka kovaa kehollesi'), sub, badge: _estimated ? _badge(cs) : null),
-              const SizedBox(height: 10),
-              _effortRow(dark),
-              const SizedBox(height: 18),
-            ],
-            if (_heavyStage) ..._heavySection(cs, sub, dark),
-            const SizedBox(height: 16),
-            // Erillinen tallennus (käyttäjä 16.11.): fiilis on valinnainen; Ohita tallentaa ilman sitä.
-            if (!widget.heavyOnly)
-              Row(
-                children: [
-                  if (!_heavyStage && _feeling == null)
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, FinishResult(feelingSkipped, _intensity)),
-                      child: Text(
-                        t('Ohita'),
-                        style: TextStyle(color: redText(context), fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  Expanded(
-                    child: FilledButton.icon(
-                      key: const ValueKey('finishSave'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF00843D),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: _save,
-                      icon: const Icon(Icons.save_outlined),
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          widget.w?.activity != null ? t('Tallenna liikunta') : t('Tallenna treeni'),
-                          maxLines: 1,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            if (_heavyStage)
+              ..._heavySection(cs, sub, dark)
+            else ...[
+              Text(
+                t('Miltä tuntui?'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
+              const SizedBox(height: 8),
+              FaceRow(value: _feeling, onTap: _pickFeeling),
+              const SizedBox(height: 10),
+              // Ohita tallentaa ilman fiilistä (fiilis on valinnainen).
+              OutlinedButton(
+                key: const ValueKey('finishSkip'),
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: () => _close(FinishResult(feelingSkipped)),
+                child: Text(t('Ohita'), style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
           ],
         ),
       ),
@@ -240,7 +188,6 @@ class _FinishSheetState extends State<FinishSheet> {
         (paceText(dur / w.distanceKm!, w.activity, short: true), t('vauhti')),
       if (w.activity == null && prs > 0) ('🏆 $prs', prs == 1 ? t('ennätys') : t('ennätystä')),
     ];
-    final face = feelingOf(_feeling);
     Widget tile(Widget value, String label, {VoidCallback? onTap, bool dashed = false, Key? key}) => Material(
       key: key,
       color: dashed ? Colors.transparent : cs.surfaceContainerHigh,
@@ -290,19 +237,6 @@ class _FinishSheetState extends State<FinishSheet> {
                       l,
                     ),
                   ),
-                SizedBox(
-                  width: wTile,
-                  child: tile(
-                    key: const ValueKey('feelingTile'),
-                    Text(
-                      face?.$2 ?? '🙂',
-                      style: TextStyle(fontSize: 20, color: face == null ? cs.onSurfaceVariant : null),
-                    ),
-                    face == null ? t('fiilis · valitse') : t('fiilis: {0}', [t(face.$3).toLowerCase()]),
-                    dashed: face == null,
-                    onTap: _askFeeling,
-                  ),
-                ),
               ],
             );
           },
@@ -335,24 +269,6 @@ class _FinishSheetState extends State<FinishSheet> {
       if (badge != null) ...[const SizedBox(width: 8), Flexible(child: badge)],
     ],
   );
-
-  Widget _badge(ColorScheme cs) => Container(
-    key: const ValueKey('effortEstimate'),
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      border: Border.all(color: cs.outlineVariant),
-      borderRadius: BorderRadius.circular(99),
-    ),
-    // Kahdelle riville tarvittaessa (pienentäminen teki englannin tekstistä liian pienen isolla tekstillä).
-    child: Text(
-      '✦ ${_estimate!.$2 == EffortSource.heartRate ? t('arvio sykkeestä') : t('arvio vauhdista')}',
-      maxLines: 2,
-      textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant, height: 1.2),
-    ),
-  );
-
-  Widget _effortRow(bool dark) => EffortScale(value: _intensity, onChanged: (v) => setState(() => _intensity = v));
 
   /// Päivän syiden kuvakkeet (ruudukon laatoissa).
   static const _reasonIcons = {
@@ -457,25 +373,26 @@ class _FinishSheetState extends State<FinishSheet> {
     final red = redText(context);
     final yellow = dark ? Sami.yellow : yellowText(context);
     return [
-      if (!widget.heavyOnly) Divider(height: 28, color: cs.outlineVariant),
-      _title(t('Mikä tuntui raskaalta?'), t('Valitse liikkeet, jotka tuntuivat liian raskailta'), sub),
-      const SizedBox(height: 12),
-      _grid(
-        [
-          for (final m in _moves)
-            _tile(
-              key: ValueKey('heavy_$m'),
-              label: exerciseLabel(m),
-              on: _heavy.contains(m),
-              accent: red,
-              onBg: red.withValues(alpha: dark ? .16 : .1),
-              onTap: () => setState(() => _heavy.contains(m) ? _heavy.remove(m) : _heavy.add(m)),
-            ),
-        ],
-        [for (final m in _moves) exerciseLabel(m)],
-      ),
-      const SizedBox(height: 20),
-      _title(t('Vaikuttiko jokin muu?'), t('Valinnainen'), sub),
+      if (_moves.isNotEmpty) ...[
+        _title(t('Mikä tuntui raskaalta?'), t('Valitse liikkeet, jotka tuntuivat liian raskailta'), sub),
+        const SizedBox(height: 12),
+        _grid(
+          [
+            for (final m in _moves)
+              _tile(
+                key: ValueKey('heavy_$m'),
+                label: exerciseLabel(m),
+                on: _heavy.contains(m),
+                accent: red,
+                onBg: red.withValues(alpha: dark ? .16 : .1),
+                onTap: () => setState(() => _heavy.contains(m) ? _heavy.remove(m) : _heavy.add(m)),
+              ),
+          ],
+          [for (final m in _moves) exerciseLabel(m)],
+        ),
+        const SizedBox(height: 20),
+      ],
+      _title(_moves.isEmpty ? t('Mikä painoi?') : t('Vaikuttiko jokin muu?'), t('Valinnainen'), sub),
       const SizedBox(height: 12),
       _grid(
         [

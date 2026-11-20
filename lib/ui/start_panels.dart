@@ -8,7 +8,6 @@ import '../app_state.dart';
 import '../daily_steps.dart';
 import '../health.dart';
 import '../home_layout.dart';
-import '../effort.dart' show estimateEffort;
 import '../heart_rate.dart' show activeKcal, hr, hrProfile;
 import '../injuries.dart' show injuryAdjusted;
 import '../insights.dart' show weekStart;
@@ -22,6 +21,8 @@ import '../sports.dart';
 import '../theme.dart';
 import '../weekly_activity.dart';
 import 'activity.dart';
+import 'finish_sheet.dart' show FaceRow, showHeavySheet;
+import 'hr_ui.dart' show HrEffortRow;
 import 'health_import.dart';
 import 'home.dart' show explainActivityMinutes, openPendingActivity;
 import 'new_workout.dart';
@@ -1102,7 +1103,7 @@ Future<void> showActivityPanel(BuildContext context) async {
   final today = dateOnly(DateTime.now());
   String? sport; // valittu laji: paneeli kysyy kirjaustavan
   Workout? hcW; // Health Connectin harjoitus tarkistettavana paneelissa
-  String? hcEffort;
+  bool hcSaving = false;
   await _panel<void>(context, (ctx, set) {
     final cs = Theme.of(ctx).colorScheme;
     final sub = TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant);
@@ -1131,7 +1132,21 @@ Future<void> showActivityPanel(BuildContext context) async {
         if (w.kcal != null) tile('${w.kcal}', 'kcal'),
         if (act != null) tile('$act', t('aktiivisia')),
       ];
-      final efforts = [('kevyt', '😌', t('Kevyt')), ('reipas', '😤', t('Reipas')), ('kova', '🥵', t('Kova'))];
+      // Hymiö tallentaa heti; Raskas tai Tahmea kysyy ensin, mikä painoi (käyttäjä 20.11.).
+      Future<void> saveHc(int? feeling) async {
+        if (hcSaving) return; // kaksoisnapautus ei tallenna kahdesti eikä sulje kahta näkymää
+        hcSaving = true;
+        if (feeling != null) w.feeling = feeling;
+        Navigator.pop(ctx);
+        if (feeling != null && feeling <= 2 && context.mounted) await showHeavySheet(context, w, feeling);
+        await store.save(w);
+        HealthImportButton.refresh();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(persist: false, content: Text(t('Tallennettu: {0}', [sportName(w.activity!)]))));
+        }
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1171,25 +1186,13 @@ Future<void> showActivityPanel(BuildContext context) async {
                 ],
               ),
             ),
-          _label(ctx, t('RASITUS')),
-          Row(
-            children: [
-              for (final (i, (k, e, l)) in efforts.indexed) ...[
-                if (i > 0) const SizedBox(width: 6),
-                Expanded(
-                  child: ChoiceChip(
-                    key: ValueKey('hcEffort_$k'),
-                    label: SizedBox(
-                      width: double.infinity,
-                      child: Text('$e $l', textAlign: TextAlign.center),
-                    ),
-                    selected: hcEffort == k,
-                    onSelected: (_) => set(() => hcEffort = k),
-                  ),
-                ),
-              ],
-            ],
-          ),
+          // Rasitus sykkeestä, kun sykettä on (ei kysytä).
+          HrEffortRow(w),
+          const SizedBox(height: 4),
+          // Fiilis samassa paneelissa (käyttäjä 20.11.: Health Connectista lisätyn liikunnan fiilistä ei kysytty
+          // ollenkaan): hymiön napautus tallentaa heti, kuten treenin yhteenvedossa.
+          _label(ctx, t('MILTÄ TUNTUI?')),
+          FaceRow(value: null, onTap: saveHc),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -1198,7 +1201,6 @@ Future<void> showActivityPanel(BuildContext context) async {
                   key: const ValueKey('hcEdit'),
                   onPressed: () {
                     Navigator.pop(ctx);
-                    w.intensity = hcEffort;
                     Navigator.of(context)
                         .push(MaterialPageRoute(builder: (_) => ActivityScreen(workout: w, manual: true)));
                   },
@@ -1211,17 +1213,7 @@ Future<void> showActivityPanel(BuildContext context) async {
                 child: FilledButton.icon(
                   key: const ValueKey('hcSave'),
                   style: FilledButton.styleFrom(backgroundColor: _actGreen, foregroundColor: Colors.white),
-                  onPressed: () async {
-                    w.intensity = hcEffort;
-                    Navigator.pop(ctx);
-                    await store.save(w);
-                    HealthImportButton.refresh();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(persist: false, content: Text(t('Tallennettu: {0}', [sportName(w.activity!)]))),
-                      );
-                    }
-                  },
+                  onPressed: () => saveHc(null),
                   icon: const Icon(Icons.check),
                   label: Text(t('Tallenna')),
                 ),
@@ -1361,7 +1353,7 @@ Future<void> showActivityPanel(BuildContext context) async {
                         final w = workoutFromHealth(c, sp, session: store.onDay(d).isEmpty ? 1 : store.nextSession(d));
                         set(() {
                           hcW = w;
-                          hcEffort = estimateEffort(w)?.$1;
+                          hcSaving = false;
                         });
                       },
                       child: Text(t('Lisää')),

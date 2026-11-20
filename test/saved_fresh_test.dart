@@ -23,7 +23,7 @@ void main() {
     dir.deleteSync(recursive: true);
   });
 
-  Future<Workout> open(WidgetTester tester, Workout w, {bool intensity = false}) async {
+  Future<Workout> open(WidgetTester tester, Workout w) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.7;
     addTearDown(tester.view.reset);
@@ -33,11 +33,8 @@ void main() {
         home: Builder(
           builder: (c) => Scaffold(
             body: TextButton(
-              onPressed: () => Navigator.of(c).push(
-                MaterialPageRoute(
-                  builder: (_) => SavedScreen(workout: w, fresh: true, askIntensity: intensity),
-                ),
-              ),
+              onPressed: () =>
+                  Navigator.of(c).push(MaterialPageRoute(builder: (_) => SavedScreen(workout: w, fresh: true))),
               child: const Text('koti'),
             ),
           ),
@@ -93,15 +90,15 @@ void main() {
     expect((stored(w).feeling, stored(w).tooHeavy.contains('Takakyykky')), (1, true));
   });
 
-  testWidgets('Liikunta: Ohita vie etusivulle ilman fiilistä; rasitus valittavissa', (tester) async {
+  testWidgets('Liikunta: Ohita vie etusivulle ilman fiilistä; ei rasitusvalintaa ilman sykettä', (tester) async {
     final w = await open(
       tester,
       Workout(date: DateTime(2026, 11, 20), title: 'Kävely', activity: 'Kävely', session: 2)
         ..seconds = 2525
         ..distanceKm = 4.21,
-      intensity: true,
     );
-    expect(find.text('Rasitus'), findsOneWidget);
+    expect(find.text('Rasitus'), findsNothing);
+    expect(find.byKey(const ValueKey('hrEffort')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('savedSkip')));
     await settle(tester, () => find.text('koti').evaluate().isNotEmpty);
     expect(find.text('koti'), findsOneWidget);
@@ -114,7 +111,6 @@ void main() {
       Workout(date: DateTime(2026, 11, 20), title: 'Pyöräily', activity: 'Pyöräily', session: 3)
         ..seconds = 1800
         ..distanceKm = 10.0,
-      intensity: true,
     );
     expect(find.text('20 km/h'), findsOneWidget);
     expect(find.textContaining('min/km'), findsNothing);

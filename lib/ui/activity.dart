@@ -896,7 +896,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
     // Käynnissä: kellon aika; pysäytetty (Lopeta): tallennettu tarkka aika.
     final doneAt = DateTime.now(); // kello pysähtyy tähän, vaikka kysymyksiin vastaaminen kestäisi
     final wasSaved = _isSaved; // vanhan liikunnan muokkaus
-    final wasLive = _live; // uusi, tänään tehtävä (tallennuksen jälkeen _live on false)
     final swSecs = _swElapsed > Duration.zero ? _swElapsedAt(doneAt).inSeconds : (_swDone ? (w.seconds ?? 0) : 0);
     if (_canStopwatch && _useWatch && !_isSaved && swSecs > 0 && swSecs < 60) {
       final keep = await showDialog<bool>(
@@ -962,14 +961,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final r = await showFinishSheet(
         context,
         w: w,
-        askIntensity: _live,
-        intensity: _live ? w.intensity : null,
         series: ((AwayActivity.mayUse(this) ? hr.peek(_hrKey) : null) ?? _gpsHr)?.series,
         // Käynnissä olevan ajanoton aika (ei oletus 45:00, joka on vasta ajanoton pysäytyksen jälkeen oikea).
         durationSec: swSecs > 0 ? swSecs : _sec,
       );
       if (r == null || !mounted) return;
-      if (_live) w.intensity = r.intensity;
       if (r.feeling != feelingSkipped) w.feeling = r.feeling;
     }
     if (_swStart != null || _swAcc > Duration.zero) _swStop(doneAt);
@@ -992,15 +988,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
     // yhteenvetoa ja sen Sulje-painiketta; takaisin edelliseen näkymään ja lyhyt ilmoitus.
     if (!measuredNow) {
       final m = ScaffoldMessenger.of(context);
-      Navigator.of(context).maybePop();
+      // pop eikä maybePop: PopScope ei ole vielä rakentunut uudelleen tallennuksen jälkeen, joten maybePop kysyi
+      // "Tallennetaanko muutokset?" juuri tallennetusta liikunnasta (kuvakierros 20.11.).
+      final nav = Navigator.of(context);
+      if (nav.canPop()) nav.pop();
       m.showSnackBar(SnackBar(persist: false, content: Text(t('Tallennettu: {0}', [sportName(w.activity!)]))));
       return;
     }
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => SavedScreen(workout: w, fresh: true, askIntensity: wasLive),
-      ),
-    );
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SavedScreen(workout: w, fresh: true)));
   }
 
   @override
@@ -1293,6 +1288,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Lukitun liikunnan rasitus, fiilis ja muistiinpanot tallentuvat suoraan (ei muokkauslupaa: ne eivät muuta
+  /// mitattuja tietoja).
+  Future<void> _saveLocked() async {
+    if (!_locked || !_isSaved) return;
+    w.notes = _notes.text;
+    await store.save(w);
+  }
+
+  /// Lukitun liikunnan fiilis: tallentuu heti; Raskas tai Tahmea kysyy, mikä painoi (päivän syyt).
+  Future<void> _setFeeling(int? v) async {
+    setState(() => w.feeling = v);
+    if (v != null && v <= 2) {
+      await showHeavySheet(context, w, v);
+      if (!mounted) return;
+    } else {
+      w.dayReasons.clear();
+    }
+    await _saveLocked();
+  }
+
   Future<void> _unlock() async {
     if (await askEditSaved(context) && mounted) setState(() => _locked = false);
   }
@@ -1301,11 +1316,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// polulle korjauksen kytkin kysyy muokkausluvan itse.
   static const _routeKey = ValueKey('route');
 
+  /// Rasitus, fiilis ja muistiinpanot ovat lukittunakin valittavissa (tallentuvat heti, ks. [_saveLocked]).
+  static final _freeKeys = <Key>{
+    const ValueKey('lockedRating'),
+    const ValueKey('lockedNotes'),
+    const ValueKey('lockedNotesLabel'),
+  };
+
   List<Widget> _guard(List<Widget> xs) => !_locked
       ? xs
       : [
           xs.first,
-          for (final x in xs.skip(1)) x.key == _routeKey ? x : EditGuard(locked: true, onTap: _unlock, child: x),
+          for (final x in xs.skip(1))
+            x.key == _routeKey || _freeKeys.contains(x.key) ? x : EditGuard(locked: true, onTap: _unlock, child: x),
         ];
 
   /// Tallennetun liikunnan lukunäkymä (lukittu; mockup 10, käyttäjän valinta 14.11.): yksi yhteenvetokortti
@@ -1572,7 +1595,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
       // Tallentamaton kirjaus: takaisin kysyy ensin (ei hiljaista hukkaa, ei käynnissä olevan ajanoton katoamista).
       canPop: _locked || _saved || w.activity == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
+        if (didPop) {
+          if (_locked && _notes.text != w.notes) _saveLocked();
+          return;
+        }
         _swActive && AwayActivity.mayUse(this) ? _leaveRunning() : _confirmLeave();
       },
       child: Scaffold(
@@ -1630,14 +1656,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
               _readSummary(cs),
               if (_hasRoute) _routeCard(),
               HrDetails(w),
-              EffortFeelingCard(
-                intensity: w.intensity,
-                onIntensity: (v) => setState(() => w.intensity = v),
-                feeling: w.feeling,
-                onFeeling: (v) => setState(() => w.feeling = v),
+              // Rasitus sykkeestä (käyttäjä 20.11.): käyrän kanssa syke-kortissa, pelkällä keskisykkeellä tässä.
+              if (w.hrSeries == null) HrEffortRow(w),
+              // Fiilis tallentuu heti myös lukittuna (ei muuta mitattuja tietoja); Raskas tai Tahmea kysyy syyt.
+              KeyedSubtree(
+                key: const ValueKey('lockedRating'),
+                child: EffortFeelingCard(feeling: w.feeling, onFeeling: _setFeeling),
               ),
-              SectionLabel(t('Muistiinpanot')),
+              KeyedSubtree(key: const ValueKey('lockedNotesLabel'), child: SectionLabel(t('Muistiinpanot'))),
               TextField(
+                key: const ValueKey('lockedNotes'),
                 controller: _notes,
                 minLines: 2,
                 maxLines: 6,
@@ -1781,13 +1809,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 if (!_live) HrDetails(w),
                 // Rasitus ja fiilis yhdessä kortissa sykkeen jälkeen (ennen kellon tiedot ja syke olivat välissä).
                 // Uudessa liikunnassa molemmat kysytään lopussa Treeni valmis -ikkunassa.
-                if (!_live || _isSaved)
-                  EffortFeelingCard(
-                    intensity: w.intensity,
-                    onIntensity: _live ? null : (v) => setState(() => w.intensity = v),
-                    feeling: w.feeling,
-                    onFeeling: _isSaved ? (v) => setState(() => w.feeling = v) : null,
-                  ),
+                if (!_live && w.hrSeries == null) HrEffortRow(w),
+                if (_isSaved) EffortFeelingCard(feeling: w.feeling, onFeeling: (v) => setState(() => w.feeling = v)),
                 SectionLabel(t('Muistiinpanot')),
                 TextField(
                   controller: _notes,

@@ -13,6 +13,18 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.2.2',
+    Icons.monitor_heart_outlined,
+    'Rasitus sykkeestä',
+    'Rasitusta ei enää kysytä: kun liikunnassa on sykettä, se lasketaan ja näkyy syke-kortissa, ja viikon reippaat minuutit tulevat sykkeestä. Maksimisykkeeksi riittää syntymävuosi.',
+  ),
+  NewFeature(
+    '0.7.2.2',
+    Icons.sentiment_satisfied_alt,
+    'Vähemmän kysymyksiä',
+    'Hymiö tallentaa yhdellä napautuksella kaikissa lajeissa. Vain Raskas tai Tahmea kysyy, mikä painoi.',
+  ),
+  NewFeature(
     '0.7.2.1',
     Icons.flag_outlined,
     'Yhteenveto heti treenin jälkeen',

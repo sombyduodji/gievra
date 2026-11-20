@@ -86,7 +86,6 @@ void main() {
   Future<FinishResult?> open(
     WidgetTester tester,
     Workout w, {
-    bool askIntensity = false,
     bool heavyStep = false,
     double width = 412,
     double scale = 1,
@@ -107,7 +106,7 @@ void main() {
             body: Center(
               child: TextButton(
                 onPressed: () async {
-                  result = await showFinishSheet(context, w: w, askIntensity: askIntensity, heavyStep: heavyStep);
+                  result = await showFinishSheet(context, w: w, heavyStep: heavyStep);
                 },
                 child: const Text('avaa'),
               ),
@@ -121,11 +120,7 @@ void main() {
     return result;
   }
 
-  testWidgets('Kävely sykkeellä: Reipas esivalittu (arvio sykkeestä), kasvon napautus palauttaa fiiliksen', (
-    tester,
-  ) async {
-    FinishResult? r;
-    final w = walk(s: hrSeries(125, 1800));
+  Future<void> openSheet(WidgetTester tester, Workout w, void Function(FinishResult?) done) async {
     tester.view.physicalSize = const Size(412 * 3, 2600 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -134,7 +129,7 @@ void main() {
         home: Builder(
           builder: (context) => Scaffold(
             body: TextButton(
-              onPressed: () async => r = await showFinishSheet(context, w: w, askIntensity: true),
+              onPressed: () async => done(await showFinishSheet(context, w: w)),
               child: const Text('avaa'),
             ),
           ),
@@ -143,51 +138,73 @@ void main() {
     );
     await tester.tap(find.text('avaa'));
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('Liikunta: ei rasitusta, hymiön napautus tallentaa heti (käyttäjä 20.11.)', (tester) async {
+    FinishResult? r;
+    await openSheet(tester, walk(s: hrSeries(125, 1800)), (x) => r = x);
     expect(find.textContaining('Giitu! Kävely tehty'), findsOneWidget);
-    expect(find.text('✦ arvio sykkeestä'), findsOneWidget);
-    // Fiilis yhtenä ruutuna (16.11.): napautus avaa valitsimen, erillinen Tallenna.
-    await tester.tap(find.byKey(const ValueKey('feelingTile')));
-    await tester.pumpAndSettle();
-    // Yötesti 18.11.: valitsin ei veny koko näytön korkuiseksi (kasvojen sarake ilman mainAxisSize.min).
-    expect(
-      tester.getSize(find.descendant(of: find.byType(AlertDialog), matching: find.byType(Material)).first).height,
-      lessThan(400),
-    );
+    expect(find.text('Rasitus'), findsNothing);
+    expect(find.text('Miltä tuntui?'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('face_4')));
     await tester.pumpAndSettle();
-    expect(r, isNull, reason: 'kasvo ei tallenna heti');
-    await tester.tap(find.byKey(const ValueKey('finishSave')));
-    await tester.pumpAndSettle();
-    expect((r!.feeling, r!.intensity), (4, 'reipas'));
+    expect(r!.feeling, 4);
   });
 
-  testWidgets('Rasituksen vaihto piilottaa arvion; Ohita palauttaa ohituksen ja valitun rasituksen', (tester) async {
-    late FinishResult? r;
-    final w = walk();
-    tester.view.physicalSize = const Size(412 * 3, 2600 * 3);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: TextButton(
-              onPressed: () async => r = await showFinishSheet(context, w: w, askIntensity: true),
-              child: const Text('avaa'),
+  testWidgets(
+    'Hymiön kaksoisnapautus sulkee vain ikkunan, ei sen alla olevaa sivua (testikierros 20.11.; Flutter estää jo sulkeutuvan ikkunan napautukset, vartija varmistaa)',
+    (tester) async {
+      var results = 0;
+      tester.view.physicalSize = const Size(412 * 3, 2600 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: const Scaffold(body: Text('koti')),
+          routes: {
+            '/liikunta': (c) => Scaffold(
+              body: TextButton(
+                onPressed: () async {
+                  await showFinishSheet(c, w: walk());
+                  results++;
+                },
+                child: const Text('avaa'),
+              ),
             ),
-          ),
+          },
         ),
-      ),
-    );
-    await tester.tap(find.text('avaa'));
+      );
+      tester.state<NavigatorState>(find.byType(Navigator)).pushNamed('/liikunta');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('avaa'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('face_4')));
+      await tester.tap(find.byKey(const ValueKey('face_4')), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(results, 1);
+      expect(find.text('avaa'), findsOneWidget, reason: 'liikunnan sivu jäi auki');
+    },
+  );
+
+  testWidgets('Liikunta: Ohita ilman fiilistä; Tahmea kysyy mikä painoi', (tester) async {
+    FinishResult? r;
+    await openSheet(tester, walk(), (x) => r = x);
+    await tester.tap(find.byKey(const ValueKey('finishSkip')));
     await tester.pumpAndSettle();
-    expect(find.text('✦ arvio vauhdista'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('effort_kova')));
+    expect(r!.feeling, feelingSkipped);
+    final w = walk();
+    await openSheet(tester, w, (x) => r = x);
+    await tester.tap(find.byKey(const ValueKey('face_2')));
+    await tester.pumpAndSettle();
+    expect(find.text('Mikä painoi?'), findsOneWidget);
+    expect(find.text('Mikä tuntui raskaalta?'), findsNothing, reason: 'liikunnassa ei liikkeitä');
+    await tester.tap(find.text('kipua'));
     await tester.pump();
-    expect(find.byKey(const ValueKey('effortEstimate')), findsNothing);
-    await tester.tap(find.text('Ohita'));
+    await tester.ensureVisible(find.byKey(const ValueKey('heavyDone')));
+    await tester.tap(find.byKey(const ValueKey('heavyDone')));
     await tester.pumpAndSettle();
-    expect((r!.feeling, r!.intensity), (feelingSkipped, 'kova'));
+    expect(r!.feeling, 2);
+    expect(w.dayReasons, {'kipua'});
   });
 
   testWidgets('Sali: nostot ylhäällä; Tahmea avaa liikkeet samaan ikkunaan, valinnat tallentuvat', (tester) async {
@@ -218,8 +235,6 @@ void main() {
     expect(find.text('ennätys'), findsOneWidget);
     expect(find.text('⬆ Takakyykky +5 kg'), findsOneWidget);
     expect(find.text('Rasitus'), findsNothing, reason: 'salissa ei rasitusta');
-    await tester.tap(find.byKey(const ValueKey('feelingTile')));
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('face_2')));
     await tester.pumpAndSettle();
     expect(find.text('Mikä tuntui raskaalta?'), findsOneWidget);
@@ -247,7 +262,9 @@ void main() {
     expect(find.text('Liian raskas: Takakyykky'), findsOneWidget);
   });
 
-  testWidgets('Tallennettu liikunta: rasitus ja fiilis samalla uudella ulkoasulla, valinta vaihtuu', (tester) async {
+  testWidgets('Tallennettu liikunta: vain fiilis, ei rasitusvalintaa; vanha rasitus säilyy (käyttäjä 20.11.)', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(412 * 3, 3000 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -259,14 +276,10 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.byType(EffortScale), findsOneWidget);
+    expect(find.byType(EffortScale), findsNothing);
     expect(find.byType(FaceRow), findsOneWidget);
-    expect(find.byType(SegmentedButton<String>), findsNothing, reason: 'vanha rasitusvalinta poissa');
-    // Rasitus ja fiilis samassa kortissa, peräkkäin.
-    final card = find.byType(EffortFeelingCard);
-    expect(card, findsOneWidget);
-    expect(find.descendant(of: card, matching: find.byType(EffortScale)), findsOneWidget);
-    expect(find.descendant(of: card, matching: find.byType(FaceRow)), findsOneWidget);
+    expect(find.byKey(const ValueKey('hrEffort')), findsNothing, reason: 'ei sykettä: ei rasitusta');
+    expect(w.intensity, 'reipas', reason: 'vanha valinta säilyy tiedostossa');
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -277,17 +290,8 @@ void main() {
         testWidgets('$lang ${width.round()} dp ${(scale * 100).round()} %: $kind', (tester) async {
           debugSetCatalog(lang, lang == 'fi' ? const {} : po[lang]!);
           final w = kind == 'kävely' ? walk(s: hrSeries(125, 1800)) : gym();
-          await open(
-            tester,
-            w,
-            askIntensity: kind == 'kävely',
-            heavyStep: kind != 'kävely',
-            width: width,
-            scale: scale,
-          );
+          await open(tester, w, heavyStep: kind != 'kävely', width: width, scale: scale);
           if (kind != 'kävely') {
-            await tester.tap(find.byKey(const ValueKey('feelingTile')));
-            await tester.pumpAndSettle();
             await tester.tap(find.byKey(const ValueKey('face_1')));
             await tester.pumpAndSettle();
           }
