@@ -76,24 +76,20 @@ void main() {
     expect(add.bottom, lessThan(finish.top));
     expect(finish.bottom, greaterThan(tester.view.physicalSize.height / tester.view.devicePixelRatio - 80));
     await tester.tap(find.text('Lopeta treeni'));
-    // Tallennus kirjoittaa tiedoston: oikeaa aikaa ennen ponnahdusikkunaa.
-    for (var k = 0; k < 20 && find.byKey(const ValueKey('feelingTile')).evaluate().isEmpty; k++) {
-      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('feelingTile')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('feelingTile')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hyvä'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('finishSave')));
+    // Lopetus tallentaa heti ja avaa tiiviin yhteenvedon; fiilis sen alareunassa (käyttäjä 20.11.).
     for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(w.feeling, 4);
-    expect(find.byType(SavedScreen), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 600)); // yhteenvedon napautussuoja
+    expect(find.byKey(const ValueKey('savedFeeling')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('face_4')));
+    int? saved() => store.workouts.where((x) => x.date == w.date && x.session == w.session).firstOrNull?.feeling;
+    for (var k = 0; k < 20 && saved() == null; k++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(saved(), 4);
   });
 
   testWidgets('Liikkeen tila: valmis tiiviinä ✓, kesken renkaalla ja jäljellä olevilla sarjoilla', (tester) async {

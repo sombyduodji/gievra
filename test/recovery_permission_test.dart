@@ -30,9 +30,7 @@ void main() {
       };
     });
   });
-  tearDown(
-    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_ch, null),
-  );
+  tearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(_ch, null));
 
   Future<void> tapSwitch(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 4000);

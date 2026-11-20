@@ -31,6 +31,25 @@ void main() {
     expect(r.map((x) => x.app), ['Paras', '', 'Lähellä']);
   });
 
+  test('Toisen treenin päällä oleva harjoitus ei tarjoudu viereiselle treenille', () {
+    // Salitreeni 12.57–13.02 ja heti perään kävely 13.03: kello kirjasi vain salitreenin.
+    final gym = Workout(date: day, title: 'Koko keho A', started: DateTime(2026, 11, 8, 12, 57), seconds: 300);
+    final walk = Workout(
+      date: day,
+      title: 'Kävely',
+      activity: 'Kävely',
+      started: DateTime(2026, 11, 8, 13, 3),
+      seconds: 210,
+    );
+    final gymWatch = c(DateTime(2026, 11, 8, 12, 57), 5, app: 'Sali');
+    expect(rankCandidates(walk, [gymWatch]).map((x) => x.app), ['Sali'], reason: 'ilman muita treenejä lähellä kelpaa');
+    expect(rankCandidates(walk, [gymWatch], others: [gym, walk]), isEmpty);
+    expect(rankCandidates(gym, [gymWatch], others: [gym, walk]).map((x) => x.app), ['Sali']);
+    // Kävelyn oma harjoitus löytyy edelleen.
+    final walkWatch = c(DateTime(2026, 11, 8, 13, 3), 4, app: 'Kävely');
+    expect(rankCandidates(walk, [gymWatch, walkWatch], others: [gym, walk]).map((x) => x.app), ['Kävely']);
+  });
+
   test('Ilman alkuaikaa: saman päivän harjoitukset, lähin kesto ensin', () {
     final w = run(secs: 1800);
     final r = rankCandidates(w, [

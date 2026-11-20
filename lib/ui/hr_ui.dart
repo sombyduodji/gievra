@@ -336,7 +336,10 @@ class _HrScreenState extends State<HrScreen> {
 /// käyrä (hr_series).
 class HrDetails extends StatelessWidget {
   final Workout w;
-  const HrDetails(this.w, {super.key});
+
+  /// Treenin yhteenveto (käyttäjä 20.11.): matala käyrä ilman sykealueita, jotta kaikki mahtuu yhdelle ruudulle.
+  final bool compact;
+  const HrDetails(this.w, {super.key, this.compact = false});
 
   static const zoneColors = [Color(0xFF9E9E9E), Color(0xFF2E7DD7), Color(0xFF2BA6A6), Color(0xFFE6A23C), Sami.red];
 
@@ -372,9 +375,9 @@ class HrDetails extends StatelessWidget {
     String mmss(int sec) => sec >= 3600 ? fmtDurationSec(sec) : '${sec ~/ 60}:${(sec % 60).toString().padLeft(2, '0')}';
     return Card(
       key: const ValueKey('hrDetails'),
-      margin: const EdgeInsets.only(top: 12),
+      margin: EdgeInsets.only(top: compact ? 8 : 12),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(compact ? 10 : 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -399,7 +402,7 @@ class HrDetails extends StatelessWidget {
               label: '${t('Syke')}: ${t('ka {0} · max {1}', [w.hrAvg ?? s.avg ?? '–', w.hrMax ?? s.max ?? '–'])}',
               excludeSemantics: true,
               child: SizedBox(
-                height: 120,
+                height: compact ? 64 : 120,
                 width: double.infinity,
                 child: CustomPaint(
                   painter: _HrCurve(
@@ -421,7 +424,7 @@ class HrDetails extends StatelessWidget {
                 ),
               ),
             ),
-            if (zones != null && zones.any((z) => z > 0)) ...[
+            if (!compact && zones != null && zones.any((z) => z > 0)) ...[
               const SizedBox(height: 10),
               for (var i = 4; i >= 0; i--)
                 if (zones[i] > 0)
@@ -533,51 +536,53 @@ class HrDetails extends StatelessWidget {
                 ],
               ),
             ],
-            const SizedBox(height: 6),
-            Text(
-              [
-                // Kellon käyrä Health Connectista (15.11.: ennen luki aina "Sykevyö").
-                if (watch)
-                  (w.healthSource ?? '').isEmpty ? 'Health Connect' : 'Health Connect · ${w.healthSource}'
-                else if (cover >= 90)
-                  t('Sykevyö')
-                else
-                  t('Sykevyö, {0} % treenistä', [cover]),
-                if (w.kcalSource == 'syke' && w.kcal != null)
-                  w.activity == null
-                      ? t('kalorit: MET sykkeen mukaan (Compendium 2024)')
-                      : t('kalorit sykkeestä (Keytel 2005)'),
-                if (w.kcalSource == 'nopeus' && w.kcal != null)
-                  w.activity == 'Kävely'
-                      ? t('kalorit kävelyvauhdista (Ludlow & Weyand 2016)')
-                      : t('kalorit matkasta ja ajasta (ACSM)'),
-                // Kokonaiskulutus ja aktiiviset (käyttäjä 17.11.): ero kävelymattoon ja kelloihin selittyy tällä.
-                if (w.kcal != null && hrProfile() != null) t('aktiiviset kalorit = kokonaiskulutus − lepokulutus'),
-              ].join(' · '),
-              style: sub,
-            ),
-            // Kävely sykevyöllä (käyttäjä 18.11.): kalorit vauhdista, mutta sykkeestä laskettu arvio näkyy vertailuksi
-            // ja merkitään epäluotettavaksi (Keytel 2005 on tehty reippaalle liikunnalle; hitaassa kävelyssä noin
-            // 1,5–3-kertainen: 49 min keskisykkeellä 93 sykkeestä 360 kcal, vauhdista noin 150).
-            if (!watch && p != null && w.kcalSource == 'nopeus' && w.activity == 'Kävely' && w.kcal != null)
-              Builder(
-                builder: (context) {
-                  final fromHr = p.kcalEnduranceFor(s, w.durationSec);
-                  if (fromHr <= w.kcal! * 1.15) return const SizedBox.shrink();
-                  return Padding(
-                    key: const ValueKey('walkHrKcal'),
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      t(
-                        'Sykevyöstä laskettuna {0} kcal: ei luotettava kävelyssä. Sykkeeseen perustuva kaava on tehty '
-                        'reippaalle liikunnalle ja yliarvioi hidasta kävelyä, joten kalorit lasketaan vauhdista.',
-                        [fromHr],
-                      ),
-                      style: sub,
-                    ),
-                  );
-                },
+            if (!compact) ...[
+              const SizedBox(height: 6),
+              Text(
+                [
+                  // Kellon käyrä Health Connectista (15.11.: ennen luki aina "Sykevyö").
+                  if (watch)
+                    (w.healthSource ?? '').isEmpty ? 'Health Connect' : 'Health Connect · ${w.healthSource}'
+                  else if (cover >= 90)
+                    t('Sykevyö')
+                  else
+                    t('Sykevyö, {0} % treenistä', [cover]),
+                  if (w.kcalSource == 'syke' && w.kcal != null)
+                    w.activity == null
+                        ? t('kalorit: MET sykkeen mukaan (Compendium 2024)')
+                        : t('kalorit sykkeestä (Keytel 2005)'),
+                  if (w.kcalSource == 'nopeus' && w.kcal != null)
+                    w.activity == 'Kävely'
+                        ? t('kalorit kävelyvauhdista (Ludlow & Weyand 2016)')
+                        : t('kalorit matkasta ja ajasta (ACSM)'),
+                  // Kokonaiskulutus ja aktiiviset (käyttäjä 17.11.): ero kävelymattoon ja kelloihin selittyy tällä.
+                  if (w.kcal != null && hrProfile() != null) t('aktiiviset kalorit = kokonaiskulutus − lepokulutus'),
+                ].join(' · '),
+                style: sub,
               ),
+              // Kävely sykevyöllä (käyttäjä 18.11.): kalorit vauhdista, mutta sykkeestä laskettu arvio näkyy vertailuksi
+              // ja merkitään epäluotettavaksi (Keytel 2005 on tehty reippaalle liikunnalle; hitaassa kävelyssä noin
+              // 1,5–3-kertainen: 49 min keskisykkeellä 93 sykkeestä 360 kcal, vauhdista noin 150).
+              if (!watch && p != null && w.kcalSource == 'nopeus' && w.activity == 'Kävely' && w.kcal != null)
+                Builder(
+                  builder: (context) {
+                    final fromHr = p.kcalEnduranceFor(s, w.durationSec);
+                    if (fromHr <= w.kcal! * 1.15) return const SizedBox.shrink();
+                    return Padding(
+                      key: const ValueKey('walkHrKcal'),
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        t(
+                          'Sykevyöstä laskettuna {0} kcal: ei luotettava kävelyssä. Sykkeeseen perustuva kaava on tehty '
+                          'reippaalle liikunnalle ja yliarvioi hidasta kävelyä, joten kalorit lasketaan vauhdista.',
+                          [fromHr],
+                        ),
+                        style: sub,
+                      ),
+                    );
+                  },
+                ),
+            ],
             // Vyö lakkasi lähettämästä kesken treenin: todennäköisin syy on puhelimen akunsäästö (näyttö lukittuna).
             if (cover < 50 && !watch)
               Padding(
@@ -591,7 +596,7 @@ class HrDetails extends StatelessWidget {
                 ),
               ),
             // Puuttuvat tiedot kysytään suoraan kortista (käyttäjä 15.11.: kellon syke ilman omia tietoja).
-            if ((watch && maxHr == null) || (!watch && p == null))
+            if (!compact && ((watch && maxHr == null) || (!watch && p == null)))
               Row(
                 children: [
                   Expanded(
@@ -1319,7 +1324,7 @@ class _PadMatchState extends State<PadMatch> {
       final ranked = rankCandidates(w, [
         for (final c in all)
           if (c.session && (c.steps ?? 0) > 0) c,
-      ]);
+      ], others: store.workouts);
       _found = ranked.firstOrNull;
     } catch (_) {
       _found = null;

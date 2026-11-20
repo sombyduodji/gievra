@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app_state.dart';
 import '../health.dart';
 import '../l10n.dart';
 import '../models.dart';
@@ -66,6 +67,7 @@ class _HealthSheetState extends State<_HealthSheet> {
       found = rankCandidates(
         widget.w,
         all,
+        others: store.workouts,
       ).where((c) => !c.stepsWindow || (walkHike && timed && (c.allSteps ?? 0) > 0)).toList();
       _stepPick.clear();
       index = 0;

@@ -21,7 +21,11 @@ void main() {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.6;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SingleChildScrollView(child: NightHrCard()))));
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: SingleChildScrollView(child: NightHrCard())),
+      ),
+    );
     await tester.pump();
   }
 

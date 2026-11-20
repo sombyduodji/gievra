@@ -41,8 +41,9 @@ void main() {
 
   for (final lang in ['fi', 'en', 'se']) {
     for (final (w, scale) in [(360.0, 1.0), (360.0, 1.3), (360.0, 2.0), (412.0, 1.3)]) {
-      testWidgets('$lang ${w.round()} dp ${(scale * 100).round()} %: lajiruudun nimi ei katkea kesken sanan',
-          (tester) async {
+      testWidgets('$lang ${w.round()} dp ${(scale * 100).round()} %: lajiruudun nimi ei katkea kesken sanan', (
+        tester,
+      ) async {
         SharedPreferences.setMockInitialValues({});
         tester.view.physicalSize = Size(w * 3, 2400 * 3);
         tester.view.devicePixelRatio = 3;
@@ -84,7 +85,11 @@ void main() {
                 b.top.round(),
             }.length;
             // Rivitys vain sanojen välistä tai tileLabelin rivinvaihdosta.
-            expect(lines, lessThanOrEqualTo(RegExp(r'[ \n]').allMatches(text).length + 1), reason: '$s: "$text" $lines riviä');
+            expect(
+              lines,
+              lessThanOrEqualTo(RegExp(r'[ \n]').allMatches(text).length + 1),
+              reason: '$s: "$text" $lines riviä',
+            );
             expect(p.didExceedMaxLines, isFalse, reason: text);
             checked++;
           }

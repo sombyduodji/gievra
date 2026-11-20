@@ -211,12 +211,13 @@ void main() {
       await tester.tap(find.text('Treeni valmis!'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Tallenna'));
-      for (var k = 0; k < 20 && find.text('Ohita').evaluate().isEmpty; k++) {
+      for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
         await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
         await tester.pump(const Duration(milliseconds: 100));
       }
-      await tester.pumpAndSettle();
-      final sheet = find.byKey(const ValueKey('finishSheet'));
+      await tester.pump(const Duration(milliseconds: 500));
+      // Ajanotto: tallennus heti ja tiivis yhteenveto (käyttäjä 20.11.), jossa kesto on ajanoton aika.
+      final sheet = find.byType(SavedScreen);
       expect(sheet, findsOneWidget);
       expect(find.descendant(of: sheet, matching: find.text('45:00')), findsNothing);
       expect(find.descendant(of: sheet, matching: find.textContaining('0:0')), findsWidgets);
@@ -253,12 +254,12 @@ void main() {
     await tester.tap(find.text('Loistava'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('finishSave')));
-    for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
+    for (var k = 0; k < 20 && store.workouts.isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(w.feeling, 5);
-    expect(find.byType(SavedScreen), findsOneWidget);
+    expect(find.byType(SavedScreen), findsNothing); // itse syötetty: ei yhteenvetoa (käyttäjä 20.11.)
   });
 
   testWidgets('Yhteenveto: otsikko, vain täytetyt luvut, fiilis rivinä, kellon tiedot -painike, toiminnot alhaalla', (
@@ -360,11 +361,11 @@ void main() {
     await tester.tap(find.text('Treeni valmis!'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ohita'));
-    for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
+    for (var k = 0; k < 20 && store.workouts.isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.byType(SavedScreen), findsOneWidget);
+    expect(find.byType(SavedScreen), findsNothing); // itse syötetty: ei yhteenvetoa (käyttäjä 20.11.)
     expect(w.feeling, isNull);
   });
 
@@ -462,12 +463,14 @@ void main() {
     await tester.tap(find.text('Hyvä'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('finishSave')));
-    for (var k = 0; k < 20 && find.byType(SavedScreen).evaluate().isEmpty; k++) {
+    for (var k = 0; k < 20 && store.workouts.isEmpty; k++) {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect((w.intensity, w.feeling), ('reipas', 4));
-    expect(find.byType(SavedScreen), findsOneWidget);
+    // Itse syötetty aika: ei erillistä yhteenvetoa (käyttäjä 20.11.), tallennus ja paluu.
+    expect(find.byType(SavedScreen), findsNothing);
+    expect(store.workouts, hasLength(1));
   });
 
   testWidgets(
@@ -513,5 +516,55 @@ void savedScreenGuardTest() {
     expect(ignoring(), isTrue);
     await tester.pump(const Duration(milliseconds: 400));
     expect(ignoring(), isFalse);
+  });
+
+  testWidgets('Health Connectista lisätty liikunta: Treeni valmis palaa suoraan, ei yhteenvetoa (käyttäjä 20.11.)', (
+    tester,
+  ) async {
+    final dir = Directory.systemTemp.createTempSync('gievra-hc');
+    settings.folder = dir.path;
+    addTearDown(() {
+      settings.folder = null;
+      store.workouts = [];
+      dir.deleteSync(recursive: true);
+    });
+    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.devicePixelRatio = 2.7;
+    addTearDown(tester.view.reset);
+    final y = DateTime.now().subtract(const Duration(days: 1));
+    final w = Workout(date: DateTime(y.year, y.month, y.day), title: 'Jooga', activity: 'Jooga', session: 1)
+      ..hcId = 'testi-1'
+      ..seconds = 1800;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (c) => TextButton(
+              onPressed: () =>
+                  Navigator.of(c).push(MaterialPageRoute(builder: (_) => ActivityScreen(workout: w, manual: true))),
+              child: const Text('koti'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('koti'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Treeni valmis!'));
+    for (var k = 0; k < 20 && find.text('Ohita').evaluate().isEmpty; k++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ohita'));
+    for (var k = 0; k < 20 && find.text('koti').evaluate().isEmpty; k++) {
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump();
+    expect(find.byType(SavedScreen), findsNothing);
+    expect(find.text('koti'), findsOneWidget);
+    expect(find.textContaining('Tallennettu'), findsOneWidget);
+    expect(store.workouts.where((x) => x.hcId == 'testi-1'), hasLength(1));
   });
 }

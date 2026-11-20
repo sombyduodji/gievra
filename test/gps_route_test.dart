@@ -280,7 +280,14 @@ void main() {
     expect(find.text('Etsitään GPS-signaalia…'), findsOneWidget);
     // Aloita on harmaa, kunnes GPS löytää sijainnin; ohitusta ei ole (käyttäjä 19.11.).
     expect(find.textContaining('Aloita silti'), findsNothing);
-    expect(tester.widget<ButtonStyleButton>(find.ancestor(of: find.text('Aloita'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton))).onPressed, isNull);
+    expect(
+      tester
+          .widget<ButtonStyleButton>(
+            find.ancestor(of: find.text('Aloita'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+          )
+          .onPressed,
+      isNull,
+    );
     gps.send(east(clock, 0));
     await tester.pump();
     await tester.pump();
@@ -315,20 +322,27 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Tarkka sijainti puuttuu: Aloita harmaa; lupa katoaa kesken: varoitus tallennuksen aikana (19.11.)',
-      (tester) async {
+  testWidgets('Tarkka sijainti puuttuu: Aloita harmaa; lupa katoaa kesken: varoitus tallennuksen aikana (19.11.)', (
+    tester,
+  ) async {
     final clock = DateTime.utc(2026, 11, 8, 10);
     final gps = FakeGps();
     final rec = GpsRecorder(source: gps, now: () => clock);
-    await tester.pumpWidget(MaterialApp(home: RecordScreen(sport: 'Kävely', recorder: rec)));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RecordScreen(sport: 'Kävely', recorder: rec),
+      ),
+    );
     for (var i = 0; i < 5; i++) {
       await tester.pump();
     }
-    bool startEnabled() => tester
-        .widget<ButtonStyleButton>(
-          find.ancestor(of: find.text('Aloita'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
-        )
-        .onPressed != null;
+    bool startEnabled() =>
+        tester
+            .widget<ButtonStyleButton>(
+              find.ancestor(of: find.text('Aloita'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)),
+            )
+            .onPressed !=
+        null;
     gps.ctl.add({'status': 'permission'});
     await tester.pump();
     await tester.pump();

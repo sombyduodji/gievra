@@ -32,6 +32,12 @@ import 'hr_ui.dart';
 import 'kcal_card.dart';
 import 'health_import.dart' show HealthImportButton;
 import 'hc_update.dart';
+import 'activity.dart' show ActivityScreen;
+import 'record_screen.dart' show RoutePainter;
+import '../maps/map_view.dart' show RouteMap;
+import '../gpx.dart' show parseGpx;
+import '../gps_filter.dart' show TrackPoint;
+import '../effort.dart' show estimateEffort;
 import '../heart_rate.dart' show hr, applyHeartRate, activeKcal, hrProfile;
 import '../l10n.dart';
 import '../time_zone.dart';
@@ -295,22 +301,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     if (_finishing || rest.justClosed) return; // myös: palautuspalkki sulkeutui juuri sormen alta
     _finishing = true;
     try {
-      // Fiilis ensin ponnahdusikkunassa (Ohita jatkaa ilman; takaisin peruu lopetuksen eikä muuta mitään).
-      // Treeni valmis -ikkuna: yhteenveto, nostot ja fiilis; Raskas/Tahmea kysyy samassa ikkunassa liikkeet.
-      // Kesto lopetusnapautuksen hetkellä (ei vasta Tallenna-napautuksesta: ikkunassa voi viipyä).
+      // Treeni valmis (käyttäjä 20.11.): kello pysähtyy ja treeni tallentuu heti; fiilis kysytään yhteenvedon
+      // alareunassa (ennen erillinen ikkuna, sitten yhteenveto ja Sulje).
+      // Kesto lopetusnapautuksen hetkellä.
       final endSec = _live && _elapsed != null && !w.fixedTime ? DateTime.now().difference(w.started!).inSeconds : null;
-      if (w.feeling == null) {
-        final r = await showFinishSheet(
-          context,
-          w: w,
-          series: hr.peek(_hrKey)?.series,
-          // Sama ehto kuin tallennuksessa: yli 5 h (kello unohtunut päälle) ei näytetä kestona.
-          durationSec: endSec ?? w.durationSec,
-          heavyStep: true,
-        );
-        if (r == null || !mounted) return;
-        if (r.feeling != feelingSkipped) w.feeling = r.feeling;
-      }
       rest.stop(); // treeni valmis: ei palautusmuistutusta
       // Kellon tai käsin asetettu kesto voittaa ajastimen.
       // Tarkka kesto sekunteina (käyttäjä 16.11.: tallennetaan ja lasketaan tarkasta, vain yhteenvedot pyöristetään);
@@ -325,7 +319,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       if (s != null) applyHeartRate(w, s);
       await _save();
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SavedScreen(workout: w)));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SavedScreen(workout: w, fresh: true)));
     } finally {
       _finishing = false;
     }
@@ -1166,7 +1160,20 @@ class SavedScreen extends StatefulWidget {
 
   /// Aiempi treeni kalenterista tai listasta: otsikkona treenin nimi, alareunassa Muokkaa (ei Valmis / Uusi treeni).
   final bool history;
-  const SavedScreen({super.key, required this.workout, this.history = false});
+
+  /// Juuri lopetettu treeni (käyttäjä 20.11.): tiivis yhteenveto yhdelle ruudulle ja alareunassa "Miltä tuntui?"
+  /// kasvoina ja leveä Ohita; valinta vie etusivulle. Treeni on jo tallennettu.
+  final bool fresh;
+
+  /// Uusi liikunta: rasitus valitaan yhteenvedossa (esivalittu sykkeestä tai vauhdista).
+  final bool askIntensity;
+  const SavedScreen({
+    super.key,
+    required this.workout,
+    this.history = false,
+    this.fresh = false,
+    this.askIntensity = false,
+  });
   @override
   State<SavedScreen> createState() => _SavedScreenState();
 }
@@ -1204,9 +1211,33 @@ class _SavedScreenState extends State<SavedScreen> {
   Timer? _armTimer;
   Timer? _suggestTimer;
 
+  bool _showAllMoves = false, _closing = false;
+
+  /// Reitti tiedostosta (tallennus siirtää GPX:n omaan tiedostoonsa ja tyhjentää routeGpx:n).
+  List<List<TrackPoint>>? _route;
+
   @override
   void initState() {
     super.initState();
+    // Rasitus esivalittuna sykkeestä tai vauhdista ja tallennettuna heti (takaisin-painike ei hukkaa sitä).
+    if (widget.askIntensity && workout.intensity == null) {
+      final w = workout; // tallennettu versio (sama, jota yhteenveto näyttää)
+      final e = estimateEffort(
+        w,
+        series: w.hrSeries,
+        maxHr: hrProfile()?.maxHr(DateTime.now()),
+        durationSec: w.durationSec,
+      );
+      if (e != null) {
+        w.intensity = e.$1;
+        Future.microtask(_persist);
+      }
+    }
+    if (widget.fresh) {
+      store.readRoute(workout).then((g) {
+        if (g != null && mounted) setState(() => _route = parseGpx(g));
+      });
+    }
     // Oman liikkeen ehdotus kerran, treenin jälkeen (ei kesken treenin, käyttäjä 16.11.). Vain jos treenissä on
     // omia liikkeitä; ajastin perutaan, jos sivulta poistutaan ennen sitä.
     if (!widget.history && widget.workout.exercises.any((e) => settings.customExercises.contains(e.name))) {
@@ -1227,7 +1258,272 @@ class _SavedScreenState extends State<SavedScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => IgnorePointer(ignoring: !_armed, child: _buildBody(context));
+  Widget build(BuildContext context) =>
+      IgnorePointer(ignoring: !_armed, child: widget.fresh ? _buildFresh(context) : _buildBody(context));
+
+  /// Liikunnan oma sivu reitin korjaukseen; palatessa reitti ja luvut luetaan uudelleen.
+  Future<void> _fixRoute() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ActivityScreen(workout: workout.copy())));
+    if (!mounted) return;
+    final g = await store.readRoute(workout);
+    if (!mounted) return;
+    setState(() => _route = g == null ? null : parseGpx(g));
+  }
+
+  /// Fiilis tai Ohita yhteenvedon alareunasta: tallennus ja etusivulle. Salissa Raskas/Tahmea kysyy ensin liikkeet.
+  Future<void> _done(int? v) async {
+    if (_closing) return;
+    _closing = true;
+    try {
+      final w = workout;
+      if (v != null) {
+        if (w.activity == null && v <= 2 && w.exercises.any((e) => e.workSets.isNotEmpty)) {
+          final r = await showHeavySheet(context, w, v);
+          if (r == null || !mounted) return; // paneeli suljettiin: jäädään yhteenvetoon
+        }
+        w.feeling = v;
+      }
+      await _persist();
+      if (!mounted) return;
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    } finally {
+      _closing = false;
+    }
+  }
+
+  /// Tiivis yhteenveto juuri lopetetulle treenille (mockup 20.11.): luvut ruutuina, reitti, liikkeet lyhyesti,
+  /// matala sykekäyrä ja kellon tiedot; alareunassa fiilis.
+  Widget _buildFresh(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final w = workout;
+    final c = compareSession(w, store.workouts, settings.program);
+    final sets = w.exercises.fold(0, (a, e) => a + e.workSets.length);
+    final sport = sportOf(w.activity);
+    final gym = w.activity == null;
+    final active = activeKcal(w, hrProfile());
+    final tiles = <(String, String, bool)>[
+      if (w.seconds != null)
+        (fmtDurationSec(w.seconds!), t('kesto'), false)
+      else if (w.minutes != null)
+        (fmtDuration(w.minutes!), t('kesto'), false),
+      if (gym) ...[
+        if (sets > 0) ('$sets', sets == 1 ? t('sarja') : t('sarjaa'), false),
+        if (c.volume > 0) ('${thousands(c.volume.round())} kg', t('volyymi'), false),
+      ] else ...[
+        if (w.distanceKm != null) ('${fmtNum((w.distanceKm! * 100).round() / 100)} km', t('matka'), false),
+        // Pyöräily ym.: keskinopeus (km/h) vauhdin sijaan, kuten liikuntasivulla.
+        if (speedSports.contains(w.activity) && w.distanceKm != null && (w.durationSec ?? 0) > 0)
+          ('${fmtNum(((w.distanceKm! / (w.durationSec! / 3600)) * 10).round() / 10)} km/h', t('keskinopeus'), false)
+        else if (w.pace != null)
+          (w.pace!, t('vauhti'), false),
+      ],
+      if (w.hrAvg != null) ('❤ ${w.hrAvg}', t('syke ka.'), false),
+      if (w.kcal != null) ('🔥 ${active ?? w.kcal}', active != null ? t('aktiiviset kcal') : t('kcal'), false),
+      if (w.steps != null) (thousands(w.steps!), t('askelta'), false),
+      if (c.prs > 0) ('🏆 ${c.prs}', c.prs == 1 ? t('ennätys') : t('ennätystä'), true),
+    ];
+    Widget tile((String, String, bool) x) => Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      decoration: BoxDecoration(
+        color: x.$3 ? Sami.yellow.withValues(alpha: .18) : cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(x.$1, maxLines: 1, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(x.$2, maxLines: 1, style: sub),
+          ),
+        ],
+      ),
+    );
+    final route = _route;
+    final moves = w.exercises.where((e) => e.workSets.isNotEmpty).toList();
+    final shown = _showAllMoves ? moves : moves.take(3).toList();
+    final name = gym ? trName(w.title) : sportName(w.activity!);
+    return Scaffold(
+      appBar: AppBar(
+        title: BarTitle(Text(t('Treeni valmis!'))),
+        bottom: const PreferredSize(preferredSize: Size.fromHeight(4), child: SamiBand(height: 4, pattern: false)),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+          child: Column(
+            key: const ValueKey('savedFeeling'),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t('Miltä tuntui?'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              FaceRow(value: w.feeling, onTap: _done),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                key: const ValueKey('savedSkip'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  side: BorderSide(color: cs.outline, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => _done(null),
+                child: Text(t('Ohita'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: (gym ? Sami.red : Sami.green).withValues(alpha: .15),
+                  shape: BoxShape.circle,
+                ),
+                child: gym
+                    ? Icon(Icons.fitness_center_rounded, size: 22, color: redText(context))
+                    : Text(sport?.icon ?? '🏃', style: const TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  t('Giitu! {0} tehty', [name]),
+                  maxLines: 2,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(shortDate(w.date), style: sub),
+            ],
+          ),
+          if (route != null && route.any((s) => s.length >= 2)) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              key: const ValueKey('savedRoute'),
+              height: 150,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: RouteMap(
+                  segments: route,
+                  fallback: Container(
+                    color: cs.surfaceContainer,
+                    child: CustomPaint(painter: RoutePainter(route, cs.primary), child: const SizedBox.expand()),
+                  ),
+                ),
+              ),
+            ),
+            // Reitin korjaus poluille, kyydin poisto tai reitin poisto liikunnan omalla sivulla (käyttäjä 20.11.:
+            // ennen erillinen tarkistussivu ennen yhteenvetoa).
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                key: const ValueKey('savedFixRoute'),
+                onPressed: _fixRoute,
+                icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
+                label: Text(t('Korjaa reittiä')),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          // Kolme ruutua rivissä.
+          for (var i = 0; i < tiles.length; i += 3) ...[
+            if (i > 0) const SizedBox(height: 6),
+            Row(
+              children: [
+                for (var j = i; j < i + 3; j++) ...[
+                  if (j > i) const SizedBox(width: 6),
+                  Expanded(child: j < tiles.length ? tile(tiles[j]) : const SizedBox()),
+                ],
+              ],
+            ),
+          ],
+          if (gym && moves.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              key: const ValueKey('savedExercises'),
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+              decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final e in shown)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${e.sets.any((x) => x.pr) ? '🏆 ' : ''}${exerciseLabel(e.name)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            e.workSets.length == 1 ? t('1 sarja') : t('{0} sarjaa', [e.workSets.length]),
+                            style: sub,
+                          ),
+                          const SizedBox(width: 6),
+                          _SetPill(
+                            exercise: e.name,
+                            set: e.workSets.reduce((a, b) => b.kg > a.kg || (b.kg == a.kg && b.reps > a.reps) ? b : a),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (moves.length > 3)
+                    TextButton(
+                      key: const ValueKey('savedAllMoves'),
+                      onPressed: () => setState(() => _showAllMoves = !_showAllMoves),
+                      child: Text(_showAllMoves ? t('Näytä vähemmän') : t('+{0} liikettä', [moves.length - 3])),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          HrDetails(w, compact: true),
+          if (widget.askIntensity) ...[
+            const SizedBox(height: 10),
+            Text(t('Rasitus'), style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            EffortScale(
+              value: w.intensity,
+              onChanged: (v) {
+                setState(() => w.intensity = v);
+                _persist();
+              },
+            ),
+          ],
+          // Kellon tiedot: odotus ja lisäys (valinta tiedoittain) samalla sivulla.
+          if (HcUpdateRow.wanted(w))
+            HcUpdateRow(
+              key: ValueKey('hc_${w.date}_${w.session}'),
+              w: w,
+              waiting: true,
+              onApplied: () async {
+                await _persist();
+                if (mounted) setState(() {});
+              },
+            ),
+        ],
+      ),
+    );
+  }
 
   /// Kolme tahmeaa tai raskasta treeniä peräkkäin -> lepovinkki (pois päältä vinkkiasetuksesta).
   String? _tiredTip() {

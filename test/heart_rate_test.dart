@@ -733,9 +733,8 @@ void main() {
     // Kaloriarvio näkyy vasta, kun sitä on kertynyt (alussa 0 kcal piilossa).
     expect(find.byKey(const ValueKey('hrStripKcal')), findsNothing);
     // Lopetus: fiilis ohitetaan, syke treeniin.
+    // Lopetus tallentaa heti (käyttäjä 20.11.: fiilis kysytään vasta yhteenvedossa).
     await tester.tap(find.textContaining('Lopeta treeni'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ohita'));
     for (var i = 0; i < 3; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
@@ -799,9 +798,8 @@ void main() {
       ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(100, 5)]));
     await tester.pumpWidget(MaterialApp(home: WorkoutScreen(workout: w)));
     await tester.pump();
+    // Lopetus tallentaa heti (käyttäjä 20.11.: fiilis kysytään vasta yhteenvedossa).
     await tester.tap(find.textContaining('Lopeta treeni'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ohita'));
     for (var i = 0; i < 3; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }

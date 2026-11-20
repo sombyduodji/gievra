@@ -119,3 +119,6 @@ bool implausibleSpeed(String? sport, double km, int seconds) {
   if (km <= 0 || seconds <= 0) return false;
   return km / (seconds / 3600) > (_maxKmh[sport] ?? 120);
 }
+
+/// Lajit, joissa nopeus (km/h) kertoo enemmän kuin vauhti (min/km).
+const speedSports = {'Pyöräily', 'Luistelu', 'Laskettelu', 'Melonta', 'Soutu'};

@@ -13,6 +13,18 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.2.1',
+    Icons.flag_outlined,
+    'Yhteenveto heti treenin jälkeen',
+    'Treeni valmis! ja GPS-liikunnan Lopeta ja tallenna tallentavat heti ja avaavat tiiviin yhteenvedon. Valitse fiilis tai Ohita, niin olet etusivulla. Reittiä voi korjata yhteenvedosta.',
+  ),
+  NewFeature(
+    '0.7.2.1',
+    Icons.watch_outlined,
+    'Kellon tiedot yhteenvedossa',
+    'Yhteenveto odottaa kellon tietoja ja kertoo, kun sykettä, kaloreita tai askeleita on tullut Health Connectiin. Napauta ja valitse, mitkä lisätään.',
+  ),
+  NewFeature(
     '0.7.2',
     Icons.monitor_heart_outlined,
     'Yöarvot unen lähteestä',

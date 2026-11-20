@@ -120,8 +120,9 @@ void main() {
     expect(settings.program!.notes.where((n) => n.startsWith('Viikon sarjamäärä')), isEmpty);
   });
 
-  testWidgets('Pikaohjelma tallennetulla keskitasolla 3 × 60 min: treeni pitenee, jotta viikon suositus täyttyy',
-      (tester) async {
+  testWidgets('Pikaohjelma tallennetulla keskitasolla 3 × 60 min: treeni pitenee, jotta viikon suositus täyttyy', (
+    tester,
+  ) async {
     settings.style = TrainingStyle(goal: 'lihaskasvu', experience: 'keski', days: 3, minutes: 60);
     await open(tester);
     await tapText(tester, 'Pikaohjelma');

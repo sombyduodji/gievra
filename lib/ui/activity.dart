@@ -432,7 +432,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   /// Lajit, joissa kilometrien alle nopeus (km/h) vauhdin (min/km) sijaan.
-  static const _speedSports = {'Pyöräily', 'Luistelu', 'Laskettelu', 'Melonta', 'Soutu'};
+  static const _speedSports = speedSports;
 
   // Korkeusprofiili ladatuista korkeustiedoista (lasketaan kerran reittiä kohti, taustalla).
   List<List<TrackPoint>>? _profRoute;
@@ -784,6 +784,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (_canSnap) await _applySnap(settings.snapFor(sport), remember: false);
     // Reitti luonnokseen heti: tallentimen tiedostot on jo poistettu, joten 3 s:n odotus voisi hukata sen.
     await _saveDraft();
+    // Lopeta ja tallenna (käyttäjä 20.11.): suoraan yhteenvetoon (fiilis, rasitus, reitin korjaus sieltä), ei erillistä
+    // tarkistussivua ja Treeni valmis -painiketta. Jos reitillä näyttää olevan kyyti (auto, bussi), sivu jää
+    // näkyviin, jotta sen voi poistaa ennen tallennusta.
+    if (mounted && _rides.isEmpty) await _save();
   }
 
   bool get _timed => sportOf(w.activity)?.distance ?? false;
@@ -891,6 +895,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
     // tallentuu tarkkana, esim. 0:16).
     // Käynnissä: kellon aika; pysäytetty (Lopeta): tallennettu tarkka aika.
     final doneAt = DateTime.now(); // kello pysähtyy tähän, vaikka kysymyksiin vastaaminen kestäisi
+    final wasSaved = _isSaved; // vanhan liikunnan muokkaus
+    final wasLive = _live; // uusi, tänään tehtävä (tallennuksen jälkeen _live on false)
     final swSecs = _swElapsed > Duration.zero ? _swElapsedAt(doneAt).inSeconds : (_swDone ? (w.seconds ?? 0) : 0);
     if (_canStopwatch && _useWatch && !_isSaved && swSecs > 0 && swSecs < 60) {
       final keep = await showDialog<bool>(
@@ -939,8 +945,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
       if (keep != true || !mounted) return;
       _speedOk = true;
     }
+    // Mitattu nyt (GPS-reitti, sykevyö tai ajanotto; käyttäjä 20.11.): tallennus heti ja tiivis yhteenveto, jonka
+    // alareunassa fiilis ja rasitus. Muuten (Health Connect, itse syötetty, muokkaus) fiilis ponnahdusikkunassa ja
+    // suoraan takaisin.
+    final measuredNow =
+        !wasSaved &&
+        w.hcId == null &&
+        w.healthSource == null &&
+        (w.routeGpx != null ||
+            (AwayActivity.mayUse(this) ? hr.peek(_hrKey) : null) != null ||
+            _gpsHr != null ||
+            swSecs > 0);
     // Fiilis ponnahdusikkunassa ensin (Ohita jatkaa; takaisin peruu lopetuksen ja ajanotto jatkuu).
-    if (w.feeling == null && !_isSaved) {
+    if (w.feeling == null && !_isSaved && !measuredNow) {
       // Uudessa liikunnassa rasitus samassa kyselyssä (valinnainen); fiiliksen napautus päättää kyselyn.
       final r = await showFinishSheet(
         context,
@@ -970,7 +987,20 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _draftTick?.cancel();
     await ActivityDraft.clear();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SavedScreen(workout: w)));
+    // Yhteenveto vain, kun liikunta mitattiin nyt (GPS-reitti, sykevyö tai ajanotto). Health Connectista lisätty,
+    // itse syötetty tai muokattu liikunta (käyttäjä 20.11.): tiedot nähtiin jo tällä sivulla, joten ei erillistä
+    // yhteenvetoa ja sen Sulje-painiketta; takaisin edelliseen näkymään ja lyhyt ilmoitus.
+    if (!measuredNow) {
+      final m = ScaffoldMessenger.of(context);
+      Navigator.of(context).maybePop();
+      m.showSnackBar(SnackBar(persist: false, content: Text(t('Tallennettu: {0}', [sportName(w.activity!)]))));
+      return;
+    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => SavedScreen(workout: w, fresh: true, askIntensity: wasLive),
+      ),
+    );
   }
 
   @override

@@ -49,7 +49,7 @@ class HcUpdateRow extends StatefulWidget {
     }
     final (start, end, _) = workoutWindow(w);
     final all = await (fetch ?? HealthConnect.candidates)(start, end);
-    final c = rankCandidates(w, all).where((c) => c.session || !c.stepsWindow).firstOrNull;
+    final c = rankCandidates(w, all, others: store.workouts).where((c) => c.session || !c.stepsWindow).firstOrNull;
     if (c == null) return null;
     final ch = hcChanges(w, c);
     return ch.isEmpty ? null : (c, ch);

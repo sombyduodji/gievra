@@ -156,8 +156,16 @@ List<(String?, int)> stepOptions(HealthCandidate c) {
 /// Ehdokkaat parhaasta huonoimpaan: päällekkäisyys treenin kanssa (osuus pidemmästä), muuten alkuaikojen ero.
 /// Mukana vain "riittävän lähellä" olevat: aikavälit menevät päällekkäin tai alkavat enintään 45 min erossa.
 /// Ilman alkuaikaa (koko päivä) verrataan kestoon. Pelkkä sykedata tulee kellon harjoitusten jälkeen.
-List<HealthCandidate> rankCandidates(Workout w, List<HealthCandidate> all) {
+/// [others]: muut tallennetut treenit. Lähellä oleva, mutta ei päällekkäinen harjoitus jätetään pois, jos se menee
+/// päällekkäin jonkin toisen treenin kanssa: se kuuluu sille (salitreeni ja heti perään kävely kotiin: kävelylle
+/// tarjottiin salitreenin kellon tietoja, kuvakierros 20.11.).
+List<HealthCandidate> rankCandidates(Workout w, List<HealthCandidate> all, {List<Workout> others = const []}) {
   final (start, end, timed) = workoutWindow(w);
+  bool otherOwns(HealthCandidate c) => others.any((o) {
+    if (identical(o, w) || o.started == null || o.started == w.started) return false;
+    final (os, oe, _) = workoutWindow(o);
+    return c.start.isBefore(oe) && c.end.isAfter(os);
+  });
   final dur = timed ? end.difference(start) : Duration(seconds: w.seconds ?? (w.minutes ?? 60) * 60);
   double score(HealthCandidate c) {
     if (!c.hasData) return double.negativeInfinity;
@@ -172,6 +180,7 @@ List<HealthCandidate> rankCandidates(Workout w, List<HealthCandidate> all) {
       final longer = c.duration > dur ? c.duration : dur;
       return 1 + overlap.inSeconds / (longer.inSeconds == 0 ? 1 : longer.inSeconds) + bonus;
     }
+    if (otherOwns(c)) return double.negativeInfinity;
     final gap = c.start.difference(start).inSeconds.abs();
     return gap <= 45 * 60 ? 1 - gap / 2700 + bonus : double.negativeInfinity;
   }
