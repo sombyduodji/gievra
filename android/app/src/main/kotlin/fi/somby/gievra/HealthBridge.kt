@@ -574,11 +574,16 @@ object HealthBridge {
                     null
                 }
                 val pkg = r.metadata.dataOrigin.packageName
+                // Univaiheet tyypeittäin (käyttäjä 23.11.: näytetään unen paneelissa; ei vaikuta unen laskentaan).
+                val stageMs = r.stages.groupBy { it.stage }.map { (k, v) ->
+                    k.toString() to v.sumOf { Duration.between(it.startTime, it.endTime).toMillis() }
+                }.toMap()
                 out.add(
                     mapOf(
                         "start" to r.startTime.toEpochMilli(),
                         "end" to r.endTime.toEpochMilli(),
                         "awakeMs" to awake,
+                        "stageMs" to stageMs,
                         "stages" to r.stages.isNotEmpty(),
                         "app" to appLabel(context, pkg),
                         "lowHr" to low,

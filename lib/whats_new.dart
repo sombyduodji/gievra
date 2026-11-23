@@ -13,6 +13,18 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.4',
+    Icons.bedtime_outlined,
+    'Univaiheet',
+    'Napauta unta (Palautuminen-ruutu, Uni-kortin viime yö tai kalenterin päivä): näet yön kevyen, syvän ja REM-unen sekä hereillä olon Health Connectista.',
+  ),
+  NewFeature(
+    '0.7.4',
+    Icons.insights,
+    'Uni ja palautuminen tilastoissa',
+    'Uusi välilehti Tilastoissa, kun Uni- tai Palautuminen-kortti on käytössä: jakson uni, nukkumaanmeno ja herätys, säännöllisyys, yöt pylväinä, univaiheet keskimäärin sekä yösyke ja HRV käyrinä.',
+  ),
+  NewFeature(
     '0.7.3',
     Icons.monitor_heart_outlined,
     'Kaikki treenit Health Connectista',

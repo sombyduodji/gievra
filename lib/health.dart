@@ -363,6 +363,10 @@ class HealthConnect {
           DateTime.fromMillisecondsSinceEpoch((m['start'] as num).toInt()),
           DateTime.fromMillisecondsSinceEpoch((m['end'] as num).toInt()),
           awake: Duration(milliseconds: (m['awakeMs'] as num? ?? 0).toInt()),
+          stageMs: {
+            for (final e in ((m['stageMs'] as Map?) ?? const {}).entries)
+              int.tryParse('${e.key}') ?? 0: (e.value as num).toInt(),
+          },
           app: HealthCandidate.appName(m['app'] as String?),
           lowHr: (m['lowHr'] as num?)?.toInt(),
         ),

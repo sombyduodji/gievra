@@ -46,6 +46,7 @@ import 'recovery_card.dart' show RecoveryHelpSection;
 import 'home_extras_ui.dart';
 import '../home_extras.dart' show nightHr;
 import '../sleep.dart' show SleepNight, sleepData;
+import 'sleep_stages_ui.dart' show showSleepStagesSheet;
 import 'shell.dart' show MainShell;
 import 'body_screen.dart';
 import 'bug_report.dart';
@@ -2947,8 +2948,9 @@ class _DaySleepRowState extends State<_DaySleepRow> {
                   if (canChange && bigText) change,
                 ],
               ),
-              trailing: canChange && !bigText ? change : null,
-              onTap: canChange ? () => _choose(alts) : null,
+              trailing: canChange && !bigText ? change : Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+              // Napautus avaa yön univaiheet (käyttäjä 23.11.: myös aiemmat yöt kalenterista); lähde Vaihda lähde -painikkeesta.
+              onTap: () => showSleepStagesSheet(context, n),
             ),
           ),
         );

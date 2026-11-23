@@ -13,7 +13,8 @@ import '../sports.dart' show sportOf;
 import '../theme.dart';
 import 'program_view.dart' show WeeklyLoadCard;
 import 'running_screen.dart';
-import 'recovery_stats.dart' show RecoveryTrendsSection;
+import 'recovery_stats.dart' show recoveryStatsVisible;
+import 'sleep_stats_ui.dart' show SleepRecoveryStatsView;
 import 'widgets.dart';
 import 'steps_ui.dart';
 import 'stats_tabs.dart';
@@ -23,8 +24,8 @@ import '../l10n.dart';
 class StatsScreen extends StatefulWidget {
   final String? kind;
 
-  /// Avautuva välilehti: 'steps' (Askeleet, kun päivän askeleet ovat päällä), 'progress', 'records' tai
-  /// 'calendar'; muuten Viikko (Kehitys, kun [kind] on annettu).
+  /// Avautuva välilehti: 'steps' (Askeleet, kun päivän askeleet ovat päällä), 'sleep' (Uni ja palautuminen),
+  /// 'progress', 'records' tai 'calendar'; muuten Viikko (Kehitys, kun [kind] on annettu).
   final String? tab;
   const StatsScreen({super.key, this.kind, this.tab});
   @override
@@ -560,8 +561,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
         ],
         if (settings.bodyTracker) BodyWeightSection(from: _span == 'month' && !_custom ? addDays(b, -84) : a, to: b),
-        // Palautumisen ja unen kehitys (käyttäjä 18.11.): vain, kun Palautuminen, Uni tai yöarvot on käytössä.
-        const RecoveryTrendsSection(),
+        // Palautumisen ja unen kehitys siirtyi omalle Uni ja palautuminen -välilehdelle (käyttäjä 23.11.).
         if (tips.isNotEmpty) ...[
           SectionLabel(t('Huomiot ja ehdotukset')),
           for (final tip in tips)
@@ -648,15 +648,23 @@ class _StatsScreenState extends State<StatsScreen> {
     // Välilehdet (ulkoasun kohennus 16.11.): Viikko, Kehitys (jakso, vertailu, voimakehitys, fiilis), Ennätykset,
     // Kalenteri ja Askeleet (kun päivän askeleet ovat päällä; sama jakso kuin Kehityksessä).
     final steps = stepsTabAvailable;
+    final sleepTab = recoveryStatsVisible();
     final tabs = <(String, Widget)>[
       (t('Viikko'), const WeekStatsTab()),
       (t('Kehitys'), workoutsBody),
       (t('Ennätykset'), const RecordsTab()),
       (t('Kalenteri'), const CalendarTab()),
       if (steps) (t('Askeleet'), StepsStatsView(from: a, to: b, prevFrom: pa, prevTo: pb, header: periodControls)),
+      // Uni ja palautuminen (käyttäjä 23.11.): vain, kun Uni-, Palautuminen- tai yöarvokortti on käytössä.
+      if (sleepTab)
+        (
+          t('Uni ja palautuminen'),
+          SleepRecoveryStatsView(from: a, to: b, prevFrom: pa, prevTo: pb, header: periodControls),
+        ),
     ];
     final initial = switch (widget.tab) {
       'steps' when steps => 4,
+      'sleep' when sleepTab => tabs.length - 1,
       'progress' => 1,
       'records' => 2,
       'calendar' => 3,

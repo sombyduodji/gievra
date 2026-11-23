@@ -10,6 +10,7 @@ import '../session_compare.dart' show fmtDuration;
 import '../sleep.dart';
 import '../theme.dart';
 import 'home_extras_ui.dart' show NightHrData, NightMetricsCard, hrvHint, nightHrNights;
+import 'sleep_stages_ui.dart';
 import 'tile_trend.dart';
 
 // Palautuminen-kortti (käyttäjä 18.11., vaihtoehto A): ruudut, joiden vasen reuna on saamen vihreä, keltainen tai
@@ -462,6 +463,9 @@ Future<void> showTileAdvice(BuildContext context, RecTile tile, int reds, DateTi
               ),
               const SizedBox(height: 4),
               Text(tile.sub.isEmpty ? tile.value : '${tile.value} · ${tile.sub}', style: sub),
+              // Univaiheet viime yöltä (käyttäjä 23.11.), vain näyttö.
+              if (tile.key == 'sleep' && sleepStats(sleepData.nights, dateOnly(now)).last != null)
+                SleepStagesBox(night: sleepStats(sleepData.nights, dateOnly(now)).last!),
               TileTrend(tileKey: tile.key, state: tile.state, now: now),
               if (warn) ...[
                 if (physio && reds >= 2 && tile.state == TileState.red)

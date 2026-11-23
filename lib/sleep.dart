@@ -42,7 +42,89 @@ class SleepSession {
   final Duration awake;
   final String app;
   final int? lowHr;
-  const SleepSession(this.start, this.end, {this.awake = Duration.zero, this.app = '', this.lowHr});
+
+  /// Univaiheet Health Connectin tyyppinumeroittain (millisekunteina), ks. [SleepStages].
+  final Map<int, int> stageMs;
+  const SleepSession(
+    this.start,
+    this.end, {
+    this.awake = Duration.zero,
+    this.app = '',
+    this.lowHr,
+    this.stageMs = const {},
+  });
+}
+
+/// Yön univaiheet Health Connectista (käyttäjä 23.11.): vain näytettäväksi, unen määrä lasketaan kuten ennenkin
+/// (yö miinus hereillä). Tyyppinumerot: SleepSessionRecord.STAGE_TYPE_* (0 tuntematon, 1 hereillä, 2 nukkuu,
+/// 3 poissa sängystä, 4 kevyt, 5 syvä, 6 REM, 7 hereillä sängyssä).
+class SleepStages {
+  final Duration light, deep, rem, sleeping, awake, outOfBed, unknown, uncovered, span;
+  const SleepStages({
+    this.light = Duration.zero,
+    this.deep = Duration.zero,
+    this.rem = Duration.zero,
+    this.sleeping = Duration.zero,
+    this.awake = Duration.zero,
+    this.outOfBed = Duration.zero,
+    this.unknown = Duration.zero,
+    this.uncovered = Duration.zero,
+    this.span = Duration.zero,
+  });
+
+  /// Univaiheet yhteensä (kevyt, syvä, REM ja nukkuu ilman vaihetta), kuten unisovellukset laskevat kokonaisunen.
+  Duration get asleep => light + deep + rem + sleeping;
+  bool get isEmpty => asleep == Duration.zero && awake == Duration.zero && outOfBed == Duration.zero;
+
+  /// Yön jaksojen vaiheet yhteen: [sessions] = saman sovelluksen jaksot, jotka kuuluvat yöhön.
+  factory SleepStages.of(Iterable<SleepSession> sessions) {
+    final ms = <int, int>{};
+    var span = 0, staged = 0;
+    for (final s in sessions) {
+      span += s.end.difference(s.start).inMilliseconds;
+      for (final e in s.stageMs.entries) {
+        ms[e.key] = (ms[e.key] ?? 0) + e.value;
+        staged += e.value;
+      }
+    }
+    Duration d(List<int> types) => Duration(milliseconds: types.fold(0, (a, k) => a + (ms[k] ?? 0)));
+    return SleepStages(
+      light: d([4]),
+      deep: d([5]),
+      rem: d([6]),
+      sleeping: d([2]),
+      awake: d([1, 7]),
+      outOfBed: d([3]),
+      unknown: d([0]),
+      uncovered: Duration(milliseconds: math.max(0, span - staged)),
+      span: Duration(milliseconds: span),
+    );
+  }
+}
+
+/// Päällekkäiset jaksot (sama yö kahteen kertaan, esim. uudelleensynkronointi) vain kerran: pisin ensin, sen kanssa
+/// päällekkäiset pois.
+List<SleepSession> distinctSessions(Iterable<SleepSession> ss) {
+  final byLen = [...ss]..sort((a, b) => b.end.difference(b.start).compareTo(a.end.difference(a.start)));
+  final kept = <SleepSession>[];
+  for (final s in byLen) {
+    if (kept.every((k) => !s.start.isBefore(k.end) || !s.end.isAfter(k.start))) kept.add(s);
+  }
+  return kept;
+}
+
+/// Yön [n] univaiheet Health Connectista (sama sovellus ja yön aika). Null, jos jaksoja ei löydy.
+Future<SleepStages?> nightStages(
+  SleepNight n, {
+  Future<List<SleepSession>> Function(DateTime, DateTime)? source,
+}) async {
+  final from = n.bed.subtract(const Duration(minutes: 1)), to = n.wake.add(const Duration(minutes: 1));
+  final got = await (source ?? sleepData.debugSource ?? HealthConnect.sleepSessions)(from, to);
+  final mine = [
+    for (final s in got)
+      if ((n.app.isEmpty || s.app == n.app) && !s.start.isBefore(from) && !s.end.isAfter(to)) s,
+  ];
+  return mine.isEmpty ? null : SleepStages.of(distinctSessions(mine));
 }
 
 /// Yksi yö: [day] = herätyspäivä.
@@ -931,3 +1013,73 @@ Map<DateTime, NightMetrics> demoMetrics(DateTime now) {
 }
 
 final sleepData = SleepData();
+
+/// Tilastot → Uni ja palautuminen (käyttäjä 23.11.): jakson yöt [from, to) (herätyspäivän mukaan).
+class SleepPeriod {
+  final List<SleepNight> nights; // vanhin ensin
+  final Duration? avg;
+  final int? bedMin, wakeMin; // keskimääräinen nukkumaanmeno ja herätys minuutteina keskiyöstä (0–1439)
+  final int? spread; // säännöllisyys: nukkumaanmenon ja herätyksen keskihajonnan keskiarvo, min (≥ 4 yötä)
+  final int belowGoal;
+  final SleepNight? longest, shortest;
+  const SleepPeriod({
+    this.nights = const [],
+    this.avg,
+    this.bedMin,
+    this.wakeMin,
+    this.spread,
+    this.belowGoal = 0,
+    this.longest,
+    this.shortest,
+  });
+}
+
+SleepPeriod sleepPeriod(Map<DateTime, SleepNight> all, DateTime from, DateTime to, {Duration goal = defaultSleepGoal}) {
+  final ns = [
+    for (final n in all.values)
+      if (!n.day.isBefore(dateOnly(from)) && n.day.isBefore(dateOnly(to))) n,
+  ]..sort((a, b) => a.day.compareTo(b.day));
+  if (ns.isEmpty) return const SleepPeriod();
+  // Kellonajat klo 12:sta, jotta keskiyö ei katkaise (23.30 ja 0.30 ovat tunnin päässä).
+  int fromNoon(DateTime d) => ((d.hour - 12) % 24) * 60 + d.minute;
+  int mean(List<int> x) => (x.reduce((a, b) => a + b) / x.length).round();
+  int clock(int noonMin) => (noonMin + 12 * 60) % (24 * 60);
+  final beds = [for (final n in ns) fromNoon(n.bed)], wakes = [for (final n in ns) fromNoon(n.wake)];
+  final sb = _spread(beds), sw = _spread(wakes);
+  final byLen = [...ns]..sort((a, b) => a.asleep.compareTo(b.asleep));
+  return SleepPeriod(
+    nights: ns,
+    avg: Duration(minutes: mean([for (final n in ns) n.asleep.inMinutes])),
+    bedMin: clock(mean(beds)),
+    wakeMin: clock(mean(wakes)),
+    spread: sb == null || sw == null ? null : (sb + sw) ~/ 2,
+    belowGoal: ns.where((n) => n.asleep < goal).length,
+    longest: byLen.last,
+    shortest: byLen.first,
+  );
+}
+
+/// Jakson öiden univaiheet yhdellä Health Connect -haulla: yhteensä ja monellako yöllä vaiheita oli.
+Future<(SleepStages, int)> periodStages(
+  List<SleepNight> nights, {
+  Future<List<SleepSession>> Function(DateTime, DateTime)? source,
+}) async {
+  if (nights.isEmpty) return (const SleepStages(), 0);
+  const pad = Duration(minutes: 1);
+  final from = nights.map((n) => n.bed).reduce((a, b) => a.isBefore(b) ? a : b).subtract(pad);
+  final to = nights.map((n) => n.wake).reduce((a, b) => a.isAfter(b) ? a : b).add(pad);
+  final got = await (source ?? sleepData.debugSource ?? HealthConnect.sleepSessions)(from, to);
+  final mine = <SleepSession>[];
+  var withStages = 0;
+  for (final n in nights) {
+    final a = n.bed.subtract(pad), b = n.wake.add(pad);
+    final ss = [
+      for (final s in got)
+        if ((n.app.isEmpty || s.app == n.app) && !s.start.isBefore(a) && !s.end.isAfter(b) && s.stageMs.isNotEmpty) s,
+    ];
+    if (ss.isEmpty) continue;
+    withStages++;
+    mine.addAll(distinctSessions(ss));
+  }
+  return (SleepStages.of(mine), withStages);
+}

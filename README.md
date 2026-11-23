@@ -132,7 +132,12 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - **Uni** (valinnainen, oletus pois): viime yö, 7 yön keskiarvo, säännöllisyys ja yöt pylväinä omaan tavalliseen
   uneen verrattuna; `uni.md`-tiedostoon ja varmuuskopioihin. Kahden unimittarin (esim. sormus ja kello) öistä
   kysytään kerran oletuslähde; yksittäisen yön lähteen voi vaihtaa kalenterin päivästä. Yösyke ja HRV vain unen lähteestä
-  (alin syke 5 minuutin jaksosta). Tilastoissa yösykkeen, HRV:n ja unen kehitys 12 viikolta
+  (alin syke 5 minuutin jaksosta). Unen napautus (Palautuminen-ruutu, viime yö, kalenterin päivä) näyttää yön
+  univaiheet Health Connectista (kevyt, syvä, REM, hereillä; vain näyttö, ei tallenneta)
+- **Tilastot → Uni ja palautuminen** (näkyy, kun Uni- tai Palautuminen-kortti on käytössä): valitun jakson (1, 3, 6 kk
+  tai oma) uni keskimäärin edelliseen jaksoon verrattuna, nukkumaanmeno ja herätys, säännöllisyys, tavoitteen alitukset,
+  yöt pylväinä tuntiviivoin ja unitavoitteella (napautus: yön vaiheet), univaiheet keskimäärin, pisin ja lyhin yö,
+  yösyke ja yöarvot jakson käyrinä sekä 12 viikon kehitys
 - **Sali, Liikunta tai Molemmat:** valitse aloituksessa (tai asetuksista), mitä treenaat. Molemmissa
   etusivun Tänään-kortissa ovat Sali ja Liikunta rinnakkain (useammin tehty leveämpänä, Liikunta-puolella viimeksi tehdyn
   lajin kuvake); kestävyysnäkymässä lenkin lisäys yhdellä napautuksella, viikon kilometrit, vauhti ja syke

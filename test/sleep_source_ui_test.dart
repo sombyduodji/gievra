@@ -130,7 +130,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'ennen: ListTilen trailing vei koko rivin leveyden');
     final row = find.byKey(const ValueKey('daySleepRow'));
-    expect(tester.widget<ListTile>(row).trailing, isNull);
+    expect(tester.widget<ListTile>(row).trailing, isNot(isA<TextButton>()), reason: 'vain pieni nuoli');
     expect(find.descendant(of: row, matching: find.byKey(const ValueKey('daySleepChange'))), findsOneWidget);
+  });
+
+  testWidgets('kalenterin päivä: aiemman yön napautus näyttää sen yön univaiheet (käyttäjä 23.11.)', (tester) async {
+    final d = addDays(t0, -3);
+    final bed = DateTime(d.year, d.month, d.day - 1, 23), wake = DateTime(d.year, d.month, d.day, 6);
+    sleepData.nights[d] = SleepNight(d, bed, wake, const Duration(minutes: 390), app: 'Oura');
+    const min = 60 * 1000;
+    sleepData.debugSource = (a, b) async => [
+      SleepSession(bed, wake, app: 'Oura', stageMs: {4: 200 * min, 5: 70 * min, 6: 120 * min, 1: 30 * min}),
+    ];
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(onPressed: () => showDay(context, d), child: const Text('avaa')),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('avaa'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('daySleepChange')), findsNothing, reason: 'yksi lähde');
+    await tester.tap(find.byKey(const ValueKey('daySleepRow')));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('sleepStages')), findsOneWidget);
+    expect(find.text('2 h 00 min · 31 %'), findsOneWidget); // REM 120 / 390
+    expect(find.text('Sängyssä'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

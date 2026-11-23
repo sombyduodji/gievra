@@ -15,6 +15,7 @@ import '../sleep.dart';
 import '../theme.dart';
 import '../session_compare.dart' show fmtDuration;
 import 'recovery_card.dart' show RecoveryCard;
+import 'sleep_stages_ui.dart' show showSleepStagesSheet;
 import 'start_panels.dart' show RingTile, showGymPanel;
 import 'widgets.dart' show fmtClock, shortDate, uiWeekdaysShort;
 
@@ -410,6 +411,7 @@ class SleepCard extends StatelessWidget {
                   Expanded(
                     child: RingTile(
                       key: const ValueKey('sleepRingLast'),
+                      onTap: () => showSleepStagesSheet(context, last),
                       v: last.asleep.inMinutes / ref.inMinutes,
                       color: durationColor(context, last.asleep, ref),
                       big: hm(last.asleep),

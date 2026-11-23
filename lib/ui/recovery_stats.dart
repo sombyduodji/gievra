@@ -62,7 +62,8 @@ List<double?> weeklyAverages(DaySeries d, DateTime today, {int weeks = 12}) {
 bool recoveryStatsVisible() =>
     settings.homeCardOn('recovery') || settings.homeCardOn('sleep') || settings.homeCardOn('night');
 
-List<TrendSeries> recoverySeries() {
+/// Kaikki palautumisen sarjat (myös alle viikon mittaiset; jakson keskiarvoihin).
+List<TrendSeries> allRecoverySeries() {
   final out = <TrendSeries>[
     TrendSeries(
       'nighthr',
@@ -99,11 +100,14 @@ List<TrendSeries> recoverySeries() {
       ),
     );
   }
-  return [
-    for (final s in out)
-      if (s.data.length >= 7) s,
-  ];
+  return out;
 }
+
+/// 12 viikon kehitykseen: sarjat, joissa on vähintään viikon arvot.
+List<TrendSeries> recoverySeries() => [
+  for (final s in allRecoverySeries())
+    if (s.data.length >= 7) s,
+];
 
 class RecoveryTrendsSection extends StatelessWidget {
   const RecoveryTrendsSection({super.key});
@@ -187,7 +191,14 @@ class _TrendRow extends StatelessWidget {
               // Nimi vie vain tarvitsemansa tilan, muutos saa loput (käyttäjä 18.11.: "7 h 22 min ← 7 h 31 min"
               // rivittyi, koska nimi ja muutos jakoivat rivin puoliksi).
               Flexible(
-                child: Text(series.label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                flex: 2,
+                child: LayoutBuilder(
+                  builder: (context, c) => WordFitText(
+                    series.label,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    width: c.maxWidth,
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
               if (arrow != null)
