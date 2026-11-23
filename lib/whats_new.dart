@@ -13,6 +13,18 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.3',
+    Icons.monitor_heart_outlined,
+    'Kaikki treenit Health Connectista',
+    'Lisää → Tuonti, vienti ja varmuuskopio → Tuo Health Connectista tuo kerralla kellon tai muun sovelluksen harjoitukset, myös sovelluksesta, jolla ei ole omaa vientiä. Valitset tuotavat; jo Gievrassa olevia ei tuoda toiste, ja niihin voi täydentää puuttuvat tiedot.',
+  ),
+  NewFeature(
+    '0.7.3',
+    Icons.bar_chart,
+    'Viikon kuorma osineen',
+    'Olkapään, selän ja muiden osien riveillä näkyy nyt myös tämän viikon sarjat sinisenä palkkina: tehty / suunniteltu.',
+  ),
+  NewFeature(
     '0.7.2.2',
     Icons.monitor_heart_outlined,
     'Rasitus sykkeestä',

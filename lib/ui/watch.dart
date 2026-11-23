@@ -21,8 +21,9 @@ class WatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Future<void> ask(String title, int? current, void Function(int?) set, {int def = 0}) async {
-      final v = await askNumber(context, title, (current ?? def).toDouble(), decimals: false);
+    // Yläraja estää kirjoitusvirheet (yötesti 21.11.: keskisyke 999 näytti "558 % maksimisykkeestä"); 0 tyhjentää.
+    Future<void> ask(String title, int? current, void Function(int?) set, {int def = 0, required double max}) async {
+      final v = await askNumber(context, title, (current ?? def).toDouble(), decimals: false, min: 0, max: max);
       if (v == null) return;
       set(v <= 0 ? null : v.round());
       w.healthSource = null; // käsin muutettu: ei enää pelkkiä Health Connectin tietoja
@@ -87,12 +88,18 @@ class WatchCard extends StatelessWidget {
             if (withDuration) ...[
               // Treenin kesto (ajastimesta, kellosta tai käsin): sama arvo kuin muualla. Muutos kiinnittää sen.
               box('⌚', t('kesto'), w.minutes, 'min', () async {
-                await ask(t('Kesto kellosta (min)'), w.minutes, (v) {
-                  w.watchTime = v != null;
-                  w.manualTime = false;
-                  w.minutes = v;
-                  w.seconds = null; // käsin kirjattu kesto korvaa ajanoton tarkan ajan
-                }, def: 60);
+                await ask(
+                  t('Kesto kellosta (min)'),
+                  w.minutes,
+                  (v) {
+                    w.watchTime = v != null;
+                    w.manualTime = false;
+                    w.minutes = v;
+                    w.seconds = null; // käsin kirjattu kesto korvaa ajanoton tarkan ajan
+                  },
+                  def: 60,
+                  max: 1440,
+                );
               }),
               const SizedBox(width: 6),
             ],
@@ -101,10 +108,16 @@ class WatchCard extends StatelessWidget {
               t('kalorit'),
               w.kcal,
               'kcal',
-              () => ask(t('Kalorit (kcal)'), w.kcal, (v) {
-                w.kcal = v;
-                w.kcalSource = v == null ? null : 'käsin';
-              }, def: 400),
+              () => ask(
+                t('Kalorit (kcal)'),
+                w.kcal,
+                (v) {
+                  w.kcal = v;
+                  w.kcalSource = v == null ? null : 'käsin';
+                },
+                def: 400,
+                max: 10000,
+              ),
             ),
             const SizedBox(width: 6),
             box(
@@ -112,10 +125,16 @@ class WatchCard extends StatelessWidget {
               t('keskisyke'),
               w.hrAvg,
               '',
-              () => ask(t('Keskisyke (lyöntiä/min)'), w.hrAvg, (v) {
-                w.hrAvg = v;
-                w.hrSource = 'käsin';
-              }, def: 130),
+              () => ask(
+                t('Keskisyke (lyöntiä/min)'),
+                w.hrAvg,
+                (v) {
+                  w.hrAvg = v;
+                  w.hrSource = 'käsin';
+                },
+                def: 130,
+                max: 250,
+              ),
             ),
             const SizedBox(width: 6),
             box(
@@ -123,15 +142,27 @@ class WatchCard extends StatelessWidget {
               t('maksimisyke'),
               w.hrMax,
               '',
-              () => ask(t('Maksimisyke (lyöntiä/min)'), w.hrMax, (v) {
-                w.hrMax = v;
-                w.hrSource = 'käsin';
-              }, def: 170),
+              () => ask(
+                t('Maksimisyke (lyöntiä/min)'),
+                w.hrMax,
+                (v) {
+                  w.hrMax = v;
+                  w.hrSource = 'käsin';
+                },
+                def: 170,
+                max: 250,
+              ),
             ),
             // Askeleet: kävelylajeissa aina (myös käsin); juoksussa vain, kun ne tulivat Health Connectista.
             if ((sportOf(w.activity)?.steps ?? false) && (!isRun(w.activity) || w.steps != null)) ...[
               const SizedBox(width: 6),
-              box('👣', t('askeleet'), w.steps, '', () => ask(t('Askeleet'), w.steps, (v) => w.steps = v, def: 5000)),
+              box(
+                '👣',
+                t('askeleet'),
+                w.steps,
+                '',
+                () => ask(t('Askeleet'), w.steps, (v) => w.steps = v, def: 5000, max: 200000),
+              ),
             ],
           ],
         ),

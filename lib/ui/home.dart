@@ -196,7 +196,11 @@ class _DayScreen extends StatelessWidget {
       ? [
           if (w.durationSec != null) (Icons.timer_outlined, fmtDurationSec(w.durationSec!)),
           if (w.distanceKm != null) (Icons.straighten, '${fmtNum(w.distanceKm!)} km'),
-          if (w.paceSecPerKm != null) (Icons.speed, paceText(w.paceSecPerKm!, w.activity, short: true)),
+          // Pyöräilyssä ym. keskinopeus kuten treenin sivulla (yötesti 21.11.: päivän kortissa oli "2:47 /km").
+          if (speedSports.contains(w.activity) && w.speedKmh != null)
+            (Icons.speed, '${fmtNum((w.speedKmh! * 10).round() / 10)} km/h')
+          else if (w.paceSecPerKm != null)
+            (Icons.speed, paceText(w.paceSecPerKm!, w.activity, short: true)),
           if (w.steps != null) (Icons.directions_walk, thousands(w.steps!)),
           if (w.hrAvg != null) (Icons.favorite_border, '${w.hrAvg}'),
         ]
@@ -229,7 +233,9 @@ class _DayScreen extends StatelessWidget {
             return a.session.compareTo(b.session);
           });
         final steps = stepsTabAvailable ? dailySteps.at(day) : null;
-        final minutes = ws.fold<int>(0, (a, w) => a + ((w.durationSec ?? (w.minutes ?? 0) * 60) ~/ 60));
+        // Sekunnit yhteen ja minuuteiksi vasta lopuksi, kuten treenikortissa (yötesti 21.11.: 54 s:n treeni näkyi
+        // kortissa "1 min" mutta aika-ruudussa "–").
+        final minutes = minutesFromSeconds(ws.fold<int>(0, (a, w) => a + (w.durationSec ?? 0)));
         final km = ws.fold<double>(0, (a, w) => a + (w.distanceKm ?? 0));
         // Päivän yhteenvetoruudut kuvakkeineen.
         Widget tile(IconData icon, Color color, String value, String label, {VoidCallback? onTap}) => Expanded(
@@ -2907,6 +2913,12 @@ class _DaySleepRowState extends State<_DaySleepRow> {
         final cs = Theme.of(context).colorScheme;
         final canChange = alts.map((a) => a.app).toSet().length >= 2;
         final clock = '${fmtClock(TimeOfDay.fromDateTime(n.bed))}–${fmtClock(TimeOfDay.fromDateTime(n.wake))}';
+        final bigText = MediaQuery.textScalerOf(context).scale(14) > 14 * 1.5;
+        final change = TextButton(
+          key: const ValueKey('daySleepChange'),
+          onPressed: () => _choose(alts),
+          child: Text(t('Vaihda lähde')),
+        );
         return Padding(
           padding: const EdgeInsets.only(top: 12),
           child: Material(
@@ -2920,20 +2932,22 @@ class _DaySleepRowState extends State<_DaySleepRow> {
                 t('Uni {0}', [fmtDuration(n.asleep.inMinutes)]),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text(
-                [
-                  clock,
-                  if (n.app.isNotEmpty) n.picked ? t('{0} (valittu)', [n.app]) : n.app,
-                ].join(' · '),
-                style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    [
+                      clock,
+                      if (n.app.isNotEmpty) n.picked ? t('{0} (valittu)', [n.app]) : n.app,
+                    ].join(' · '),
+                    style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+                  ),
+                  // Suurella tekstillä painike omalle rivilleen: oikeassa reunassa se veisi koko rivin leveyden
+                  // (yötesti 23.11., tekstikoko 2,0).
+                  if (canChange && bigText) change,
+                ],
               ),
-              trailing: canChange
-                  ? TextButton(
-                      key: const ValueKey('daySleepChange'),
-                      onPressed: () => _choose(alts),
-                      child: Text(t('Vaihda lähde')),
-                    )
-                  : null,
+              trailing: canChange && !bigText ? change : null,
               onTap: canChange ? () => _choose(alts) : null,
             ),
           ),

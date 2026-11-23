@@ -299,7 +299,10 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                     Expanded(
                       child: Text(t('Näin teet'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                     ),
-                    Text(t('Kokeellinen ohje'), style: sub),
+                    // Joustava: suurella tekstillä (2,0) rivi ylitti reunan 26 px (yötesti 22.11.).
+                    Flexible(
+                      child: Text(t('Kokeellinen ohje'), style: sub, textAlign: TextAlign.end),
+                    ),
                   ],
                 ),
                 if (motion != null)

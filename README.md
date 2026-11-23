@@ -112,7 +112,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   treenit yhdessä tai sali ja kestävyys erikseen (kerrat, aika, sarjat, volyymi, kilometrit, syke, lajeittain),
   treenit viikoittain, kuukausittain tai pitkällä aikavälillä vuosittain;
   mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
-- viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (keskiarvo viikossa valitulta jaksolta)
+- viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (keskiarvo viikossa valitulta jaksolta; olkapään, selän ym. osat
+  alariveinä samoin: tehty / suunniteltu; lämmittelysarjoja ei lasketa)
 - kehonpainon seuranta (valinnainen): aamupaino kysytään etusivulla kerran päivässä (*Tallenna* tai *Ei tänään*),
   painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
   FitNotesin punnitukset tuodaan mukana
@@ -148,6 +149,11 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   valmiiksi täytettynä liikuntana (laji, aika, matka, syke, kalorit, askeleet); askeleet ja matka harjoituksen
   omasta sovelluksesta, myös salitreenit (kellon tiedot päivän salitreeniin tai uusi salitreeni) ja askeleet
   ilman harjoitusta (yhtenäinen kävely vähintään 10 min, esim. kävelymatolta)
+- *Tuonti, vienti ja varmuuskopio → Tuo Health Connectista*: kaikki kellon tai muun sovelluksen Health Connectiin tallentamat
+  harjoitukset kerralla (30 päivää, 12 kuukautta tai kaikki; vanhemmille historialupa), esim. sovelluksesta, jolla ei
+  ole omaa vientiä; valitset listasta tuotavat; jo Gievrassa olevia ei tuoda toiste (myös kahdesti tuotaessa tai
+  toisen sovelluksen kopiona), ja niihin voi täydentää puuttuvat tiedot (syke, kalorit, matka, askeleet,
+  aloitusaika) korvaamatta mitään; tuonnin voi keskeyttää
 - *Päivän askeleet* (asetus, oletus pois): päivän askeleet Health Connectista ilman päällekkäisyyksiä (puhelin, Oura
   ym.), kävelymaton puuttuvat askeleet lisättyinä; etusivun kortissa, kalenterissa renkaana ja tilastojen
   Askeleet-välilehdellä, `askeleet.md`-tiedostossa ja varmuuskopioissa. Kalenterin päivän napautus avaa päivän

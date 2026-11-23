@@ -329,8 +329,9 @@ class _HealthSheetState extends State<_HealthSheet> {
           ],
         );
     }
+    // Vieritettävä: suurella tekstillä (2,0) sisältö ylitti arkin alareunan 49 px (yötesti 22.11.).
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,

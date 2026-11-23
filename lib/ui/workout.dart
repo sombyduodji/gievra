@@ -1517,6 +1517,12 @@ class _SavedScreenState extends State<SavedScreen> {
     // Rasitus tulee sykkeestä (käyttäjä 20.11.): vanha tallennettu rasitus säilyy tiedostossa.
     setState(() {
       if (r.feeling != feelingSkipped) workout.feeling = r.feeling;
+      // Hyvä fiilis ei jätä vanhoja "Mikä painoi?" -vastauksia (yötesti 21.11.: Raskas → Hyvä näytti yhä "Liian
+      // raskas: …" ja keventäisi seuraavaa ehdotusta); sama kuin lukitun liikunnan fiiliksessä (activity.dart).
+      if (r.feeling > 2) {
+        workout.tooHeavy.clear();
+        workout.dayReasons.clear();
+      }
     });
     await _persist();
   }

@@ -43,7 +43,8 @@ class _WeekStatsTabState extends State<WeekStatsTab> {
       ..sort((a, b) => b.date.compareTo(a.date));
     final gym = ws.where((w) => w.activity == null && w.exercises.any((e) => e.sets.isNotEmpty)).toList();
     final act = ws.where((w) => w.activity != null).toList();
-    final sets = gym.fold<int>(0, (n, w) => n + w.exercises.fold(0, (m, e) => m + e.sets.length));
+    // Työsarjat ilman lämmittelyä kuten etusivulla (yötesti 23.11.).
+    final sets = gym.fold<int>(0, (n, w) => n + w.exercises.fold(0, (m, e) => m + e.workSets.length));
     final actMin = act.fold<int>(0, (n, w) => n + (w.seconds != null ? (w.seconds! / 60).round() : (w.minutes ?? 0)));
     final km = act.fold<double>(0, (n, w) => n + (w.distanceKm ?? 0));
     var steps = 0;

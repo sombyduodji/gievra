@@ -291,6 +291,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     _loadRoute();
     // Keskeneräinen kirjaus talteen muutaman sekunnin välein (vain muuttuessa).
     _draftTick = Timer.periodic(const Duration(seconds: 3), (_) => _saveDraft());
+    _lockedNotes = w.notes; // ennen ajastinta ja [_dirty]-tarkistuksia (ne kopioivat kentän w.notes:iin)
     // Vertailukohta poistuttaessa: palautettu luonnos tai GPS-tallennus = aina muutoksia.
     _baseline = widget.draft != null || widget.recoverGps || w.activity == null ? null : _snapshot();
   }
@@ -1293,8 +1294,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _saveLocked() async {
     if (!_locked || !_isSaved) return;
     w.notes = _notes.text;
+    _lockedNotes = w.notes;
     await store.save(w);
   }
+
+  /// Tiedostossa olevat muistiinpanot. Vertailu tähän eikä w.notes:iin: luonnoksen ajastin ja [_dirty] kopioivat
+  /// kentän tekstin w.notes:iin muutaman sekunnin välein, jolloin takaisin palattaessa muutosta ei enää huomattu
+  /// eikä muistiinpanoja tallennettu (yötesti 21.11., Nothing).
+  String _lockedNotes = '';
 
   /// Lukitun liikunnan fiilis: tallentuu heti; Raskas tai Tahmea kysyy, mikä painoi (päivän syyt).
   Future<void> _setFeeling(int? v) async {
@@ -1596,7 +1603,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       canPop: _locked || _saved || w.activity == null,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
-          if (_locked && _notes.text != w.notes) _saveLocked();
+          if (_locked && _notes.text != _lockedNotes) _saveLocked();
           return;
         }
         _swActive && AwayActivity.mayUse(this) ? _leaveRunning() : _confirmLeave();

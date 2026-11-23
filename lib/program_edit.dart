@@ -242,8 +242,11 @@ Map<String, double> loggedSets(List<Workout> history, DateTime from, DateTime to
     if (w.date.isBefore(from) || !w.date.isBefore(to)) continue;
     for (final e in w.exercises) {
       final slot = slotOf(e.name);
-      final top = e.sets.fold<double>(0, (a, s) => s.kg > a ? s.kg : a);
-      final n = e.sets.where((s) => top == 0 || s.kg >= top * .6).length;
+      // Vain työsarjat: lämmittelysarjaksi merkitty ei ole viikon kuormaa (yötesti 23.11.: 20 kg lämmittely ennen 30 kg
+      // sarjaa laskettiin rintaan).
+      final work = e.workSets;
+      final top = work.fold<double>(0, (a, s) => s.kg > a ? s.kg : a);
+      final n = work.where((s) => top == 0 || s.kg >= top * .6).length;
       // Päälihakset, osat ja tietorivit samaan karttaan (avaimet eivät mene päällekkäin).
       for (final m in loadOf(e.name, slot).entries) {
         out[m.key] = (out[m.key] ?? 0) + n * m.value;

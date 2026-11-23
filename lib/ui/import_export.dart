@@ -22,6 +22,8 @@ import '../open_files.dart' show OpenedFile;
 import '../save_verified.dart';
 import '../theme.dart';
 import 'bug_report.dart';
+import 'health_bulk_ui.dart';
+import 'health_import.dart' show HealthImportButton;
 import 'program_template.dart' show importTemplate, templateMaxBytes;
 import 'widgets.dart';
 import '../l10n.dart';
@@ -663,6 +665,16 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
             ),
             _importAny,
           ),
+          if (HealthImportButton.available)
+            tile(
+              Icons.monitor_heart_outlined,
+              t('Tuo Health Connectista'),
+              t(
+                'Kaikki kellon tai muun sovelluksen Health Connectiin tallentamat harjoitukset kerralla, esim. '
+                'sovelluksesta, jolla ei ole omaa vientiä. Valitset listasta tuotavat; jo Gievrassa olevat jätetään pois.',
+              ),
+              () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HealthBulkImportScreen())),
+            ),
           SectionLabel(t('Gievran varmuuskopio')),
           tile(
             Icons.archive_outlined,

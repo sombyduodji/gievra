@@ -107,4 +107,30 @@ void main() {
     expect(find.text('Uni 7 h 00 min'), findsOneWidget);
     expect(find.textContaining('Oura (valittu)'), findsOneWidget);
   });
+  testWidgets('kalenterin päivä: Vaihda lähde omalla rivillään tekstikoolla 2,0 (yötesti 23.11.)', (tester) async {
+    sleepData.nights[t0] = n('Kello', 6);
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2.0)),
+          child: child!,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(onPressed: () => showDay(context, t0), child: const Text('avaa')),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('avaa'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'ennen: ListTilen trailing vei koko rivin leveyden');
+    final row = find.byKey(const ValueKey('daySleepRow'));
+    expect(tester.widget<ListTile>(row).trailing, isNull);
+    expect(find.descendant(of: row, matching: find.byKey(const ValueKey('daySleepChange'))), findsOneWidget);
+  });
 }

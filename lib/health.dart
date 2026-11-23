@@ -120,7 +120,21 @@ class HealthCandidate {
     ownSteps: (m['ownSteps'] as num?)?.toInt(),
     allSteps: (m['allSteps'] as num?)?.toInt(),
     hrSamples: samplesOf(m),
+    pkg: m['pkg'] as String?,
   );
+
+  /// Joukkotuonnin listan harjoitus (sessionList) Health Connectin tiedoilla (rangeStats) samassa muodossa kuin
+  /// päivän harjoitukset (sessions).
+  Map<String, Object?> toListMap() => {
+    'kind': session ? 'session' : 'steps',
+    'id': id,
+    'start': start.millisecondsSinceEpoch,
+    'end': end.millisecondsSinceEpoch,
+    'title': title,
+    'type': type,
+    'app': app,
+    'pkg': pkg,
+  };
 
   /// Treenin oma aika ilman harjoitusta ja ilman sykettä: pelkät askeleet.
   bool get stepsWindow => !session && hrAvg == null && hrMax == null;
@@ -221,7 +235,8 @@ void applyCandidate(Workout w, HealthCandidate c, {bool steps = false, int? chos
   final n = chosenSteps ?? c.steps;
   if (steps && (n ?? 0) > 0) w.steps = n;
   // Health Connectista lisätty liikunta (sama harjoitus): myös matka päivittyy, ellei sitä ole kirjoitettu käsin.
-  if (w.hcId != null && w.hcId == c.id && (c.meters ?? 0) > 0 && !w.distanceManual) {
+  // Ei salitreeniin (testikierros 21.11.: tuotu salitreeni sai kellon matkan).
+  if (w.activity != null && w.hcId != null && w.hcId == c.id && (c.meters ?? 0) > 0 && !w.distanceManual) {
     w.distanceKm = (c.meters! / 10).round() / 100;
   }
   w.healthSource = c.app;
@@ -371,6 +386,25 @@ class HealthConnect {
       'end': DateTime(day.year, day.month, day.day + 1).millisecondsSinceEpoch,
     });
     return [for (final m in r ?? const []) StepRecord.fromMap(m as Map)];
+  }
+
+  /// Joukkotuonti: kaikki harjoitukset välillä [from, to) ilman sykettä ja muita tietoja (ks. [fullSession]).
+  static Future<List<HealthCandidate>> sessionList(DateTime from, DateTime to) async {
+    final r = await _ch.invokeMethod<List>('sessionList', {
+      'start': from.millisecondsSinceEpoch,
+      'end': to.millisecondsSinceEpoch,
+    });
+    return [for (final m in r ?? const []) HealthCandidate.fromMap(m as Map)];
+  }
+
+  /// Joukkotuonti: listan harjoitus syke-, kalori-, askel- ja matkatietoineen tallentaneelta sovellukselta.
+  static Future<HealthCandidate> fullSession(HealthCandidate c) async {
+    final m = await _ch.invokeMethod<Map>('rangeStats', {
+      'start': c.start.millisecondsSinceEpoch,
+      'end': c.end.millisecondsSinceEpoch,
+      'pkg': c.pkg,
+    });
+    return HealthCandidate.fromMap({...?m, ...c.toListMap()});
   }
 
   /// Aikavälin syke, kalorit ja matka sovellukselta [pkg].

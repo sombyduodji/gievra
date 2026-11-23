@@ -73,6 +73,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('viikon kuorma: alariveillä tämän viikon sarjat sinisenä palkkina ja "tehty / suunniteltu" (22.11.)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 5000);
+    tester.view.devicePixelRatio = 2.7;
+    addTearDown(tester.view.reset);
+    Future<void> show(Map<String, double>? done) => tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: WeeklyLoadCard(program: program(), done: done),
+          ),
+        ),
+      ),
+    );
+    final bars = find.byType(LinearProgressIndicator);
+    await show(null);
+    final planned = tester.widgetList(bars).length;
+    expect(find.text('3'), findsWidgets, reason: 'etuolkapää ilman toteutunutta: vain suunniteltu');
+    await show({'olkapää': 2, 'etuolkapää': 6, 'alaselkä': 0.5, 'vatsa': 1});
+    expect(find.text('6 / 3'), findsOneWidget, reason: 'etuolkapää');
+    expect(find.text('1 / 2'), findsOneWidget, reason: 'keskivartalo');
+    expect(find.textContaining(' · '), findsNothing, reason: 'vanha "suunniteltu · tehty" poistui');
+    expect(find.text('6 / 3 ✓'), findsNothing, reason: 'alariveillä ei suositusta');
+    expect(tester.widgetList(bars).length, planned * 2, reason: 'jokaiselle riville sininen palkki');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('liikevalitsin: ▶ avaa ohjeen, josta voi valita liikkeen', (tester) async {
     tester.view.physicalSize = const Size(1080, 4000);
     tester.view.devicePixelRatio = 2.7;

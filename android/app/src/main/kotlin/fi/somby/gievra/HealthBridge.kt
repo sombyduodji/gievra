@@ -164,6 +164,9 @@ object HealthBridge {
     /** Tehdyn liikunnan lisääminen (asetus, oletus pois): lisäksi matka. Kysytään vasta, kun toimintoa käytetään. */
     val importPermissions = readPermissions + HealthPermission.getReadPermission(DistanceRecord::class)
 
+    /** Joukkotuonti (Tuonti ja vienti): tuonnin luvat ja historialupa (yli 30 päivää ennen luvan antamista). */
+    val importHistoryPermissions = importPermissions + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+
     /** Kehitysversion testitiedot emulaattorille (vain debug-manifestissa on kirjoitusluvat). */
     val writePermissions = setOf(
         HealthPermission.getWritePermission(ExerciseSessionRecord::class),
@@ -419,6 +422,44 @@ object HealthBridge {
                 "app" to appLabel(context, s.metadata.dataOrigin.packageName),
             ) + stats(context, s.startTime, s.endTime, s.metadata.dataOrigin.packageName)
         }
+    }
+
+    /**
+     * Joukkotuonti (Tuonti ja vienti): kaikki harjoitukset, jotka alkavat välillä [startMs, endMs), sivu kerrallaan,
+     * ilman sykettä ja muita tietoja (ne haetaan vasta tuodessa, rangeStats). Pkg mukana, jotta tiedot luetaan
+     * samalta sovellukselta.
+     */
+    suspend fun sessionList(context: Context, startMs: Long, endMs: Long): List<Map<String, Any?>> {
+        val start = Instant.ofEpochMilli(startMs)
+        val end = Instant.ofEpochMilli(endMs)
+        val out = mutableListOf<Map<String, Any?>>()
+        var token: String? = null
+        do {
+            val page = client(context).readRecords(
+                ReadRecordsRequest(
+                    ExerciseSessionRecord::class,
+                    TimeRangeFilter.between(start, end),
+                    pageSize = 1000,
+                    pageToken = token,
+                ),
+            )
+            for (s in page.records) {
+                if (s.startTime.isBefore(start) || !s.startTime.isBefore(end)) continue
+                val pkg = s.metadata.dataOrigin.packageName
+                out += mapOf(
+                    "kind" to "session",
+                    "id" to s.metadata.id,
+                    "start" to s.startTime.toEpochMilli(),
+                    "end" to s.endTime.toEpochMilli(),
+                    "title" to s.title,
+                    "type" to s.exerciseType,
+                    "app" to appLabel(context, pkg),
+                    "pkg" to pkg,
+                )
+            }
+            token = page.pageToken
+        } while (!token.isNullOrEmpty())
+        return out.sortedBy { it["start"] as Long }
     }
 
     /**

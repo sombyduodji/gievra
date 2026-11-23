@@ -342,6 +342,32 @@ class WeeklyLoadCard extends StatelessWidget {
     ),
   );
 
+  /// Alarivin toteutunut: tällä viikolla tekemätön on 0 (ei puuttuva), kun toteutunut näytetään.
+  double? _doneOf(String key) => done == null ? null : (done![key] ?? 0);
+
+  /// Alarivin ohut palkki.
+  Widget _thinBar(BuildContext context, double f, Color color) => ClipRRect(
+    borderRadius: BorderRadius.circular(4),
+    child: LinearProgressIndicator(
+      value: f.clamp(0.0, 1.0),
+      minHeight: 5,
+      color: color,
+      backgroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: .10),
+    ),
+  );
+
+  /// Alarivin luvut: suunniteltu, tai "tehty / suunniteltu" sinisenä kuten päärivissä (ei suositusta, ei ✓ eikä ↑).
+  Widget _subNumbers(BuildContext context, double v, double? doneV, TextStyle style) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: AlignmentDirectional.centerEnd,
+    child: Text(
+      doneV == null ? fmtLoad(v) : '${fmtLoad(doneV)} / ${fmtLoad(v)}',
+      maxLines: 1,
+      softWrap: false,
+      style: doneV == null ? style : style.copyWith(color: blueText(context), fontWeight: FontWeight.w600),
+    ),
+  );
+
   /// Alarivi (olkapään tai selän osa): ohut palkki pääpalkin mittakaavassa, luku ja tehdyt sarjat.
   Widget _subRow(BuildContext context, String label, double v, double? doneV, int hi, TextStyle small) => Padding(
     padding: const EdgeInsets.only(bottom: 3),
@@ -367,25 +393,19 @@ class WeeklyLoadCard extends StatelessWidget {
         ),
         Expanded(
           child: ExcludeSemantics(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: hi <= 0 ? 0 : (v / hi).clamp(0.0, 1.0),
-                minHeight: 5,
-                color: Sami.green.withValues(alpha: .55),
-                backgroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: .10),
-              ),
+            child: Column(
+              children: [
+                _thinBar(context, hi <= 0 ? 0 : v / hi, Sami.green.withValues(alpha: .55)),
+                // Tämän viikon sarjat sinisenä kuten päärivissä (käyttäjä 22.11.), samassa mittakaavassa.
+                if (doneV != null) ...[
+                  const SizedBox(height: 2),
+                  _thinBar(context, hi <= 0 ? 0 : doneV / hi, blueText(context)),
+                ],
+              ],
             ),
           ),
         ),
-        SizedBox(
-          width: 84,
-          child: Text(
-            doneV == null ? fmtLoad(v) : '${fmtLoad(v)} · ${fmtLoad(doneV)}',
-            textAlign: TextAlign.end,
-            style: small,
-          ),
-        ),
+        SizedBox(width: 84, child: _subNumbers(context, v, doneV, small)),
       ],
     ),
   );
@@ -408,24 +428,36 @@ class WeeklyLoadCard extends StatelessWidget {
         ),
         Expanded(
           child: ExcludeSemantics(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: LinearProgressIndicator(
-                value: (v / 10).clamp(0.0, 1.0),
-                minHeight: 8,
-                color: cs.onSurfaceVariant,
-                backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
-              ),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: LinearProgressIndicator(
+                    value: (v / 10).clamp(0.0, 1.0),
+                    minHeight: doneV == null ? 8 : 6,
+                    color: cs.onSurfaceVariant,
+                    backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+                  ),
+                ),
+                if (doneV != null) ...[
+                  const SizedBox(height: 3),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: LinearProgressIndicator(
+                      value: (doneV / 10).clamp(0.0, 1.0),
+                      minHeight: 6,
+                      color: blueText(context),
+                      backgroundColor: cs.onSurfaceVariant.withValues(alpha: .12),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
         SizedBox(
           width: 84,
-          child: Text(
-            doneV == null ? fmtLoad(v) : '${fmtLoad(v)} · ${fmtLoad(doneV)}',
-            textAlign: TextAlign.end,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
+          child: _subNumbers(context, v, doneV, const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         ),
       ],
     );
@@ -559,23 +591,23 @@ class WeeklyLoadCard extends StatelessWidget {
             ),
             // Olkapään ja selän osat pieninä alariveinä (käyttäjä 16.11.): vain sarjamäärä, sama mittakaava kuin pääpalkissa.
             for (final x in subMuscles[m.muscle] ?? const <String>[])
-              _subRow(context, t(x), sub[x] ?? 0, done?[x], m.hi, small),
+              _subRow(context, t(x), sub[x] ?? 0, _doneOf(x), m.hi, small),
             // Tietorivit ryhmän lopussa: kyynärvarret käsivarsiin, lähentäjät jalkoihin (ei suositusta).
             if (m.muscle == 'ojentaja')
-              _subRow(context, t('kyynärvarret'), sub['kyynärvarret'] ?? 0, done?['kyynärvarret'], m.hi, small),
+              _subRow(context, t('kyynärvarret'), sub['kyynärvarret'] ?? 0, _doneOf('kyynärvarret'), m.hi, small),
             if (m.muscle == 'pohje')
               _subRow(
                 context,
                 t('lähentäjät'),
                 sub['lähentäjät'] ?? 0,
-                done?['lähentäjät'],
+                _doneOf('lähentäjät'),
                 load.firstWhere((x) => x.muscle == 'etureisi', orElse: () => m).hi,
                 small,
               ),
           ],
           // Keskivartalo omana rivinään: tieto, ei suositusrajaa eikä varoitusta.
           Divider(height: 18, color: cs.outlineVariant),
-          _coreRow(context, core, done?['vatsa'], small),
+          _coreRow(context, core, _doneOf('vatsa'), small),
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(

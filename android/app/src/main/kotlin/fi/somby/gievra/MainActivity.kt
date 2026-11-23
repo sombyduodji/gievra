@@ -504,6 +504,7 @@ class MainActivity : FlutterActivity() {
                 "granted" -> scope.launch {
                     try {
                         val need = when {
+                            call.argument<Boolean>("import") == true && call.argument<Boolean>("history") == true -> HealthBridge.importHistoryPermissions
                             call.argument<Boolean>("sleep") == true && call.argument<Boolean>("history") == true -> HealthBridge.sleepHistoryPermissions
                             call.argument<Boolean>("sleep") == true -> HealthBridge.sleepPermissions
                             call.argument<Boolean>("metrics") == true -> HealthBridge.metricsPermissions(this@MainActivity)
@@ -523,6 +524,7 @@ class MainActivity : FlutterActivity() {
                 "request" -> {
                     val write = call.argument<Boolean>("write") == true && BuildConfig.DEBUG
                     val read = when {
+                        call.argument<Boolean>("import") == true && call.argument<Boolean>("history") == true -> HealthBridge.importHistoryPermissions
                         call.argument<Boolean>("sleep") == true && call.argument<Boolean>("history") == true -> HealthBridge.sleepHistoryPermissions
                         call.argument<Boolean>("sleep") == true -> HealthBridge.sleepPermissions
                         call.argument<Boolean>("metrics") == true -> HealthBridge.metricsPermissions(this)
@@ -635,6 +637,15 @@ class MainActivity : FlutterActivity() {
                         result.error("health", e.message, null)
                     }
                 }
+                "sessionList" -> scope.launch {
+                    try {
+                        val start = (call.argument<Number>("start") ?: 0).toLong()
+                        val end = (call.argument<Number>("end") ?: 0).toLong()
+                        result.success(HealthBridge.sessionList(this@MainActivity, start, end))
+                    } catch (e: Exception) {
+                        result.error("health", e.message, null)
+                    }
+                }
                 "rangeStats" -> scope.launch {
                     try {
                         val start = (call.argument<Number>("start") ?: 0).toLong()
@@ -671,12 +682,29 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "settings" -> {
-                    try {
-                        startActivity(Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS"))
-                        result.success(true)
-                    } catch (e: Exception) {
-                        result.success(false)
+                    // Android 14+: Health Connect on osa järjestelmää, eikä androidx-toiminto löydy (yötesti 22.11.,
+                    // Nothing Android 16: Avaa Health Connect ei tehnyt mitään). Ensin Gievran oma lupasivu, sitten
+                    // Health Connect -sovelluksen asetukset (Android 13 ja vanhemmat) ja Health Connectin etusivu.
+                    val intents = buildList {
+                        if (android.os.Build.VERSION.SDK_INT >= 34) {
+                            add(
+                                Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
+                                    .putExtra(Intent.EXTRA_PACKAGE_NAME, packageName),
+                            )
+                        }
+                        add(Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS"))
+                        if (android.os.Build.VERSION.SDK_INT >= 34) add(Intent("android.health.connect.action.HEALTH_HOME_SETTINGS"))
                     }
+                    result.success(
+                        intents.any { i ->
+                            try {
+                                startActivity(i)
+                                true
+                            } catch (e: Exception) {
+                                false
+                            }
+                        },
+                    )
                 }
                 else -> result.notImplemented()
             }
