@@ -329,6 +329,10 @@ int? _spread(List<int> minutes) {
   return math.sqrt(v).round();
 }
 
+/// Yö on keltainen, kun uni jää vähintään tämän verran omasta tavallisesta (sama raja Palautuminen-ruudussa,
+/// Uni-kortin renkaissa ja pylväissä sekä käyrän vihreässä vyössä; käyttäjä 23.11.: ennen kortissa 30 min).
+const sleepShortMargin = Duration(minutes: 45);
+
 /// Oma unitavoite (Walsh ym. 2021, BJSM: yksilöllinen tavoite; oletus AASM:n 7 h).
 const defaultSleepGoal = Duration(hours: 7);
 

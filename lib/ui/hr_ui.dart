@@ -886,7 +886,11 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                     key: const ValueKey('heightCm'),
                     controller: _height,
                     keyboardType: TextInputType.number,
-                    decoration: dec(t('Pituus'), 'cm'),
+                    // Rajojen ulkopuolinen arvo näkyy virheenä (yötesti 24.11.), ei hiljaa ohitettuna.
+                    decoration: dec(
+                      t('Pituus'),
+                      'cm',
+                    ).copyWith(errorText: _height.text.trim().isNotEmpty && _h == null ? '100–250' : null),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
@@ -896,7 +900,10 @@ class _ProfileSheetState extends State<_ProfileSheet> {
                     key: const ValueKey('weightKg'),
                     controller: _weight,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: dec(t('Paino nyt'), 'kg'),
+                    decoration: dec(
+                      t('Paino nyt'),
+                      'kg',
+                    ).copyWith(errorText: _weight.text.trim().isNotEmpty && _w == null ? '20–400' : null),
                     onChanged: (_) => setState(() {}),
                   ),
                 ),

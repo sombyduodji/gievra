@@ -59,7 +59,7 @@ TileState sleepTileState(SleepStats s) {
   if (last == null) return TileState.none;
   if (last.asleep <= const Duration(hours: 6)) return TileState.red;
   final usual = s.usual;
-  if (usual != null && last.asleep <= usual - const Duration(minutes: 45)) return TileState.yellow;
+  if (usual != null && last.asleep <= usual - sleepShortMargin) return TileState.yellow;
   return TileState.green;
 }
 

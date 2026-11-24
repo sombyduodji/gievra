@@ -363,9 +363,11 @@ class HealthConnect {
           DateTime.fromMillisecondsSinceEpoch((m['start'] as num).toInt()),
           DateTime.fromMillisecondsSinceEpoch((m['end'] as num).toInt()),
           awake: Duration(milliseconds: (m['awakeMs'] as num? ?? 0).toInt()),
+          // Toisen sovelluksen kirjaamat vaiheet: vain järkevät arvot (0–24 h), muu ohitetaan (yötesti 24.11.).
           stageMs: {
             for (final e in ((m['stageMs'] as Map?) ?? const {}).entries)
-              int.tryParse('${e.key}') ?? 0: (e.value as num).toInt(),
+              if (e.value case final num v when v > 0 && v <= 24 * 3600 * 1000)
+                int.tryParse('${e.key}') ?? 0: v.toInt(),
           },
           app: HealthCandidate.appName(m['app'] as String?),
           lowHr: (m['lowHr'] as num?)?.toInt(),

@@ -39,11 +39,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   /// terveysominaisuuksia oteta käyttöön (kellon ja sykevyön treenitiedot toimivat silti). Kaiken voi kytkeä
   /// myöhemmin asetuksista.
   bool _health = false;
+  bool _showErrors = false;
+  bool get _heightBad => _height.text.trim().isNotEmpty && parseHeight(_height.text) == null;
+  bool get _weightBad => _weight.text.trim().isNotEmpty && parseWeight(_weight.text) == null;
 
   void _done() {
     if (!_health) {
       _body = false;
       _steps = false;
+    }
+    // Rajojen ulkopuolinen pituus tai paino (yötesti 24.11.: 999 cm ja 0 kg ohitettiin hiljaa): virhe kenttään,
+    // eikä jatketa ennen korjausta tai tyhjennystä.
+    if (_health && _body && (_heightBad || _weightBad)) {
+      setState(() => _showErrors = true);
+      return;
     }
     settings.trainMode = _mode;
     // Kehonpainon seuranta: pituus ja nykyinen paino ovat valinnaisia (voi lisätä myöhemmin asetuksista).
@@ -241,10 +250,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                         LengthLimitingTextInputFormatter(3),
                       ],
+                      key: const ValueKey('onbHeight'),
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: t('Pituus'),
                         suffixText: 'cm',
                         border: const OutlineInputBorder(),
+                        errorText: _showErrors && _heightBad ? t('Anna pituus 100–250 cm.') : null,
+                        errorMaxLines: 3,
                       ),
                     ),
                   ),
@@ -257,10 +270,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                         LengthLimitingTextInputFormatter(5),
                       ],
+                      key: const ValueKey('onbWeight'),
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: t('Paino nyt'),
                         suffixText: 'kg',
                         border: const OutlineInputBorder(),
+                        errorText: _showErrors && _weightBad ? t('Anna paino 20–400 kg.') : null,
+                        errorMaxLines: 3,
                       ),
                     ),
                   ),

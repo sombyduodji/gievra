@@ -2778,7 +2778,7 @@ void showHomeHelp(BuildContext context) => showModalBottomSheet<void>(
                   'Valinnainen kortti (Asetukset → Etusivu, oletus pois): yöunet Health Connectista, esim. Ouralta. '
                   'Viime yön uni ilman valveillaoloa, 7 yön keskiarvo ja säännöllisyys 14 yöltä (nukkumaanmenon ja '
                   'herätyksen vaihtelu, vihreä enintään ±30 min, keltainen ±90 min). Unta verrataan omaan tavalliseesi '
-                  '(mediaani 4–5 viikolta; alussa 7 h): vihreä enintään 30 min alle tavallisen, keltainen enemmän, '
+                  '(mediaani 4–5 viikolta; alussa 7 h): vihreä alle 45 min alle tavallisen, keltainen 45 min tai enemmän, '
                   'punainen 6 h tai alle. ⚠ otsikossa kertoo vihjeen (lyhyt yö, tavallista lyhyempi viikko, myöhäinen '
                   'kova treeni). Vain vihjeitä, ei diagnoosia; lähteet Lisää → Tietoa. Usean sovelluksen kirjaamista öistä käytetään sitä, '
                   'jolla on eniten öitä (vaihdettavissa: Asetukset → Etusivu → Unen lähde). Yöt tallentuvat uni.md-tiedostoon ja '

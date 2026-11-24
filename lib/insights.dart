@@ -155,7 +155,10 @@ class LiftRecord {
   const LiftRecord(this.date, this.kg, this.reps, this.e1rm);
 }
 
-LiftRecord? bestLift(List<Workout> ws, String exercise, {DateTime? since, DateTime? until}) {
+/// Tasapelissä aiempi kerta (ennätys syntyi silloin; yötesti 24.11.: sama 50 × 10 joka kerta sai "uusi"-merkin ja
+/// viimeisimmän päivän, koska tulos riippui treenilistan järjestyksestä). [latest]: tasapelissä viimeisin kerta
+/// (arvio nyt).
+LiftRecord? bestLift(List<Workout> ws, String exercise, {DateTime? since, DateTime? until, bool latest = false}) {
   LiftRecord? best;
   for (final w in ws) {
     if (since != null && w.date.isBefore(since)) continue;
@@ -163,11 +166,56 @@ LiftRecord? bestLift(List<Workout> ws, String exercise, {DateTime? since, DateTi
     for (final e in w.exercises.where((e) => e.name == exercise)) {
       for (final s in e.sets) {
         final v = recordValue(exercise, s);
-        if (v != null && (best == null || v > best.e1rm)) best = LiftRecord(w.date, s.kg, s.reps, v);
+        if (v == null) continue;
+        final better =
+            best == null ||
+            v > best.e1rm ||
+            (v == best.e1rm && (latest ? w.date.isAfter(best.date) : w.date.isBefore(best.date)));
+        if (better) best = LiftRecord(w.date, s.kg, s.reps, v);
       }
     }
   }
   return best;
+}
+
+/// Painavin nosto (käyttäjä 23.11.: todellinen ennätys arvion rinnalle): suurin paino millä tahansa
+/// toistomäärällä, ei lämmittelyä. Tasapelissä enemmän toistoja, sitten aiempi kerta (ennätys syntyi silloin).
+/// Vain toistoliikkeille ([Measure.reps]). [LiftRecord.e1rm] = sarjan arvio tai paino, jos yli 12 toistoa.
+LiftRecord? heaviestLift(List<Workout> ws, String exercise, {DateTime? until}) {
+  if (measureOf(exercise) != Measure.reps) return null;
+  LiftRecord? best;
+  for (final w in ws) {
+    if (until != null && w.date.isAfter(until)) continue;
+    for (final e in w.exercises.where((e) => e.name == exercise)) {
+      for (final s in e.sets) {
+        if (s.warmup || s.kg <= 0 || s.reps < 1) continue;
+        final better =
+            best == null ||
+            s.kg > best.kg ||
+            (s.kg == best.kg && s.reps > best.reps) ||
+            (s.kg == best.kg && s.reps == best.reps && w.date.isBefore(best.date));
+        if (better) best = LiftRecord(w.date, s.kg, s.reps, e1rm(s.kg, s.reps) ?? s.kg);
+      }
+    }
+  }
+  return best;
+}
+
+/// Nykyinen arvioitu maksimi: paras arvio viimeiseltä [weeks] viikolta. Jos liikettä ei ole tehty niin pitkään,
+/// viimeisimmän kerran paras arvio (recent = false).
+({LiftRecord lift, bool recent})? currentE1rm(List<Workout> ws, String exercise, DateTime today, {int weeks = 8}) {
+  final r = bestLift(ws, exercise, since: addDays(dateOnly(today), -7 * weeks), latest: true);
+  if (r != null) return (lift: r, recent: true);
+  DateTime? last;
+  for (final w in ws) {
+    if (w.exercises.any((e) => e.name == exercise && e.sets.any((s) => recordValue(exercise, s) != null)) &&
+        (last == null || w.date.isAfter(last))) {
+      last = w.date;
+    }
+  }
+  if (last == null) return null;
+  final l = bestLift(ws, exercise, since: dateOnly(last), until: last);
+  return l == null ? null : (lift: l, recent: false);
 }
 
 /// Maksimiehdotus aloituskyselyyn: paras arvio viimeiseltä 6 kuukaudelta. Jos liikettä ei ole tehty

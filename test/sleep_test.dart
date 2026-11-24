@@ -332,16 +332,19 @@ void main() {
     });
   });
 
-  testWidgets('värit omaan tavalliseen verrattuna: 30 min sisällä vihreä, enemmän keltainen, 6 h tai alle punainen', (
-    tester,
-  ) async {
-    late BuildContext ctx;
-    await tester.pumpWidget(MaterialApp(home: Builder(builder: (c) => (ctx = c, const SizedBox()).$2)));
-    const usual = Duration(hours: 7, minutes: 31);
-    Color col(int min) => SleepCard.durationColor(ctx, Duration(minutes: min), usual);
-    expect(col(425), greenText(ctx), reason: '7 h 05: 26 min alle');
-    expect(col(400), SleepCard.amber(ctx), reason: '6 h 40: yli 30 min alle');
-    expect(col(360), redText(ctx), reason: '6 h');
-    expect(SleepCard.usualOf(const SleepStats()), const Duration(hours: 7), reason: 'alussa 7 h');
-  });
+  testWidgets(
+    'värit omaan tavalliseen verrattuna: alle 45 min vajaa vihreä, 45 min tai enemmän keltainen, 6 h tai alle punainen (sama kuin ruutu, 23.11.)',
+    (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(MaterialApp(home: Builder(builder: (c) => (ctx = c, const SizedBox()).$2)));
+      const usual = Duration(hours: 7, minutes: 31);
+      Color col(int min) => SleepCard.durationColor(ctx, Duration(minutes: min), usual);
+      expect(col(425), greenText(ctx), reason: '7 h 05: 26 min alle');
+      expect(col(412), greenText(ctx), reason: '6 h 52: 39 min alle, ruudussakin vihreä');
+      expect(col(406), SleepCard.amber(ctx), reason: '6 h 46: 45 min alle');
+      expect(col(400), SleepCard.amber(ctx), reason: '6 h 40: 51 min alle');
+      expect(col(360), redText(ctx), reason: '6 h');
+      expect(SleepCard.usualOf(const SleepStats()), const Duration(hours: 7), reason: 'alussa 7 h');
+    },
+  );
 }

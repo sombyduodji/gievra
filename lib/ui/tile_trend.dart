@@ -53,7 +53,8 @@ Map<DateTime, double> tileSeries(String key, DateTime now) {
       final u = sleepStats(sleepData.nights, today, goal: Duration(minutes: settings.sleepGoal)).usual;
       if (u == null) return null;
       final m = u.inMinutes.toDouble();
-      return (mid: m, lo: m - 45, hi: m + 45);
+      final k = sleepShortMargin.inMinutes.toDouble();
+      return (mid: m, lo: m - k, hi: m + k);
     case 'load':
       final s = tileSeries('load', now);
       var sum = 0.0;

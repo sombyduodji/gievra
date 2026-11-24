@@ -657,7 +657,8 @@ object HealthBridge {
      * Yön alin syke (etusivun palautumiskortti, käyttäjä 17.11.): kunkin aamun [from]..[to] yöltä (edellinen ilta
      * 21:00 – aamu 10:00) sykenäytteiden alin 5 minuutin keskiarvo (vain valitun unen lähteen, jos se on tiedossa). Käyttää samaa sykkeen lukulupaa kuin
      * harjoitusten tuonti; unitietoja eikä leposyketietuetta lueta (ne vaatisivat uudet luvat). Yö jätetään pois,
-     * jos näytteitä on alle 12 (kello ei mitannut yöllä).
+     * jos näytteitä on alle 12 (kello ei mitannut yöllä), jos levon näytteet kattavat alle 3 tuntia tai jos
+     * syke on vain harjoituksista.
      */
     suspend fun nightLowHr(context: Context, from: String, to: String, app: String? = null): List<List<Any>> {
         val zone = java.time.ZoneId.systemDefault()
@@ -671,7 +672,19 @@ object HealthBridge {
         while (!d.isAfter(last)) {
             val start = d.minusDays(1).atTime(21, 0).atZone(zone).toInstant()
             val end = d.atTime(10, 0).atZone(zone).toInstant()
-            lowWindow(hrSamples(client(context), start, end, src))?.let { out.add(listOf(d.toString(), it)) }
+            val c = client(context)
+            // Yösyke vain levosta (yötesti 21.–24.11.: yön ikkunaan osui pelkkä illan treenin syke, ja yösykkeeksi tuli
+            // 83): harjoitusten ajan näytteet ja 15 min niiden jälkeen pois, ja jäljelle jääneiden pitää kattaa
+            // vähintään 3 tuntia yöstä. Ilman harjoitusten lukulupaa rajaus jää pois, kattavuusehto pysyy.
+            val workouts = try {
+                c.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, TimeRangeFilter.between(start, end), pageSize = 200))
+                    .records.map { it.startTime to it.endTime.plus(Duration.ofMinutes(15)) }
+            } catch (e: Throwable) {
+                emptyList()
+            }
+            val rest = hrSamples(c, start, end, src).filter { x -> workouts.none { (a, b) -> !x.time.isBefore(a) && x.time.isBefore(b) } }
+            val covered = rest.size >= 2 && Duration.between(rest.first().time, rest.last().time) >= Duration.ofHours(3)
+            if (covered) lowWindow(rest)?.let { out.add(listOf(d.toString(), it)) }
             d = d.plusDays(1)
         }
         return out

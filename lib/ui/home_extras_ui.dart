@@ -261,11 +261,11 @@ class SleepCard extends StatelessWidget {
   const SleepCard({super.key});
 
   /// Unen väri omaan tavalliseen verrattuna (käyttäjä 18.11.: ei asetettua tavoitetta, vaan oma mediaani):
-  /// vihreä enintään 30 min alle tavallisen, keltainen enemmän, punainen 6 h tai alle (Craven 2022; turvaraja,
+  /// vihreä alle 45 min alle tavallisen, keltainen 45 min tai enemmän (sama kuin Palautuminen-ruudussa), punainen 6 h tai alle (Craven 2022; turvaraja,
   /// jottei pitkäaikaisesti lyhyt uni näytä "tavalliselta").
   static Color durationColor(BuildContext context, Duration d, Duration usual) => d <= const Duration(hours: 6)
       ? redText(context)
-      : d < usual - const Duration(minutes: 30)
+      : d <= usual - sleepShortMargin
       ? amber(context)
       : greenText(context);
 

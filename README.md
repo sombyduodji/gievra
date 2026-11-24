@@ -114,6 +114,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
   mukana myös FitNotesista ja Garminista tuodut treenit; voimakehitys, fiilis viikonpäivittäin ja treeneittäin
 - viikon kuorma lihasryhmittäin: suunniteltu ja toteutunut allekkain (keskiarvo viikossa valitulta jaksolta; olkapään, selän ym. osat
   alariveinä samoin: tehty / suunniteltu; lämmittelysarjoja ei lasketa)
+- *Tilastot → Ennätykset*: liikkeittäin kortti, jossa paras nosto (painavin sarja millä tahansa toistomäärällä) ja
+  arvioitu 1 toiston maksimi nyt (paras sarja 8 viikolta, Epley) rinnakkain; uusi-merkki vain, kun aiempi paras ylittyy
 - kehonpainon seuranta (valinnainen): aamupaino kysytään etusivulla kerran päivässä (*Tallenna* tai *Ei tänään*),
   painon kehitys ja painoindeksi tilastoissa, punnitukset ja pituus asetuksissa; tallentuu `kehonpaino.md`:hen;
   FitNotesin punnitukset tuodaan mukana

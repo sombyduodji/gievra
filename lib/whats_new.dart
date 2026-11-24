@@ -13,6 +13,12 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.4.1',
+    Icons.emoji_events_outlined,
+    'Ennätykset korteiksi',
+    'Tilastot → Ennätykset: jokaisella liikkeellä paras nosto (painavin sarja) ja arvioitu 1 toiston maksimi nyt rinnakkain. Sama tulos uudelleen ei ole uusi ennätys.',
+  ),
+  NewFeature(
     '0.7.4',
     Icons.bedtime_outlined,
     'Univaiheet',

@@ -163,10 +163,35 @@ class RecordsTab extends StatelessWidget {
           for (final e in w.exercises)
             if (e.sets.any((s) => s.kg > 0 && !s.warmup)) e.name,
     };
-    final lifts = [
-      for (final n in names)
-        if (bestLift(ws, n) case final r?) (n, r, bestLift(ws, n, until: addDays(r.date, -1)) != null),
-    ]..sort((a, b) => b.$2.date.compareTo(a.$2.date));
+    final today = dateOnly(DateTime.now());
+    // Liikkeen kortti (käyttäjä 23.11.): painavin nosto (todellinen ennätys) ja arvioitu maksimi nyt.
+    final lifts =
+        <
+            ({
+              String name,
+              LiftRecord best,
+              LiftRecord? heavy,
+              ({LiftRecord lift, bool recent})? now,
+              bool newHeavy,
+              bool newBest,
+            })
+          >[
+            for (final n in names)
+              if (bestLift(ws, n) case final r?)
+                (
+                  name: n,
+                  best: r,
+                  heavy: heaviestLift(ws, n),
+                  now: currentE1rm(ws, n, today),
+                  newHeavy: switch (heaviestLift(ws, n)) {
+                    final h? => _isNew(h.date) && heaviestLift(ws, n, until: addDays(h.date, -1)) != null,
+                    _ => false,
+                  },
+                  // Uusi vain, kun aiempi paras ylittyi (sama tulos uudelleen ei ole ennätys).
+                  newBest: _isNew(r.date) && (bestLift(ws, n, until: addDays(r.date, -1))?.e1rm ?? r.e1rm) < r.e1rm,
+                ),
+          ]
+          ..sort((a, b) => _latest(b).compareTo(_latest(a)));
     final bests = runBests(runsOf(ws));
 
     Widget badge() => Container(
@@ -233,20 +258,15 @@ class RecordsTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
       children: [
         if (lifts.isNotEmpty) ...[
-          SectionLabel(t('Sali · arvioitu maksimi (1 toisto)')),
-          for (final (n, r, beat) in lifts)
-            row(
-              key: ValueKey('record_$n'),
-              title: exerciseLabel(n),
-              isNew: beat && _isNew(r.date),
-              detail: measureOf(n) == Measure.reps
-                  ? '${fmtNum(shownKg(n, r.kg))} × ${r.reps} · ${shortDateY(r.date)}'
-                  // Kantaminen: paras paino matkoineen ("132 kg × 2 edestakaisin"), ei arvioitua maksimia.
-                  : '${fmtSetHand(n, SetEntry(r.kg, r.reps))} · ${shortDateY(r.date)}',
-              value: '${fmtNum(shownKg(n, r.e1rm).roundToDouble())} ${kgUnit(n, short: true)}',
-              onTap: () => _showHistory(context, n),
+          SectionLabel(t('Sali')),
+          for (final l in lifts) _LiftCard(l, badge: badge, onTap: () => _showHistory(context, l.name)),
+          Text(
+            t(
+              'Paras nosto: painavin sarja millä tahansa toistomäärällä. Arvio 1 toisto: Epleyn kaava parhaasta '
+              'enintään 12 toiston sarjasta viimeiseltä 8 viikolta.',
             ),
-          Text(t('Epleyn kaava parhaasta enintään 12 toiston sarjasta.'), style: sub),
+            style: sub,
+          ),
         ],
         if (bests.isNotEmpty) ...[
           SectionLabel(t('Juoksu · nopein')),
@@ -264,6 +284,25 @@ class RecordsTab extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// Kortin järjestys: uusin ennätys tai arvio ensin.
+  static DateTime _latest(
+    ({
+      String name,
+      LiftRecord best,
+      LiftRecord? heavy,
+      ({LiftRecord lift, bool recent})? now,
+      bool newHeavy,
+      bool newBest,
+    })
+    l,
+  ) {
+    var d = l.best.date;
+    for (final x in [l.heavy?.date, l.now?.lift.date]) {
+      if (x != null && x.isAfter(d)) d = x;
+    }
+    return d;
   }
 
   /// Liikkeen paras sarja joka kerralta uusimmasta vanhimpaan; napautus avaa treenin.
@@ -327,6 +366,134 @@ class RecordsTab extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Ennätyskortti (käyttäjä 23.11.): liikkeen nimi ja kaksi ruutua rinnakkain, painavin nosto ja arvioitu maksimi
+/// nyt; kantamisessa ja pidoissa yksi ruutu (paras paino). Napautus avaa liikkeen historian.
+class _LiftCard extends StatelessWidget {
+  final ({
+    String name,
+    LiftRecord best,
+    LiftRecord? heavy,
+    ({LiftRecord lift, bool recent})? now,
+    bool newHeavy,
+    bool newBest,
+  })
+  l;
+  final Widget Function() badge;
+  final VoidCallback onTap;
+  const _LiftCard(this.l, {required this.badge, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final n = l.name;
+    final unit = kgUnit(n, short: true);
+    String kg(double v) => '${fmtNum(shownKg(n, v))} $unit';
+    String kgR(double v) => '${fmtNum(shownKg(n, v).roundToDouble())} $unit';
+    final reps = measureOf(n) == Measure.reps;
+    Widget tile(String label, String value, String detail, {String? note, bool isNew = false, Key? key}) => Expanded(
+      child: Container(
+        key: key,
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+        decoration: BoxDecoration(
+          color: dark ? Colors.white.withValues(alpha: .06) : Colors.black.withValues(alpha: .04),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant), maxLines: 3),
+            const SizedBox(height: 2),
+            // Uusi-merkki arvon perässä (testi 23.11.: nimen perässä se rivitti nimen kolmelle riville).
+            Row(
+              children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                  ),
+                ),
+                if (isNew) badge(),
+              ],
+            ),
+            Text(detail, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            if (note != null) Text(note, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+    final h = l.heavy, now = l.now;
+    final tiles = <Widget>[
+      if (!reps)
+        // Kantaminen: paras paino matkoineen ("132 kg × 2 edestakaisin"), ei arvioitua maksimia.
+        tile(
+          t('Paras'),
+          kg(l.best.kg),
+          '${fmtSetHand(n, SetEntry(l.best.kg, l.best.reps))} · ${shortDateY(l.best.date)}',
+          isNew: l.newBest,
+          key: ValueKey('recordBest_$n'),
+        )
+      else ...[
+        if (h != null)
+          tile(
+            t('Paras nosto'),
+            kg(h.kg),
+            '× ${h.reps} · ${shortDateY(h.date)}',
+            isNew: l.newHeavy,
+            key: ValueKey('recordHeavy_$n'),
+          ),
+        if (now != null) ...[
+          const SizedBox(width: 8),
+          tile(
+            now.recent ? t('Arvio 1 toisto nyt') : t('Arvio 1 toisto'),
+            kgR(now.lift.e1rm),
+            now.recent
+                ? '${fmtNum(shownKg(n, now.lift.kg))} × ${now.lift.reps} · ${shortDateY(now.lift.date)}'
+                : t('viimeksi {0}', [shortDateY(now.lift.date)]),
+            // Kaikkien aikojen arvio, jos se on parempi kuin nykyinen.
+            note: l.best.e1rm > now.lift.e1rm + .5
+                ? t('paras {0} ({1})', [kgR(l.best.e1rm), shortDateY(l.best.date)])
+                : null,
+            isNew: l.newBest && now.lift.e1rm >= l.best.e1rm, // nykyinen arvio on uusi ennätys (myös toistettuna)
+            key: ValueKey('recordNow_$n'),
+          ),
+        ],
+      ],
+    ];
+    return Padding(
+      key: ValueKey('record_$n'),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  exerciseLabel(n),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: tiles),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

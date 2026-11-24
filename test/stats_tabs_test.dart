@@ -52,7 +52,16 @@ void main() {
     await tester.tap(find.text('Ennätykset'));
     await tester.pumpAndSettle();
     expect(find.text('117 kg'), findsOneWidget);
-    expect(find.text('uusi'), findsOneWidget);
+    // Kortti (23.11.): painavin nosto 100 kg × 5 ja arvio nyt 117 kg, molemmat uusia ennätyksiä (ennen 80 kg).
+    expect(
+      find.descendant(of: find.byKey(const ValueKey('recordHeavy_Takakyykky')), matching: find.text('100 kg')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byKey(const ValueKey('recordNow_Takakyykky')), matching: find.text('117 kg')),
+      findsOneWidget,
+    );
+    expect(find.text('uusi'), findsNWidgets(2));
     await tester.tap(find.byKey(const ValueKey('record_Takakyykky')));
     await tester.pumpAndSettle();
     expect(find.text('Paras sarja joka kerralta'), findsOneWidget);
