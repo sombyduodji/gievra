@@ -83,6 +83,29 @@ void main() {
     expect(find.textContaining('oma mittaus'), findsOneWidget);
   });
 
+  testWidgets('virheellinen pituus tai paino estää tallennuksen kuten maksimisyke (yötesti 25.11.)', (tester) async {
+    await pump(tester, watchWorkout());
+    await tester.tap(find.byKey(const ValueKey('hrProfileAdd')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('birthYear')), '1985');
+    await tester.enterText(find.byKey(const ValueKey('heightCm')), '5');
+    await tester.pump();
+    final save = find.widgetWithText(FilledButton, 'Tallenna');
+    expect(find.text('100–250'), findsOneWidget);
+    expect(tester.widget<FilledButton>(save).onPressed, isNull);
+    await tester.enterText(find.byKey(const ValueKey('heightCm')), '178');
+    await tester.enterText(find.byKey(const ValueKey('weightKg')), '0');
+    await tester.pump();
+    expect(find.text('20–400'), findsOneWidget);
+    expect(tester.widget<FilledButton>(save).onPressed, isNull);
+    await tester.enterText(find.byKey(const ValueKey('weightKg')), '');
+    await tester.pump();
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(settings.birthYear, 1985);
+    expect(settings.body.heightCm, 178);
+  });
+
   testWidgets('Ei nyt: mitään ei tallenneta, painike jää', (tester) async {
     await pump(tester, watchWorkout());
     await tester.tap(find.byKey(const ValueKey('hrProfileAdd')));

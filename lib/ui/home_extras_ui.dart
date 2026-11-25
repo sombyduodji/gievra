@@ -255,6 +255,13 @@ class NightHrCard extends StatelessWidget {
   }
 }
 
+/// Edellisen yön viikonpäivät, esim. "su–ma" (yö päättyi [wakeDay]).
+String staleNightLabel(DateTime wakeDay) {
+  final d = dateOnly(wakeDay);
+  final w = uiWeekdaysShort;
+  return '${w[addDays(d, -1).weekday - 1]}–${w[d.weekday - 1]}';
+}
+
 /// Uni (käyttäjä 17.11.; oletus pois, Asetukset → Etusivu): renkaat kuten WHO-rivissä (viime yö ja 7 päivän
 /// keskiarvo 7 tunnin suositusta vasten, säännöllisyys), 7 yön pylväät ja vihje. Lähteet: lib/sleep.dart.
 class SleepCard extends StatelessWidget {
@@ -413,9 +420,10 @@ class SleepCard extends StatelessWidget {
                       key: const ValueKey('sleepRingLast'),
                       onTap: () => showSleepStagesSheet(context, last),
                       v: last.asleep.inMinutes / ref.inMinutes,
-                      color: durationColor(context, last.asleep, ref),
+                      // Edellinen yö (tämän yön uni ei vielä Health Connectissa): harmaa ja yön viikonpäivät.
+                      color: s.fresh ? durationColor(context, last.asleep, ref) : cs.outline,
                       big: hm(last.asleep),
-                      small: t('viime yö'),
+                      small: s.fresh ? t('viime yö') : t('yö {0}', [staleNightLabel(last.day)]),
                     ),
                   ),
                   Expanded(
@@ -437,6 +445,28 @@ class SleepCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (!s.fresh)
+              Padding(
+                key: const ValueKey('sleepNotYet'),
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1, right: 6),
+                      child: Icon(Icons.sync, size: 16, color: cs.onSurfaceVariant),
+                    ),
+                    Expanded(
+                      child: Text(
+                        t(
+                          'Tämän yön unta ei vielä ole Health Connectissa. Avaa kellon tai sormuksen sovellus, niin tieto päivittyy.',
+                        ),
+                        style: sub,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 10),
             Text.rich(
               TextSpan(

@@ -78,8 +78,13 @@ List<RecTile> recoveryTiles(DateTime now) {
             'sleep',
             t('Uni'),
             Icons.bedtime_outlined,
-            fmtDuration(s.last!.asleep.inMinutes),
-            s.usual == null ? '' : t('tav. {0}', [fmtDuration(s.usual!.inMinutes)]),
+            // Tämän yön uni ei vielä Health Connectissa: ei edellisen yön arvoa tämän päivän palautumisena.
+            s.fresh ? fmtDuration(s.last!.asleep.inMinutes) : '–',
+            !s.fresh
+                ? t('ei vielä')
+                : s.usual == null
+                ? ''
+                : t('tav. {0}', [fmtDuration(s.usual!.inMinutes)]),
             sleepTileState(s),
           ),
         );

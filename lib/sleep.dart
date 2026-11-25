@@ -310,8 +310,14 @@ class SleepStats {
   /// Univaje 7 päivältä omaan tavoitteeseen verrattuna.
   final Duration debt7;
 
+  /// [last] päättyi tänään. Epätosi, kun tämän yön uni ei ole vielä Health Connectissa (esim. Ouraa ei ole avattu)
+  /// ja [last] on edellinen yö (käyttäjä 24.11.): kortti merkitsee sen vanhaksi, eikä siitä anneta vihjeitä tai
+  /// Palautumisen väriä.
+  final bool fresh;
+
   const SleepStats({
     this.debt7 = Duration.zero,
+    this.fresh = true,
     this.last,
     this.avg7,
     this.short7 = 0,
@@ -363,6 +369,7 @@ SleepStats sleepStats(Map<DateTime, SleepNight> nights, DateTime today, {Duratio
   int fromNoon(DateTime d) => ((d.hour - 12) % 24) * 60 + d.minute;
   return SleepStats(
     last: last,
+    fresh: last != null && dateOnly(last.day) == t,
     avg7: week.isEmpty
         ? null
         : Duration(minutes: (week.map((n) => n.asleep.inMinutes).reduce((a, b) => a + b) / week.length).round()),
@@ -381,7 +388,7 @@ enum SleepHint { shortAndHr, short, lowWeek, ok }
 
 SleepHint sleepHint(SleepStats s, {double? hrDelta, Duration goal = defaultSleepGoal}) {
   final last = s.last;
-  if (last != null && last.asleep <= const Duration(hours: 6)) {
+  if (last != null && s.fresh && last.asleep <= const Duration(hours: 6)) {
     return (hrDelta ?? 0) >= 5 ? SleepHint.shortAndHr : SleepHint.short;
   }
   if (s.avg7 != null && s.n7 >= 4 && s.avg7! < goal) return SleepHint.lowWeek;
@@ -447,7 +454,7 @@ bool hardWorkout(Workout w, {int? maxHr}) {
 
 LateWorkout? lateHardWorkout(SleepStats s, Map<DateTime, SleepNight> nights, List<Workout> ws, {int? maxHr}) {
   final last = s.last, usual = s.usual;
-  if (last == null || usual == null || last.asleep > usual - const Duration(minutes: 30)) return null;
+  if (last == null || !s.fresh || usual == null || last.asleep > usual - const Duration(minutes: 30)) return null;
   final bedMin = usualBedMinutes(nights, last.day);
   if (bedMin == null) return null;
   final usualBed = DateTime(last.day.year, last.day.month, last.day.day - 1, 12).add(Duration(minutes: bedMin));

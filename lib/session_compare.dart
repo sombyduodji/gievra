@@ -86,13 +86,13 @@ SessionCompare compareSession(Workout w, List<Workout> all, Program? p) {
     final now = _best(e)!;
     final before = prev?.exercises.where((x) => x.name == e.name && x.sets.isNotEmpty).firstOrNull;
     if (before == null) {
-      ex.add(ExerciseCompare(e.name, fmtSet(e.name, now.$1), null, 2));
+      ex.add(ExerciseCompare(e.name, fmtSetHand(e.name, now.$1), null, 2));
       continue;
     }
     final b = _best(before)!;
     final diff = (now.$2 - b.$2) / (b.$2 == 0 ? 1 : b.$2);
     ex.add(
-      ExerciseCompare(e.name, fmtSet(e.name, now.$1), fmtSet(e.name, b.$1), diff > .005 ? 1 : (diff < -.02 ? -1 : 0)),
+      ExerciseCompare(e.name, fmtSetHand(e.name, now.$1), fmtSetHand(e.name, b.$1), diff > .005 ? 1 : (diff < -.02 ? -1 : 0)),
     );
   }
   final hist = [

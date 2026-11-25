@@ -59,7 +59,8 @@ tervehdys on aina saameksi (*Buorre iđit!*, *Buorre eahket!*).
 - isot +/– -säätimet, edellinen kerta ja paras tulos näkyvissä, ennätykset 🏆
 - sarja tallentuu yhdellä napautuksella samalla kun vastaat *jäikö varaa?* (Ei yhtään / Muutama / Reilusti)
 - lämmittelysarjat omalla painikkeella: ne eivät vaikuta tavoitteeseen, ehdotuksiin eikä ennätyksiin
-- painoehdotus seuraavaan kertaan edellisen treenin perusteella
+- painoehdotus seuraavaan kertaan edellisen treenin perusteella; asetuksista vaihtoehtoisesti paras sarja
+  6 viikon ajalta tai ei ehdotusta lainkaan
 - *Miltä tuntui?* viidellä hymiöllä 😫 😕 😐 🙂 🤩; raskaan treenin jälkeen voi kertoa, mikä liike oli liian
   raskas tai oliko vain rankka päivä, ja seuraava ehdotus ottaa sen huomioon
 - palautusajastin (valinnainen): raskaissa ja lähellä maksimia pidempi tauko, lämmittelyissä ja kevennysviikolla

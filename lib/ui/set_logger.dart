@@ -59,13 +59,62 @@ class SetLoggerScreen extends StatefulWidget {
   State<SetLoggerScreen> createState() => _SetLoggerScreenState();
 }
 
+/// Tallentamaton seuraava sarja liikettä kohden (käyttäjä 24.11.: paino ja toistot vaihdettu, käyty liikelistassa
+/// ja palattu: arvot palasivat edelliseen sarjaan). Vain muistissa; säilyy, kunnes sarja tallennetaan tai sarjoja
+/// muutetaan muualla.
+/// Sarja ilman huonoja rivinvaihtoja: luku ja yksikkö yhdessä ("21,25 kg/käsi"), kertomerkki lukunsa kanssa
+/// ("× 2"), vinoviivan jälkeen sananliitin (U+2060; ennen "kg/⏎käsi"). Yksikkösanojen väli ("ovddas
+/// ruovttoluotta") saa katketa: kokonaan sitova pitkä sarja katkesi suurella tekstillä keskeltä sanaa (tarkistus 25.11.).
+String _noBreak(String s) => s
+    // Luku sitoutuu vain lyhyeen yksikköön (kg, s); pitkä yksikkösana saa rivittyä luvun jälkeen ("2⏎edestakaisin").
+    .replaceAllMapped(RegExp(r'(\d) (?=kg|s\b)'), (m) => '${m[1]}\u00A0')
+    .replaceAll(' × ', '\u00A0×\u00A0')
+    .replaceAll('/', '/\u2060');
+
+
+class _Draft {
+  final double kg;
+  final int reps;
+  final String? kind;
+  final bool edited, kgEdited;
+  final int sets;
+  const _Draft(this.kg, this.reps, this.kind, this.edited, this.kgEdited, this.sets);
+}
+
+final _drafts = Expando<_Draft>('setDraft');
+
 class _SetLoggerScreenState extends State<SetLoggerScreen> {
   ExerciseEntry get e => widget.entry;
   late final _last = store.lastBefore(e.name, widget.date, widget.session);
   late final double _bestBefore = store.maxKgBefore(e.name, widget.date, session: widget.session);
-  late final Suggestion? _sugg = widget.target != null
+  late final Suggestion? _calc = widget.target != null
       ? suggestForTarget(e.name, widget.date, widget.target!, session: widget.session)
       : suggestNext(e.name, widget.date, session: widget.session);
+
+  /// Edellisen kerran paras työsarja: raskain, saman painon sisällä eniten toistoja tai pisin aika.
+  late final SetEntry? _lastBest = () {
+    final sets = _last?.$2.sets;
+    if (sets == null || sets.isEmpty) return null;
+    final work = sets.where((s) => !s.warmup);
+    SetEntry? b;
+    for (final s in work.isEmpty ? sets : work) {
+      if (b == null || s.kg > b.kg || (s.kg == b.kg && s.reps > b.reps)) b = s;
+    }
+    return b;
+  }();
+
+  /// Paras sarja 6 viikon ajalta (Paras 6 vk -tila); jos liikettä ei ole tehty 6 viikkoon, edellisen kerran paras.
+  late final (DateTime, SetEntry)? _best6 =
+      store.bestWithin(e.name, widget.date, widget.session) ??
+      (_lastBest == null ? null : (_last!.$1, _lastBest));
+
+  /// Painon esitäyttö ja Käytä: asetuksen mukaan laskettu ehdotus, 6 viikon paras sarja tai edellisen kerran paras
+  /// sarja (käyttäjä 25.11.).
+  late final Suggestion? _sugg = switch (settings.suggestMode) {
+    'suggest' => _calc,
+    'best' => _best6 == null ? null : Suggestion(_best6.$2.kg, _best6.$2.reps, ''),
+    _ => _lastBest == null ? null : Suggestion(_lastBest.kg, _lastBest.reps, ''),
+  };
   late final InjuryStatus _inj = injuryStatus(e.name, settings.injuries);
 
   /// Tämän liikkeen lihakset, jotka kuormittuivat jo tänään toisessa salitreenissä (käyttäjä 16.11.).
@@ -184,6 +233,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   @override
   void dispose() {
     _cd?.cancel();
+    _drafts[e] = _edited || _kind != null ? _Draft(_kg, _reps, _kind, _edited, _kgEdited, e.sets.length) : null;
     if (rest.nextFn == _restNext) {
       rest.nextText = _restNext();
       rest.nextFn = null;
@@ -200,7 +250,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
 
   String? _restNextLine() {
     if (_next != null && _nextAfterRest) return t('Seuraavaksi: {0}', [exerciseLabel(_next!)]);
-    final set = fmtSet(e.name, SetEntry(_kg, _reps, kind: _kind));
+    final set = fmtSetHand(e.name, SetEntry(_kg, _reps, kind: _kind));
     final done = e.sets.where((s) => !s.warmup).length;
     final target = widget.target;
     if (target != null && target.sets > 0) {
@@ -268,6 +318,16 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     if (src == null && _sugg == null && isHexBar(e.name)) _kg = barFor(e.name, hex: true) ?? 0;
     // Palattu lämmittelyn jälkeen: työpaino valmiina (ei viimeisimmän lämmittelysarjan painoa).
     if (e.workSets.isEmpty && e.sets.isNotEmpty) _prefillWork();
+    // Palattu liikkeeseen: tallentamaton paino, toistot ja sarjatyyppi säilyvät, jos sarjat eivät ole muuttuneet.
+    final d = _drafts[e];
+    if (d != null && d.sets == e.sets.length) {
+      _kg = d.kg;
+      _reps = d.reps;
+      _kind = d.kind;
+      _edited = d.edited;
+      _kgEdited = d.kgEdited;
+    }
+    _drafts[e] = null;
     // Toisen liikkeen palautus käynnissä: palkki näyttää tämän liikkeen ensimmäisen sarjan (tauon jälkeen tämä).
     if (rest.running && rest.exercise != e.name) rest.nextFn = _restNext;
   }
@@ -369,23 +429,122 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     ),
   );
 
-  /// Yksi tietokortti: tavoite, ehdotus ja edellinen kerta. Napautus näyttää lisätiedot.
+  /// Tietokortti taulukkona (käyttäjä 25.11.): otsikot omassa sarakkeessa, luvut alkavat samasta kohdasta.
+  /// Ehdotus (oletus): tavoite, työsarjat tai Tänään, edellisen kerran paras sarja. Viimeksi paras: vain se rivi.
+  /// Pois: ei korttia.
   Widget _infoCard(ColorScheme cs) {
+    final mode = settings.suggestMode;
+    if (mode == 'off') return const SizedBox.shrink();
     final target = widget.target;
-    final sugg = settings.tips ? _sugg : null;
+    final sugg = settings.tips && mode == 'suggest' ? _sugg : null;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
-    final strong = TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600);
-    // Kahden käsipainon tai kuulan liikkeet: historia yhteispainona (käyttäjä 15.11.), syöttö painoa kohden.
-    final mul = loadMultiplier(e.name);
-    final total = mul == 2 ? ' ${t('yhteensä')}' : '';
-    // Tuplakahvakuula: kuulien yhteispaino "48×8 yhteensä"; muut fmtSetsCompact-muodossa.
-    final last = _last == null
-        ? t('ei aiempaa')
-        : mul == 1
-        // Tiivis muoto kuten muualla, yksikkö kerran (käyttäjä 15.11., vaihtoehto B); kahden käsipainon liikkeissä
-        // kummankin käden paino. Aika- ja matkaliikkeissä yksikkö sarjassa (ennen "0×60, 0×60" ilman yksikköä).
-        ? '${shortDateY(_last.$1)} – ${fmtSetsUnit(e.name, _last.$2.sets, short: false)}'
-        : '${shortDateY(_last.$1)} – ${_last.$2.sets.map((s) => '${fmtNum(s.kg * mul)}×${s.reps}').join(', ')}$total';
+    final per = totalDumbbells(e.name)
+        ? t('per käsi')
+        : loadMultiplier(e.name) == 2
+        ? t('per kuula')
+        : null;
+    final best = _lastBest;
+    final date = _last == null ? null : shortDate(_last.$1);
+    final useBtn = TextButton(
+      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+      onPressed: _sugg == null
+          ? null
+          : () => setState(() {
+              _kg = _sugg.kg;
+              _reps = _sugg.reps;
+              _edited = true;
+            }),
+      child: Text(t('Käytä')),
+    );
+    Widget label(String main, String? small) => Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(main, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+          if (small != null && small.isNotEmpty)
+            Text(small, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        ],
+      ),
+    );
+    Widget value(String text, {double size = 15, Key? key, String? extra}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text.rich(
+        key: key,
+        TextSpan(
+          children: [
+            TextSpan(
+              text: _noBreak(text),
+              style: TextStyle(fontSize: size, fontWeight: FontWeight.w700, color: cs.onSurface),
+            ),
+            if (extra != null) TextSpan(text: '  $extra', style: sub),
+          ],
+        ),
+      ),
+    );
+    TableRow row(Widget a, Widget b, Widget c, {bool line = false}) => TableRow(
+      decoration: line ? BoxDecoration(border: Border(top: BorderSide(color: cs.outlineVariant, width: .5))) : null,
+      children: [a, b, c],
+    );
+    final bestText = best == null ? t('ei aiempaa') : fmtSetPer(e.name, best);
+    final rows = <TableRow>[];
+    if (mode == 'best') {
+      final b6 = _best6;
+      if (b6 == null) return const SizedBox.shrink();
+      rows.add(
+        row(
+          label(t('Paras 6 vk'), [shortDate(b6.$1), ?per].join(' · ')),
+          value(fmtSetPer(e.name, b6.$2), size: 17, key: const ValueKey('bestRow')),
+          useBtn,
+        ),
+      );
+    } else {
+      if (target != null) {
+        final targetLabel = switch (_m) {
+          Measure.reps => _cap(t('toistot')),
+          Measure.seconds => t('Kesto'),
+          // "Matka: 3 × 2–4 edestakaisin" (ennen "Edestakaiset: … edestakaisin", käyttäjä 25.11.).
+          _ => t('Matka'),
+        };
+        rows.add(
+          row(
+            label(targetLabel, null),
+            value(
+              '${target.text}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'}',
+              key: const ValueKey('targetRow'),
+              extra: reserveTarget(_m, target.rir),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text('${e.workSets.length}/${target.sets}', style: sub, textAlign: TextAlign.end),
+            ),
+          ),
+        );
+      }
+      if (sugg != null) {
+        // Työsarjat vain liikkeissä, joissa on lämmittely; aika- ja kehonpainoliikkeissä "Tänään".
+        final warmupKind =
+            _m != Measure.seconds && !(exerciseEquipment[e.name]?.every((q) => q == Equip.kehonpaino) ?? false);
+        rows.add(
+          row(
+            label(warmupKind ? t('Työsarjat') : t('Tänään'), warmupKind ? per : null),
+            value(fmtSetPer(e.name, SetEntry(sugg.kg, sugg.reps)), size: 17, key: const ValueKey('suggRow')),
+            useBtn,
+            line: rows.isNotEmpty,
+          ),
+        );
+      }
+      // Edellinen kerta: vain paras sarja (käyttäjä 25.11.: koko sarjaluettelo oli kuin laskutehtävä salilla).
+      rows.add(
+        row(
+          label(best == null ? t('Edellinen') : t('Edellinen paras'), [?date, if (sugg == null) ?per].join(' · ')),
+          value(bestText, size: 14, key: const ValueKey('lastRow')),
+          Icon(_infoOpen ? Icons.expand_less : Icons.expand_more, size: 18, color: cs.onSurfaceVariant),
+          line: rows.isNotEmpty,
+        ),
+      );
+    }
     return Material(
       color: cs.surfaceContainer,
       borderRadius: BorderRadius.circular(14),
@@ -398,85 +557,39 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               : const BoxDecoration(
                   border: Border(left: BorderSide(color: Sami.green, width: 4)),
                 ),
-          padding: const EdgeInsets.fromLTRB(12, 10, 8, 8),
+          padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (target != null)
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${t('Tavoite')}: ${target.text}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'} · '
-                        '${reserveTarget(_m, target.rir)}',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    // Väli laskuriin: pitkä tavoiteteksti ei osu siihen kiinni ("…varaa0/4", testikierros 16.11.).
-                    const SizedBox(width: 8),
-                    Text('${e.workSets.length}/${target.sets}', style: sub),
-                  ],
-                ),
-              if (sugg != null)
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        // Työsarjojen paino ja toistot (käyttäjä 17.11.: "Ehdotus" sekoittui lämmittelyyn ja maksimiin).
-                        t('Työsarjat: {0}', [fmtSet(e.name, SetEntry(sugg.kg, sugg.reps))]) +
-                            (mul == 2 && sugg.kg > 0 ? ' (${t('yhteensä {0} kg', [fmtNum(sugg.kg * mul)])})' : ''),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    TextButton(
-                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                      onPressed: () => setState(() {
-                        _kg = sugg.kg;
-                        _reps = sugg.reps;
-                        _edited = true;
-                      }),
-                      child: Text(t('Käytä')),
-                    ),
-                  ],
-                ),
+              Table(
+                columnWidths: const {
+                  0: IntrinsicColumnWidth(),
+                  1: FlexColumnWidth(),
+                  2: IntrinsicColumnWidth(),
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: rows,
+              ),
               if (_infoOpen) ...[
-                if (sugg != null) Text(sugg.reason, style: sub),
+                if (sugg != null && sugg.reason.isNotEmpty) Text(sugg.reason, style: sub),
+                if (_last != null)
+                  Text(
+                    '${t('Edellinen ({0})', [shortDateY(_last.$1)])}: ${fmtSetGroups(e.name, _last.$2.sets.where((s) => !s.warmup))}',
+                    style: sub,
+                  ),
                 if (target != null)
                   Text(
                     '${t('{0} · tehty {1}/{2}', [target.label, e.workSets.length, target.sets])} · '
                     '${t('tauko {0} min', [fmtNum(target.restSec / 60)])}',
                     style: sub,
                   ),
-                const SizedBox(height: 4),
-              ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(text: t('Edellinen kerta: ')),
-                          TextSpan(text: last, style: strong),
-                          if (_bestBefore > 0) ...[
-                            TextSpan(text: _infoOpen ? '\n${t('Paras: ')}' : ' · ${t('Paras: ')}'),
-                            TextSpan(
-                              text: mul == 2
-                                  ? '${fmtNum(_bestBefore * mul)} kg$total'
-                                  : '${fmtNum(shownKg(e.name, _bestBefore))} ${kgUnit(e.name)}',
-                              style: strong,
-                            ),
-                          ],
-                        ],
-                      ),
-                      maxLines: _infoOpen ? null : 1,
-                      overflow: _infoOpen ? null : TextOverflow.ellipsis,
-                      style: sub,
-                    ),
+                if (_bestBefore > 0)
+                  Text(
+                    '${t('Paras: ')}${fmtNum(shownKg(e.name, _bestBefore))} kg${per == null ? '' : ' ($per)'}',
+                    style: sub,
                   ),
-                  Icon(_infoOpen ? Icons.expand_less : Icons.expand_more, size: 18, color: cs.onSurfaceVariant),
-                ],
-              ),
+                const SizedBox(height: 6),
+              ],
             ],
           ),
         ),
@@ -537,11 +650,13 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
       }
       _recomputePr();
     });
-    // TalkBack (20.11.): tallennus ei kertonut mitään; nyt "Sarja tallennettu: 5 kg × 6".
+    // TalkBack (20.11.): tallennus ei kertonut mitään; nyt "Sarja tallennettu: 5 kg × 6". Sama muoto kuin
+    // sarjaluettelossa (yötesti 25.11.): kahden käsipainon liikkeissä kättä kohden ("10 kg/käsi × 8"), aika- ja
+    // matkaliikkeissä yksikkö ("45 s").
     final last = e.sets.last;
     SemanticsService.sendAnnouncement(
       View.of(context),
-      t('Sarja tallennettu: {0}', ['${fmtNum(last.kg)} kg × ${last.reps}']),
+      t('Sarja tallennettu: {0}', [fmtSetHand(e.name, last)]),
       Directionality.of(context),
     );
     // Supersarja: kesken kierroksen suoraan seuraavaan liikkeeseen, palautus vasta kierroksen jälkeen.
@@ -572,9 +687,9 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     }
     await widget.onChanged();
     if (mounted && e.sets.last.pr) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t('🏆 Uusi ennätys: {0}! Giitu, hienoa!', [fmtSet(e.name, e.sets.last)]))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('🏆 Uusi ennätys: {0}! Giitu, hienoa!', [fmtSetHand(e.name, e.sets.last)]))),
+      );
     }
   }
 
@@ -697,13 +812,14 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                           ),
                           onPressed: _markDone,
                           icon: const Icon(Icons.check),
-                          label: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              t('{0} valmis', [exerciseLabel(e.name)]),
-                              maxLines: 1,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                            ),
+                          // Pitkä nimi (käyttäjä 24.11.): ei kutisteta pieneksi yhdelle riville, vaan rivitetään
+                          // kahdelle samalla koolla; englanninkielinen nimi suluissa jää pois (se on jo otsikossa).
+                          label: Text(
+                            t('{0} valmis', [exerciseDisplay(e.name)]),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
                         ),
                         const SizedBox(height: 4),

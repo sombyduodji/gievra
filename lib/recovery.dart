@@ -56,7 +56,7 @@ TileState metricState(String key, MetricStat s, Map<DateTime, NightMetrics> all,
 /// tavallisen. Ilman tavallista tasoa vain 6 tunnin raja.
 TileState sleepTileState(SleepStats s) {
   final last = s.last;
-  if (last == null) return TileState.none;
+  if (last == null || !s.fresh) return TileState.none;
   if (last.asleep <= const Duration(hours: 6)) return TileState.red;
   final usual = s.usual;
   if (usual != null && last.asleep <= usual - sleepShortMargin) return TileState.yellow;

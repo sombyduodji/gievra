@@ -203,6 +203,10 @@ class Settings extends ChangeNotifier {
   Map<String, double> exerciseBars = {};
   bool tips = true;
 
+  /// Painoehdotus salitreenissä (käyttäjä 25.11.): 'suggest' = ehdotus kuten ennen (oletus), 'best' = vain edellisen
+  /// kerran paras sarja, 'off' = ei tietokorttia lainkaan.
+  String suggestMode = 'suggest';
+
   /// Kehonpainon seuranta (asetukset.md: body_tracker). Punnitukset ja pituus kehonpaino.md:ssä ([body]).
   bool bodyTracker = false;
 
@@ -662,6 +666,7 @@ class Settings extends ChangeNotifier {
             : 'exercise_bars: ${exerciseBars.entries.map((e) => '${e.key}=${fileNum(e.value)}').join('; ')}\n',
       )
       ..writeln('tips: $tips')
+      ..writeln('suggest_mode: $suggestMode')
       ..writeln('body_tracker: $bodyTracker')
       ..writeln('weight_home: $weightOnHome')
       ..write(listEquals(runBands, defaultRunBands) ? '' : 'run_bands: ${runBandsToFile(runBands)}\n')
@@ -818,6 +823,8 @@ class Settings extends ChangeNotifier {
             };
           case 'tips':
             tips = v != 'false';
+          case 'suggest_mode':
+            if (const ['suggest', 'best', 'off'].contains(v)) suggestMode = v;
           case 'body_tracker':
             bodyTracker = v == 'true';
           case 'weight_home':
@@ -1244,6 +1251,11 @@ class Settings extends ChangeNotifier {
     _persist();
   }
 
+  void setSuggestMode(String v) {
+    suggestMode = v;
+    _persist();
+  }
+
   void setDeloadEvery(int v) {
     deloadEvery = v;
     _persist();
@@ -1551,6 +1563,23 @@ class WorkoutStore extends ChangeNotifier {
       }
     }
     return best;
+  }
+
+  /// Paras työsarja [days] päivän ajalta ennen päivän [before] treeniä numero [session] (käyttäjä 25.11.: "Paras 6 vk";
+  /// yksi kevyt kerta ei ratkaise). Raskain, saman painon sisällä eniten toistoja tai pisin aika; lämmittely ei käy.
+  (DateTime, SetEntry)? bestWithin(String exercise, DateTime before, int session, {int days = 42}) {
+    final from = addDays(dateOnly(before), -days);
+    (DateTime, SetEntry)? b;
+    for (final w in workouts) {
+      if (!earlierThan(w, before, session) || dateOnly(w.date).isBefore(from)) continue;
+      for (final e in w.exercises.where((e) => e.name == exercise)) {
+        for (final s in e.sets.where((s) => !s.warmup)) {
+          final c = b?.$2;
+          if (c == null || s.kg > c.kg || (s.kg == c.kg && s.reps > c.reps)) b = (w.date, s);
+        }
+      }
+    }
+    return b;
   }
 
   /// Edellinen kerta, kun liike tehtiin ennen annettua päivää tai saman päivän aiemmassa treenissä ([session]:

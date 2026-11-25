@@ -106,7 +106,7 @@ void main() {
     expect(rampBtn, findsNothing);
     expect(find.text('Ohita lämmittely'), findsNothing);
     expect(find.byKey(const ValueKey('rampChip_0')), findsNothing);
-    expect(find.textContaining('Työsarjat: '), findsOneWidget);
+    expect(find.text('Työsarjat'), findsOneWidget);
     expect(warmBtn, findsOneWidget);
     expect(find.text('Sarja 1'), findsOneWidget, reason: 'esitäyttö on työsarja');
     final work = e.sets.isEmpty ? null : e.sets.last.kg;

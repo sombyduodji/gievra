@@ -28,11 +28,14 @@ import 'theme.dart';
 import 'ui/shell.dart';
 import 'ui/intro.dart';
 import 'ui/onboarding.dart';
+import 'ui/orientation_lock.dart';
 import 'ui/tap_guard.dart';
 import 'time_zone.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Puhelimessa pystyssä, tabletissa ja avatussa taittopuhelimessa kääntyy (käyttäjä 24.11.).
+  initOrientationLock();
   // Julkaisuversiossa Flutter karsii virheen pinosta rivit, joita se ei tunnista; Dart-symbolit ovat erillään
   // (tools/build_apk.sh), joten karsittuna pinosta ei jäisi mitään. Raaka pino lokiin, jotta
   // tools/symbolize.py saa sen luettavaksi.

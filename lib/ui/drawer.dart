@@ -309,6 +309,7 @@ class SettingsScreen extends StatefulWidget {
       'Painon lisäys (kg)',
       'Levyt ja tanko',
       'Lämmittelylaitteet',
+      'Painoehdotus',
       'Vinkit ja edistyminen',
     ])
       (SettingsGroup.training, k),
@@ -959,6 +960,30 @@ class _SettingsSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
               child: Text(t('Laitteita voi lisätä ja poistaa uuden treenin Muokkaa-napista.'), style: sub),
+            ),
+            // Painoehdotus salitreenissä (käyttäjä 25.11.): koko ehdotus, vain edellisen kerran paras sarja tai pois.
+            Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 2), child: Text(t('Painoehdotus'))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Text(switch (settings.suggestMode) {
+                'best' => t('Sarjan kirjauksessa näkyy vain paras sarja 6 viikon ajalta.'),
+                'off' => t('Sarjan kirjauksessa ei näy tietokorttia; paino alkaa edellisen kerran parhaasta sarjasta.'),
+                _ => t('Tavoite, ehdotettu työsarja ja edellisen kerran paras sarja.'),
+              }, style: sub),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<String>(
+                key: const ValueKey('suggestMode'),
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'suggest', label: Text(t('Ehdotus'))),
+                  ButtonSegment(value: 'best', label: Text(t('Paras 6 vk'))),
+                  ButtonSegment(value: 'off', label: Text(t('Pois'))),
+                ],
+                selected: {settings.suggestMode},
+                onSelectionChanged: (v) => settings.setSuggestMode(v.first),
+              ),
             ),
             const SizedBox(height: 8),
             SwitchListTile(

@@ -615,8 +615,9 @@ String fmtSet(String exercise, SetEntry s) => _withKind(s, _plain(exercise, s, s
 
 String _plain(String exercise, SetEntry s, double kg, String unit) {
   final m = measureOf(exercise);
+  // Kehonpaino ilman lisäpainoa: "9 toistoa", ei "0 kg × 9" (käyttäjä 25.11.).
   return m == Measure.reps
-      ? '${fmtNum(kg)} $unit × ${s.reps}'
+      ? (s.kg == 0 ? '${s.reps} ${s.reps == 1 ? t('toisto') : t('toistoa')}' : '${fmtNum(kg)} $unit × ${s.reps}')
       : (s.kg == 0 ? '${s.reps} ${t(m.unit)}' : '${fmtNum(kg)} $unit × ${s.reps} ${t(m.unit)}');
 }
 
@@ -639,6 +640,42 @@ String kgUnit(String exercise, {bool short = false}) =>
 /// Yksi sarja luettelon sirussa: "12 kg/käsi × 10" tai "60 kg × 6".
 String fmtSetHand(String exercise, SetEntry s) =>
     _withKind(s, _plain(exercise, s, shownKg(exercise, s.kg), kgUnit(exercise, short: true)));
+
+/// Sarja painoa kohden ilman tarkennetta: "15 kg × 9" (kahden käsipainon liikkeissä kättä kohden, tarkenne otsikossa),
+/// "65 s", "9 toistoa".
+String fmtSetPer(String exercise, SetEntry s) => _withKind(s, _plain(exercise, s, shownKg(exercise, s.kg), 'kg'));
+
+/// Sarjat ryhmiteltyinä, paino ensin kuten muualla: peräkkäiset samanlaiset "3 × 24 kg × 10", eri painot
+/// "70 kg × 6 · 2 × 80 kg × 6" (käyttäjä 25.11.).
+String fmtSetGroups(String exercise, Iterable<SetEntry> sets) {
+  // Pitkät yksiköt (edestakaisin, askelta, m) kerran loppuun: "20 kg × 2 · 21,25 kg × 2 edestakaisin"; ennen
+  // jokaisen sarjan perässä, ja rivi katkesi (käyttäjä 25.11., Farmer walk).
+  final m = measureOf(exercise);
+  final unitOnce = m == Measure.trips || m == Measure.steps || m == Measure.meters;
+  String one(SetEntry s) => !unitOnce
+      ? fmtSetPer(exercise, s)
+      : _withKind(s, s.kg == 0 ? '${s.reps}' : '${fmtNum(shownKg(exercise, s.kg))} kg × ${s.reps}');
+  final out = <String>[];
+  SetEntry? prev;
+  var n = 0;
+  void flush() {
+    final p = prev;
+    if (p != null) out.add(n > 1 ? '$n × ${one(p)}' : one(p));
+  }
+
+  for (final s in sets) {
+    final p = prev;
+    if (p != null && s.kg == p.kg && s.reps == p.reps && s.kind == p.kind) {
+      n++;
+      continue;
+    }
+    flush();
+    prev = s;
+    n = 1;
+  }
+  flush();
+  return unitOnce && out.isNotEmpty ? '${out.join(' · ')} ${t(m.unit)}' : out.join(' · ');
+}
 
 /// Sarjat tiiviisti ilman yksikköä: "12 × 12 · 22 × 10" (yksikkö erikseen [kgUnit]). Ennätys 🏆.
 String fmtSetsCompact(String exercise, Iterable<SetEntry> sets) {

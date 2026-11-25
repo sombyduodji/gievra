@@ -13,6 +13,30 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.5',
+    Icons.fitness_center,
+    'Selkeämpi sarjan kirjaus',
+    'Tavoite, ehdotus ja edellinen kerta omilla riveillään, luvut samassa linjassa. Edellinen kerta näyttää parhaan sarjan. Kahden käsipainon liikkeissä paino kättä kohden, kahvakuulissa kuulaa kohden.',
+  ),
+  NewFeature(
+    '0.7.5',
+    Icons.tune,
+    'Painoehdotus valittavissa',
+    'Asetukset → Harjoittelu → Painoehdotus: Ehdotus (kuten ennen), Paras 6 vk (paras sarja kuuden viikon ajalta) tai Pois. Paino alkaa valmiiksi oikeasta kohdasta.',
+  ),
+  NewFeature(
+    '0.7.5',
+    Icons.edit_note,
+    'Muutettu paino säilyy',
+    'Jos muutat seuraavan sarjan painoa tai toistoja ja käyt välillä liikelistassa, arvot ovat tallessa, kun palaat liikkeeseen.',
+  ),
+  NewFeature(
+    '0.7.5',
+    Icons.bedtime_outlined,
+    'Yön uni ei vielä synkronoitu',
+    'Jos tämän yön uni ei vielä ole Health Connectissa, Uni-kortti näyttää edellisen yön harmaana omalla nimellään ja kertoo, että kellon tai sormuksen sovelluksen avaaminen päivittää tiedon.',
+  ),
+  NewFeature(
     '0.7.4.1',
     Icons.emoji_events_outlined,
     'Ennätykset korteiksi',

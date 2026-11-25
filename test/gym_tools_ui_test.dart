@@ -75,8 +75,8 @@ void main() {
       ];
       await logger(tester, 'Penkkipunnerrus');
       // Edellinen kerta ja ehdotus samassa kortissa; Näin teet ei vie tilaa ylhäällä.
-      expect(find.textContaining('Edellinen kerta', findRichText: true), findsOneWidget);
-      expect(find.textContaining('Työsarjat'), findsOneWidget);
+      expect(find.byKey(const ValueKey('lastRow')), findsOneWidget);
+      expect(find.textContaining('Työsarjat', findRichText: true), findsOneWidget);
       expect(find.text('Näin teet'), findsNothing);
       // Paino ja toistot samalla rivillä.
       final w = tester.getCenter(find.text('PAINO'));
@@ -84,7 +84,7 @@ void main() {
       expect((w.dy - r.dy).abs(), lessThan(1));
       expect(r.dx, greaterThan(w.dx));
       // Lisätiedot kortin napautuksella.
-      await tester.tap(find.textContaining('Edellinen kerta', findRichText: true));
+      await tester.tap(find.byKey(const ValueKey('lastRow')));
       await tester.pump();
       expect(find.byIcon(Icons.expand_less), findsOneWidget);
       // Ohje ja mittaustapa.
@@ -192,7 +192,7 @@ void main() {
   });
 
   testWidgets(
-    'Edellinen kerta tiiviisti yksikön kanssa: toistot "60 × 8 · 62,5 × 6 kg", aika "60 s" (testikierros 15.11.)',
+    'Edellinen paras sarja yksikön kanssa: "62,5 kg × 6", aika "60 s" (käyttäjä 25.11.)',
     (tester) async {
       await tall(tester);
       store.workouts = [
@@ -206,13 +206,12 @@ void main() {
       ];
       addTearDown(() => store.workouts = []);
       await logger(tester, 'Penkkipunnerrus');
-      expect(
-        find.textContaining('kg: 60 × 8 · 62,5 × 6', findRichText: true),
-        findsOneWidget,
-      ); // yksikkö edessä (16.11.)
+      String last() =>
+          tester.widget<Text>(find.byKey(const ValueKey('lastRow'))).textSpan!.toPlainText().replaceAll('\u00A0', ' ');
+      expect(last(), '62,5 kg × 6'); // vain paras sarja (käyttäjä 25.11.)
       await tester.pumpWidget(const SizedBox()); // uusi näkymä, ei edellisen tilaa
       await logger(tester, 'Lankku');
-      expect(find.textContaining('60 s · 45 s', findRichText: true), findsOneWidget);
+      expect(last(), '60 s');
       expect(find.textContaining('0×60', findRichText: true), findsNothing);
     },
   );

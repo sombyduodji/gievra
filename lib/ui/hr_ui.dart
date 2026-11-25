@@ -832,7 +832,13 @@ class _ProfileSheetState extends State<_ProfileSheet> {
     final cs = Theme.of(context).colorScheme;
     final sub = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     // Syntymävuosi riittää sykealueisiin; muut kaloreihin (valinnaiset, käyttäjä 15.11.: kellon syke ilman vyötä).
-    final ok = _y != null && (_max.text.trim().isEmpty || _m != null);
+    // Virheellinen pituus tai paino estää tallennuksen kuten maksimisyke (yötesti 25.11.: virhe näkyi, mutta Tallenna
+    // sulki arkin ja jätti arvon hiljaa pois).
+    final ok =
+        _y != null &&
+        (_max.text.trim().isEmpty || _m != null) &&
+        (_height.text.trim().isEmpty || _h != null) &&
+        (_weight.text.trim().isEmpty || _w != null);
     InputDecoration dec(String label, String? suffix) =>
         InputDecoration(labelText: label, suffixText: suffix, border: const OutlineInputBorder());
     return Padding(
