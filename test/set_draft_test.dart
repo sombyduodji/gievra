@@ -310,14 +310,28 @@ void main() {
     expect(find.text('Paras 6 vk'), findsOneWidget);
     expect(row(tester, 'bestRow'), '85 kg × 5', reason: 'kevyt viimeisin kerta ei ratkaise, yli 6 vk vanha ei mukana');
     expect(find.textContaining('20.10.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('targetRow')), findsNothing);
+    // Ohjelman tavoite ja laskuri pienempänä toisella rivillä (yötesti 26.11.).
+    expect(row(tester, 'targetRow'), startsWith('3 × 6–10'));
+    expect(find.byKey(const ValueKey('targetCount')), findsOneWidget);
+    expect(find.text('0/3'), findsOneWidget);
     expect(find.byKey(const ValueKey('suggRow')), findsNothing);
     expect(kg('85'), findsOneWidget, reason: 'paino alkaa 6 viikon parhaasta sarjasta');
     expect(reps('5'), findsOneWidget);
 
-    settings.suggestMode = 'off';
+    // Ei 6 viikon parasta (vain yli 6 vk vanhoja tai ei yhtään): tavoite näkyy silti.
+    store.workouts = [];
     await show();
     expect(find.text('Paras 6 vk'), findsNothing);
+    expect(find.text('0/3'), findsOneWidget);
+
+    settings.suggestMode = 'off';
+    store.workouts = [
+      w(DateTime(2026, 10, 20), [SetEntry(85, 5, rir: 1)]),
+      w(DateTime(2026, 11, 12), [SetEntry(60, 10, rir: 3)]),
+    ];
+    await show();
+    expect(find.text('Paras 6 vk'), findsNothing);
+    expect(find.byKey(const ValueKey('targetRow')), findsNothing);
     expect(find.byKey(const ValueKey('lastRow')), findsNothing);
     expect(find.text('Käytä'), findsNothing);
     expect(kg('60'), findsOneWidget, reason: 'Pois: paino alkaa edellisen kerran parhaasta sarjasta');

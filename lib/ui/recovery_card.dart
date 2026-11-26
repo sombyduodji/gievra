@@ -42,28 +42,38 @@ List<RecTile> recoveryTiles(DateTime now) {
       case 'nighthr':
         final n = nightHr(nightHrNights(), now);
         if (n == null) continue;
+        // Tämän yön arvo ei vielä Health Connectissa (yötesti 25.–26.11.): ei edellisen yön arvoa tämän päivän
+        // palautumisena, kuten Uni-ruudussa.
+        final fresh = dateOnly(n.lastDay) == today;
         tiles.add(
           RecTile(
             'nighthr',
             t('Yösyke'),
             Icons.favorite_border,
-            '${n.last}',
-            n.base == null ? t('tav. viikon jälkeen') : t('tav. {0}', [n.base!.round()]),
-            nightHrState(n),
+            fresh ? '${n.last}' : '–',
+            !fresh
+                ? t('ei vielä')
+                : n.base == null
+                ? t('tav. viikon jälkeen')
+                : t('tav. {0}', [n.base!.round()]),
+            fresh ? nightHrState(n) : TileState.none,
           ),
         );
       case 'hrv' || 'rr' || 'spo2' || 'temp':
         if (!settings.homeCardOn('night')) continue;
         final s = metricStat(sleepData.metrics, k, now);
         if (s == null) continue;
-        final st = metricState(k, s, sleepData.metrics, now);
+        final fresh = dateOnly(s.lastDay) == today;
+        final st = fresh ? metricState(k, s, sleepData.metrics, now) : TileState.none;
         tiles.add(
           RecTile(
             k,
             NightMetricsCard.label(k),
             NightMetricsCard.icon(k),
-            NightMetricsCard.value(k, s.last),
-            st == TileState.none
+            fresh ? NightMetricsCard.value(k, s.last) : '–',
+            !fresh
+                ? t('ei vielä')
+                : st == TileState.none
                 ? t('vertailu 2 viikon jälkeen')
                 : t('tav. {0}', [NightMetricsCard.value(k, metricUsual(k, s)!)]),
             st,

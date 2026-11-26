@@ -169,8 +169,26 @@ void main() {
       final s = suggestForTarget('Leuanveto', DateTime(2026, 11, 18), t)!;
       expect(s.kg, 0, reason: kind);
       expect(s.reason, contains(kind == 'loma' ? 'lomalta' : 'sairauden'));
+      // Ei "kuormat −0 %" (yötesti 26.11.): kuorman ollessa ennallaan "normaalit kuormat".
+      expect(s.reason, isNot(contains('−0 %')), reason: s.reason);
       expect(suggestNext('Leuanveto', DateTime(2026, 11, 18))!.kg, 0, reason: kind);
     }
+    settings.pauses = [];
+  });
+
+  test('Paluujakson lopussa kuorma ennallaan: "normaalit kuormat" eikä "kuormat −0 %" (yötesti 26.11.)', () {
+    store.workouts = [
+      Workout(
+        date: DateTime(2026, 10, 20),
+        exercises: [
+          ExerciseEntry('Takakyykky', [SetEntry(80, 6, rir: 2), SetEntry(80, 6, rir: 2)]),
+        ],
+      ),
+    ];
+    settings.pauses = [Pause(DateTime(2026, 10, 22), 'loma', DateTime(2026, 11, 14))];
+    final s = suggestForTarget('Takakyykky', DateTime(2026, 11, 28), Target(2, 6, 10, '1–3', 150, 'Viikko 3'))!;
+    expect(s.reason, startsWith('Paluu lomalta (24 pv): normaalit kuormat.'), reason: s.reason);
+    expect(s.kg, 80);
     settings.pauses = [];
   });
 

@@ -262,17 +262,20 @@ Suggestion? _suggestForTarget(String exercise, DateTime date, Target t, [int ses
     return Suggestion(
       _roundDown(base * load, stepFor(exercise)),
       s.reps,
-      p.sick
-          ? l10n.t('Paluu sairauden jälkeen ({0} pv): kuormat −{1} %, noin {2} % sarjoista.', [
-              p.days,
-              ((1 - load) * 100).round(),
-              (sets * 100).round(),
-            ])
-          : l10n.t('Paluu lomalta ({0} pv): kuormat −{1} %, noin {2} % sarjoista.', [
-              p.days,
-              ((1 - load) * 100).round(),
-              (sets * 100).round(),
-            ]),
+      // Sama muoto kuin aika- ja matkaliikkeissä: kuorman ollessa ennallaan "normaalit kuormat" eikä "kuormat −0 %",
+      // ja täysi sarjamäärä jää pois (yötesti 26.11.).
+      [
+        l10n.t('{0} ({1} pv): {2}', [
+          p.sick ? l10n.t('Paluu sairauden jälkeen') : l10n.t('Paluu lomalta'),
+          p.days,
+          ((1 - load) * 100).round() > 0
+              ? l10n.t('kuormat −{0} %', [((1 - load) * 100).round()])
+              : l10n.t('normaalit kuormat'),
+        ]),
+        if (sets < 1) l10n.t(', noin {0} % tavallisista sarjoista', [(sets * 100).round()]),
+        '.',
+        if (p.sick) ' ${l10n.t('Jos oireita vielä on, kevennä lisää.')}',
+      ].join(),
       setsFactor: sets,
     );
   }

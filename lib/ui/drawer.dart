@@ -1,6 +1,7 @@
 import '../sleep.dart' show sleepData;
 
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'maps_screen.dart';
 import 'licenses_screen.dart';
@@ -966,7 +967,7 @@ class _SettingsSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
               child: Text(switch (settings.suggestMode) {
-                'best' => t('Sarjan kirjauksessa näkyy vain paras sarja 6 viikon ajalta.'),
+                'best' => t('Sarjan kirjauksessa näkyy paras sarja 6 viikon ajalta ja ohjelman tavoite.'),
                 'off' => t('Sarjan kirjauksessa ei näy tietokorttia; paino alkaa edellisen kerran parhaasta sarjasta.'),
                 _ => t('Tavoite, ehdotettu työsarja ja edellisen kerran paras sarja.'),
               }, style: sub),
@@ -976,13 +977,21 @@ class _SettingsSection extends StatelessWidget {
               child: SegmentedButton<String>(
                 key: const ValueKey('suggestMode'),
                 showSelectedIcon: false,
-                // Yksi rivi, tarvittaessa pienempänä: suurella tekstillä "Suggest⏎ion" katkesi keskeltä sanaa
-                // (yötesti 26.11. Samsung, englanti 1,3; saameksi "Deaddoevttohus" vielä pidempi).
+                // Rivitys vain sanojen välistä: suurella tekstillä "Suggest⏎ion" katkesi keskeltä sanaa (yötesti
+                // 26.11. Samsung). Jos nimi ei mahdu riville, se jaetaan kahdelle riville välilyönnistä ("Buoremus⏎
+                // 6 vahkus", käyttäjä 26.11.); yksittäinen liian pitkä sana pienenee.
                 segments: [
                   for (final (v, l) in [('suggest', t('Ehdotus')), ('best', t('Paras 6 vk')), ('off', t('Pois'))])
                     ButtonSegment(
                       value: v,
-                      label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          segmentLines(context, l, (MediaQuery.sizeOf(context).width - 32) / 3 - 26),
+                          textAlign: TextAlign.center,
+                          softWrap: false,
+                        ),
+                      ),
                     ),
                 ],
                 selected: {settings.suggestMode},
@@ -2098,4 +2107,28 @@ class _NotificationsBlockedTileState extends State<NotificationsBlockedTile> wit
       onTap: _fix,
     );
   }
+}
+
+/// Valintapainikkeen nimi: yhdellä rivillä, jos mahtuu [width]:iin, muuten kahdella rivillä välilyönnin kohdalta,
+/// joka tasaa rivit parhaiten (ei koskaan keskeltä sanaa).
+String segmentLines(BuildContext context, String label, double width) {
+  final style = Theme.of(context).textTheme.labelLarge;
+  final scaler = MediaQuery.textScalerOf(context);
+  double w(String s) => (TextPainter(
+    text: TextSpan(text: s, style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: scaler,
+  )..layout()).width;
+  if (!label.contains(' ') || w(label) <= width) return label;
+  var best = label;
+  var bestW = double.infinity;
+  for (var i = label.indexOf(' '); i >= 0; i = label.indexOf(' ', i + 1)) {
+    final a = label.substring(0, i), b = label.substring(i + 1);
+    final m = math.max(w(a), w(b));
+    if (m < bestW) {
+      bestW = m;
+      best = '$a\n$b';
+    }
+  }
+  return best;
 }

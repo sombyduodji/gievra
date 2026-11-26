@@ -669,7 +669,12 @@ class NightMetricsCard extends StatelessWidget {
             if (settings.nightTiles.contains(k) && !(embedded && k == 'rest')) k,
         ];
         final stats = {for (final k in keys) k: ?metricStat(sleepData.metrics, k, now)};
-        final flags = {for (final e in stats.entries) e.key: metricFlag(e.key, e.value)};
+        // Tämän yön arvo ei vielä Health Connectissa (yötesti 25.–26.11.): edellisen yön arvo harmaana omalla
+        // nimellään, ei väriä eikä vihjettä, kuten Uni-kortissa.
+        final today = dateOnly(now);
+        bool stale(String k) => dateOnly(stats[k]!.lastDay) != today;
+        final flags = {for (final e in stats.entries) e.key: stale(e.key) ? null : metricFlag(e.key, e.value)};
+        final allStale = stats.isNotEmpty && stats.keys.every(stale);
         // HRV liputetaan vasta toisena päivänä peräkkäin (yksittäinen matala jakso ei vielä näy).
         if (flags['hrv'] == 1 && !hrvLowSustained(sleepData.metrics, now)) flags['hrv'] = 0;
         final body = flags.entries.where((e) => e.key != 'spo2' && e.value == 1).length + (extraFlag ? 1 : 0);
@@ -767,11 +772,17 @@ class NightMetricsCard extends StatelessWidget {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 value(e.key, e.value.last),
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: stale(e.key) ? cs.outline : null,
+                                ),
                               ),
                             ),
                             Text(
-                              flags[e.key] == -1
+                              stale(e.key)
+                                  ? t('yö {0}', [staleNightLabel(e.value.lastDay)])
+                                  : flags[e.key] == -1
                                   ? t('vertailu 2 viikon jälkeen')
                                   : t('tav. {0}', [value(e.key, metricUsual(e.key, e.value)!)]),
                               style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
@@ -788,7 +799,15 @@ class NightMetricsCard extends StatelessWidget {
             const SizedBox(height: 10),
             _hint(
               context,
-              body >= 2
+              allStale
+                  ? (
+                      t(
+                        'Tämän yön arvoja ei vielä ole Health Connectissa. Avaa kellon tai sormuksen sovellus, niin tieto päivittyy.',
+                      ),
+                      cs.onSurfaceVariant,
+                      Icons.sync,
+                    )
+                  : body >= 2
                   ? (
                       t(
                         'Useampi yöarvo poikkeaa tavallisesta: mahdollinen sairastuminen tai kova kuormitus. Kevyt päivä tai lepo.',

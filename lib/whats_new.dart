@@ -13,10 +13,16 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
-    '0.7.5.1',
+    '0.7.5.2',
     Icons.build_outlined,
     'Korjauksia sarjan kirjaukseen',
-    'Muutettu paino ja toistot säilyvät nyt myös ennen liikkeen ensimmäistä sarjaa. Tauon jälkeen kehonpainoliikkeisiin ei enää ehdoteta lisäpainoa. Kapealla näytöllä ja suurella tekstillä luvut eivät katkea kesken.',
+    'Muutettu paino ja toistot säilyvät myös ennen liikkeen ensimmäistä sarjaa. Paras 6 vk -tilassa näkyy myös ohjelman tavoite. Tauon jälkeen kehonpainoliikkeisiin ei ehdoteta lisäpainoa, ja kuorman ollessa ennallaan lukee "normaalit kuormat". Suurella tekstillä sanat eivät katkea kesken.',
+  ),
+  NewFeature(
+    '0.7.5.2',
+    Icons.bedtime_outlined,
+    'Vanha yö harmaana',
+    'Jos tämän yön yösyke tai HRV ei vielä ole Health Connectissa, Palautuminen ja Yöarvot näyttävät edellisen yön harmaana eivätkä väritä sitä tämän päivän arvoksi.',
   ),
   NewFeature(
     '0.7.5',

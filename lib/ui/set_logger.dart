@@ -109,8 +109,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
 
   /// Paras sarja 6 viikon ajalta (Paras 6 vk -tila); jos liikettä ei ole tehty 6 viikkoon, edellisen kerran paras.
   late final (DateTime, SetEntry)? _best6 =
-      store.bestWithin(e.name, widget.date, widget.session) ??
-      (_lastBest == null ? null : (_last!.$1, _lastBest));
+      store.bestWithin(e.name, widget.date, widget.session) ?? (_lastBest == null ? null : (_last!.$1, _lastBest));
 
   /// Painon esitäyttö ja Käytä: asetuksen mukaan laskettu ehdotus, 6 viikon paras sarja tai edellisen kerran paras
   /// sarja (käyttäjä 25.11.).
@@ -475,14 +474,26 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(main, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+          // Yksi sana ei katkea keskeltä (saame 1,3: "Geardduheam⏎it"), vaan pienenee hieman; monisanainen otsikko
+          // rivittyy sanojen välistä.
+          if (main.contains(' '))
+            Text(main, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant))
+          else
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(main, maxLines: 1, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+            ),
           if (small != null && small.isNotEmpty)
             Text(small, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
         ],
       ),
     );
     Widget value(String text, {double size = 15, Key? key, String? extra}) {
-      final bound = _noBreak(text);
+      var bound = _noBreak(text);
+      // Kaksi sanaa ("8 geardduheami", "9 toistoa"): sidotaan, ettei pitkä sana katkea keskeltä (saame 1,3:
+      // "8 geardduh⏎eami"); pienenee tarvittaessa. Pidemmät ("2 ovddas ruovttoluotta") rivittyvät sanojen välistä.
+      if (RegExp(r'^\S+ \S+$').hasMatch(bound)) bound = bound.replaceAll(' ', '\u00a0');
       final rich = Text.rich(
         key: key,
         TextSpan(
@@ -505,45 +516,65 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             : rich,
       );
     }
+
     TableRow row(Widget a, Widget b, Widget c, {bool line = false}) => TableRow(
-      decoration: line ? BoxDecoration(border: Border(top: BorderSide(color: cs.outlineVariant, width: .5))) : null,
+      decoration: line
+          ? BoxDecoration(
+              border: Border(top: BorderSide(color: cs.outlineVariant, width: .5)),
+            )
+          : null,
       children: [a, b, c],
     );
     final bestText = best == null ? t('ei aiempaa') : fmtSetPer(e.name, best);
     final rows = <TableRow>[];
+    // Ohjelman tavoite ja laskuri (0/2). Paras 6 vk -tilassa pienempänä toisella rivillä (yötesti 26.11.: tila
+    // piilotti ne, vaikka salilla niitä tarvitaan).
+    TableRow? targetRow({double size = 15, bool line = false}) {
+      if (target == null) return null;
+      final targetLabel = switch (_m) {
+        Measure.reps => _cap(t('toistot')),
+        Measure.seconds => t('Kesto'),
+        // "Matka: 3 × 2–4 edestakaisin" (ennen "Edestakaiset: … edestakaisin", käyttäjä 25.11.).
+        _ => t('Matka'),
+      };
+      return row(
+        label(targetLabel, null),
+        value(
+          '${target.text}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'}',
+          size: size,
+          key: const ValueKey('targetRow'),
+          extra: reserveTarget(_m, target.rir),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Text(
+            '${e.workSets.length}/${target.sets}',
+            key: const ValueKey('targetCount'),
+            style: sub,
+            textAlign: TextAlign.end,
+          ),
+        ),
+        line: line,
+      );
+    }
+
     if (mode == 'best') {
       final b6 = _best6;
-      if (b6 == null) return const SizedBox.shrink();
-      rows.add(
-        row(
-          label(t('Paras 6 vk'), [shortDate(b6.$1), ?per].join(' · ')),
-          value(fmtSetPer(e.name, b6.$2), size: 17, key: const ValueKey('bestRow')),
-          useBtn,
-        ),
-      );
-    } else {
-      if (target != null) {
-        final targetLabel = switch (_m) {
-          Measure.reps => _cap(t('toistot')),
-          Measure.seconds => t('Kesto'),
-          // "Matka: 3 × 2–4 edestakaisin" (ennen "Edestakaiset: … edestakaisin", käyttäjä 25.11.).
-          _ => t('Matka'),
-        };
+      if (b6 != null) {
         rows.add(
           row(
-            label(targetLabel, null),
-            value(
-              '${target.text}${_m == Measure.reps ? '' : ' ${t(_m.unit)}'}',
-              key: const ValueKey('targetRow'),
-              extra: reserveTarget(_m, target.rir),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: Text('${e.workSets.length}/${target.sets}', style: sub, textAlign: TextAlign.end),
-            ),
+            label(t('Paras 6 vk'), [shortDate(b6.$1), ?per].join(' · ')),
+            value(fmtSetPer(e.name, b6.$2), size: 17, key: const ValueKey('bestRow')),
+            useBtn,
           ),
         );
       }
+      final tr = targetRow(size: 13, line: rows.isNotEmpty);
+      if (tr != null) rows.add(tr);
+      if (rows.isEmpty) return const SizedBox.shrink();
+    } else {
+      final tr = targetRow();
+      if (tr != null) rows.add(tr);
       if (sugg != null) {
         // Työsarjat vain liikkeissä, joissa on lämmittely; aika- ja kehonpainoliikkeissä "Tänään".
         final warmupKind =
@@ -1216,51 +1247,44 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       child: Row(
                         children: [
-                          // Kapea näyttö tai suuri fontti: otsikko vie enintään puolet, varaa-teksti ja sarja kapenevat
-                          // (17.11.: Lämmittely + reilusti varaa + 42 kg × 2 edestakaisin vuoti yli).
-                          Flexible(
-                            child: Text(
-                              e.sets[i].warmup
-                                  ? t('Lämmittely')
-                                  : t('Sarja {0}', [i + 1 - e.sets.take(i).where((s) => s.warmup).length]),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: cs.onSurfaceVariant),
+                          // Otsikko ja varaa-teksti allekkain vasemmalla, sarja oikealla (yötesti 26.11.: suurella
+                          // fontilla englanniksi ja saameksi varaa-teksti lyheni rivin keskellä: "Set 1 a fe…").
+                          // Varaa-teksti saa rivittyä sanojen välistä; sarja pysyy yhdellä rivillä, tarvittaessa pienempänä.
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  e.sets[i].warmup
+                                      ? t('Lämmittely')
+                                      : t('Sarja {0}', [i + 1 - e.sets.take(i).where((s) => s.warmup).length]),
+                                  style: TextStyle(color: cs.onSurfaceVariant),
+                                ),
+                                if (e.sets[i].rir != null)
+                                  Text(
+                                    reserveWords(_m).short[e.sets[i].rir] ?? '',
+                                    key: ValueKey('setReserve_$i'),
+                                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                                  ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                if (e.sets[i].rir != null)
-                                  Flexible(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        reserveWords(_m).short[e.sets[i].rir] ?? '',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                                      ),
-                                    ),
-                                  ),
-                                // Yksi rivi, tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8").
-                                Flexible(
-                                  flex: 2,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: AlignmentDirectional.centerEnd,
-                                    child: Text(
-                                      '${fmtSetHand(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
-                                      textAlign: TextAlign.end,
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          // Yksi rivi, tarvittaessa pienempänä (suurella fontilla ennen "20 / kg × / 8"); enintään
+                          // puolet leveydestä, ja otsikkosarake saa loput.
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .5),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: Text(
+                                '${fmtSetHand(e.name, e.sets[i])}${e.sets[i].pr ? ' 🏆' : ''}',
+                                textAlign: TextAlign.end,
+                                maxLines: 1,
+                                softWrap: false,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),
