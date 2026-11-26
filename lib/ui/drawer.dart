@@ -976,10 +976,14 @@ class _SettingsSection extends StatelessWidget {
               child: SegmentedButton<String>(
                 key: const ValueKey('suggestMode'),
                 showSelectedIcon: false,
+                // Yksi rivi, tarvittaessa pienempänä: suurella tekstillä "Suggest⏎ion" katkesi keskeltä sanaa
+                // (yötesti 26.11. Samsung, englanti 1,3; saameksi "Deaddoevttohus" vielä pidempi).
                 segments: [
-                  ButtonSegment(value: 'suggest', label: Text(t('Ehdotus'))),
-                  ButtonSegment(value: 'best', label: Text(t('Paras 6 vk'))),
-                  ButtonSegment(value: 'off', label: Text(t('Pois'))),
+                  for (final (v, l) in [('suggest', t('Ehdotus')), ('best', t('Paras 6 vk')), ('off', t('Pois'))])
+                    ButtonSegment(
+                      value: v,
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text(l, maxLines: 1)),
+                    ),
                 ],
                 selected: {settings.suggestMode},
                 onSelectionChanged: (v) => settings.setSuggestMode(v.first),

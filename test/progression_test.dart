@@ -154,6 +154,26 @@ void main() {
     expect(returnFor(DateTime(2026, 11, 20)), isNull);
   });
 
+  test('Tauon jälkeen kehonpainoliike ei saa lisäpainoa (yötesti 26.11.: leuanveto 8 toistoa → 2,5 kg × 9)', () {
+    store.workouts = [
+      Workout(
+        date: DateTime(2026, 10, 20),
+        exercises: [
+          ExerciseEntry('Leuanveto', [SetEntry(0, 8, rir: 2), SetEntry(0, 8, rir: 2), SetEntry(0, 8, rir: 2)]),
+        ],
+      ),
+    ];
+    final t = Target(3, 8, 12, '1–3', 150, 'Viikko 3');
+    for (final kind in ['loma', 'sairas']) {
+      settings.pauses = [Pause(DateTime(2026, 10, 25), kind, DateTime(2026, 11, 17))];
+      final s = suggestForTarget('Leuanveto', DateTime(2026, 11, 18), t)!;
+      expect(s.kg, 0, reason: kind);
+      expect(s.reason, contains(kind == 'loma' ? 'lomalta' : 'sairauden'));
+      expect(suggestNext('Leuanveto', DateTime(2026, 11, 18))!.kg, 0, reason: kind);
+    }
+    settings.pauses = [];
+  });
+
   test('Tauon jälkeen ohjelman ehdotus ei nouse: kevennys edellisestä painosta alaspäin pyöristäen', () {
     // Edellinen kerta toistoalueen ylärajalla (20 × 10): ilman taukoa paino nousisi, tauon jälkeen ei.
     store.workouts = [

@@ -13,6 +13,12 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.5.1',
+    Icons.build_outlined,
+    'Korjauksia sarjan kirjaukseen',
+    'Muutettu paino ja toistot säilyvät nyt myös ennen liikkeen ensimmäistä sarjaa. Tauon jälkeen kehonpainoliikkeisiin ei enää ehdoteta lisäpainoa. Kapealla näytöllä ja suurella tekstillä luvut eivät katkea kesken.',
+  ),
+  NewFeature(
     '0.7.5',
     Icons.fitness_center,
     'Selkeämpi sarjan kirjaus',

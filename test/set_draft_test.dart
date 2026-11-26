@@ -92,6 +92,37 @@ void main() {
     expect(kg('70'), findsNothing);
   });
 
+  testWidgets(
+    'ensimmäinen sarja: luonnos säilyy, vaikka treeninäkymä luo tyhjän liikerivin uudelleen (yötesti 26.11.)',
+    (tester) async {
+      store.workouts = [
+        Workout(date: DateTime(2026, 11, 10), title: 'X')
+          ..exercises.add(ExerciseEntry('Takakyykky', [SetEntry(80, 6, rir: 2)])),
+      ];
+      await open(tester, ExerciseEntry('Takakyykky', []));
+      final start = tester.getSemantics(find.bySemanticsLabel(RegExp(r'^Paino: \d'))).label;
+      await plus(tester, 'Paino', 2);
+      await plus(tester, 'Toistot', 1);
+      final kgNow = tester.getSemantics(find.bySemanticsLabel(RegExp(r'^Paino: \d'))).label;
+      final repsNow = tester.getSemantics(find.bySemanticsLabel(RegExp(r'^Toistot: \d'))).label;
+      expect(kgNow, isNot(start));
+      await leave(tester);
+      // Uusi olio samalla nimellä, kuten workout.dart:n _log poistaa tyhjän rivin ja lisää uuden.
+      await open(tester, ExerciseEntry('Takakyykky', []));
+      expect(find.bySemanticsLabel(kgNow), findsOneWidget, reason: 'tallentamaton paino säilyi');
+      expect(find.bySemanticsLabel(repsNow), findsOneWidget, reason: 'tallentamattomat toistot säilyivät');
+      // Palautettu luonnos tallentuu taas poistuttaessa (arvot yhä muutettuja).
+      await leave(tester);
+      await open(tester, ExerciseEntry('Takakyykky', []));
+      expect(find.bySemanticsLabel(kgNow), findsOneWidget, reason: 'luonnos tallennettiin uudelleen poistuttaessa');
+      // Toinen liike samana päivänä ei saa tätä luonnosta.
+      await leave(tester);
+      await open(tester, ExerciseEntry('Penkkipunnerrus', []));
+      expect(find.bySemanticsLabel(kgNow), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('muuttamaton: ei luonnosta, avaus kuten ennen', (tester) async {
     final e = ExerciseEntry('Penkkipunnerrus', [SetEntry(60, 6, rir: 2)]);
     await open(tester, e);
@@ -171,6 +202,12 @@ void main() {
     // Edellinen: vain paras sarja (käyttäjä 25.11.), kättä kohden.
     expect(find.text('Edellinen paras'), findsOneWidget);
     expect(row(tester, 'lastRow'), '22 kg × 8');
+    // Sitova sarja pienenee kapeassa sarakkeessa eikä katkea keskeltä ("17,5 kg ×⏎9", yötesti 26.11.).
+    for (final k in ['suggRow', 'lastRow']) {
+      final fitted = find.ancestor(of: find.byKey(ValueKey(k)), matching: find.byType(FittedBox));
+      expect(fitted, findsOneWidget, reason: k);
+    }
+    expect(find.ancestor(of: find.byKey(const ValueKey('targetRow')), matching: find.byType(FittedBox)), findsNothing);
     await tester.tap(find.text('Käytä'));
     await tester.pump();
     final hand = double.parse(m![1]!.replaceAll(',', '.'));

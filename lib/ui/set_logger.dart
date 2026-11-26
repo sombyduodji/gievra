@@ -59,9 +59,6 @@ class SetLoggerScreen extends StatefulWidget {
   State<SetLoggerScreen> createState() => _SetLoggerScreenState();
 }
 
-/// Tallentamaton seuraava sarja liikettä kohden (käyttäjä 24.11.: paino ja toistot vaihdettu, käyty liikelistassa
-/// ja palattu: arvot palasivat edelliseen sarjaan). Vain muistissa; säilyy, kunnes sarja tallennetaan tai sarjoja
-/// muutetaan muualla.
 /// Sarja ilman huonoja rivinvaihtoja: luku ja yksikkö yhdessä ("21,25 kg/käsi"), kertomerkki lukunsa kanssa
 /// ("× 2"), vinoviivan jälkeen sananliitin (U+2060; ennen "kg/⏎käsi"). Yksikkösanojen väli ("ovddas
 /// ruovttoluotta") saa katketa: kokonaan sitova pitkä sarja katkesi suurella tekstillä keskeltä sanaa (tarkistus 25.11.).
@@ -71,7 +68,9 @@ String _noBreak(String s) => s
     .replaceAll(' × ', '\u00A0×\u00A0')
     .replaceAll('/', '/\u2060');
 
-
+/// Tallentamaton seuraava sarja liikettä kohden (käyttäjä 24.11.: paino ja toistot vaihdettu, käyty liikelistassa
+/// ja palattu: arvot palasivat edelliseen sarjaan). Vain muistissa; säilyy, kunnes sarja tallennetaan tai sarjoja
+/// muutetaan muualla.
 class _Draft {
   final double kg;
   final int reps;
@@ -82,6 +81,11 @@ class _Draft {
 }
 
 final _drafts = Expando<_Draft>('setDraft');
+
+/// Liike ilman tallennettuja sarjoja: treeninäkymä poistaa tyhjän liikerivin poistuttaessa ja luo uuden seuraavalla
+/// avauksella, joten luonnos pidetään päivän, treenin ja liikkeen nimen mukaan (yötesti 26.11.: ohjelman liikkeen
+/// ensimmäisen sarjan muutettu paino palasi ehdotukseen liikelistassa käynnin jälkeen).
+final _emptyDrafts = <String, _Draft>{};
 
 class _SetLoggerScreenState extends State<SetLoggerScreen> {
   ExerciseEntry get e => widget.entry;
@@ -233,7 +237,13 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
   @override
   void dispose() {
     _cd?.cancel();
-    _drafts[e] = _edited || _kind != null ? _Draft(_kg, _reps, _kind, _edited, _kgEdited, e.sets.length) : null;
+    final draft = _edited || _kind != null ? _Draft(_kg, _reps, _kind, _edited, _kgEdited, e.sets.length) : null;
+    _drafts[e] = draft;
+    if (draft != null && e.sets.isEmpty) {
+      _emptyDrafts[_draftKey] = draft;
+    } else {
+      _emptyDrafts.remove(_draftKey);
+    }
     if (rest.nextFn == _restNext) {
       rest.nextText = _restNext();
       rest.nextFn = null;
@@ -319,7 +329,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     // Palattu lämmittelyn jälkeen: työpaino valmiina (ei viimeisimmän lämmittelysarjan painoa).
     if (e.workSets.isEmpty && e.sets.isNotEmpty) _prefillWork();
     // Palattu liikkeeseen: tallentamaton paino, toistot ja sarjatyyppi säilyvät, jos sarjat eivät ole muuttuneet.
-    final d = _drafts[e];
+    final empty = _emptyDrafts.remove(_draftKey);
+    final d = _drafts[e] ?? (e.sets.isEmpty ? empty : null);
     if (d != null && d.sets == e.sets.length) {
       _kg = d.kg;
       _reps = d.reps;
@@ -331,6 +342,8 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
     // Toisen liikkeen palautus käynnissä: palkki näyttää tämän liikkeen ensimmäisen sarjan (tauon jälkeen tämä).
     if (rest.running && rest.exercise != e.name) rest.nextFn = _restNext;
   }
+
+  String get _draftKey => '${widget.date.year}-${widget.date.month}-${widget.date.day}|${widget.session}|${e.name}';
 
   Measure get _m => measureOf(e.name);
 
@@ -468,21 +481,30 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
         ],
       ),
     );
-    Widget value(String text, {double size = 15, Key? key, String? extra}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text.rich(
+    Widget value(String text, {double size = 15, Key? key, String? extra}) {
+      final bound = _noBreak(text);
+      final rich = Text.rich(
         key: key,
         TextSpan(
           children: [
             TextSpan(
-              text: _noBreak(text),
+              text: bound,
               style: TextStyle(fontSize: size, fontWeight: FontWeight.w700, color: cs.onSurface),
             ),
             if (extra != null) TextSpan(text: '  $extra', style: sub),
           ],
         ),
-      ),
-    );
+      );
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        // Kokonaan sitova sarja ("17,5 kg × 11", ei tavallisia välilyöntejä): jos se ei mahdu sarakkeeseen, Flutter
+        // katkaisi sen mistä tahansa ("17,5 kg ×⏎9", yötesti 26.11. Nothing, saame 1,3). Pienennetään mieluummin
+        // hieman. Pitkät yksikkösanat ("ovddas ruovttoluotta") rivittyvät edelleen sanojen välistä.
+        child: extra == null && !bound.contains(' ')
+            ? FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: rich)
+            : rich,
+      );
+    }
     TableRow row(Widget a, Widget b, Widget c, {bool line = false}) => TableRow(
       decoration: line ? BoxDecoration(border: Border(top: BorderSide(color: cs.outlineVariant, width: .5))) : null,
       children: [a, b, c],
@@ -562,8 +584,10 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Table(
+                // Otsikot enintään 40 % leveydestä (pitkä saamen otsikko rivittyy), jotta arvolle jää tilaa
+                // eikä se pienene olemattomaksi (yötesti 26.11.).
                 columnWidths: const {
-                  0: IntrinsicColumnWidth(),
+                  0: MinColumnWidth(IntrinsicColumnWidth(), FractionColumnWidth(.4)),
                   1: FlexColumnWidth(),
                   2: IntrinsicColumnWidth(),
                 },
@@ -571,7 +595,9 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
                 children: rows,
               ),
               if (_infoOpen) ...[
-                if (sugg != null && sugg.reason.isNotEmpty) Text(sugg.reason, style: sub),
+                // Väli "6–10" ei katkea viivan jälkeen ("(tavoite 6–⏎10)", yötesti 26.11. Nothing 1,3).
+                if (sugg != null && sugg.reason.isNotEmpty)
+                  Text(sugg.reason.replaceAllMapped(RegExp(r'(\d)–(?=\d)'), (m) => '${m[1]}–\u2060'), style: sub),
                 if (_last != null)
                   Text(
                     '${t('Edellinen ({0})', [shortDateY(_last.$1)])}: ${fmtSetGroups(e.name, _last.$2.sets.where((s) => !s.warmup))}',

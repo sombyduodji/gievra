@@ -71,7 +71,8 @@ double returnLoadFactor(int days, {required bool sick}) {
 double _round(double kg, double step) => (kg / step).round() * step;
 
 /// Alaspäin lähimpään askeleeseen (tauon jälkeinen kevennys ei saa pyöristyä takaisin ylös), vähintään yksi askel.
-double _roundDown(double kg, double step) => math.max(step, (kg / step + 1e-9).floor() * step);
+/// Kehonpaino (0 kg) pysyy nollana: ennen tauon jälkeen leuanvetoon ehdotettiin 2,5 kg lisäpainoa (yötesti 26.11.).
+double _roundDown(double kg, double step) => kg <= 0 ? kg : math.max(step, (kg / step + 1e-9).floor() * step);
 
 /// Moninivelliike (kyykky, maastaveto, punnerrukset, vedot): isompi lisäys ja alempi toistoyläraja.
 bool _compound(String exercise) => slots[slotOf(exercise)]?.compound ?? false;
