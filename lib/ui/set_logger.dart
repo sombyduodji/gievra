@@ -66,7 +66,9 @@ String _noBreak(String s) => s
     // Luku sitoutuu vain lyhyeen yksikköön (kg, s); pitkä yksikkösana saa rivittyä luvun jälkeen ("2⏎edestakaisin").
     .replaceAllMapped(RegExp(r'(\d) (?=kg|s\b)'), (m) => '${m[1]}\u00A0')
     .replaceAll(' × ', '\u00A0×\u00A0')
-    .replaceAll('/', '/\u2060');
+    .replaceAll('/', '/\u2060')
+    // Väli "6–10" ei katkea viivan jälkeen (saame 1,3, yötesti 27.11.).
+    .replaceAllMapped(RegExp(r'(\d)–(?=\d)'), (m) => '${m[1]}–\u2060');
 
 /// Tallentamaton seuraava sarja liikettä kohden (käyttäjä 24.11.: paino ja toistot vaihdettu, käyty liikelistassa
 /// ja palattu: arvot palasivat edelliseen sarjaan). Vain muistissa; säilyy, kunnes sarja tallennetaan tai sarjoja
@@ -502,7 +504,7 @@ class _SetLoggerScreenState extends State<SetLoggerScreen> {
               text: bound,
               style: TextStyle(fontSize: size, fontWeight: FontWeight.w700, color: cs.onSurface),
             ),
-            if (extra != null) TextSpan(text: '  $extra', style: sub),
+            if (extra != null) TextSpan(text: '  ${bindNumbers(extra)}', style: sub),
           ],
         ),
       );

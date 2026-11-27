@@ -80,8 +80,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     if (await askEditSaved(context) && mounted) setState(() => _locked = false);
   }
 
-  List<Widget> _guard(List<Widget> xs) =>
-      !_locked ? xs : [xs.first, for (final x in xs.skip(1)) EditGuard(locked: true, onTap: _unlock, child: x)];
+  /// Muistiinpanot ovat muokattavissa myös lukittuna kuten liikunnassa (yötesti 27.11. Nothing: "Muokataanko?"
+  /// -kysymyksen jälkeen kenttä ei saanut fokusta ja lista hyppäsi, kun ohjelman tekemättömät liikkeet ilmestyivät).
+  static final _openWhenLocked = {const ValueKey('notesLabel'), const ValueKey('notes')};
+
+  List<Widget> _guard(List<Widget> xs) => !_locked
+      ? xs
+      : [
+          xs.first,
+          for (final x in xs.skip(1))
+            _openWhenLocked.contains(x.key) ? x : EditGuard(locked: true, onTap: _unlock, child: x),
+        ];
 
   /// Aikavyöhyke vaihtui kesken treenin: sama kalenteripäivä uuden vyöhykkeen keskiyönä (muuten "tänään",
   /// ajastin ja kesto katoavat).
@@ -583,10 +592,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           builder: (_) {
             final tg = targetFor(settings.program!, it, w.date);
             final mu = measureOf(it.exercise);
-            return Text(
+            final target = bindNumbers(
               '${tg.text}${mu == Measure.reps ? '' : ' ${t(mu.unit)}'}'
               '${it.pct == null || it.kind != null ? '' : ' @ ${fmtNum(double.parse((it.pct! * 100).toStringAsFixed(1)))} %'}'
-              ' · ${reserveTarget(mu, tg.rir)}'
+              ' · ${reserveTarget(mu, tg.rir)}',
+            );
+            return Text(
+              '$target'
               '${it.alts.isEmpty ? '' : '\n${t('tai: {0}', [it.alts.map(exerciseLabel).join(', ')])}'}'
               '${it.note != null
                   ? '\n🩹 ${trNote(it.note!)}'
@@ -1134,11 +1146,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 _save();
               },
             ),
-          SectionLabel(t('Muistiinpanot')),
+          KeyedSubtree(key: const ValueKey('notesLabel'), child: SectionLabel(t('Muistiinpanot'))),
           TextField(
+            key: const ValueKey('notes'),
             controller: _notes,
             minLines: 2,
             maxLines: 6,
+            maxLength: notesLimit(w.notes),
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            buildCounter: notesCounter,
             decoration: InputDecoration(
               hintText: t('Kivut, unet, tavoitteet… (vapaaehtoinen)'),
               filled: true,

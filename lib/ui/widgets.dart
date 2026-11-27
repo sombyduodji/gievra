@@ -783,6 +783,29 @@ class EditGuard extends StatelessWidget {
       : child;
 }
 
+/// Luku tai väli ("2–3") sanansa kanssa ja ilman katkoa viivan jälkeen: "varaa 2–3" / "fápmu 2–3" rivittyy
+/// kokonaisena (yötesti 27.11. Nothing, saame 1,3: "fápmu 2–⏎3"). Muut sanavälit ("jätä vähän varaa") saavat katketa.
+/// Käytössä sarjan kirjauksessa, treenin liikelistassa, ohjelman näkymässä ja palautuspalkin "Seuraava sarja" -rivillä.
+String bindNumbers(String s) => s
+    .replaceAllMapped(RegExp(r'(\d)–(?=\d)'), (m) => '${m[1]}–\u2060')
+    .replaceAllMapped(RegExp(r' (?=\d)|(?<=\d) '), (_) => '\u00A0');
+
+/// Muistiinpanon pituusraja (yötesti 27.11.: liitetty hyvin pitkä teksti kasvatti .md:n ja CSV:n rajatta).
+/// 20 000 merkkiä on noin 8 sivua, joten tavallinen päiväkirjamerkintä ei osu siihen.
+const notesMaxLength = 20000;
+
+/// Raja kentälle: jo pidempi tallennettu muistiinpano (käsin tehty tiedosto) ei saa rajaa, ettei ensimmäinen
+/// muokkaus katkaise sitä.
+int? notesLimit(String initial) => initial.length > notesMaxLength ? null : notesMaxLength;
+
+/// Laskuri näkyy vasta rajan lähellä (viimeiset 1 000 merkkiä).
+Widget? notesCounter(
+  BuildContext context, {
+  required int currentLength,
+  required int? maxLength,
+  required bool isFocused,
+}) => maxLength == null || currentLength < maxLength - 1000 ? null : Text('$currentLength / $maxLength');
+
 /// Kysyy, muokataanko tallennettua treeniä (true = muokataan).
 Future<bool> askEditSaved(BuildContext context) async =>
     await showDialog<bool>(

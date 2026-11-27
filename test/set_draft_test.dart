@@ -194,6 +194,10 @@ void main() {
     await tester.pump();
     expect(find.text('Toistot'), findsOneWidget);
     expect(row(tester, 'targetRow'), startsWith('3 × 6–10'));
+    // Väli ja varaus eivät katkea viivan jälkeen eikä varaus lukunsa edestä (saame 1,3: "fápmu 2–⏎3", yötesti 27.11.).
+    final rawTarget = tester.widget<Text>(find.byKey(const ValueKey('targetRow'))).textSpan!.toPlainText();
+    expect(rawTarget, contains('6–\u206010'));
+    expect(rawTarget, contains('varaa\u00A01–\u20602'));
     expect(find.text('Työsarjat'), findsOneWidget);
     expect(find.text('per käsi'), findsOneWidget);
     final sugg = row(tester, 'suggRow');

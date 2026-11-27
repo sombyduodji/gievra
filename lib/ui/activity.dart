@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../drafts.dart';
@@ -1676,6 +1677,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 controller: _notes,
                 minLines: 2,
                 maxLines: 6,
+                maxLength: notesLimit(w.notes),
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                buildCounter: notesCounter,
                 decoration: InputDecoration(
                   hintText: t('Reitti, sää, joukkue, tulos… (vapaaehtoinen)'),
                   filled: true,
@@ -1823,6 +1827,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   controller: _notes,
                   minLines: 2,
                   maxLines: 6,
+                  maxLength: notesLimit(w.notes),
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                  buildCounter: notesCounter,
                   decoration: InputDecoration(
                     hintText: t('Reitti, sää, joukkue, tulos… (vapaaehtoinen)'),
                     filled: true,

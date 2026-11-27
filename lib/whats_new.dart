@@ -13,6 +13,12 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.5.3',
+    Icons.edit_note,
+    'Muistiinpanot suoraan',
+    'Tallennetun salitreenin muistiinpanoihin voi kirjoittaa suoraan ilman muokkauskysymystä, kuten liikunnassa. Suurella tekstillä tavoiteväli ja varaus eivät katkea myöskään liikelistassa, ohjelmassa ja palautuspalkissa.',
+  ),
+  NewFeature(
     '0.7.5.2',
     Icons.build_outlined,
     'Korjauksia sarjan kirjaukseen',

@@ -9,7 +9,7 @@ import '../theme.dart';
 import '../exercises.dart' show exerciseLabel;
 import '../l10n.dart';
 import 'hr_ui.dart';
-import 'widgets.dart' show textScale;
+import 'widgets.dart' show bindNumbers, textScale;
 
 String _mmss(int s) => '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
 
@@ -132,7 +132,7 @@ class RestBanner extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4, right: 8),
                   child: Text(
-                    next,
+                    bindNumbers(next),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),

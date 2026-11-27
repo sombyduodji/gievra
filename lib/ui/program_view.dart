@@ -126,10 +126,11 @@ class ProgramView extends StatelessWidget {
                 child: Text(textAlign: TextAlign.end, switch (i.kind) {
                   'H' => t('raskas, viikon mukaan'),
                   'V' => t('volyymi, viikon mukaan'),
-                  _ =>
+                  _ => bindNumbers(
                     '${i.sets} × ${i.lo == i.hi ? i.lo : '${i.lo}–${i.hi}'}'
-                        '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
-                        '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
+                    '${measureOf(i.exercise) == Measure.reps ? '' : ' ${t(measureOf(i.exercise).unit)}'}'
+                    '${i.pct == null ? '' : ' @ ${fmtNum(double.parse((i.pct! * 100).toStringAsFixed(1)))} %'}',
+                  ),
                 }, style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
               if (_editable) ...[const SizedBox(width: 6), Icon(Icons.edit, size: 15, color: cs.onSurfaceVariant)],

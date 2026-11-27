@@ -134,7 +134,8 @@ void main() {
     await tester.tap(ok);
     await tester.pump();
     expect(rest.running, isTrue);
-    expect(find.textContaining('Seuraava sarja 2/3:'), findsOneWidget);
+    // Palkin teksti sidotaan (bindNumbers): luku pysyy sanansa kanssa.
+    expect(find.textContaining('Seuraava sarja\u00A02/3:'), findsOneWidget);
     final first = rest.next!;
     // Paino + : palkki seuraa heti.
     await tester.tap(find.byIcon(Icons.add).first);
