@@ -34,7 +34,12 @@ String shareText(Workout w) {
       final best = e.sets.reduce((a, c) => c.kg * (1 + c.reps / 30) > a.kg * (1 + a.reps / 30) ? c : a);
       final pr = e.sets.any((s) => s.pr) ? ' 🏆' : '';
       b.writeln(
-        l10n.t('• {0}: {1} sarjaa, paras {2}{3}', [exerciseLabel(e.name), e.workSets.length, fmtSetHand(e.name, best), pr]),
+        l10n.t('• {0}: {1} sarjaa, paras {2}{3}', [
+          exerciseLabel(e.name),
+          e.workSets.length,
+          fmtSetHand(e.name, best),
+          pr,
+        ]),
       );
     }
   }

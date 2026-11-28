@@ -162,7 +162,7 @@ msgstr "Gaskamearálaš pulsa"
 msgid "Maksimisyke"
 msgstr "Alimus pulsa"
 
-#: lib/csv_export.dart:198 lib/csv_export.dart:241 lib/ui/watch.dart:112
+#: lib/csv_export.dart:198 lib/csv_export.dart:241 lib/ui/watch.dart:116
 msgid "Kalorit (kcal)"
 msgstr "Kaloriijat (kcal)"
 
@@ -843,12 +843,12 @@ msgstr "✓ Vuoiŋŋastan"
 msgid "✓ Tauko ohi"
 msgstr "✓ Vuoiŋŋasteapmi nohkai"
 
-#: lib/ongoing.dart:206 lib/ui/widgets.dart:841 lib/ui/workout.dart:1471 lib/ui/workout.dart:1897
+#: lib/ongoing.dart:206 lib/ui/widgets.dart:861 lib/ui/workout.dart:1473 lib/ui/workout.dart:1899
 msgid "1 sarja"
 msgstr "1 ráidu"
 
 #. {0} = n
-#: lib/ongoing.dart:206 lib/share_text.dart:29 lib/ui/widgets.dart:841 lib/ui/workout.dart:1471 …
+#: lib/ongoing.dart:206 lib/share_text.dart:29 lib/ui/widgets.dart:861 lib/ui/workout.dart:1473 …
 msgid "{0} sarjaa"
 msgstr "{0} ráiddu"
 
@@ -1863,17 +1863,17 @@ msgstr "• {0}: {1} ráiddu, buoremus {2}{3}"
 
 #. {0} = w.hrAvg ?? '–'
 #. {1} = w.hrMax ?? '–'
-#: lib/share_text.dart:42
+#: lib/share_text.dart:47
 msgid "syke {0}/{1}"
 msgstr "pulsa {0}/{1}"
 
 #. {0} = feel.$2
 #. {1} = l10n.t(feel.$3)
-#: lib/share_text.dart:46
+#: lib/share_text.dart:51
 msgid "Fiilis: {0} {1}"
 msgstr "Dovdu: {0} {1}"
 
-#: lib/share_text.dart:48
+#: lib/share_text.dart:53
 msgid "— Gievra"
 msgstr "— Gievra"
 
@@ -2216,7 +2216,7 @@ msgstr "Lávvardaga"
 msgid "Sunnuntain"
 msgstr "Sotnabeaivvi"
 
-#: lib/ui/activity.dart:231 lib/ui/workout.dart:2263 lib/ui/workout.dart:2268
+#: lib/ui/activity.dart:231 lib/ui/workout.dart:2287 lib/ui/workout.dart:2292
 msgid "Aloitusaika"
 msgstr "Álgoáigi"
 
@@ -2240,7 +2240,7 @@ msgstr "áigi"
 msgid "matka"
 msgstr "gaska"
 
-#: lib/ui/activity.dart:410 lib/ui/activity.dart:1359 lib/ui/activity.dart:1494 lib/ui/workout.dart:1310
+#: lib/ui/activity.dart:410 lib/ui/activity.dart:1359 lib/ui/activity.dart:1494 lib/ui/workout.dart:1312
 msgid "keskinopeus"
 msgstr "gaskamearálaš leaktu"
 
@@ -2414,7 +2414,7 @@ msgstr "Áigemihtideapmi"
 msgid "Lopeta ajanotto ensin."
 msgstr "Loahpat áigemihtideami vuos."
 
-#: lib/ui/activity.dart:1097 lib/ui/workout.dart:2266
+#: lib/ui/activity.dart:1097 lib/ui/workout.dart:2290
 msgid "ei tiedossa"
 msgstr "ii dihtosis"
 
@@ -2456,7 +2456,7 @@ msgstr "Álgge"
 msgid "Aloitus- ja loppuaika tallentuvat; voit korjata ne lopuksi."
 msgstr "Álgo- ja loahppaáigi vurkejuvvojit; sáhtát divvut daid loahpas."
 
-#: lib/ui/activity.dart:1237 lib/ui/new_workout.dart:302 lib/ui/workout.dart:2255
+#: lib/ui/activity.dart:1237 lib/ui/new_workout.dart:302 lib/ui/workout.dart:2279
 msgid "Kesto (min)"
 msgstr "Áigi (min)"
 
@@ -2477,7 +2477,7 @@ msgstr "Fiila {0}.md sihkkojuvvo."
 msgid "Poista"
 msgstr "Sihko"
 
-#: lib/ui/activity.dart:1362 lib/ui/health_bulk_ui.dart:263 lib/ui/watch.dart:108
+#: lib/ui/activity.dart:1362 lib/ui/health_bulk_ui.dart:263 lib/ui/watch.dart:112
 msgid "kalorit"
 msgstr "kaloriijat"
 
@@ -2502,7 +2502,7 @@ msgstr "GPS-ruvtto vurkejuvvo .gpx-fiilan hárjehallama bálddas."
 msgid "Poista reitti"
 msgstr "Sihko ruvtto"
 
-#: lib/ui/activity.dart:1630 lib/ui/workout.dart:1344 lib/ui/workout.dart:1698
+#: lib/ui/activity.dart:1630 lib/ui/workout.dart:1346 lib/ui/workout.dart:1700
 msgid "Treeni valmis!"
 msgstr "Hárjehallan gárvvis!"
 
@@ -3385,7 +3385,7 @@ msgstr "Seavdnjat"
 msgid "Vaalea"
 msgstr "Čuovgat"
 
-#: lib/ui/drawer.dart:802 lib/ui/onboarding.dart:97 lib/whats_new.dart:384
+#: lib/ui/drawer.dart:802 lib/ui/onboarding.dart:97 lib/whats_new.dart:390
 msgid "Tekstin koko"
 msgstr "Teavstta sturrodat"
 
@@ -3409,7 +3409,7 @@ msgstr ""
 msgid "Liikkeiden nimet"
 msgstr "Hárjehusaid namat"
 
-#: lib/ui/drawer.dart:857 lib/ui/widgets.dart:755
+#: lib/ui/drawer.dart:857 lib/ui/widgets.dart:775
 msgid "Molemmat"
 msgstr "Goappašat"
 
@@ -3619,7 +3619,7 @@ msgstr ""
 "Polar H10, Verity Sense, Garmin HRM ja earát Bluetoothain: pulsa "
 "hárjehallama áigge."
 
-#: lib/ui/drawer.dart:1199 lib/ui/import_export.dart:337 lib/whats_new.dart:432
+#: lib/ui/drawer.dart:1199 lib/ui/import_export.dart:337 lib/whats_new.dart:438
 msgid "Päivän askeleet"
 msgstr "Beaivvi lávkkit"
 
@@ -4165,7 +4165,7 @@ msgstr ""
 "Sierranas hárjehusat ja liegganeami ráiddut oanehaččat. Ii veaháge "
 "vára: +30 s. Geahpedanvahkus × 0,75."
 
-#: lib/ui/drawer.dart:2100 lib/whats_new.dart:120
+#: lib/ui/drawer.dart:2100 lib/whats_new.dart:126
 msgid "Ilmoitukset estetty"
 msgstr "Dieđáhusat leat hehttejuvvon"
 
@@ -4288,7 +4288,7 @@ msgstr ""
 msgid "Valitse tämä liike"
 msgstr "Vállje dán hárjehusa"
 
-#: lib/ui/finish_sheet.dart:146 lib/ui/finish_sheet.dart:607 lib/ui/workout.dart:1357 lib/ui/workout.dart:1927 …
+#: lib/ui/finish_sheet.dart:146 lib/ui/finish_sheet.dart:607 lib/ui/workout.dart:1359 lib/ui/workout.dart:1929 …
 msgid "Miltä tuntui?"
 msgstr "Mo dovddai?"
 
@@ -4296,7 +4296,7 @@ msgstr "Mo dovddai?"
 msgid "kesto"
 msgstr "áigi"
 
-#: lib/ui/finish_sheet.dart:180 lib/ui/stats_screen.dart:437 lib/ui/stats_tabs.dart:113 lib/ui/workout.dart:1304 …
+#: lib/ui/finish_sheet.dart:180 lib/ui/stats_screen.dart:437 lib/ui/stats_tabs.dart:113 lib/ui/workout.dart:1306 …
 msgid "sarja"
 msgstr "ráidu"
 
@@ -4304,24 +4304,24 @@ msgstr "ráidu"
 msgid "sarjaa"
 msgstr "ráiddu"
 
-#: lib/ui/finish_sheet.dart:182 lib/ui/share_card.dart:159 lib/ui/stats_screen.dart:441 lib/ui/workout.dart:1305 …
+#: lib/ui/finish_sheet.dart:182 lib/ui/share_card.dart:159 lib/ui/stats_screen.dart:441 lib/ui/workout.dart:1307 …
 msgid "volyymi"
 msgstr "voluma"
 
-#: lib/ui/finish_sheet.dart:186 lib/ui/workout.dart:1314
+#: lib/ui/finish_sheet.dart:186 lib/ui/workout.dart:1316
 msgid "syke ka."
 msgstr "gaskapulsa"
 
-#: lib/ui/finish_sheet.dart:189 lib/ui/workout.dart:1317 lib/ui/workout.dart:1628
+#: lib/ui/finish_sheet.dart:189 lib/ui/workout.dart:1319 lib/ui/workout.dart:1630
 msgid "ennätys"
 msgstr "rekorda"
 
-#: lib/ui/finish_sheet.dart:189 lib/ui/stats_screen.dart:447 lib/ui/workout.dart:1317 lib/ui/workout.dart:1628
+#: lib/ui/finish_sheet.dart:189 lib/ui/stats_screen.dart:447 lib/ui/workout.dart:1319 lib/ui/workout.dart:1630
 msgid "ennätystä"
 msgstr "rekorda"
 
 #. {0} = name
-#: lib/ui/finish_sheet.dart:218 lib/ui/workout.dart:1398 lib/ui/workout.dart:1799
+#: lib/ui/finish_sheet.dart:218 lib/ui/workout.dart:1400 lib/ui/workout.dart:1801
 msgid "Giitu! {0} tehty"
 msgstr "Giitu! {0} dahkkon"
 
@@ -4753,7 +4753,7 @@ msgid "Tarkista"
 msgstr "Dárkkis"
 
 #. {0} = c.kcal
-#: lib/ui/health_sheet.dart:189 lib/ui/watch.dart:211
+#: lib/ui/health_sheet.dart:189 lib/ui/watch.dart:215
 msgid "🔥 {0} kcal"
 msgstr "🔥 {0} kcal"
 
@@ -4843,7 +4843,7 @@ msgstr "Lasit"
 msgid "Health Connectin luku ei onnistunut: {0}"
 msgstr "Health Connect lohkan ii lihkostuvvan: {0}"
 
-#: lib/ui/health_sheet.dart:339 lib/ui/watch.dart:81
+#: lib/ui/health_sheet.dart:339 lib/ui/watch.dart:85
 msgid "Health Connect"
 msgstr "Health Connect"
 
@@ -5073,7 +5073,7 @@ msgstr "Dušše dán vahku"
 msgid "Askeleet (täysi rengas {0})"
 msgstr "Lávkkit (dievva gierdu {0})"
 
-#: lib/ui/home.dart:1630 lib/whats_new.dart:396
+#: lib/ui/home.dart:1630 lib/whats_new.dart:402
 msgid "Viikon liikunta"
 msgstr "Vahku lihkadeapmi"
 
@@ -5401,7 +5401,7 @@ msgstr "Lihkadeapmi dahkkon"
 msgid "Tänään keltaisella · napauta päivää nähdäksesi sen treenit"
 msgstr "Odne fiskadin · coahkkal beaivvi oaidnin dihte dan hárjehallamiid"
 
-#: lib/ui/home.dart:2758 lib/whats_new.dart:204
+#: lib/ui/home.dart:2758 lib/whats_new.dart:210
 msgid "Omat tavoitteet ja kortit"
 msgstr "Iežat ulbmilat ja kárttat"
 
@@ -5961,7 +5961,7 @@ msgstr "Ijaárvvut Vuoiŋŋasteapmi-kárttas"
 msgid "Palautumisen ruudut"
 msgstr "Vuoiŋŋasteami njealjehasat"
 
-#: lib/ui/home_settings.dart:269 lib/ui/home_settings.dart:388 lib/whats_new.dart:144
+#: lib/ui/home_settings.dart:269 lib/ui/home_settings.dart:388 lib/whats_new.dart:150
 msgid "Unen lähde"
 msgstr "Oađđima gáldu"
 
@@ -6191,7 +6191,7 @@ msgstr "Iežat alimus pulsa (0 = árvvoštallon agis)"
 msgid "Mitä sykealueet tarkoittavat?"
 msgstr "Maid pulsaguovllut mearkkašit?"
 
-#: lib/ui/hr_ui.dart:212 lib/whats_new.dart:372
+#: lib/ui/hr_ui.dart:212 lib/whats_new.dart:378
 msgid "Palautus sykkeen mukaan"
 msgstr "Vuoiŋŋasteapmi pulssa mielde"
 
@@ -8309,7 +8309,7 @@ msgstr ""
 msgid "Hae liikettä…"
 msgstr "Oza hárjehusa…"
 
-#: lib/ui/new_workout.dart:82 lib/ui/workout.dart:1734
+#: lib/ui/new_workout.dart:82 lib/ui/workout.dart:1736
 msgid "Uusi treeni"
 msgstr "Ođđa hárjehallan"
 
@@ -8516,7 +8516,7 @@ msgstr "Oažžugo Gievra doaibmat duogážis?"
 msgid "Aloitetaan"
 msgstr "Álggahit"
 
-#: lib/ui/percent_sheet.dart:67 lib/ui/set_logger.dart:903 lib/whats_new.dart:456
+#: lib/ui/percent_sheet.dart:67 lib/ui/set_logger.dart:903 lib/whats_new.dart:462
 msgid "Prosenttia maksimista"
 msgstr "Proseanttat eanemus deattus"
 
@@ -8637,7 +8637,7 @@ msgstr "Deattut juohke bealde: {0}"
 msgid "ei tarkalleen"
 msgstr "ii dárkilit"
 
-#: lib/ui/plate_sheet.dart:94 lib/whats_new.dart:450
+#: lib/ui/plate_sheet.dart:94 lib/whats_new.dart:456
 msgid "Levylaskuri"
 msgstr "Deaddorehkenastin"
 
@@ -9904,12 +9904,12 @@ msgid "Maraton"
 msgstr "Maraton"
 
 #. {0} = -s
-#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:2191
+#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:2215
 msgid "{0} s/km nopeampi"
 msgstr "{0} s/km johtilit"
 
 #. {0} = s
-#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:2191
+#: lib/ui/running_screen.dart:159 lib/ui/workout.dart:2215
 msgid "{0} s/km hitaampi"
 msgstr "{0} s/km njoazit"
 
@@ -10257,7 +10257,7 @@ msgstr "Olles hárjehallan fiilan (rahpasa notáhtaprográmmain)"
 msgid "treenipäiväkirja"
 msgstr "hárjehallanbeaivegirji"
 
-#: lib/ui/share_card.dart:136 lib/ui/start_panels.dart:1131 lib/ui/stats_screen.dart:488 lib/ui/watch.dart:125 …
+#: lib/ui/share_card.dart:136 lib/ui/start_panels.dart:1131 lib/ui/stats_screen.dart:488 lib/ui/watch.dart:129 …
 msgid "keskisyke"
 msgstr "gaskapulsa"
 
@@ -10294,7 +10294,7 @@ msgstr "Viežžat oađđindásiid…"
 msgid "Tälle yölle ei ole univaiheita Health Connectissa."
 msgstr "Dán idjii eai leat oađđindásit Health Connectis."
 
-#: lib/ui/sleep_stages_ui.dart:83 lib/whats_new.dart:66
+#: lib/ui/sleep_stages_ui.dart:83 lib/whats_new.dart:72
 msgid "Univaiheet"
 msgstr "Oađđindásit"
 
@@ -10438,7 +10438,7 @@ msgstr "Oza valáštallama…"
 msgid "Tyhjennä"
 msgstr "Sihko"
 
-#: lib/ui/sport_picker.dart:137 lib/ui/workout.dart:1486
+#: lib/ui/sport_picker.dart:137 lib/ui/workout.dart:1488
 msgid "Näytä vähemmän"
 msgstr "Čájet unnit"
 
@@ -11352,36 +11352,36 @@ msgstr "Beaivegaskamearri: 7 b {0} · 30 b {1}"
 msgid "Keskiarvo: 7 pv {0} · 30 pv {1}"
 msgstr "Gaskamearri: 7 b {0} · 30 b {1}"
 
-#: lib/ui/watch.dart:63
+#: lib/ui/watch.dart:67
 msgid "Kellon tiedot"
 msgstr "Diimmu dieđut"
 
-#: lib/ui/watch.dart:73 lib/ui/watch.dart:180
+#: lib/ui/watch.dart:77 lib/ui/watch.dart:184
 msgid "Tiedot haettu Health Connectista"
 msgstr "Dieđut vižžojuvvon Health Connectis"
 
-#: lib/ui/watch.dart:92
+#: lib/ui/watch.dart:96
 msgid "Kesto kellosta (min)"
 msgstr "Áigi diimmus (min)"
 
-#: lib/ui/watch.dart:129
+#: lib/ui/watch.dart:133
 msgid "Keskisyke (lyöntiä/min)"
 msgstr "Gaskamearálaš pulsa (časkkástagat/min)"
 
-#: lib/ui/watch.dart:142 lib/ui/workout.dart:1641
+#: lib/ui/watch.dart:146 lib/ui/workout.dart:1643
 msgid "maksimisyke"
 msgstr "alimus pulsa"
 
-#: lib/ui/watch.dart:146
+#: lib/ui/watch.dart:150
 msgid "Maksimisyke (lyöntiä/min)"
 msgstr "Alimus pulsa (časkkástagat/min)"
 
 #. {0} = w.healthSource!
-#: lib/ui/watch.dart:181
+#: lib/ui/watch.dart:185
 msgid "Tiedot haettu Health Connectista ({0})"
 msgstr "Dieđut vižžojuvvon Health Connectis ({0})"
 
-#: lib/ui/watch.dart:192
+#: lib/ui/watch.dart:196
 msgid ""
 "Hae Health Connectista tai napauta ja kirjoita arvo kellosta. Kellon "
 "kesto korvaa sovelluksen ajastimen. 0 tyhjentää."
@@ -11389,7 +11389,7 @@ msgstr ""
 "Viečča Health Connectis dahje deaddil ja čále árvvu diimmus. Diimmu "
 "áigi buhtte prográmma áigemihttára. 0 sihkku árvvu."
 
-#: lib/ui/watch.dart:195
+#: lib/ui/watch.dart:199
 msgid ""
 "Hae Health Connectista tai napauta ja kirjoita arvo kellosta. 0 "
 "tyhjentää."
@@ -11397,7 +11397,7 @@ msgstr ""
 "Viečča Health Connectis dahje deaddil ja čále árvvu diimmus. 0 sihkku "
 "árvvu."
 
-#: lib/ui/watch.dart:197
+#: lib/ui/watch.dart:201
 msgid ""
 "Napauta ja kirjoita arvo kellosta. Kellon kesto korvaa sovelluksen "
 "ajastimen. 0 tyhjentää."
@@ -11405,7 +11405,7 @@ msgstr ""
 "Deaddil ja čále árvvu diimmus. Diimmu áigi buhtte prográmma "
 "áigemihttára. 0 sihkku árvvu."
 
-#: lib/ui/watch.dart:199
+#: lib/ui/watch.dart:203
 msgid "Napauta ja kirjoita arvo kellosta. 0 tyhjentää."
 msgstr "Deaddil ja čále árvvu diimmus. 0 sihkku árvvu."
 
@@ -11444,7 +11444,7 @@ msgstr "Vállje beaivvi"
 
 #. {0} = fmtNum(min)
 #. {1} = fmtNum(max)
-#: lib/ui/widgets.dart:303 lib/ui/workout.dart:2256
+#: lib/ui/widgets.dart:303 lib/ui/workout.dart:2280
 msgid "Sallittu {0}–{1}"
 msgstr "Lobálaš {0}–{1}"
 
@@ -11452,72 +11452,72 @@ msgstr "Lobálaš {0}–{1}"
 msgid "Tarkista luku"
 msgstr "Dárkkis logu"
 
-#: lib/ui/widgets.dart:715
+#: lib/ui/widgets.dart:735
 msgid "Pieni"
 msgstr "Unni"
 
-#: lib/ui/widgets.dart:715
+#: lib/ui/widgets.dart:735
 msgid "Normaali"
 msgstr "Dábálaš"
 
-#: lib/ui/widgets.dart:715
+#: lib/ui/widgets.dart:735
 msgid "Suuri"
 msgstr "Stuoris"
 
-#: lib/ui/widgets.dart:814
+#: lib/ui/widgets.dart:834
 msgid "Muokataanko tallennettua treeniä?"
 msgstr "Rievdatgo vurkejuvvon hárjehallama?"
 
-#: lib/ui/widgets.dart:815
+#: lib/ui/widgets.dart:835
 msgid "Treeni on merkitty valmiiksi. Muutokset tallentuvat sen tiedostoon."
 msgstr ""
 "Hárjehallan lea merkejuvvon gárvvisin. Rievdadusat vurkejuvvojit dan "
 "fiilii."
 
-#: lib/ui/widgets.dart:833
+#: lib/ui/widgets.dart:853
 msgid "Tallennettu treeni: muokkaa"
 msgstr "Vurkejuvvon hárjehallan: rievdat"
 
-#: lib/ui/widgets.dart:863
+#: lib/ui/widgets.dart:883
 msgid "Mikä laji tämä on?"
 msgstr "Makkár šládja dát lea?"
 
-#: lib/ui/widgets.dart:881
+#: lib/ui/widgets.dart:901
 msgid "Ohita, älä tuo"
 msgstr "Njuike, ale buvtte"
 
 #. {0} = p.days
-#: lib/ui/widgets.dart:978
+#: lib/ui/widgets.dart:998
 msgid "🩹 Vammatauko päällä · {0}. päivä"
 msgstr "🩹 Vahátbottu lea doaimmas · {0}. beaivi"
 
 #. {0} = p.days
-#: lib/ui/widgets.dart:980
+#: lib/ui/widgets.dart:1000
 msgid "🤒 Sairastauko päällä · {0}. päivä"
 msgstr "🤒 Buohccibottu lea doaimmas · {0}. beaivi"
 
 #. {0} = p.days
-#: lib/ui/widgets.dart:981
+#: lib/ui/widgets.dart:1001
 msgid "🏖 Loma päällä · {0}. päivä"
 msgstr "🏖 Luomus lea doaimmas · {0}. beaivi"
 
-#: lib/ui/widgets.dart:1001
+#: lib/ui/widgets.dart:1021
 msgid "Treenaa ja liiku kevyesti. Tauko jatkuu, kunnes lopetat sen itse."
 msgstr ""
 "Hárjehala ja lihkat geahppasit. Bottu joatkašuvvá dassážii go ieš "
 "loahpahat dan."
 
 #. {0} = shortDate(p.end!)
-#: lib/ui/widgets.dart:1002
+#: lib/ui/widgets.dart:1022
 msgid "Treenaa ja liiku kevyesti. Tauko päättyy {0} jälkeen."
 msgstr "Hárjehala ja lihkat geahppasit. Bottu nohká {0} maŋŋel."
 
 #. {0} = names
-#: lib/ui/widgets.dart:1035
+#: lib/ui/widgets.dart:1055
 msgid "🩹 Vammatila: {0}"
 msgstr "🩹 Roasmmohuvvan: {0}"
 
-#: lib/ui/widgets.dart:1040
+#: lib/ui/widgets.dart:1060
 msgid ""
 "Merkityt liikkeet: 🩹 kevennä, ⚠️ vältä. Kipu yli 3–5/10? Lopeta liike "
 "tai vaihda se."
@@ -11525,16 +11525,16 @@ msgstr ""
 "Merkejuvvon lihkadusat: 🩹 geahpat, ⚠️ garvve. Bávččas badjel 3–5/10? "
 "Bisset lihkadusa dahje molsso dan."
 
-#: lib/ui/widgets.dart:1054
+#: lib/ui/widgets.dart:1074
 msgid "vältä"
 msgstr "garvve"
 
 #. {0} = exerciseLabel(st.substitute!)
-#: lib/ui/widgets.dart:1054
+#: lib/ui/widgets.dart:1074
 msgid "korvaava: {0}"
 msgstr "buhttejeaddji: {0}"
 
-#: lib/ui/widgets.dart:1056
+#: lib/ui/widgets.dart:1076
 msgid "kevennä (vammatila)"
 msgstr "geahpat (roasmmohuvvan)"
 
@@ -11665,7 +11665,7 @@ msgstr "áigi {0}"
 msgid "Nimeä treeni"
 msgstr "Rievdat hárjehallama nama"
 
-#: lib/ui/workout.dart:1059 lib/ui/workout.dart:2243
+#: lib/ui/workout.dart:1059 lib/ui/workout.dart:2267
 msgid "Muokkaa kestoa"
 msgstr "Rievdat áiggi"
 
@@ -11687,24 +11687,24 @@ msgstr "Ii vel hárjehusat."
 msgid "Kivut, unet, tavoitteet… (vapaaehtoinen)"
 msgstr "Bákčasat, nahkárat, ulbmilat… (eaktodáhtolaš)"
 
-#: lib/ui/workout.dart:1315
+#: lib/ui/workout.dart:1317
 msgid "aktiiviset kcal"
 msgstr "aktiivvalaš kcal"
 
-#: lib/ui/workout.dart:1315 lib/ui/workout.dart:1639
+#: lib/ui/workout.dart:1317 lib/ui/workout.dart:1641
 msgid "kcal"
 msgstr "kcal"
 
-#: lib/ui/workout.dart:1430
+#: lib/ui/workout.dart:1432
 msgid "Korjaa reittiä"
 msgstr "Divvo ruvtto"
 
 #. {0} = moves.length - 3
-#: lib/ui/workout.dart:1486
+#: lib/ui/workout.dart:1488
 msgid "+{0} liikettä"
 msgstr "+{0} hárjehusa"
 
-#: lib/ui/workout.dart:1520
+#: lib/ui/workout.dart:1522
 msgid ""
 "Kolme raskasta treeniä peräkkäin. Harkitse lepopäivää tai kevyempää "
 "viikkoa; uni, syöminen ja stressi vaikuttavat palautumiseen."
@@ -11713,64 +11713,64 @@ msgstr ""
 "dahje geahppasit vahku; oađđin, borran ja streassa váikkuhit "
 "buorráneapmái."
 
-#: lib/ui/workout.dart:1584
+#: lib/ui/workout.dart:1586
 msgid "Tallennettu tiedosto"
 msgstr "Vurkejuvvon fiila"
 
-#: lib/ui/workout.dart:1595
+#: lib/ui/workout.dart:1597
 msgid "(tyhjä treeni, ei tallennettu)"
 msgstr "(guorus hárjehallan, ii vurkejuvvon)"
 
-#: lib/ui/workout.dart:1632
+#: lib/ui/workout.dart:1634
 msgid "rasitus"
 msgstr "rahčan"
 
-#: lib/ui/workout.dart:1744
+#: lib/ui/workout.dart:1746
 msgid "Tiedosto"
 msgstr "Fiila"
 
 #. {0} = workout.healthSource
-#: lib/ui/workout.dart:1836 lib/ui/workout.dart:1973
+#: lib/ui/workout.dart:1838 lib/ui/workout.dart:1997
 msgid "Health Connectista ({0})"
 msgstr "Health Connectas ({0})"
 
-#: lib/ui/workout.dart:1853 lib/ui/workout.dart:1990
+#: lib/ui/workout.dart:1855 lib/ui/workout.dart:2014
 msgid "Hae kellon tiedot"
 msgstr "Viečča diimmu dieđuid"
 
-#: lib/ui/workout.dart:1854 lib/ui/workout.dart:1991
+#: lib/ui/workout.dart:1856 lib/ui/workout.dart:2015
 msgid "Kalorit ja syke Health Connectista tai käsin"
 msgstr "Kaloriijat ja pulsa Health Connectas dahje gieđain"
 
 #. {0} = t(feel.$3).toLowerCase()
-#: lib/ui/workout.dart:1927 lib/ui/workout.dart:2020
+#: lib/ui/workout.dart:1929 lib/ui/workout.dart:2044
 msgid "Fiilis: {0}"
 msgstr "Dovdu: {0}"
 
 #. {0} = workout.tooHeavy.map(exerciseLabel).join(', ')
-#: lib/ui/workout.dart:1936 lib/ui/workout.dart:2029
+#: lib/ui/workout.dart:1938 lib/ui/workout.dart:2053
 msgid "Liian raskas: {0}"
 msgstr "Menddo lossat: {0}"
 
-#: lib/ui/workout.dart:1944 lib/ui/workout.dart:2037
+#: lib/ui/workout.dart:1946 lib/ui/workout.dart:2061
 msgid "Valitse"
 msgstr "Vállje"
 
-#: lib/ui/workout.dart:1944 lib/ui/workout.dart:2037
+#: lib/ui/workout.dart:1946 lib/ui/workout.dart:2061
 msgid "Muuta"
 msgstr "Rievdat"
 
 #. {0} = c.prs
-#: lib/ui/workout.dart:2065
+#: lib/ui/workout.dart:2089
 msgid "{0} ennätystä!"
 msgstr "{0} rekorda!"
 
-#: lib/ui/workout.dart:2065
+#: lib/ui/workout.dart:2089
 msgid "1 ennätys!"
 msgstr "1 rekorda!"
 
 #. {0} = c.skipReason
-#: lib/ui/workout.dart:2078
+#: lib/ui/workout.dart:2102
 msgid ""
 "Tämä oli {0}: kuorma on tarkoituksella pienempi, joten tätä kertaa ei "
 "verrata aiempiin. Tärkeintä on palautua."
@@ -11778,7 +11778,7 @@ msgstr ""
 "Dát lei {0}: noađđi lea áigumušas unnit, nu ahte dán geardde ii "
 "buohtastahttojuvvo ovddibuiguin. Deháleamos lea buorránit."
 
-#: lib/ui/workout.dart:2084
+#: lib/ui/workout.dart:2108
 msgid "Ensimmäinen kerta tällä treenillä. Ensi kerralla näet, miten kehityit."
 msgstr ""
 "Vuosttaš geardde dáinna hárjehallamiin. Boahtte geardde oainnát mo "
@@ -11786,40 +11786,40 @@ msgstr ""
 
 #. {0} = sportName(workout.activity!)
 #. {1} = shortDateY(c.previous!.date)
-#: lib/ui/workout.dart:2087
+#: lib/ui/workout.dart:2111
 msgid "Edellinen kerta: {0} ({1})"
 msgstr "Ovddit geardde: {0} ({1})"
 
 #. {0} = shortDateY(c.previous!.date)
-#: lib/ui/workout.dart:2094
+#: lib/ui/workout.dart:2118
 msgid "Verrattuna edelliseen kertaan ({0})"
 msgstr "Buohtastahttojuvvon ovddit geardái ({0})"
 
 #. {0} = kg(c.previousVolume!)
 #. {1} = kg(c.volume)
 #. {2} = pct(c.volume, c.previousVolume!)
-#: lib/ui/workout.dart:2100
+#: lib/ui/workout.dart:2124
 msgid "Volyymi {0} → {1} ({2})"
 msgstr "Voluma {0} → {1} ({2})"
 
 #. {0} = fmtDuration(c.previous!.minutes!)
 #. {1} = fmtDuration(workout.minutes!)
-#: lib/ui/workout.dart:2109
+#: lib/ui/workout.dart:2133
 msgid "Kesto {0} → {1}"
 msgstr "Áigi {0} → {1}"
 
 #. {0} = feelingOf(c.previous!.feeling)!.$2
 #. {1} = feelingOf(workout.feeling)!.$2
-#: lib/ui/workout.dart:2114
+#: lib/ui/workout.dart:2138
 msgid "Fiilis {0} → {1}"
 msgstr "Dovdu {0} → {1}"
 
 #. {0} = c.history.where((h) => h.$2 > 0).map((h) => fmtNum(h.$2.roundToDouble())).join(' → ')
-#: lib/ui/workout.dart:2155
+#: lib/ui/workout.dart:2179
 msgid "Volyymi viime kerroilla: {0} kg"
 msgstr "Voluma maŋimuš gerddiid: {0} kg"
 
-#: lib/ui/workout.dart:2164
+#: lib/ui/workout.dart:2188
 msgid ""
 "Paras sarja verrataan arvioituna maksimina, joten raskaampi paino tai "
 "useampi toisto näkyy nousuna. Kevennys- ja paluuviikot jätetään "
@@ -11832,24 +11832,39 @@ msgstr ""
 #. {0} = t('juoksu')
 #. {1} = shortDate(prev.date)
 #. {2} = fmtPace(prev.paceSecPerKm!)
-#: lib/ui/workout.dart:2190
+#: lib/ui/workout.dart:2214
 msgid "Edellinen {0} ({1}): {2} min/km"
 msgstr "Ovddit {0} ({1}): {2} min/km"
 
-#: lib/ui/workout.dart:2190
+#: lib/ui/workout.dart:2214
 msgid "juoksu"
 msgstr "viehkan"
 
 #. {0} = end(_start!, m)
-#: lib/ui/workout.dart:2276
+#: lib/ui/workout.dart:2300
 msgid "Päättyi klo {0}"
 msgstr "Nogai diibmu {0}"
 
 #: lib/whats_new.dart:18
+msgid "Muistiinpanot yhteenvedossa"
+msgstr "Notáhtat čoahkkáigeasus"
+
+#: lib/whats_new.dart:19
+msgid ""
+"Salitreenin yhteenveto näyttää muistiinpanot. Treenin lopetuksen "
+"kaksoisnapautus ei enää ohita fiilistä. Suurella tekstillä pitkä "
+"liikkeen nimi pienenee eikä katkea keskeltä sanaa."
+msgstr ""
+"Sállahárjehallama čoahkkáigeassu čájeha notáhtaid. Hárjehallama "
+"loahpaheami guovttegeardásaš deaddileapmi ii šat njuikes dovddu "
+"badjel. Stuorra teavsttain guhkes hárjehusnamma unnu iige boatkan "
+"gaskkas."
+
+#: lib/whats_new.dart:24
 msgid "Muistiinpanot suoraan"
 msgstr "Notáhtat njuolga"
 
-#: lib/whats_new.dart:19
+#: lib/whats_new.dart:25
 msgid ""
 "Tallennetun salitreenin muistiinpanoihin voi kirjoittaa suoraan ilman "
 "muokkauskysymystä, kuten liikunnassa. Suurella tekstillä tavoiteväli "
@@ -11861,11 +11876,11 @@ msgstr ""
 "fápmu eai boatkan maiddái hárjehuslisttus, prográmmas ja "
 "vuoiŋŋasteami áigge."
 
-#: lib/whats_new.dart:24
+#: lib/whats_new.dart:30
 msgid "Korjauksia sarjan kirjaukseen"
 msgstr "Divvumat ráiddu čállosii"
 
-#: lib/whats_new.dart:25
+#: lib/whats_new.dart:31
 msgid ""
 "Muutettu paino ja toistot säilyvät myös ennen liikkeen ensimmäistä "
 "sarjaa. Paras 6 vk -tilassa näkyy myös ohjelman tavoite. Tauon "
@@ -11879,11 +11894,11 @@ msgstr ""
 "lassideaddu, ja go noađđi lea seamma, čállojuvvo \"dábálaš noađit\". "
 "Stuorra teavsttain sánit eai boatkan gaskkas."
 
-#: lib/whats_new.dart:30
+#: lib/whats_new.dart:36
 msgid "Vanha yö harmaana"
 msgstr "Boares ija ránisin"
 
-#: lib/whats_new.dart:31
+#: lib/whats_new.dart:37
 msgid ""
 "Jos tämän yön yösyke tai HRV ei vielä ole Health Connectissa, "
 "Palautuminen ja Yöarvot näyttävät edellisen yön harmaana eivätkä "
@@ -11893,11 +11908,11 @@ msgstr ""
 "Vuoiŋŋasteapmi ja Ijaárvvut čájehit ovddit ija ránisin eaige ivdne "
 "dan dálá beaivvi árvun."
 
-#: lib/whats_new.dart:36 lib/whats_new.dart:318
+#: lib/whats_new.dart:42 lib/whats_new.dart:324
 msgid "Selkeämpi sarjan kirjaus"
 msgstr "Čielgasit ráiddu čálus"
 
-#: lib/whats_new.dart:37
+#: lib/whats_new.dart:43
 msgid ""
 "Tavoite, ehdotus ja edellinen kerta omilla riveillään, luvut samassa "
 "linjassa. Edellinen kerta näyttää parhaan sarjan. Kahden käsipainon "
@@ -11908,11 +11923,11 @@ msgstr ""
 "hárjehusain deaddu juohke gieđa nammii, kettlebellain juohke "
 "kettlebella nammii."
 
-#: lib/whats_new.dart:42
+#: lib/whats_new.dart:48
 msgid "Painoehdotus valittavissa"
 msgstr "Deaddoevttohusa sáhttá válljet"
 
-#: lib/whats_new.dart:43
+#: lib/whats_new.dart:49
 msgid ""
 "Asetukset → Harjoittelu → Painoehdotus: Ehdotus (kuten ennen), Paras "
 "6 vk (paras sarja kuuden viikon ajalta) tai Pois. Paino alkaa "
@@ -11922,11 +11937,11 @@ msgstr ""
 "Buoremus 6 vahkus (buoremus ráidu guđa vahku áigge) dahje Ii "
 "geavahusas. Deaddu álgá dalán riekta sajis."
 
-#: lib/whats_new.dart:48
+#: lib/whats_new.dart:54
 msgid "Muutettu paino säilyy"
 msgstr "Rievdaduvvon deaddu seailu"
 
-#: lib/whats_new.dart:49
+#: lib/whats_new.dart:55
 msgid ""
 "Jos muutat seuraavan sarjan painoa tai toistoja ja käyt välillä "
 "liikelistassa, arvot ovat tallessa, kun palaat liikkeeseen."
@@ -11935,11 +11950,11 @@ msgstr ""
 "gaskkohagaid geahčat hárjehuslisttu, árvvut leat seilon go máhcat "
 "hárjehussii."
 
-#: lib/whats_new.dart:54
+#: lib/whats_new.dart:60
 msgid "Yön uni ei vielä synkronoitu"
 msgstr "Ija oađđin ii vel synkroniserejuvvon"
 
-#: lib/whats_new.dart:55
+#: lib/whats_new.dart:61
 msgid ""
 "Jos tämän yön uni ei vielä ole Health Connectissa, Uni-kortti näyttää "
 "edellisen yön harmaana omalla nimellään ja kertoo, että kellon tai "
@@ -11949,11 +11964,11 @@ msgstr ""
 "ovddit ija ránisin iežas namain ja muitala ahte diimmu dahje "
 "suorbmasa prográmma rahpan ođasmahttá dieđu."
 
-#: lib/whats_new.dart:60
+#: lib/whats_new.dart:66
 msgid "Ennätykset korteiksi"
 msgstr "Rekordat kortan"
 
-#: lib/whats_new.dart:61
+#: lib/whats_new.dart:67
 msgid ""
 "Tilastot → Ennätykset: jokaisella liikkeellä paras nosto (painavin "
 "sarja) ja arvioitu 1 toiston maksimi nyt rinnakkain. Sama tulos "
@@ -11963,7 +11978,7 @@ msgstr ""
 "ráidu) ja árvvoštallon 1 geardduheami eanemus deaddu dál "
 "bálddalagaid. Seamma boađus ođđasit ii leat ođđa rekorda."
 
-#: lib/whats_new.dart:67
+#: lib/whats_new.dart:73
 msgid ""
 "Napauta unta (Palautuminen-ruutu, Uni-kortin viime yö tai kalenterin "
 "päivä): näet yön kevyen, syvän ja REM-unen sekä hereillä olon Health "
@@ -11973,11 +11988,11 @@ msgstr ""
 "dahje kaleandara beaivi): oainnát ija geahppa, čiekŋalis ja "
 "REM-oađđima ja gohcima Health Connectas."
 
-#: lib/whats_new.dart:72
+#: lib/whats_new.dart:78
 msgid "Uni ja palautuminen tilastoissa"
 msgstr "Oađđin ja vuoiŋŋasteapmi statistihkas"
 
-#: lib/whats_new.dart:73
+#: lib/whats_new.dart:79
 msgid ""
 "Uusi välilehti Tilastoissa, kun Uni- tai Palautuminen-kortti on "
 "käytössä: jakson uni, nukkumaanmeno ja herätys, säännöllisyys, yöt "
@@ -11987,11 +12002,11 @@ msgstr ""
 "anus: áigodaga oađđin, seŋgii ja morihan, jeavddalašvuohta, ijat "
 "sárggáin, oađđindásit gaskamearálaččat sihke ija pulsa ja HRV gráfain."
 
-#: lib/whats_new.dart:78
+#: lib/whats_new.dart:84
 msgid "Kaikki treenit Health Connectista"
 msgstr "Buot hárjehallamat Health Connectas"
 
-#: lib/whats_new.dart:79
+#: lib/whats_new.dart:85
 msgid ""
 "Lisää → Tuonti, vienti ja varmuuskopio → Tuo Health Connectista tuo "
 "kerralla kellon tai muun sovelluksen harjoitukset, myös "
@@ -12005,11 +12020,11 @@ msgstr ""
 "mat leat juo Gievras eai vižžojuvvo fas, ja daidda sáhtát lasihit "
 "dieđuid mat váilot."
 
-#: lib/whats_new.dart:84
+#: lib/whats_new.dart:90
 msgid "Viikon kuorma osineen"
 msgstr "Vahku noađđi osiiguin"
 
-#: lib/whats_new.dart:85
+#: lib/whats_new.dart:91
 msgid ""
 "Olkapään, selän ja muiden osien riveillä näkyy nyt myös tämän viikon "
 "sarjat sinisenä palkkina: tehty / suunniteltu."
@@ -12017,11 +12032,11 @@ msgstr ""
 "Oalgi, čielggi ja eará osiid vuolit ráidduin oidnojit dál maiddái dán "
 "vahku ráiddut alit sárggáin: dahkkon / plánejuvvon."
 
-#: lib/whats_new.dart:90
+#: lib/whats_new.dart:96
 msgid "Rasitus sykkeestä"
 msgstr "Rahčan pulssas"
 
-#: lib/whats_new.dart:91
+#: lib/whats_new.dart:97
 msgid ""
 "Rasitusta ei enää kysytä: kun liikunnassa on sykettä, se lasketaan ja "
 "näkyy syke-kortissa, ja viikon reippaat minuutit tulevat sykkeestä. "
@@ -12031,11 +12046,11 @@ msgstr ""
 "rehkenastojuvvo ja oidno pulsakoarttas, ja vahku johtilis minuhtat "
 "bohtet pulssas. Alimus pulsii riegádanjahki lea doarvái."
 
-#: lib/whats_new.dart:96
+#: lib/whats_new.dart:102
 msgid "Vähemmän kysymyksiä"
 msgstr "Unnit gažaldagat"
 
-#: lib/whats_new.dart:97
+#: lib/whats_new.dart:103
 msgid ""
 "Hymiö tallentaa yhdellä napautuksella kaikissa lajeissa. Vain Raskas "
 "tai Tahmea kysyy, mikä painoi."
@@ -12043,11 +12058,11 @@ msgstr ""
 "Dovdu vurkejuvvo ovtta deaddilemiin buot valáštallamiin. Dušše Lossat "
 "dahje Njoahci jearrá, mii deattuhii."
 
-#: lib/whats_new.dart:102
+#: lib/whats_new.dart:108
 msgid "Yhteenveto heti treenin jälkeen"
 msgstr "Čoahkkáigeassu dakkaviđe hárjehallama maŋŋá"
 
-#: lib/whats_new.dart:103
+#: lib/whats_new.dart:109
 msgid ""
 "Treeni valmis! ja GPS-liikunnan Lopeta ja tallenna tallentavat heti "
 "ja avaavat tiiviin yhteenvedon. Valitse fiilis tai Ohita, niin olet "
@@ -12057,11 +12072,11 @@ msgstr ""
 "dakkaviđe ja rahpet oanehis čoahkkáigeasu. Vállje dovddu dahje "
 "Njuikes, de leat ovdasiiddus. Ruvtto sáhttá divvut čoahkkáigeasus."
 
-#: lib/whats_new.dart:108
+#: lib/whats_new.dart:114
 msgid "Kellon tiedot yhteenvedossa"
 msgstr "Diimmu dieđut čoahkkáigeasus"
 
-#: lib/whats_new.dart:109
+#: lib/whats_new.dart:115
 msgid ""
 "Yhteenveto odottaa kellon tietoja ja kertoo, kun sykettä, kaloreita "
 "tai askeleita on tullut Health Connectiin. Napauta ja valitse, mitkä "
@@ -12071,11 +12086,11 @@ msgstr ""
 "dahje lávkkit leat boahtán Health Connectii. Deaddil ja vállje, maid "
 "lasihit."
 
-#: lib/whats_new.dart:114
+#: lib/whats_new.dart:120
 msgid "Yöarvot unen lähteestä"
 msgstr "Ijaárvvut oađđima gáldus"
 
-#: lib/whats_new.dart:115
+#: lib/whats_new.dart:121
 msgid ""
 "Yösyke ja HRV lasketaan vain valitsemastasi unen lähteestä, ja alin "
 "syke 5 minuutin jaksosta kuten esim. Ouran sovelluksessa."
@@ -12083,7 +12098,7 @@ msgstr ""
 "Ija pulsa ja HRV rehkenastojuvvojit dušše du válljen oađđima gáldus, "
 "ja vuolimus pulsa 5 minuhta áigodagas nugo omd. Oura-prográmmas."
 
-#: lib/whats_new.dart:121
+#: lib/whats_new.dart:127
 msgid ""
 "Jos ilmoitukset on estetty, Palautusajastin-asetukset kertovat sen, "
 "ja painike vie sovelluksen asetuksiin."
@@ -12091,11 +12106,11 @@ msgstr ""
 "Jus dieđáhusat leat hehttejuvvon, Vuoiŋŋasteami áigemihttára ásahusat "
 "muitalit dan, ja boallu rahpá prográmma ásahusaid."
 
-#: lib/whats_new.dart:126
+#: lib/whats_new.dart:132
 msgid "Parempi ruudunlukijan tuki"
 msgstr "Buoret šearbmalohkki"
 
-#: lib/whats_new.dart:127
+#: lib/whats_new.dart:133
 msgid ""
 "TalkBack lukee sarjan painon ja toistot, kertoo tallennetun sarjan ja "
 "kalenterin päivät kokonaisina, ja tehdyn sarjan voi poistaa "
@@ -12105,11 +12120,11 @@ msgstr ""
 "ráiddu ja kaleandara beivviid ollásit, ja dahkkon ráiddu sáhttá "
 "sihkkut doaimmain."
 
-#: lib/whats_new.dart:132
+#: lib/whats_new.dart:138
 msgid "Etusivu pelkälle treenaajalle"
 msgstr "Ovdasiidu dušše hárjehallamii"
 
-#: lib/whats_new.dart:133
+#: lib/whats_new.dart:139
 msgid ""
 "Ilman terveys- ja hyvinvointitoimintoja etusivulla treeniputki "
 "ohjelmasi treenipäivistä, viikon sarjat ja treeniaika sekä voiman "
@@ -12120,11 +12135,11 @@ msgstr ""
 "ráiddut ja hárjehallanáigi ja fámu ovdáneapmi juo vuosttaš "
 "hárjehallamis."
 
-#: lib/whats_new.dart:138
+#: lib/whats_new.dart:144
 msgid "Palautumisen käyrät"
 msgstr "Vuoiŋŋasteami govvosat"
 
-#: lib/whats_new.dart:139
+#: lib/whats_new.dart:145
 msgid ""
 "Napauta Palautuminen-ruutua: arvo 30 päivältä tai 12 viikolta, oma "
 "tavallinen vaihtelusi vihreänä vyönä ja asteikko."
@@ -12132,7 +12147,7 @@ msgstr ""
 "Deaddil Vuoiŋŋasteami njealjehasa: árvu 30 beaivvis dahje 12 vahkus, "
 "du dábálaš rievddadeapmi ruoná boagánin ja skála."
 
-#: lib/whats_new.dart:145
+#: lib/whats_new.dart:151
 msgid ""
 "Jos kaksi laitetta (esim. sormus ja kello) kirjaa saman yön, "
 "Uni-kortti kysyy kerran, kumpaa käytetään. Yksittäisen yön lähteen "
@@ -12142,11 +12157,11 @@ msgstr ""
 "Oađđin-kárta jearrá oktii, goappá geavahuvvo. Ovttaskas ija gáldu "
 "sáhttá molsut kaleandara beaivvis."
 
-#: lib/whats_new.dart:150
+#: lib/whats_new.dart:156
 msgid "Paremmat ohjelmaehdotukset"
 msgstr "Buoret prográmmaevttohusat"
 
-#: lib/whats_new.dart:151
+#: lib/whats_new.dart:157
 msgid ""
 "Liikkeet valituilla välineillä kaikissa yhdistelmissä; vammatilassa "
 "vaivalle hyvin siedetyt liikkeet ensin."
@@ -12154,11 +12169,11 @@ msgstr ""
 "Hárjehusat válljejuvvon rusttegiiguin buot kombinašuvnnain; "
 "Roasmmohuvvan-dilis vigi ektui buorre hárjehusat vuosttažettiin."
 
-#: lib/whats_new.dart:156
+#: lib/whats_new.dart:162
 msgid "Palautuminen uudistettu"
 msgstr "Vuoiŋŋasteapmi ođasmahttojuvvon"
 
-#: lib/whats_new.dart:157
+#: lib/whats_new.dart:163
 msgid ""
 "Ruudut värireunoin (vihreä, keltainen, punainen) omaan tasoosi "
 "verrattuna; ⚠-ruudusta neuvo. Mukana HRV, hengitys, happi, lämpö, uni "
@@ -12170,11 +12185,11 @@ msgstr ""
 "temperatuvra, oađđin ja noađđi, jus diibmu dahje suorbmasa vurke "
 "daid. Njealjehasat ja ortnet: Ásahusat → Ovdasiidu."
 
-#: lib/whats_new.dart:162
+#: lib/whats_new.dart:168
 msgid "Uni-kortti"
 msgstr "Oađđin-kárta"
 
-#: lib/whats_new.dart:163
+#: lib/whats_new.dart:169
 msgid ""
 "Viime yö, viikon keskiarvo ja säännöllisyys omaan tavalliseen uneesi "
 "verrattuna. Valinnainen: Asetukset → Etusivu."
@@ -12182,11 +12197,11 @@ msgstr ""
 "Maŋimus idja, vahku gaskamearri ja jeavddalašvuohta veardádallon du "
 "iežat dábálaš oađđimii. Válljejuvvon: Ásahusat → Ovdasiidu."
 
-#: lib/whats_new.dart:168
+#: lib/whats_new.dart:174
 msgid "Kehitys Tilastoissa"
 msgstr "Ovdáneapmi statistihkas"
 
-#: lib/whats_new.dart:169
+#: lib/whats_new.dart:175
 msgid ""
 "Yösyke, HRV ja uni 12 viikolta: Tilastot → Kehitys → Palautuminen ja "
 "uni."
@@ -12194,11 +12209,11 @@ msgstr ""
 "Ija pulsa, HRV ja oađđin 12 vahkus: Statistihkka → Ovdáneapmi → "
 "Vuoiŋŋasteapmi ja oađđin."
 
-#: lib/whats_new.dart:174
+#: lib/whats_new.dart:180
 msgid "Juoksun kehitystavoitteet ja oma askeltavoite"
 msgstr "Viehkama ovdánanulbmilat ja iežat lávkeulbmil"
 
-#: lib/whats_new.dart:175
+#: lib/whats_new.dart:181
 msgid ""
 "Vauhdin kehitys ja vauhti samalla sykkeellä omiin tavoitteisiin; "
 "askeltavoite Asetukset → Etusivu."
@@ -12206,21 +12221,21 @@ msgstr ""
 "Leavttu ovdáneapmi ja leaktu seamma pulssain iežat ulbmiliidda; "
 "lávkeulbmil Ásahusat → Ovdasiidu."
 
-#: lib/whats_new.dart:180
+#: lib/whats_new.dart:186
 msgid "Hex bar ja liikekohtainen tanko"
 msgstr "Hex bar ja lihkadusa iežas stággu"
 
-#: lib/whats_new.dart:181
+#: lib/whats_new.dart:187
 msgid "Hex barin paino asetuksiin; levylaskuri muistaa tangon liikkeittäin."
 msgstr ""
 "Hex bar -stákku deaddu ásahusaide; deaddorehkenastin muitá stákku "
 "juohke lihkadussii."
 
-#: lib/whats_new.dart:186
+#: lib/whats_new.dart:192
 msgid "Uusia etusivun kortteja"
 msgstr "Ođđa ovdasiidokárttat"
 
-#: lib/whats_new.dart:187
+#: lib/whats_new.dart:193
 msgid ""
 "Seuraava treeni ohjelmasta Aloita-painikkeella, Viikkoputki (montako "
 "viikkoa peräkkäin WHO:n suositukset täyttyivät; tauot eivät katkaise) "
@@ -12234,11 +12249,11 @@ msgstr ""
 "dássái (Health Connect, dušše pulsa). Alde, eret ja ortnet: Ásahusat "
 "→ Ovdasiidu."
 
-#: lib/whats_new.dart:192
+#: lib/whats_new.dart:198
 msgid "Lihaskuntopäivät yhtenä renkaana"
 msgstr "Deahkkefápmobeaivvit ovtta gierdun"
 
-#: lib/whats_new.dart:193
+#: lib/whats_new.dart:199
 msgid ""
 "Salipäivät lasketaan lihaskuntopäiviin. Tavoite on ohjelmasi päivät "
 "viikossa, ilman ohjelmaa WHO:n vähimmäismäärä 2. Uusi liike: Reiden "
@@ -12248,11 +12263,11 @@ msgstr ""
 "prográmma beaivvit vahkus, prográmma haga WHO unnimus 2. Ođđa "
 "lihkadus: Reiden koukistus istuen."
 
-#: lib/whats_new.dart:198 lib/whats_new.dart:336
+#: lib/whats_new.dart:204 lib/whats_new.dart:342
 msgid "Uusi etusivu"
 msgstr "Ođđa ovdasiidu"
 
-#: lib/whats_new.dart:199
+#: lib/whats_new.dart:205
 msgid ""
 "Sali | Liikunta -painike avaa valinnan etusivun päälle: ohjelman "
 "päivät, viimeksi käytetyt lajit ja kellon harjoitukset. Viikko tai "
@@ -12262,7 +12277,7 @@ msgstr ""
 "beaivvit, maŋimusat geavahuvvon šlájat ja diimmu hárjehallamat. "
 "Vahkku dahje mánnu gierdduiguin ja kaleandaris beaivvi lávkkit."
 
-#: lib/whats_new.dart:205
+#: lib/whats_new.dart:211
 msgid ""
 "Asetukset → Etusivu: WHO:n suositusten lisäksi enintään kolme omaa "
 "tavoitetta (salipäivät, matka, aika tai kerrat) sekä kortit omassa "
@@ -12274,11 +12289,11 @@ msgstr ""
 "ortnegis: Maŋimusat, Fámu ovdáneapmi, Viehkama ovdáneapmi ja "
 "Rumašdeaddu."
 
-#: lib/whats_new.dart:210
+#: lib/whats_new.dart:216
 msgid "Juoksun kehitys matkoittain"
 msgstr "Viehkama ovdáneapmi gaskkaid mielde"
 
-#: lib/whats_new.dart:211
+#: lib/whats_new.dart:217
 msgid ""
 "Vauhti ja syke viimeiset 4 viikkoa vs. 8 viikkoa ennen, omilla "
 "matkaryhmillä (oletus alle 5, 5–10 ja yli 10 km)."
@@ -12286,11 +12301,11 @@ msgstr ""
 "Leaktu ja pulsa maŋimuš 4 vahku vs. 8 vahku ovdal, iežat "
 "gaskajoavkkuin (álgoárvu vuollel 5, 5–10 ja badjel 10 km)."
 
-#: lib/whats_new.dart:216
+#: lib/whats_new.dart:222
 msgid "Lämmittelysarjat"
 msgstr "Liegganeami ráiddut"
 
-#: lib/whats_new.dart:217
+#: lib/whats_new.dart:223
 msgid ""
 "Tallenna lämmittelysarjana -painike painoliikkeissä ensimmäiseen "
 "työsarjaan asti. Lämmittely ei vaikuta tavoitteeseen, ehdotuksiin "
@@ -12300,11 +12315,11 @@ msgstr ""
 "bargoráidui rádjái. Liegganeapmi ii váikkut ulbmilii, evttohusaide "
 "iige rekordaide, ja ráiddu sáhttá merket liegganeapmin maŋŋel."
 
-#: lib/whats_new.dart:222
+#: lib/whats_new.dart:228
 msgid "Uusi ulkoasu"
 msgstr "Ođđa hápmi"
 
-#: lib/whats_new.dart:223
+#: lib/whats_new.dart:229
 msgid ""
 "Alapalkki: Tänään, Ohjelma, Tilastot ja Lisää. Etusivulla Sali- ja "
 "Liikunta-valinta, päivän ehdotus ja viikon renkaat."
@@ -12312,11 +12327,11 @@ msgstr ""
 "Vuolleholga: Odne, Prográmma, Statistihkka ja Lasit. Vuođđosiiddus "
 "Sálla- ja Lihkadeapmi-válljen, beaivvi evttohus ja vahku gierddut."
 
-#: lib/whats_new.dart:228
+#: lib/whats_new.dart:234
 msgid "Treeni jatkuu taustalla"
 msgstr "Hárjehallan joatkašuvvá duogážis"
 
-#: lib/whats_new.dart:229
+#: lib/whats_new.dart:235
 msgid ""
 "Takaisin kesken liikunnan ei enää kysy tallennusta: ajanotto, GPS ja "
 "sykevyö jatkavat. Alapalkin yläpuolelta ja etusivun Jatka treeniä "
@@ -12326,11 +12341,11 @@ msgstr ""
 "ja pulsaboagán joatkašuvvet. Vuolleholgga bajábealde ja vuođđosiiddu "
 "Joatkke hárjehallama -boalus máhcat hárjehallamii."
 
-#: lib/whats_new.dart:234
+#: lib/whats_new.dart:240
 msgid "Kalorit renkaana"
 msgstr "Kaloriijat gierdun"
 
-#: lib/whats_new.dart:235
+#: lib/whats_new.dart:241
 msgid ""
 "Kokonaiskulutus ja aktiiviset kalorit erikseen. Kävelyn kalorit "
 "lasketaan vauhdista ja pituudesta, myös ilman sykevyötä."
@@ -12339,11 +12354,11 @@ msgstr ""
 "Vázzima kaloriijat rehkenastojuvvojit leavttus ja guhkkodagas, "
 "maiddái pulsaboahkána haga."
 
-#: lib/whats_new.dart:240
+#: lib/whats_new.dart:246
 msgid "Tilastot välilehdillä"
 msgstr "Ođđa statistihkka"
 
-#: lib/whats_new.dart:241
+#: lib/whats_new.dart:247
 msgid ""
 "Viikko, Kehitys, Ennätykset, Kalenteri ja Askeleet omina "
 "välilehtinään. Paino ja pituus kuvaajalla."
@@ -12351,11 +12366,11 @@ msgstr ""
 "Vahkku, Ovdáneapmi, Rekordat, Kaleandar ja Lávkkit sierra siidduin. "
 "Deaddu ja guhkkodat govvosiin."
 
-#: lib/whats_new.dart:246
+#: lib/whats_new.dart:252
 msgid "Vammatila ja tauko"
 msgstr "Roasmmohuvvan ja boddu"
 
-#: lib/whats_new.dart:247
+#: lib/whats_new.dart:253
 msgid ""
 "Vammatila keventää merkittyjen liikkeiden painoehdotusta ja tarjoaa "
 "korvaavan liikkeen. Tauolle voi valita viimeisen päivän tai merkitä "
@@ -12365,11 +12380,11 @@ msgstr ""
 "fállá lonuhan lihkastaga. Boddui sáhttá válljet maŋimuš beaivvi dahje "
 "merket boahtte luomu ovdagihtii."
 
-#: lib/whats_new.dart:252
+#: lib/whats_new.dart:258
 msgid "Ohjaus ilmoituksesta"
 msgstr "Stivren dieđáhusas"
 
-#: lib/whats_new.dart:253
+#: lib/whats_new.dart:259
 msgid ""
 "Palautukseen −15 s, +15 s ja Ohita, liikuntaan Tauko ja Jatka. "
 "Palautuksen voi mitata ajalla tai sykkeellä."
@@ -12377,11 +12392,11 @@ msgstr ""
 "Vuoiŋŋasteapmái −15 s, +15 s ja Njuikes, lihkadeapmái Boddu ja "
 "Joatkke. Vuoiŋŋasteami sáhttá mihtidit áiggiin dahje pulssain."
 
-#: lib/whats_new.dart:258
+#: lib/whats_new.dart:264
 msgid "Haku asetuksissa"
 msgstr "Ohcan ásahusain"
 
-#: lib/whats_new.dart:259
+#: lib/whats_new.dart:265
 msgid ""
 "Asetuksista löytää haulla. Health Connectin tiedot päivitetään tieto "
 "kerrallaan, ja päivityksen voi perua."
@@ -12389,11 +12404,11 @@ msgstr ""
 "Ásahusain sáhttá ohcat. Health Connect -dieđut ođasmahttojuvvojit "
 "okta hávális, ja ođasmahttima sáhttá máhcahit."
 
-#: lib/whats_new.dart:264
+#: lib/whats_new.dart:270
 msgid "Tämä tai tuo -liikkeet"
 msgstr "Dát dahje dat -hárjehusat"
 
-#: lib/whats_new.dart:265
+#: lib/whats_new.dart:271
 msgid ""
 "Ohjelman liikkeelle voi lisätä vaihtoehtoja (esim. penkki tai "
 "taukopenkki). Treenissä valitset, minkä teet tänään; jokaisella oma "
@@ -12403,11 +12418,11 @@ msgstr ""
 "Penkkipunnerrus dahje Taukopenkki). Hárjehallamis válljet, man dagat "
 "odne; juohkehaččas iežas historjá ja deaddoevttohus."
 
-#: lib/whats_new.dart:270
+#: lib/whats_new.dart:276
 msgid "Ohjelman muokkaus"
 msgstr "Prográmma rievdadeapmi"
 
-#: lib/whats_new.dart:271
+#: lib/whats_new.dart:277
 msgid ""
 "Liikkeiden järjestys vetämällä tai Siirrä ylös / alas, ja päiviä voi "
 "lisätä ja poistaa. Ohjelman ja treenin voi jakaa kuvana (WhatsApp "
@@ -12417,11 +12432,11 @@ msgstr ""
 "beivviid sáhttá lasihit ja sihkkut. Prográmma ja hárjehallama sáhttá "
 "juogadit govvan (WhatsApp jna.)."
 
-#: lib/whats_new.dart:276
+#: lib/whats_new.dart:282
 msgid "Tarkempi viikon kuorma"
 msgstr "Dárkilet vahku noađđi"
 
-#: lib/whats_new.dart:277
+#: lib/whats_new.dart:283
 msgid ""
 "Olkapää ja selkä osineen, käsivarret ja jalat ryhminä, pohkeet, "
 "kyynärvarret, lähentäjät ja keskivartalo omina riveinään."
@@ -12429,11 +12444,11 @@ msgstr ""
 "Oalgi ja čielgi osiiguin, gieđat ja juolggit joavkun, ruoppas, "
 "giehtaváimmut, reaŋgga siskkit deahkit ja gaskarumaš iežaset rájuin."
 
-#: lib/whats_new.dart:282
+#: lib/whats_new.dart:288
 msgid "Liikeohje liikettä valitessa"
 msgstr "Hárjehusrávvagat hárjehusa válljedettiin"
 
-#: lib/whats_new.dart:283
+#: lib/whats_new.dart:289
 msgid ""
 "Liikevalitsimen ▶ näyttää animaation ja vinkit ennen valintaa. Uudet "
 "liikkeet: kapea taukopenkki ja vinopenkki tauolla."
@@ -12441,11 +12456,11 @@ msgstr ""
 "Hárjehusválljejeaddji ▶ čájeha animašuvnna ja rávvagiid ovdal "
 "válljema. Ođđa hárjehusat: Kapea taukopenkki ja Vinopenkki tauolla."
 
-#: lib/whats_new.dart:288
+#: lib/whats_new.dart:294
 msgid "Omat liikkeet"
 msgstr "Iežat hárjehusat"
 
-#: lib/whats_new.dart:289
+#: lib/whats_new.dart:295
 msgid ""
 "Omalle liikkeelle valitaan lihakset, jolloin se näkyy viikon "
 "kuormassa. Liikkeen voi ehdottaa Gievraan (💡) ja poistaa pitkällä "
@@ -12455,11 +12470,11 @@ msgstr ""
 "noađis. Hárjehusa sáhttá evttohit Gievrai (💡) ja sihkkut guhkes "
 "deaddilemiin."
 
-#: lib/whats_new.dart:294
+#: lib/whats_new.dart:300
 msgid "Uinnin vauhti 100 metrille"
 msgstr "Vuodjanleaktu 100 mehterii"
 
-#: lib/whats_new.dart:295
+#: lib/whats_new.dart:301
 msgid ""
 "Uinnin vauhdin voi näyttää muodossa min/100 m: Asetukset → "
 "Harjoittelu → Uinnin vauhti."
@@ -12467,11 +12482,11 @@ msgstr ""
 "Vuodjanleavttu sáhttá čájehit min/100 m: Ásahusat → Hárjehallan → "
 "Vuodjanleaktu."
 
-#: lib/whats_new.dart:300
+#: lib/whats_new.dart:306
 msgid "Matkan ja ajan tarkistus"
 msgstr "Gaskka ja áiggi dárkkisteapmi"
 
-#: lib/whats_new.dart:301
+#: lib/whats_new.dart:307
 msgid ""
 "Jos käsin syötetty matka ja aika tekevät lajille mahdottoman nopeuden "
 "(esim. 1 km ajassa 0:10), Gievra pyytää tarkistamaan ne ennen "
@@ -12481,11 +12496,11 @@ msgstr ""
 "veadjemeahttun leavttu (omd. 1 km áiggis 0:10), Gievra bivdá "
 "dárkkistit daid ovdal vurkema."
 
-#: lib/whats_new.dart:306
+#: lib/whats_new.dart:312
 msgid "Käsipainot yhteispainona"
 msgstr "Giehtadeattut oktiibuot"
 
-#: lib/whats_new.dart:307
+#: lib/whats_new.dart:313
 msgid ""
 "Kahden käsipainon liikkeissä syötät nyt molempien käsipainojen "
 "yhteispainon, ja alla näkyy kummankin käden paino. Etusivu pyytää "
@@ -12497,11 +12512,11 @@ msgstr ""
 "Ovdasiidu bivdá dárkkistit oktii, ledjego boares deattut oktiibuot "
 "vai juohke giehtadeattus."
 
-#: lib/whats_new.dart:312
+#: lib/whats_new.dart:318
 msgid "Aiempi salitreeni yhteenvetona"
 msgstr "Boares sállahárjehallan čoahkkáigeassun"
 
-#: lib/whats_new.dart:313
+#: lib/whats_new.dart:319
 msgid ""
 "Kalenterista avattu salitreeni näyttää yhteenvedon liikkeineen ja "
 "sarjoineen. Muokkaa avaa liikelistan."
@@ -12509,7 +12524,7 @@ msgstr ""
 "Kaleandaris rahppon sállahárjehallan čájeha čoahkkáigeasu hárjehusaid "
 "ja ráidduid mielde. Rievdat rahpá hárjehuslistta."
 
-#: lib/whats_new.dart:319
+#: lib/whats_new.dart:325
 msgid ""
 "Paino, toistot ja tallennus ovat omana korttinaan, ja Merkitse liike "
 "valmiiksi on tehtyjen sarjojen alla, jottei sitä paina vahingossa."
@@ -12518,11 +12533,11 @@ msgstr ""
 "hárjehusa gárvvisin lea dahkkon ráidduid vuolábealde, vai dan ii "
 "deaddil fuomáškeahttá."
 
-#: lib/whats_new.dart:324
+#: lib/whats_new.dart:330
 msgid "Farmer walk hex barilla"
 msgstr "Farmer walk hex barilla"
 
-#: lib/whats_new.dart:325
+#: lib/whats_new.dart:331
 msgid ""
 "Oma liike kuusikulmatangolla tehtävälle farmer walkille. Vanhat "
 "Farmer walk -kerrat voi siirtää siihen käsipainojen tarkistuksessa."
@@ -12530,11 +12545,11 @@ msgstr ""
 "Sierra lihkadus: Farmer walk hex barilla. Boares Farmer walk -geardde "
 "sáhttá sirdit dasa giehtadeattuid dárkkisteamis."
 
-#: lib/whats_new.dart:330
+#: lib/whats_new.dart:336
 msgid "Kellon sykekäyrä"
 msgstr "Diimmu pulsakurva"
 
-#: lib/whats_new.dart:331
+#: lib/whats_new.dart:337
 msgid ""
 "Health Connectista haettu syke tallentuu nyt käyränä ja sykealueina, "
 "kuten sykevyöllä. Vanhoihin treeneihin: hae kellon tiedot uudelleen."
@@ -12543,7 +12558,7 @@ msgstr ""
 "pulsaguovlluiguin, dego pulsaboahkániin. Boarráset hárjehallamiidda: "
 "viečča diimmu dieđuid ođđasit."
 
-#: lib/whats_new.dart:337
+#: lib/whats_new.dart:343
 msgid ""
 "Tänään-kortissa Sali ja Liikunta ovat rinnakkain: useammin tekemäsi "
 "on leveämpi, ja Liikunta-puolella on viimeksi tekemäsi lajin kuvake. "
@@ -12555,11 +12570,11 @@ msgstr ""
 "lihkadanšlája govaš. Gárvekeahtes sállahárjehallan joatkašuvvá "
 "Joatkke-boalus. Seamma bárra lea maiddái kaleandara beaivvis."
 
-#: lib/whats_new.dart:342
+#: lib/whats_new.dart:348
 msgid "Uusi Treeni valmis -ikkuna"
 msgstr "Ođđa Hárjehallan gárvvis -láse"
 
-#: lib/whats_new.dart:343
+#: lib/whats_new.dart:349
 msgid ""
 "Rasitus arvioidaan sykkeestä tai vauhdista (voit vaihtaa), "
 "salitreenin ennätykset ja painojen nousut näkyvät heti, ja voit "
@@ -12569,11 +12584,11 @@ msgstr ""
 "sálla rekordat ja deattuid lassáneamit oidnojit dakkaviđe, ja sáhtát "
 "merket hárjehusaid, mat dovde menddo lossadin."
 
-#: lib/whats_new.dart:348
+#: lib/whats_new.dart:354
 msgid "Tallennettu liikunta"
 msgstr "Vurkejuvvon lihkadeapmi"
 
-#: lib/whats_new.dart:349
+#: lib/whats_new.dart:355
 msgid ""
 "Vanha liikunta aukeaa yhteenvetona: aika, matka, vauhti, reitti ja "
 "syke. Muokkaa-painike avaa muokkauksen."
@@ -12581,11 +12596,11 @@ msgstr ""
 "Boares lihkadeapmi rahpasa čoahkkáigeassun: áigi, gaska, leaktu, "
 "ruvtto ja pulsa. Rievdat-boallu rahpá rievdadeami."
 
-#: lib/whats_new.dart:354
+#: lib/whats_new.dart:360
 msgid "Kyyti tunnistetaan"
 msgstr "Biilamátki dovdojuvvo"
 
-#: lib/whats_new.dart:355
+#: lib/whats_new.dart:361
 msgid ""
 "Jos GPS-kävelyssä tai -juoksussa on autolla tai bussilla ajettu "
 "pätkä, Gievra kysyy, poistetaanko se matkasta ja ajasta."
@@ -12593,11 +12608,11 @@ msgstr ""
 "Jus GPS-vázzimis dahje -viehkamis lea oassi, man vudjet biillain "
 "dahje bussiin, Gievra jearrá, galgágo dan sihkkut gaskkas ja áiggis."
 
-#: lib/whats_new.dart:360
+#: lib/whats_new.dart:366
 msgid "Avaa Gievralla"
 msgstr "Raba Gievrrain"
 
-#: lib/whats_new.dart:361
+#: lib/whats_new.dart:367
 msgid ""
 "FitNotes-varmuuskopion, Gievran varmuuskopion (.zip), Garminin CSV:n "
 "ja .md-treenit voi avata Gievralla suoraan tiedostoista, "
@@ -12607,11 +12622,11 @@ msgstr ""
 "CSV-fiilla ja .md-hárjehallamiid sáhtát rahpat Gievrrain njuolgga "
 "fiillain, e-poasttas dahje Juogat-fállagis."
 
-#: lib/whats_new.dart:366
+#: lib/whats_new.dart:372
 msgid "Treeni pysyy käynnissä"
 msgstr "Hárjehallan bissu jođus"
 
-#: lib/whats_new.dart:367
+#: lib/whats_new.dart:373
 msgid ""
 "Käynnissä olevan treenin ilmoitus pitää nyt Gievran käynnissä, kun "
 "näyttö on pois päältä: palautuksen ilmoitus tulee ajallaan. Älä sulje "
@@ -12623,7 +12638,7 @@ msgstr ""
 "hárjehallama dieđiheami hárjehallama áigge. Dárkkis maiddái, ahte "
 "Gievra oažžu doaibmat duogážis: Ásahusat → Oppalaš → Doaibma duogážis."
 
-#: lib/whats_new.dart:373
+#: lib/whats_new.dart:379
 msgid ""
 "Sykevyön kanssa palautusajastin voi odottaa, kunnes syke on laskenut, "
 "ja ilmoittaa silloin. Palautuksen ilmoitus on nyt lyhyt ponnahdus, "
@@ -12634,7 +12649,7 @@ msgstr ""
 "dál oanehis dieđiheapmi, mii jávká iešalddis. Ásahusat → Rumaš ja "
 "rusttegat → Pulsaboagán."
 
-#: lib/whats_new.dart:379
+#: lib/whats_new.dart:385
 msgid ""
 "Sykevyö Bluetoothilla (esim. Polar H10, Verity Sense, Garmin HRM): "
 "syke näkyy treenin ja palautuksen aikana, ja treeniin tallentuvat "
@@ -12647,7 +12662,7 @@ msgstr ""
 "rehkenastojuvvon kaloriijat. Ásahusat → Rumaš ja rusttegat → "
 "Pulsaboagán."
 
-#: lib/whats_new.dart:385
+#: lib/whats_new.dart:391
 msgid ""
 "Tekstin koon voi nyt valita. Sinun tekstisi pysyi ennallaan (Pieni). "
 "Isompi teksti: Asetukset → Yleiset → Tekstin koko → Normaali tai "
@@ -12657,11 +12672,11 @@ msgstr ""
 "sturrosaš (Unni). Stuorát teaksta: Ásahusat → Oppalaš → Teavstta "
 "sturrodat → Dábálaš dahje Stuoris."
 
-#: lib/whats_new.dart:390
+#: lib/whats_new.dart:396
 msgid "Askeleet kalenterissa"
 msgstr "Lávkkit kaleandaris"
 
-#: lib/whats_new.dart:391
+#: lib/whats_new.dart:397
 msgid ""
 "Vihreä rengas kalenterin päivämäärän ympärillä on sen päivän "
 "askeleet: täysi rengas on 10 000 askelta. Napauta päivää, niin näet "
@@ -12671,7 +12686,7 @@ msgstr ""
 "lávkkiid: ollislaš riekkis lea 10 000 lávkki. Deaddil beaivvi, de "
 "oainnát dárkilis meari."
 
-#: lib/whats_new.dart:397
+#: lib/whats_new.dart:403
 msgid ""
 "Etusivun kortin Viikko-puoli: reipasta liikuntaa 150 minuutin "
 "tavoitetta vasten (kova minuutti lasketaan kahdesti) ja "
@@ -12681,11 +12696,11 @@ msgstr ""
 "ulbmila ektui (garra minuhtta rehkenastojuvvo guktii) ja "
 "deahkkefápmobeaivvit, nugo WHO ávžžuha."
 
-#: lib/whats_new.dart:402
+#: lib/whats_new.dart:408
 msgid "Treeni valmis ja fiilis"
 msgstr "Hárjehallan gárvvis ja dovdu"
 
-#: lib/whats_new.dart:403
+#: lib/whats_new.dart:409
 msgid ""
 "Treenin ja liikunnan lopussa yksi painike, ja fiilis (liikunnassa "
 "myös rasitus) kysytään samassa ikkunassa. Uusi yhteenveto näyttää "
@@ -12695,11 +12710,11 @@ msgstr ""
 "(lihkadeamis maiddái rahčan) jerrojuvvo seamma láses. Ođđa "
 "čoahkkáigeassu čájeha dušše devdon dieđuid."
 
-#: lib/whats_new.dart:408
+#: lib/whats_new.dart:414
 msgid "Liikkeen pitkä painallus"
 msgstr "Hárjehusa guhkes deaddileapmi"
 
-#: lib/whats_new.dart:409
+#: lib/whats_new.dart:415
 msgid ""
 "Paina liikettä pitkään: lisää supersarjaan, pura supersarja tai "
 "poista liike tästä treenistä."
@@ -12707,11 +12722,11 @@ msgstr ""
 "Deaddil hárjehusa guhká: lasit superráidui, gaikkut superráiddu dahje "
 "sihko hárjehusa dán hárjehallamis."
 
-#: lib/whats_new.dart:414
+#: lib/whats_new.dart:420
 msgid "Seuraava sarja palautuksessa"
 msgstr "Boahtte ráidu vuoiŋŋasteamis"
 
-#: lib/whats_new.dart:415
+#: lib/whats_new.dart:421
 msgid ""
 "Palautusajastin näyttää seuraavan sarjan painon ja toistot, joten "
 "voit vaihtaa painot tauon aikana."
@@ -12719,11 +12734,11 @@ msgstr ""
 "Vuoiŋŋasteami áigemihttár čájeha boahtte ráiddu deattu ja "
 "geardduhemiid, nu ahte sáhtát molsut deattuid vuoiŋŋasteami áigge."
 
-#: lib/whats_new.dart:420
+#: lib/whats_new.dart:426
 msgid "Uusi lajivalinta ja ajanotto"
 msgstr "Ođđa valáštallanválljen ja áigemihtideapmi"
 
-#: lib/whats_new.dart:421
+#: lib/whats_new.dart:427
 msgid ""
 "Lajit hakuna ja ryhminä, viimeisimmät ensin. Ilman GPS:ää valitse "
 "Ajanotto (aloita, tauko, lopeta) tai Syötä itse."
@@ -12731,11 +12746,11 @@ msgstr ""
 "Valáštallamat ohcamin ja joavkkuin, maŋimuččat vuosttažin. Almmá GPS "
 "haga vállje Áigemihtideapmi (álgge, boddu, loahpat) dahje Čális ieš."
 
-#: lib/whats_new.dart:426
+#: lib/whats_new.dart:432
 msgid "GPS: 5 sekunnin laskenta"
 msgstr "GPS: 5 sekundda lohkan"
 
-#: lib/whats_new.dart:427
+#: lib/whats_new.dart:433
 msgid ""
 "Tallennus alkaa 5 sekunnin laskennan jälkeen, joten ehdit laittaa "
 "puhelimen taskuun. Ohita laskenta aloittaa heti."
@@ -12743,7 +12758,7 @@ msgstr ""
 "Vurken álgá 5 sekundda lohkama maŋŋá, nu ahte áiggiset bidjat "
 "telefovnna lumma. Njuikes lohkama álggaha dakkaviđe."
 
-#: lib/whats_new.dart:433
+#: lib/whats_new.dart:439
 msgid ""
 "Askeleet päivittäin Health Connectista (esim. puhelin ja Oura) ilman "
 "päällekkäisyyksiä; kävelymaton askeleet lisätään. Etusivun kortissa, "
@@ -12756,11 +12771,11 @@ msgstr ""
 "Lávkkit-siiddus. Váldde atnui: Ásahusat → Rumaš ja rusttegat → "
 "Beaivvi lávkkit."
 
-#: lib/whats_new.dart:438
+#: lib/whats_new.dart:444
 msgid "Päivän yhteenveto"
 msgstr "Beaivvi čoahkkáigeassu"
 
-#: lib/whats_new.dart:439
+#: lib/whats_new.dart:445
 msgid ""
 "Kalenterin päivän napautus näyttää päivän treenit, ajan, matkan ja "
 "askeleet. Pyyhkäise sivulle vaihtaaksesi päivää."
@@ -12769,11 +12784,11 @@ msgstr ""
 "áiggi, gaskka ja lávkkiid. Sihko gurutbeallái dahje olgešbeallái "
 "molsut beaivvi."
 
-#: lib/whats_new.dart:444
+#: lib/whats_new.dart:450
 msgid "Juoksu etusivun kortissa"
 msgstr "Viehkan ruovttušearpma kárttas"
 
-#: lib/whats_new.dart:445
+#: lib/whats_new.dart:451
 msgid ""
 "Etusivun kortissa Edistyminen, Juoksu ja Askeleet: pyyhkäise tai "
 "valitse otsikosta. Juoksu näkyy, kun juoksuja on tallennettu."
@@ -12781,7 +12796,7 @@ msgstr ""
 "Ruovttušearpma kárttas Ovdáneapmi, Viehkan ja Lávkkit: sihko dahje "
 "vállje bajilčállagis. Viehkan oidno, go leat vurken viehkamiid."
 
-#: lib/whats_new.dart:451
+#: lib/whats_new.dart:457
 msgid ""
 "Tankoliikkeissä painon alla näkyy levyt puolta kohden. Napauta: kuva "
 "tangosta ja omat levyt."
@@ -12789,7 +12804,7 @@ msgstr ""
 "Stággohárjehusain deattu vuolde oidnojit deattut juohke bealde. "
 "Deaddil: govva stákkus ja du iežat deattut."
 
-#: lib/whats_new.dart:457
+#: lib/whats_new.dart:463
 msgid ""
 "Sarjan kirjauksen %-painike näyttää painot 50–95 % arvioidusta "
 "maksimista. Ohjelmassa painon voi antaa prosentteina."
@@ -12797,11 +12812,11 @@ msgstr ""
 "Ráiddu merkema %-boallu čájeha deattuid 50–95 % árvvoštallon eanemus "
 "deattus. Prográmmas deattu sáhttá addit proseanttain."
 
-#: lib/whats_new.dart:462
+#: lib/whats_new.dart:468
 msgid "Supersarjat ja kiertoharjoittelu"
 msgstr "Superráiddut ja vuorrohárjehallan"
 
-#: lib/whats_new.dart:463
+#: lib/whats_new.dart:469
 msgid ""
 "Liikkeet vuorotellen, tauko vasta kierroksen jälkeen. Ohjelmassa "
 "liikkeen kohdalla Supersarja A–D, treenissä ⋮ → Supersarjat."
@@ -12809,11 +12824,11 @@ msgstr ""
 "Hárjehusat vuorrováldima, boddu easkka vuoru maŋŋá. Prográmmas "
 "hárjehusa luhtte Superráidu A–D, hárjehallamis ⋮ → Superráiddut."
 
-#: lib/whats_new.dart:468
+#: lib/whats_new.dart:474
 msgid "Pudotus- ja AMRAP-sarjat"
 msgstr "Njiedjan- ja AMRAP-ráiddut"
 
-#: lib/whats_new.dart:469
+#: lib/whats_new.dart:475
 msgid ""
 "Sarjan tyyppi tallennuspainikkeiden yläpuolella: pudotus (kevyempi "
 "paino heti perään) tai AMRAP (niin monta toistoa kuin jaksat)."
@@ -12821,11 +12836,11 @@ msgstr ""
 "Ráiddu šládja vurkenboaluid bajábealde: njiedjan (geahppasut deaddu "
 "dakkaviđe maŋŋá) dahje AMRAP (nu ollu geardduhemiid go nagodat)."
 
-#: lib/whats_new.dart:474
+#: lib/whats_new.dart:480
 msgid "Ajastin aikaliikkeisiin"
 msgstr "Áigemihtideaddji áigehárjehusaide"
 
-#: lib/whats_new.dart:475
+#: lib/whats_new.dart:481
 msgid ""
 "Lankku ja muut sekunteina mitattavat liikkeet: Aloita ajastin laskee "
 "alas ja ilmoittaa äänellä."
@@ -12833,11 +12848,11 @@ msgstr ""
 "Sekunddaiguin mihtiduvvon hárjehusat: Álggat áigemihtideaddji lohká "
 "vulos ja dieđiha jienain."
 
-#: lib/whats_new.dart:480
+#: lib/whats_new.dart:486
 msgid "Tarkemmat painoehdotukset"
 msgstr "Dárkilut deaddoevttohusat"
 
-#: lib/whats_new.dart:481
+#: lib/whats_new.dart:487
 msgid ""
 "Tankoliikkeissä paino nousee 5 tai 10 kg ja toistot palaavat "
 "alueelle; toistoja ei lisätä loputtomiin. Kahvakuulalla seuraava "

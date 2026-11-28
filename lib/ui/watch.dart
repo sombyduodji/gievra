@@ -42,8 +42,12 @@ class WatchCard extends StatelessWidget {
             child: Column(
               children: [
                 Text(emoji, style: const TextStyle(fontSize: 18)),
-                Text(value == null ? '–' : '$value $unit', style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text(
+                WordFit(
+                  value == null ? '–' : '$value\u00A0$unit',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
+                WordFit(
                   label,
                   style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                   textAlign: TextAlign.center,

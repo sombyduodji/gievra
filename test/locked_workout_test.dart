@@ -81,7 +81,7 @@ void main() {
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 100));
     }
-    await tester.pump(const Duration(milliseconds: 600)); // yhteenvedon napautussuoja
+    await tester.pump(const Duration(milliseconds: 1000)); // yhteenvedon napautussuoja (0,9 s)
     expect(find.byKey(const ValueKey('savedFeeling')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('face_4')));
     int? saved() => store.workouts.where((x) => x.date == w.date && x.session == w.session).firstOrNull?.feeling;

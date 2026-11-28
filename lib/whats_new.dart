@@ -13,6 +13,12 @@ class NewFeature {
 // l10n: data
 const whatsNew = <NewFeature>[
   NewFeature(
+    '0.7.5.4',
+    Icons.notes,
+    'Muistiinpanot yhteenvedossa',
+    'Salitreenin yhteenveto näyttää muistiinpanot. Treenin lopetuksen kaksoisnapautus ei enää ohita fiilistä. Suurella tekstillä pitkä liikkeen nimi pienenee eikä katkea keskeltä sanaa.',
+  ),
+  NewFeature(
     '0.7.5.3',
     Icons.edit_note,
     'Muistiinpanot suoraan',

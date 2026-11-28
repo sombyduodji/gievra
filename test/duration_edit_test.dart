@@ -112,8 +112,8 @@ void main() {
         'fi',
       ),
     );
-    expect(find.text('52 min'), findsOneWidget);
-    await tester.tap(find.text('52 min'));
+    expect(find.text('52\u00A0min'), findsOneWidget);
+    await tester.tap(find.text('52\u00A0min'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '64');
     await tester.tap(find.text('OK'));

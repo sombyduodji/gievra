@@ -1217,7 +1217,7 @@ class _SavedScreenState extends State<SavedScreen> {
   Timer? _armTimer;
   Timer? _suggestTimer;
 
-  bool _showAllMoves = false, _closing = false;
+  bool _showAllMoves = false, _closing = false, _notesOpen = false;
 
   /// Reitti tiedostosta (tallennus siirtää GPX:n omaan tiedostoonsa ja tyhjentää routeGpx:n).
   List<List<TrackPoint>>? _route;
@@ -1237,7 +1237,9 @@ class _SavedScreenState extends State<SavedScreen> {
         if (mounted) maybeSuggestOwnExercises(context, widget.workout);
       });
     }
-    _armTimer = Timer(const Duration(milliseconds: 450), () {
+    // Juuri lopetetun treenin yhteenveto: pidempi viive, koska "Lopeta treeni" -painikkeen hidas kaksoisnapautus
+    // (~0,6 s) osui Ohita-painikkeeseen ja treeni tallentui ilman fiilistä (Motorola, yötesti 28.11.).
+    _armTimer = Timer(Duration(milliseconds: widget.fresh ? 900 : 450), () {
       if (mounted) setState(() => _armed = true);
     });
   }
@@ -1947,6 +1949,28 @@ class _SavedScreenState extends State<SavedScreen> {
                 onTap: _changeFeeling,
               ),
             ),
+            // Muistiinpanot näkyvät myös yhteenvedossa (ennen vain Muokkaa-näkymässä, yötesti 28.11.); pitkä teksti
+            // lyhennettynä, napautus näyttää kokonaan.
+            if (workout.notes.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Material(
+                color: cs.surfaceContainer,
+                borderRadius: BorderRadius.circular(14),
+                child: ListTile(
+                  key: const ValueKey('summaryNotes'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  leading: Icon(Icons.notes, color: cs.onSurfaceVariant),
+                  title: Text(t('Muistiinpanot'), style: sub),
+                  subtitle: Text(
+                    workout.notes.trim(),
+                    maxLines: _notesOpen ? null : 4,
+                    overflow: _notesOpen ? null : TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, color: cs.onSurface),
+                  ),
+                  onTap: () => setState(() => _notesOpen = !_notesOpen),
+                ),
+              ),
+            ],
           ] else ...[
             if (watchStats.isNotEmpty || ring) ...[
               const SizedBox(height: 8),

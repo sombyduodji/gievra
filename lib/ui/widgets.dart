@@ -673,6 +673,26 @@ class BarTitle extends StatelessWidget {
       : child;
 }
 
+/// Yksisanainen teksti pienenee mahtuakseen eikä katkea keskeltä sanaa (tekstikoko 2,0, yötesti 28.11.:
+/// "Penkkipunner⏎rus" ohjelman näkymässä, "durati⏎on" kellon ruuduissa). Usean sanan teksti rivittyy sanojen välistä
+/// tavalliseen tapaan.
+class WordFit extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  const WordFit(this.text, {super.key, this.style, this.textAlign});
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.trim().contains(RegExp(r'\s'))) return Text(text, style: style, textAlign: textAlign);
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: textAlign == TextAlign.center ? Alignment.center : AlignmentDirectional.centerStart,
+      child: Text(text, style: style, textAlign: textAlign, maxLines: 1, softWrap: false),
+    );
+  }
+}
+
 class ExName extends StatelessWidget {
   final String name;
   final TextStyle? style;
@@ -681,12 +701,12 @@ class ExName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final en = englishOf(name);
-    if (en == null || effectiveNameMode == 'en') return Text(en ?? name, style: style);
+    if (en == null || effectiveNameMode == 'en') return WordFit(en ?? name, style: style);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(name, style: style),
+        WordFit(name, style: style),
         Text('($en)', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );

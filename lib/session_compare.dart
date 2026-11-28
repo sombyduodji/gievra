@@ -92,7 +92,12 @@ SessionCompare compareSession(Workout w, List<Workout> all, Program? p) {
     final b = _best(before)!;
     final diff = (now.$2 - b.$2) / (b.$2 == 0 ? 1 : b.$2);
     ex.add(
-      ExerciseCompare(e.name, fmtSetHand(e.name, now.$1), fmtSetHand(e.name, b.$1), diff > .005 ? 1 : (diff < -.02 ? -1 : 0)),
+      ExerciseCompare(
+        e.name,
+        fmtSetHand(e.name, now.$1),
+        fmtSetHand(e.name, b.$1),
+        diff > .005 ? 1 : (diff < -.02 ? -1 : 0),
+      ),
     );
   }
   final hist = [
